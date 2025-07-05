@@ -1998,7 +1998,8 @@ async function initializeDefaultSports() {
 
 // 서버 시작
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, async () => {
+const HOST = process.env.HOST || '0.0.0.0';
+server.listen(PORT, HOST, async () => {
   logger.info(`서버가 포트 ${PORT}에서 실행 중입니다.`);
   
   // 기본 종목 초기화
