@@ -623,7 +623,12 @@
     </div>
 
     <script>
-        const socket = io();
+        // Railway 도메인에 맞는 Socket.IO 연결
+        const socket = io({
+            transports: ['websocket', 'polling'],
+            upgrade: true,
+            rememberUpgrade: true
+        });
         const matchId = '<%= match.id %>';
         
         // 소켓 연결

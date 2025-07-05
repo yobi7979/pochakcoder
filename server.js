@@ -32,7 +32,17 @@ const logger = winston.createLogger({
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
+// Socket.IO 설정 - Railway 도메인 허용
+const io = socketIo(server, {
+  cors: {
+    origin: [
+      'http://localhost:3000',
+      'https://sportscoder-production.up.railway.app',
+      'https://*.up.railway.app'
+    ],
+    credentials: true
+  }
+});
 
 // 팀 로고 업로드를 위한 multer 설정
 const storage = multer.diskStorage({
@@ -116,7 +126,15 @@ app.set('views', path.join(__dirname, 'views'));
 app.locals.hexToRgb = hexToRgb;
 
 // 미들웨어 설정
-app.use(cors());
+// CORS 설정 - Railway 도메인 허용
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'https://sportscoder-production.up.railway.app',
+    'https://*.up.railway.app'
+  ],
+  credentials: true
+}));
 app.use(bodyParser.json());
 app.use(morgan('dev'));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -1999,6 +2017,7 @@ async function initializeDefaultSports() {
 // 서버 시작
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
+const DOMAIN = process.env.DOMAIN || 'sportscoder-production.up.railway.app';
 server.listen(PORT, HOST, async () => {
   logger.info(`서버가 포트 ${PORT}에서 실행 중입니다.`);
   
