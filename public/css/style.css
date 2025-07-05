@@ -1,0 +1,88 @@
+/* 기본 스타일 */
+body {
+    background-color: #f8f9fa;
+}
+
+/* 템플릿 카드 스타일 */
+.template-card {
+    transition: transform 0.2s;
+    margin-bottom: 1rem;
+}
+
+.template-card:hover {
+    transform: translateY(-5px);
+}
+
+/* 템플릿 미리보기 스타일 */
+.template-preview {
+    height: 200px;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 1.2rem;
+}
+
+/* 테이블 스타일 */
+.table th {
+    background-color: #f8f9fa;
+}
+
+/* 버튼 스타일 */
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* 모달 스타일 */
+.modal-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.modal-footer {
+    background-color: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+}
+
+/* 폼 스타일 */
+.form-label {
+    font-weight: 500;
+}
+
+.form-text {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+/* 배지 스타일 */
+.badge {
+    font-weight: 500;
+    padding: 0.5em 0.75em;
+}
+
+/* 네비게이션 스타일 */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+}
+
+.nav-link {
+    font-weight: 500;
+}
+
+/* 컨테이너 스타일 */
+.container {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+/* 카드 스타일 */
+.card {
+    box-shadow: 0 2px 4px rgba(0,0,0,.05);
+    border: none;
+}
+
+.card-body {
+    padding: 1.5rem;
+} 

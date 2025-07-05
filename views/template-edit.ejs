@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>템플릿 수정</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css" rel="stylesheet">
+    <style>
+        .editor-container {
+            margin-top: 20px;
+        }
+        .editor-section, .preview-section {
+            display: none;
+            width: 100%;
+        }
+        .editor-section.active, .preview-section.active {
+            display: block;
+        }
+        .CodeMirror {
+            height: 600px;
+            border: 1px solid #ddd;
+        }
+        .preview-section {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 20px;
+            background: #fff;
+            position: relative;
+            width: 1920px;
+            height: 1080px;
+            transform: scale(0.5);
+            transform-origin: top left;
+            margin: 0 auto;
+        }
+        .preview-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #fff;
+            display: none;
+        }
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            position: absolute;
+            top: -40px;
+            left: 0;
+            right: 0;
+            z-index: 1;
+        }
+        .preview-controls {
+            display: flex;
+            gap: 10px;
+        }
+        .overlay-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .overlay-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+        }
+        .view-toggle {
+            margin-bottom: 20px;
+        }
+        .preview-wrapper {
+            overflow: auto;
+            max-height: 600px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h2>템플릿 수정</h2>
+        <div class="mb-3">
+            <label for="templateName" class="form-label">템플릿 이름</label>
+            <input type="text" class="form-control" id="templateName" value="<%= template.name %>">
+        </div>
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="isDefault" <%= template.is_default ? 'checked' : '' %>>
+            <label class="form-check-label" for="isDefault">기본 템플릿으로 설정</label>
+        </div>
+
+        <div class="view-toggle">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-primary active" onclick="switchView('editor')">템플릿 내용</button>
+                <button type="button" class="btn btn-outline-primary" onclick="switchView('preview')">미리보기</button>
+            </div>
+        </div>
+
+        <div class="editor-container">
+            <div class="editor-section active">
+                <label for="templateContent" class="form-label">템플릿 내용</label>
+                <textarea id="templateContent"><%= ejsContent %></textarea>
+            </div>
+            <div class="preview-section">
+                <div class="preview-header">
+                    <h5>미리보기</h5>
+                    <div class="preview-controls">
+                        <button class="btn btn-sm btn-outline-primary" onclick="refreshPreview()">새로고침</button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="toggleAutoRefresh()">자동 새로고침</button>
+                    </div>
+                </div>
+                <div class="preview-wrapper">
+                    <iframe id="previewFrame" class="preview-frame"></iframe>
+                    <div class="overlay-container">
+                        <iframe id="overlayFrame" class="overlay-frame"></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-3">
+            <button class="btn btn-primary" onclick="saveTemplate()">저장</button>
+            <a href="/templates" class="btn btn-secondary">취소</a>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js"></script>
+    <script>
+        let autoRefreshEnabled = false;
+        let autoRefreshInterval = null;
+
+        // CodeMirror 에디터 초기화
+        var editor = CodeMirror.fromTextArea(document.getElementById("templateContent"), {
+            mode: "htmlmixed",
+            theme: "monokai",
+            lineNumbers: true,
+            autoCloseTags: true,
+            autoCloseBrackets: true,
+            matchBrackets: true,
+            indentUnit: 4,
+            lineWrapping: true
+        });
+
+        // 뷰 전환 함수
+        function switchView(view) {
+            const editorSection = document.querySelector('.editor-section');
+            const previewSection = document.querySelector('.preview-section');
+            const buttons = document.querySelectorAll('.view-toggle .btn');
+            
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (view === 'editor') {
+                editorSection.classList.add('active');
+                previewSection.classList.remove('active');
+            } else {
+                editorSection.classList.remove('active');
+                previewSection.classList.add('active');
+                refreshPreview();
+            }
+        }
+
+        // 미리보기 새로고침 함수
+        async function refreshPreview() {
+            const overlayFrame = document.getElementById('overlayFrame');
+            const content = editor.getValue();
+            
+            try {
+                // 오버레이 프레임 업데이트
+                overlayFrame.src = `/templates/<%= template.id %>/overlay`;
+            } catch (error) {
+                console.error('미리보기 업데이트 실패:', error);
+            }
+        }
+
+        // 자동 새로고침 토글
+        function toggleAutoRefresh() {
+            autoRefreshEnabled = !autoRefreshEnabled;
+            const button = document.querySelector('.preview-controls button:last-child');
+            
+            if (autoRefreshEnabled) {
+                button.classList.remove('btn-outline-secondary');
+                button.classList.add('btn-secondary');
+                autoRefreshInterval = setInterval(refreshPreview, 2000);
+            } else {
+                button.classList.remove('btn-secondary');
+                button.classList.add('btn-outline-secondary');
+                clearInterval(autoRefreshInterval);
+            }
+        }
+
+        // 에디터 내용이 변경될 때마다 미리보기 업데이트
+        editor.on('change', function() {
+            if (autoRefreshEnabled) {
+                refreshPreview();
+            }
+        });
+
+        async function saveTemplate() {
+            const templateData = {
+                name: document.getElementById('templateName').value,
+                content: editor.getValue(),
+                is_default: document.getElementById('isDefault').checked,
+                file_name: '<%= template.file_name %>'
+            };
+
+            try {
+                const response = await fetch('/api/templates/<%= template.id %>', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(templateData)
+                });
+
+                if (response.ok) {
+                    // 저장 성공 시 미리보기로 전환하고 새로고침
+                    switchView('preview');
+                    refreshPreview();
+                } else {
+                    const error = await response.json();
+                    alert(error.error || '템플릿 저장 중 오류가 발생했습니다.');
+                }
+            } catch (error) {
+                console.error('저장 오류:', error);
+                alert('서버 오류가 발생했습니다.');
+            }
+        }
+    </script>
+</body>
+</html> 

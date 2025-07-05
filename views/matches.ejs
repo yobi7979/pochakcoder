@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>경기 목록</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding: 15px;
+            font-size: 0.9rem;
+        }
+        .match-list {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .match-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+            padding: 15px;
+        }
+        .match-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .match-teams {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .match-score {
+            font-size: 24px;
+            font-weight: bold;
+            color: #dc3545;
+        }
+        .match-info {
+            color: #6c757d;
+            font-size: 12px;
+        }
+        .match-actions {
+            margin-top: 12px;
+            display: flex;
+            gap: 8px;
+        }
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+            font-size: 0.8rem;
+            padding: 4px 10px;
+        }
+        .delete-btn:hover {
+            background-color: #c82333;
+            color: white;
+        }
+        .modal-confirm {
+            color: #636363;
+        }
+        .modal-confirm .modal-content {
+            padding: 15px;
+            border-radius: 5px;
+            border: none;
+        }
+        .modal-confirm .modal-header {
+            border-bottom: none;
+            position: relative;
+        }
+        .modal-confirm h4 {
+            text-align: center;
+            font-size: 22px;
+            margin: 25px 0;
+        }
+        .modal-confirm .close {
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            font-size: 24px;
+            font-weight: 300;
+            color: #fff;
+            text-shadow: none;
+            opacity: .5;
+        }
+        .modal-confirm .close:hover {
+            opacity: .8;
+        }
+        .modal-confirm .icon-box {
+            color: #eee;
+            font-size: 60px;
+            display: inline-block;
+            margin-top: 0;
+        }
+        .modal-confirm .btn {
+            color: #fff;
+            border-radius: 5px;
+            text-decoration: none;
+            padding: 8px 15px;
+            font-size: 13px;
+            background: #60a7fa;
+            display: inline-block;
+            outline: none !important;
+        }
+        .modal-confirm .btn-secondary {
+            background: #a1a1a1;
+        }
+        .modal-confirm .btn-danger {
+            background: #dc3545;
+        }
+        .modal-confirm .btn-danger:hover {
+            background: #c82333;
+        }
+        .modal-confirm .btn-secondary:hover {
+            background: #8a8a8a;
+        }
+        /* 새로운 스타일 추가 */
+        .match-grid {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            margin-top: 15px;
+        }
+        .match-cell {
+            background-color: white;
+            border-radius: 6px;
+            box-shadow: 0 0 4px rgba(0,0,0,0.1);
+            padding: 10px;
+            margin-bottom: 8px;
+            transition: transform 0.2s;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .match-cell:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .match-cell-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 35%;
+            padding-right: 10px;
+        }
+        .match-cell-teams {
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .match-cell-score {
+            font-size: 18px;
+            font-weight: bold;
+            color: #dc3545;
+            min-width: 60px;
+            text-align: center;
+        }
+        .match-cell-info {
+            color: #6c757d;
+            font-size: 12px;
+            width: 20%;
+            padding: 0 10px;
+        }
+        .match-cell-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            width: 35%;
+            padding-left: 10px;
+        }
+        .match-cell-actions .btn {
+            font-size: 12px;
+            padding: 3px 8px;
+        }
+        .nav-tabs .nav-link {
+            font-weight: bold;
+            font-size: 14px;
+            padding: 8px 12px;
+        }
+        .nav-tabs .nav-link.active {
+            background-color: #f8f9fa;
+            border-bottom-color: #f8f9fa;
+        }
+        .tab-content {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+            padding: 15px;
+        }
+        .sport-icon {
+            margin-right: 5px;
+            font-size: 0.9rem;
+        }
+        .empty-message {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
+        .empty-message h3 {
+            font-size: 18px;
+            margin-top: 10px;
+        }
+        .empty-message p {
+            font-size: 14px;
+        }
+        /* URL 텍스트 박스 스타일 추가 */
+        .url-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 3px;
+            width: 100%;
+        }
+        .url-container .btn {
+            flex-shrink: 0;
+            width: 85px;
+            font-size: 11px;
+            padding: 2px 5px;
+            height: 24px;
+            line-height: 1.2;
+        }
+        .url-container .form-control {
+            flex-grow: 1;
+            font-size: 11px;
+            height: 24px;
+            margin-left: 3px;
+            padding: 0 5px;
+        }
+        .control-url, .overlay-url {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            margin-bottom: 3px;
+        }
+        .control-url .btn, .overlay-url .btn {
+            flex-shrink: 0;
+            width: 85px;
+            font-size: 11px;
+            padding: 2px 5px;
+            height: 24px;
+            line-height: 1.2;
+        }
+        .control-url .form-control, .overlay-url .form-control {
+            flex-grow: 1;
+            font-size: 11px;
+            height: 24px;
+            margin-left: 3px;
+            padding: 0 5px;
+        }
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+            padding: 3px 10px;
+            font-size: 12px;
+        }
+        .delete-container {
+            width: 10%;
+            text-align: center;
+        }
+        h1 {
+            font-size: 24px;
+        }
+        .card {
+            margin-bottom: 15px;
+        }
+        .card-header {
+            padding: 8px 15px;
+            font-size: 14px;
+        }
+        .card-body {
+            padding: 12px;
+        }
+        .btn {
+            font-size: 13px;
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="match-list">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>경기 목록</h1>
+            <div class="d-flex gap-2">
+                <a href="/sports" class="btn btn-outline-primary">
+                    <i class="bi bi-trophy"></i> 종목 관리
+                </a>
+                <a href="/templates" class="btn btn-outline-success">
+                    <i class="bi bi-file-earmark-text"></i> 템플릿 관리
+                </a>
+                <a href="/matches/new" class="btn btn-primary">
+                    <i class="bi bi-plus-lg"></i> 새 경기 생성
+                </a>
+            </div>
+        </div>
+
+        <!-- 직접 경기 ID로 삭제하는 폼 추가 -->
+        <div class="card mb-3">
+            <div class="card-header bg-danger text-white">
+                경기 직접 삭제
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <input type="number" id="direct-delete-id" class="form-control" placeholder="삭제할 경기 ID">
+                            <button class="btn btn-danger" onclick="deleteMatchById(document.getElementById('direct-delete-id').value)">삭제</button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <button class="btn btn-danger w-100" onclick="confirmDeleteAllMatches()">
+                            <i class="bi bi-trash"></i> 모든 경기 데이터 삭제
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 검색 필터링 추가 -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                경기 검색 필터링
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-9">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input type="text" id="team-search" class="form-control" placeholder="팀 이름으로 검색" oninput="filterMatches()">
+                            <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
+                                <i class="bi bi-x-circle"></i> 초기화
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-end">
+                        <span id="match-count" class="text-muted" style="font-size: 12px;">총 <span id="filtered-count">0</span>개 / <span id="total-count">0</span>개 표시</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 종목별 탭 추가 -->
+        <ul class="nav nav-tabs" id="matchTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab" aria-controls="all" aria-selected="true">
+                    <i class="bi bi-grid-3x3-gap sport-icon"></i>전체
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="soccer-tab" data-bs-toggle="tab" data-bs-target="#soccer" type="button" role="tab" aria-controls="soccer" aria-selected="false">
+                    <i class="bi bi-emoji-dizzy sport-icon"></i>축구
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="baseball-tab" data-bs-toggle="tab" data-bs-target="#baseball" type="button" role="tab" aria-controls="baseball" aria-selected="false">
+                    <i class="bi bi-circle sport-icon"></i>야구
+                </button>
+            </li>
+        </ul>
+        
+        <div class="tab-content" id="matchTabsContent">
+            <!-- 전체 경기 탭 -->
+            <div class="tab-pane fade show active" id="all" role="tabpanel" aria-labelledby="all-tab">
+                <div class="match-grid">
+                    <% if (matches.length > 0) { %>
+                        <!-- 헤더 행 추가 -->
+                        <div class="match-cell" style="background-color: #f8f9fa; font-weight: bold;">
+                            <div class="match-cell-header">팀 정보</div>
+                            <div class="match-cell-info">경기 상태</div>
+                            <div class="match-cell-actions">링크</div>
+                            <div class="delete-container">삭제</div>
+                        </div>
+                        
+                        <% matches.forEach(function(match) { %>
+                        <div class="match-cell" id="match-cell-<%= match.id %>">
+                            <div class="match-cell-header">
+                                <div class="match-cell-teams">
+                                    <%= match.home_team %> vs <%= match.away_team %>
+                                </div>
+                                <div class="match-cell-score">
+                                    <%= match.home_score || 0 %> - <%= match.away_score || 0 %>
+                                </div>
+                            </div>
+                            <div class="match-cell-info">
+                                <div>종목: <%= match.sport_type %></div>
+                                <div>상태: <%= match.status %></div>
+                                <div>생성일: <%= new Date(match.created_at).toLocaleString() %></div>
+                            </div>
+                            <div class="match-cell-actions">
+                                <div class="control-url">
+                                    <a href="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" class="btn btn-primary"><%= match.sport_type %> 컨트롤</a>
+                                    <input type="text" class="form-control" value="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" readonly>
+                                </div>
+                                <div class="overlay-url">
+                                    <a href="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" class="btn btn-success"><%= match.sport_type %> 오버레이</a>
+                                    <input type="text" class="form-control" value="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" readonly>
+                                </div>
+                            </div>
+                            <div class="delete-container">
+                                <button class="btn delete-btn" onclick="confirmDelete('<%= match.id %>', '<%= match.home_team %> vs <%= match.away_team %>')">삭제</button>
+                            </div>
+                        </div>
+                        <% }); %>
+                    <% } else { %>
+                        <div class="empty-message">
+                            <i class="bi bi-clipboard-x" style="font-size: 2.5rem;"></i>
+                            <h3>등록된 경기가 없습니다</h3>
+                            <p>새 경기를 생성해보세요!</p>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+            
+            <!-- 축구 경기 탭 -->
+            <div class="tab-pane fade" id="soccer" role="tabpanel" aria-labelledby="soccer-tab">
+                <div class="match-grid">
+                    <% 
+                    const soccerMatches = matches.filter(match => match.sport_type === 'soccer');
+                    if (soccerMatches.length > 0) {
+                        // 헤더 행 추가
+                    %>
+                        <div class="match-cell" style="background-color: #f8f9fa; font-weight: bold;">
+                            <div class="match-cell-header">팀 정보</div>
+                            <div class="match-cell-info">경기 상태</div>
+                            <div class="match-cell-actions">링크</div>
+                            <div class="delete-container">삭제</div>
+                        </div>
+                    <%
+                        soccerMatches.forEach(function(match) { 
+                    %>
+                        <div class="match-cell" id="match-cell-<%= match.id %>">
+                            <div class="match-cell-header">
+                                <div class="match-cell-teams">
+                                    <%= match.home_team %> vs <%= match.away_team %>
+                                </div>
+                                <div class="match-cell-score">
+                                    <%= match.home_score || 0 %> - <%= match.away_score || 0 %>
+                                </div>
+                            </div>
+                            <div class="match-cell-info">
+                                <div>상태: <%= match.status %></div>
+                                <div>생성일: <%= new Date(match.created_at).toLocaleString() %></div>
+                            </div>
+                            <div class="match-cell-actions">
+                                <div class="control-url">
+                                    <a href="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" class="btn btn-primary"><%= match.sport_type %> 컨트롤</a>
+                                    <input type="text" class="form-control" value="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" readonly>
+                                </div>
+                                <div class="overlay-url">
+                                    <a href="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" class="btn btn-success"><%= match.sport_type %> 오버레이</a>
+                                    <input type="text" class="form-control" value="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" readonly>
+                                </div>
+                            </div>
+                            <div class="delete-container">
+                                <button class="btn delete-btn" onclick="confirmDelete('<%= match.id %>', '<%= match.home_team %> vs <%= match.away_team %>')">삭제</button>
+                            </div>
+                        </div>
+                    <% 
+                        });
+                    } else {
+                    %>
+                        <div class="empty-message">
+                            <i class="bi bi-emoji-dizzy" style="font-size: 3rem;"></i>
+                            <h3>축구 경기가 없습니다</h3>
+                            <p>새 경기를 생성해보세요!</p>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+            
+            <!-- 야구 경기 탭 -->
+            <div class="tab-pane fade" id="baseball" role="tabpanel" aria-labelledby="baseball-tab">
+                <div class="match-grid">
+                    <% 
+                    const baseballMatches = matches.filter(match => match.sport_type === 'baseball');
+                    if (baseballMatches.length > 0) {
+                        // 헤더 행 추가
+                    %>
+                        <div class="match-cell" style="background-color: #f8f9fa; font-weight: bold;">
+                            <div class="match-cell-header">팀 정보</div>
+                            <div class="match-cell-info">경기 상태</div>
+                            <div class="match-cell-actions">링크</div>
+                            <div class="delete-container">삭제</div>
+                        </div>
+                    <%
+                        baseballMatches.forEach(function(match) { 
+                    %>
+                        <div class="match-cell" id="match-cell-<%= match.id %>">
+                            <div class="match-cell-header">
+                                <div class="match-cell-teams">
+                                    <%= match.home_team %> vs <%= match.away_team %>
+                                </div>
+                                <div class="match-cell-score">
+                                    <%= match.home_score || 0 %> - <%= match.away_score || 0 %>
+                                </div>
+                            </div>
+                            <div class="match-cell-info">
+                                <div>상태: <%= match.status %></div>
+                                <div>생성일: <%= new Date(match.created_at).toLocaleString() %></div>
+                            </div>
+                            <div class="match-cell-actions">
+                                <div class="control-url">
+                                    <a href="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" class="btn btn-primary"><%= match.sport_type %> 컨트롤</a>
+                                    <input type="text" class="form-control" value="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" readonly>
+                                </div>
+                                <div class="overlay-url">
+                                    <a href="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" class="btn btn-success"><%= match.sport_type %> 오버레이</a>
+                                    <input type="text" class="form-control" value="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" readonly>
+                                </div>
+                            </div>
+                            <div class="delete-container">
+                                <button class="btn delete-btn" onclick="confirmDelete('<%= match.id %>', '<%= match.home_team %> vs <%= match.away_team %>')">삭제</button>
+                            </div>
+                        </div>
+                    <% 
+                        });
+                    } else {
+                    %>
+                        <div class="empty-message">
+                            <i class="bi bi-circle" style="font-size: 3rem;"></i>
+                            <h3>야구 경기가 없습니다</h3>
+                            <p>새 경기를 생성해보세요!</p>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 삭제 확인 모달 -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content modal-confirm">
+                <div class="modal-header">
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="icon-box">
+                        <i class="fa fa-trash"></i>
+                    </div>
+                    <h4 id="deleteModalLabel">경기 삭제</h4>
+                    <p id="deleteModalText">정말로 이 경기를 삭제하시겠습니까?</p>
+                    <p id="deleteMatchInfo" class="text-danger"></p>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">삭제</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let matchIdToDelete = null;
+        const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            updateMatchCount();
+        });
+
+        // 경기 필터링 함수
+        function filterMatches() {
+            const searchTerm = document.getElementById('team-search').value.toLowerCase().trim();
+            const allMatches = document.querySelectorAll('.match-cell:not([style*="font-weight: bold"])'); // 헤더 행 제외
+            let visibleCount = 0;
+            
+            // 각 탭의 헤더 행 상태 관리
+            const allTabHeader = document.querySelector('#all .match-cell[style*="font-weight: bold"]');
+            const soccerTabHeader = document.querySelector('#soccer .match-cell[style*="font-weight: bold"]');
+            const baseballTabHeader = document.querySelector('#baseball .match-cell[style*="font-weight: bold"]');
+            
+            // 모든 경기 검색
+            allMatches.forEach(match => {
+                const teamInfo = match.querySelector('.match-cell-teams').textContent.toLowerCase();
+                
+                if (searchTerm === '' || teamInfo.includes(searchTerm)) {
+                    match.style.display = 'flex';
+                    visibleCount++;
+                } else {
+                    match.style.display = 'none';
+                }
+            });
+            
+            // 각 탭의 헤더 행 표시 여부 설정
+            if (allTabHeader) {
+                allTabHeader.style.display = visibleCount > 0 ? 'flex' : 'none';
+            }
+            
+            // 축구 탭 검사
+            const visibleSoccerMatches = document.querySelectorAll('#soccer .match-cell:not([style*="font-weight: bold"]):not([style*="display: none"])');
+            if (soccerTabHeader) {
+                soccerTabHeader.style.display = visibleSoccerMatches.length > 0 ? 'flex' : 'none';
+            }
+            
+            // 야구 탭 검사
+            const visibleBaseballMatches = document.querySelectorAll('#baseball .match-cell:not([style*="font-weight: bold"]):not([style*="display: none"])');
+            if (baseballTabHeader) {
+                baseballTabHeader.style.display = visibleBaseballMatches.length > 0 ? 'flex' : 'none';
+            }
+            
+            // 빈 결과 메시지 표시 관리
+            const emptyMessages = document.querySelectorAll('.empty-message');
+            emptyMessages.forEach(msg => {
+                msg.style.display = 'none'; // 기본적으로 숨김
+            });
+            
+            // 각 탭에 표시할 경기가 없고 검색어가 있는 경우만 검색 결과 없음 표시
+            if (visibleCount === 0 && searchTerm !== '') {
+                const activeTab = document.querySelector('.tab-pane.active');
+                const emptyMsg = activeTab.querySelector('.empty-message') || document.createElement('div');
+                
+                if (!activeTab.querySelector('.empty-message')) {
+                    emptyMsg.className = 'empty-message';
+                    emptyMsg.innerHTML = `
+                        <i class="bi bi-search" style="font-size: 2.5rem;"></i>
+                        <h3>검색 결과가 없습니다</h3>
+                        <p>"${searchTerm}" 검색어와 일치하는 팀이 없습니다</p>
+                    `;
+                    activeTab.querySelector('.match-grid').appendChild(emptyMsg);
+                } else {
+                    emptyMsg.innerHTML = `
+                        <i class="bi bi-search" style="font-size: 2.5rem;"></i>
+                        <h3>검색 결과가 없습니다</h3>
+                        <p>"${searchTerm}" 검색어와 일치하는 팀이 없습니다</p>
+                    `;
+                    emptyMsg.style.display = 'block';
+                }
+            }
+            
+            updateMatchCount(visibleCount, allMatches.length);
+        }
+        
+        // 검색 초기화
+        function clearSearch() {
+            document.getElementById('team-search').value = '';
+            filterMatches();
+        }
+        
+        // 경기 수 업데이트
+        function updateMatchCount(filtered, total) {
+            const filteredCount = document.getElementById('filtered-count');
+            const totalCount = document.getElementById('total-count');
+            
+            if (filtered !== undefined && total !== undefined) {
+                filteredCount.textContent = filtered;
+                totalCount.textContent = total;
+            } else {
+                const allMatches = document.querySelectorAll('.match-cell:not([style*="font-weight: bold"])');
+                filteredCount.textContent = allMatches.length;
+                totalCount.textContent = allMatches.length;
+            }
+        }
+        
+        function confirmDelete(matchId, matchInfo) {
+            matchIdToDelete = matchId;
+            document.getElementById('deleteMatchInfo').textContent = matchInfo;
+            deleteModal.show();
+        }
+        
+        document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+            if (matchIdToDelete) {
+                deleteMatch(matchIdToDelete);
+            }
+        });
+        
+        // 탭 변경 시 필터링 다시 적용
+        document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(tab => {
+            tab.addEventListener('shown.bs.tab', function() {
+                filterMatches();
+            });
+        });
+        
+        async function deleteMatch(matchId) {
+            try {
+                console.log(`경기 삭제 시도: ${matchId}`);
+                const response = await fetch(`/api/match/${matchId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log(`삭제 응답 상태: ${response.status}`);
+                
+                if (response.ok) {
+                    // 모달 닫기
+                    deleteModal.hide();
+                    
+                    // 성공 메시지 표시
+                    alert('경기가 성공적으로 삭제되었습니다.');
+                    
+                    // 페이지 새로고침
+                    window.location.reload();
+                } else {
+                    const data = await response.json();
+                    console.error(`삭제 실패: ${data.error || '알 수 없는 오류가 발생했습니다.'}`);
+                    alert(`삭제 실패: ${data.error || '알 수 없는 오류가 발생했습니다.'}`);
+                }
+            } catch (error) {
+                console.error('삭제 중 오류 발생:', error);
+                alert('경기 삭제 중 오류가 발생했습니다.');
+            }
+        }
+        
+        // 직접 경기 ID를 지정하여 삭제하는 함수
+        function deleteMatchById(matchId) {
+            if (!matchId) {
+                alert('삭제할 경기 ID를 입력해주세요.');
+                return;
+            }
+            
+            if (confirm(`정말로 경기 ID ${matchId}를 삭제하시겠습니까?`)) {
+                console.log(`직접 삭제 시도: ID=${matchId}`);
+                
+                // 직접 API 호출
+                fetch(`/api/match/${matchId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => {
+                    console.log(`삭제 응답 상태: ${response.status}`);
+                    if (response.ok) {
+                        alert('경기가 성공적으로 삭제되었습니다.');
+                        window.location.reload();
+                    } else {
+                        return response.json().then(data => {
+                            throw new Error(data.error || '알 수 없는 오류가 발생했습니다.');
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('삭제 중 오류 발생:', error);
+                    alert(`삭제 실패: ${error.message}`);
+                });
+            }
+        }
+        
+        // 모든 경기 데이터 삭제 확인
+        function confirmDeleteAllMatches() {
+            if (confirm('정말로 모든 경기 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                deleteAllMatches();
+            }
+        }
+        
+        // 모든 경기 데이터 삭제
+        function deleteAllMatches() {
+            fetch('/api/matches/all', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                location.reload();
+            })
+            .catch(error => {
+                console.error('모든 경기 데이터 삭제 중 오류 발생:', error);
+                alert('모든 경기 데이터 삭제 중 오류가 발생했습니다.');
+            });
+        }
+
+        function copyToClipboard(text) {
+            const fullUrl = window.location.origin + '/' + text;
+            navigator.clipboard.writeText(fullUrl).then(() => {
+                alert('URL이 클립보드에 복사되었습니다.');
+            }).catch(err => {
+                console.error('클립보드 복사 실패:', err);
+                alert('URL 복사에 실패했습니다.');
+            });
+        }
+    </script>
+</body>
+</html> 

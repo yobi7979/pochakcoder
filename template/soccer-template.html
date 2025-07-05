@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soccer Overlay</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Noto Sans KR', Arial, sans-serif;
+        }
+        body {
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+            background-color: transparent;
+            position: relative;
+        }
+        .overlay-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        /* 상단 스코어보드 */
+        .scoreboard {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 550px;
+            height: 90px;
+            background-color: rgba(0, 0, 0, 0.8);
+            border-radius: 8px;
+            display: flex;
+            color: white;
+            overflow: hidden;
+        }
+        .team-section {
+            width: 40%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        .team-section.home {
+            background-color: rgba(29, 78, 216, 0.3);
+            border-radius: 8px 0 0 8px;
+        }
+        .team-section.away {
+            background-color: rgba(220, 38, 38, 0.3);
+            border-radius: 0 8px 8px 0;
+        }
+        .team-header {
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .home .team-header {
+            background-color: rgba(29, 78, 216, 0.6);
+            border-radius: 8px 0 0 0;
+        }
+        .away .team-header {
+            background-color: rgba(220, 38, 38, 0.6);
+            border-radius: 0 8px 0 0;
+        }
+        .team-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+        }
+        .team-logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: white;
+            margin-right: 15px;
+            overflow: hidden;
+        }
+        .team-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .team-name {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .score-section {
+            width: 20%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        .score-display {
+            font-size: 42px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+        }
+        .score-divider {
+            margin: 0 8px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .match-time {
+            margin-top: 5px;
+            font-size: 14px;
+            padding: 3px 10px;
+            background-color: rgba(234, 88, 12, 0.8);
+            border-radius: 4px;
+        }
+        
+        /* 경기 상태 표시 */
+        .match-state {
+            position: absolute;
+            top: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            border-radius: 6px;
+            color: white;
+            padding: 8px 15px;
+            font-size: 16px;
+            min-width: 300px;
+            text-align: center;
+        }
+        
+        /* 선수 카드 */
+        .player-card {
+            position: absolute;
+            bottom: 120px;
+            width: 320px;
+            height: 100px;
+            background-color: rgba(0, 0, 0, 0.8);
+            border-radius: 8px;
+            color: white;
+            overflow: hidden;
+            display: flex;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .player-card.visible {
+            opacity: 1;
+        }
+        .player-card.home {
+            left: 20px;
+        }
+        .player-card.away {
+            right: 20px;
+        }
+        .player-header {
+            width: 100px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+        }
+        .home .player-header {
+            background-color: rgba(29, 78, 216, 0.4);
+        }
+        .away .player-header {
+            background-color: rgba(220, 38, 38, 0.4);
+        }
+        .player-number {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .player-position {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .player-info {
+            flex: 1;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .player-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .player-stats {
+            display: flex;
+            justify-content: space-between;
+        }
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 3px;
+        }
+        
+        /* 경기 정보 (하단) */
+        .match-info {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 70px;
+            background-color: rgba(0, 0, 0, 0.8);
+            border-radius: 8px;
+            color: white;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .info-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 5px;
+        }
+        .info-value {
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        /* 골 이벤트 */
+        .goal-alert {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            height: 150px;
+            background-color: rgba(0, 0, 0, 0.9);
+            border-radius: 10px;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .goal-alert.visible {
+            opacity: 1;
+        }
+        .goal-label {
+            font-size: 48px;
+            font-weight: bold;
+            color: #f59e0b;
+            margin-bottom: 10px;
+        }
+        .goal-info {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .goal-player {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .goal-team {
+            font-size: 18px;
+        }
+        .goal-time {
+            font-size: 24px;
+            font-weight: bold;
+            color: #f59e0b;
+        }
+        
+        /* 카드 표시 영역 */
+        .cards-display {
+            position: absolute;
+            top: 130px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .card-row {
+            display: flex;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+        .card-team {
+            width: 120px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .card-count {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .yellow-card {
+            width: 15px;
+            height: 20px;
+            background-color: #facc15;
+            border-radius: 2px;
+        }
+        .red-card {
+            width: 15px;
+            height: 20px;
+            background-color: #ef4444;
+            border-radius: 2px;
+        }
+        .card-number {
+            color: white;
+            font-weight: bold;
+            margin-left: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay-container">
+        <!-- 스코어보드 -->
+        <div class="scoreboard">
+            <div class="team-section home">
+                <div class="team-header">HOME</div>
+                <div class="team-content">
+                    <div class="team-logo">
+                        <img src="{{teamA_logo}}" alt="Home Team">
+                    </div>
+                    <div class="team-name team-a-name">{{teamA}}</div>
+                </div>
+            </div>
+            <div class="score-section">
+                <div class="score-display">
+                    <span class="team-a-score score-a">{{scoreA}}</span>
+                    <span class="score-divider">:</span>
+                    <span class="team-b-score score-b">{{scoreB}}</span>
+                </div>
+                <div class="match-time timer">{{timer}}</div>
+            </div>
+            <div class="team-section away">
+                <div class="team-header">AWAY</div>
+                <div class="team-content">
+                    <div class="team-logo">
+                        <img src="{{teamB_logo}}" alt="Away Team">
+                    </div>
+                    <div class="team-name team-b-name">{{teamB}}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 경기 상태 -->
+        <div class="match-state state">{{state}}</div>
+        
+        <!-- 카드 표시 -->
+        <div class="cards-display">
+            <div class="card-row">
+                <div class="card-team">{{teamA}}</div>
+                <div class="card-count">
+                    <div class="yellow-card"></div>
+                    <span class="card-number team-a-yellow-cards yellow-card-a">0</span>
+                </div>
+                <div class="card-count" style="margin-left: 15px;">
+                    <div class="red-card"></div>
+                    <span class="card-number team-a-red-cards red-card-a">0</span>
+                </div>
+            </div>
+            <div class="card-row">
+                <div class="card-team">{{teamB}}</div>
+                <div class="card-count">
+                    <div class="yellow-card"></div>
+                    <span class="card-number team-b-yellow-cards yellow-card-b">0</span>
+                </div>
+                <div class="card-count" style="margin-left: 15px;">
+                    <div class="red-card"></div>
+                    <span class="card-number team-b-red-cards red-card-b">0</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 선수 카드 (홈팀) -->
+        <div class="player-card home">
+            <div class="player-header">
+                <div class="player-number">7</div>
+                <div class="player-position">MF</div>
+            </div>
+            <div class="player-info">
+                <div class="player-name">이축구</div>
+                <div class="player-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">5</div>
+                        <div class="stat-label">슛</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">2</div>
+                        <div class="stat-label">골</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">3</div>
+                        <div class="stat-label">키패스</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 선수 카드 (원정팀) -->
+        <div class="player-card away">
+            <div class="player-header">
+                <div class="player-number">9</div>
+                <div class="player-position">FW</div>
+            </div>
+            <div class="player-info">
+                <div class="player-name">박축구</div>
+                <div class="player-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">3</div>
+                        <div class="stat-label">슛</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">1</div>
+                        <div class="stat-label">골</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">2</div>
+                        <div class="stat-label">키패스</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 골 이벤트 -->
+        <div class="goal-alert">
+            <div class="goal-label">GOL</div>
+            <div class="goal-info">
+                <div class="goal-player">이축구</div>
+                <div class="goal-team">{{teamA}}</div>
+            </div>
+            <div class="goal-time">38'</div>
+        </div>
+        
+        <!-- 경기 정보 (하단) -->
+        <div class="match-info">
+            <div class="info-item">
+                <div class="info-label">대회명</div>
+                <div class="info-value">{{round}}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">경기장</div>
+                <div class="info-value">{{venue}}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">경기 시간</div>
+                <div class="info-value match-half half">전반전</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">관중</div>
+                <div class="info-value">32,451명</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 부모 창에서 오는 메시지 수신
+        window.addEventListener('message', function(event) {
+            console.log('iframe: 메시지 수신됨', event.data);
+            
+            if (event.data && event.data.type === 'UPDATE_OVERLAY') {
+                try {
+                    // 업데이트 데이터 가져오기
+                    const updatedData = event.data.payload;
+                    console.log('iframe: 업데이트할 데이터', updatedData);
+                    
+                    // DOM 요소 업데이트 함수
+                    function updateElement(selector, value) {
+                        const elements = document.querySelectorAll(selector);
+                        if (elements.length > 0) {
+                            elements.forEach(el => { el.textContent = value; });
+                            console.log('업데이트됨: ' + selector + ' -> ' + value);
+                        } else {
+                            console.warn('요소를 찾을 수 없음: ' + selector);
+                        }
+                    }
+                    
+                    // 팀명 업데이트
+                    if (updatedData.teamA) {
+                        updateElement('.team-a-name', updatedData.teamA);
+                    }
+                    
+                    if (updatedData.teamB) {
+                        updateElement('.team-b-name', updatedData.teamB);
+                    }
+                    
+                    // 점수 업데이트
+                    if (updatedData.scoreA !== undefined) {
+                        updateElement('.score-a, .team-a-score', updatedData.scoreA);
+                    }
+                    if (updatedData.scoreB !== undefined) {
+                        updateElement('.score-b, .team-b-score', updatedData.scoreB);
+                    }
+                    
+                    // 타이머 업데이트
+                    if (updatedData.timer) {
+                        updateElement('.timer', updatedData.timer);
+                    }
+                    
+                    // 상태 업데이트
+                    if (updatedData.state) {
+                        updateElement('.state', updatedData.state);
+                    }
+                    
+                    // 경기 시간(하프) 업데이트
+                    if (updatedData.half) {
+                        let halfText = '전반전';
+                        if (updatedData.half === '2nd') halfText = '후반전';
+                        else if (updatedData.half === 'ET') halfText = '연장전';
+                        updateElement('.half', halfText);
+                    }
+                    
+                    // 카드 업데이트
+                    if (updatedData.yellowCards) {
+                        if (updatedData.yellowCards.teamA !== undefined) {
+                            updateElement('.yellow-card-a', updatedData.yellowCards.teamA);
+                        }
+                        if (updatedData.yellowCards.teamB !== undefined) {
+                            updateElement('.yellow-card-b', updatedData.yellowCards.teamB);
+                        }
+                    }
+                    if (updatedData.redCards) {
+                        if (updatedData.redCards.teamA !== undefined) {
+                            updateElement('.red-card-a', updatedData.redCards.teamA);
+                        }
+                        if (updatedData.redCards.teamB !== undefined) {
+                            updateElement('.red-card-b', updatedData.redCards.teamB);
+                        }
+                    }
+                } catch (error) {
+                    console.error('iframe: 데이터 업데이트 중 오류 발생', error);
+                }
+            }
+            
+            if (event.data && event.data.type === 'REQUEST_DATA_REFRESH') {
+                console.log('iframe: 데이터 새로고침 요청 수신');
+                // 부모 창에 데이터 요청 메시지 전송
+                window.parent.postMessage({
+                    type: 'GET_MATCH_DATA',
+                    payload: { matchId: event.data.payload.matchId }
+                }, '*');
+            }
+        });
+
+        // 애니메이션 데모 (실제 환경에서는 제거할 수 있음)
+        setTimeout(() => {
+            document.querySelector('.player-card.home').classList.add('visible');
+        }, 2000);
+        
+        setTimeout(() => {
+            document.querySelector('.player-card.home').classList.remove('visible');
+        }, 7000);
+        
+        setTimeout(() => {
+            document.querySelector('.player-card.away').classList.add('visible');
+        }, 9000);
+        
+        setTimeout(() => {
+            document.querySelector('.player-card.away').classList.remove('visible');
+        }, 14000);
+        
+        setTimeout(() => {
+            document.querySelector('.goal-alert').classList.add('visible');
+        }, 16000);
+        
+        setTimeout(() => {
+            document.querySelector('.goal-alert').classList.remove('visible');
+        }, 21000);
+    </script>
+</body>
+</html> 

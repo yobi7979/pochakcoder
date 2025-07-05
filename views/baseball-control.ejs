@@ -1,0 +1,1937 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>야구 경기 컨트롤 패널</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+        }
+        
+        body {
+            background-color: var(--light-color);
+            padding: 10px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .control-panel {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .panel-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .team-section {
+            background-color: var(--light-color);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        .team-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--dark-color);
+        }
+        
+        .score-section {
+            margin: 15px 0;
+        }
+        
+        .score-input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .score-input {
+            width: 80px;
+            height: 40px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            padding: 5px;
+        }
+        
+        .score-controls {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .score-btn {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 20px;
+        }
+        
+        .score-btn i {
+            font-size: 20px;
+        }
+        
+        .team-color-picker {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 8px;
+        }
+        
+        .team-color-picker label {
+            font-size: 0.9rem;
+            margin-bottom: 0;
+        }
+        
+        .team-color-picker input[type="color"] {
+            width: 40px;
+            height: 30px;
+            padding: 0;
+            border: 1px solid #adadad;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .team-color-picker .save-team-color {
+            padding: 2px 8px;
+            font-size: 0.8rem;
+        }
+        
+        .team-logo-upload {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .team-logo-preview {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #c5c5c5;
+        }
+        
+        .team-logo-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .no-logo {
+            width: 100px;
+            height: 100px;
+            border-radius: 8px;
+            background-color: #c5c5c5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .team-logo-input {
+            display: none;
+        }
+        
+        .upload-logo-btn {
+            padding: 2px 8px;
+            font-size: 0.8rem;
+        }
+        
+        .game-status-section {
+            background-color: var(--light-color);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        .status-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--dark-color);
+        }
+        
+        .game-status-content {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        
+        .game-status-left {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .game-status-right {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .inning-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .inning-number {
+            font-size: 24px;
+            font-weight: bold;
+            min-width: 120px;
+            text-align: center;
+        }
+        
+        .inning-control-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background-color: #f0f0f0;
+            color: #333;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .inning-control-btn:hover {
+            background-color: #e0e0e0;
+        }
+        
+        /* 베이스 컨트롤 영역을 정의합니다. 이 영역은 야구 경기에서 각 베이스의 상태를 시각적으로 표시하고 조작할 수 있는 공간입니다. */
+        .base-controls {
+            width: 120px;
+            height: 120px;
+            position: relative;
+            margin: 0 auto;
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transform: rotate(-45deg); /* 전체 45도 회전 */
+        }
+        
+        .diamond {
+            width: 80px;
+            height: 80px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+        
+        .base {
+            width: 40px;
+            height: 40px;
+            position: absolute;
+            background-color: #666;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        .base.active {
+            background-color: #f59e0b;
+        }
+        
+        .base.first {
+            right: 0;
+            bottom: 50%;
+            transform: translate(50%, 50%) rotate(45deg); /* 45도 회전 추가 */
+        }
+        
+        .base.second {
+            top: 0;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+        
+        .base.third {
+            left: 0;
+            bottom: 50%;
+            transform: translate(-50%, 50%) rotate(45deg); /* 45도 회전 추가 */
+        }
+        
+        .base.home {
+            bottom: 0;
+            left: 50%;
+            transform: translate(-50%, 50%) rotate(45deg); /* 45도 회전 추가 */
+            background-color: #fff;
+            border: 2px solid #666;
+        }
+        
+        .count-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .count-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .count-label {
+            font-size: 18px;
+            font-weight: bold;
+            width: 30px;
+            text-align: center;
+        }
+        
+        .count-dots {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .count-dot {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #666;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        .count-dot.ball.active {
+            background-color: #22c55e;
+        }
+        
+        .count-dot.strike.active {
+            background-color: #eab308;
+        }
+        
+        .count-dot.out.active {
+            background-color: #ef4444;
+        }
+        
+        .reset-button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background-color: #f0f0f0;
+            color: #333;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        
+        .reset-button:hover {
+            background-color: #e0e0e0;
+        }
+        
+        /* 모바일 최적화 */
+        @media (max-width: 768px) {
+            .control-panel {
+                padding: 10px;
+            }
+            
+            .panel-title {
+                font-size: 1.2rem;
+            }
+            
+            .score-input {
+                width: 60px;
+                height: 35px;
+                font-size: 20px;
+            }
+            
+            .score-btn {
+                width: 35px;
+                height: 35px;
+            }
+            
+            .score-btn i {
+                font-size: 18px;
+            }
+            
+            .base-btn, .count-btn, .inning-btn, .player-btn {
+                padding: 10px 5px;
+                font-size: 0.9rem;
+            }
+        }
+        
+        /* 터치 최적화 */
+        @media (hover: none) {
+            .base-btn, .count-btn, .inning-btn, .player-btn, .back-btn {
+                padding: 12px 15px;
+            }
+            
+            .score-input, .innings-input {
+                height: 45px;
+            }
+        }
+        
+        /* 다크 모드 지원 */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #121212;
+                color: #f0f0f0;
+            }
+            
+            .control-panel {
+                background-color: #1e1e1e;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            }
+            
+            .team-section, .game-status-section, .player-section, .innings-score-section {
+                background-color: #2a2a2a;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            }
+            
+            .score-input, .innings-input, .player-input {
+                background-color: #333;
+                border-color: #444;
+                color: #fff;
+            }
+            
+            .team-name, .status-title, .player-title, .innings-title {
+                color: #f0f0f0;
+            }
+            
+            .panel-header {
+                border-bottom-color: #333;
+            }
+            
+            .innings-table th, .innings-table td {
+                border-color: #444;
+            }
+            
+            .innings-table th {
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+        }
+        
+        /* 이닝 스코어 섹션 스타일 */
+        .innings-score-section {
+            background-color: var(--light-color);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        .innings-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--dark-color);
+        }
+        
+        .innings-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            background-color: white;
+        }
+        
+        .innings-table th,
+        .innings-table td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #ddd;
+            font-size: 14px;
+        }
+        
+        .innings-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .innings-table td:first-child {
+            text-align: left;
+            font-weight: 500;
+            min-width: 120px;
+            background-color: #f8f9fa;
+        }
+        
+        .innings-table td:nth-last-child(-n+3) {
+            background-color: #f8f9fa;
+            font-weight: 500;
+        }
+        
+        .innings-input {
+            width: 40px;
+            text-align: center;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 4px;
+            font-size: 14px;
+        }
+        
+        .innings-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+        
+        .update-innings-btn {
+            width: 100%;
+            padding: 10px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        .update-innings-btn:hover {
+            background-color: #0056b3;
+        }
+        
+        /* 선수 정보 섹션 스타일 */
+        .player-section {
+            background-color: var(--light-color);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        .player-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--dark-color);
+        }
+        
+        .player-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .player-input-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .player-input {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-size: 14px;
+        }
+        
+        .player-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+        
+        .player-btn {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        .player-btn:hover {
+            background-color: #0056b3;
+        }
+        
+        .count-controls {
+            display: flex;
+            gap: 5px;
+            margin-left: 10px;
+        }
+        
+        .count-btn {
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background-color: #f0f0f0;
+            color: #333;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .count-btn:hover {
+            background-color: #e0e0e0;
+        }
+
+        .team-logo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .team-logo img {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+            border-radius: 5px;
+            /* background: #ffffff; */
+        }
+        
+        .upload-logo-btn {
+            padding: 4px 8px;
+            font-size: 12px;
+            background: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .upload-logo-btn:hover {
+            background: #357abd;
+        }
+    </style>
+</head>
+<body>
+    <div class="control-panel">
+        <div class="panel-header">
+            <h2 class="panel-title">야구 경기 컨트롤 패널</h2>
+            <div class="connection-status text-success">
+                <i class="bi bi-circle-fill"></i> 연결됨
+            </div>
+        </div>
+        
+        <!-- 팀 정보 -->
+        <div class="row mb-3">
+            <div class="col-6">
+                <div class="team-section">
+                    <div class="team-name"><%= match.home_team || 'HOME' %></div>
+                    <div class="team-color-picker">
+                        <label>팀 컬러:</label>
+                        <input type="color" class="home-team-color" value="<%= match.home_team_color || match.match_data?.home_team_color || '#1d4ed8' %>">
+                        <button class="btn btn-sm btn-primary save-team-color" data-team-type="home">
+                            <i class="bi bi-check2"></i> 저장
+                        </button>
+                        <label>로고:</label>
+                        <input type="color" class="home-team-colorbg" value="<%= match.home_team_colorbg || match.match_data?.home_team_colorbg || '#1d4ed8' %>">
+                        <button class="btn btn-sm btn-primary save-team-colorbg" data-team-type="home">
+                            <i class="bi bi-check2"></i> 저장
+                        </button>
+                    </div>
+                    <div class="team-logo-upload">
+                        <label>팀 로고:</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="team-logo-preview" id="home-team-logo-preview">
+                                <% if (match.match_data?.home_team_logo) { %>
+                                    <img src="<%= match.match_data.home_team_logo %>" alt="홈팀 로고" class="img-fluid">
+                                <% } else { %>
+                                    <div class="no-logo">로고 없음</div>
+                                <% } %>
+                            </div>
+                            <input type="file" class="form-control form-control-sm team-logo-input" id="home-team-logo" accept="image/*" style="display: none;">
+                            <button class="btn btn-sm btn-outline-secondary upload-logo-btn" data-team-type="home">
+                                <i class="bi bi-upload"></i> 업로드
+                            </button>
+                            <% if (match.match_data?.home_team_logo) { %>
+                                <button class="btn btn-sm btn-outline-danger remove-logo-btn" data-team-type="home">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            <% } %>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="team-section">
+                    <div class="team-name"><%= match.away_team || 'AWAY' %></div>
+                    <div class="team-color-picker">
+                        <label>팀 컬러:</label>
+                        <input type="color" class="away-team-color" value="<%= match.away_team_color || match.match_data?.away_team_color || '#dc2626' %>">
+                        <button class="btn btn-sm btn-primary save-team-color" data-team-type="away">
+                            <i class="bi bi-check2"></i> 저장
+                        </button>
+                        <label>로고:</label>
+                        <input type="color" class="away-team-colorbg" value="<%=match.away_team_colorbg||match.match_data?.away_team_colorbg||'#dc2626'%>">
+                        <button class="btn btn-sm btn-primary save-team-colorbg" data-team-type="away">
+                            <i class="bi bi-check2"></i> 저장
+                        </button>
+                    </div>
+                    <div class="team-logo-upload">
+                        <label>팀 로고:</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="team-logo-preview" id="away-team-logo-preview">
+                                <% if (match.match_data?.away_team_logo) { %>
+                                    <img src="<%= match.match_data.away_team_logo %>" alt="원정팀 로고" class="img-fluid">
+                                <% } else { %>
+                                    <div class="no-logo">로고 없음</div>
+                                <% } %>
+                            </div>
+                            <input type="file" class="form-control form-control-sm team-logo-input" id="away-team-logo" accept="image/*" style="display: none;">
+                            <button class="btn btn-sm btn-outline-secondary upload-logo-btn" data-team-type="away">
+                                <i class="bi bi-upload"></i> 업로드
+                            </button>
+                            <% if (match.match_data?.away_team_logo) { %>
+                                <button class="btn btn-sm btn-outline-danger remove-logo-btn" data-team-type="away">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            <% } %>
+                        </div>
+                    </div>                    
+                </div>
+            </div>
+        </div>
+        
+        <!-- 게임 상태 -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="game-status-section">
+                    <div class="status-title">게임 상태</div>
+                    <div class="score-section">
+                        <div class="score-input-group">
+                            <div class="team-name"><%= match.home_team || 'HOME' %></div>
+                            <input type="number" class="score-input home-score" value="<%= match.home_score || 0 %>" min="0">
+                            <div class="score-controls">
+                                <button class="btn btn-outline-danger score-btn" onclick="updateScore('home', -1)">
+                                    <i class="bi bi-dash"></i>
+                                </button>
+                                <button class="btn btn-outline-primary score-btn" onclick="updateScore('home', 1)">
+                                    <i class="bi bi-plus"></i>
+                                </button>
+                                <div style="min-width: 60px;"></div>
+                                <div class="team-name"><%= match.away_team || 'AWAY' %></div>
+                                <div class="score-input-group">
+                                    <input type="number" class="score-input away-score" value="<%= match.away_score || 0 %>" min="0">
+                                    <div class="score-controls">
+                                        <button class="btn btn-outline-danger score-btn" onclick="updateScore('away', -1)">
+                                            <i class="bi bi-dash"></i>
+                                        </button>
+                                        <button class="btn btn-outline-primary score-btn" onclick="updateScore('away', 1)">
+                                            <i class="bi bi-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>                    
+                    <div class="game-status-content">
+                        <div class="game-status-left">
+                            <!-- 이닝 컨트롤 -->
+                            <div class="inning-display">
+                                <button class="inning-control-btn" onclick="updateInning(-1)">
+                                    <i class="bi bi-dash"></i>
+                                </button>
+                                <div class="inning-number">
+                                    <span id="current-inning"><%= match.match_data?.current_inning || 1 %></span>회
+                                    <span id="inning-type"><%= match.match_data?.inning_type === 'bottom' ? '말' : '초' %></span>
+                                </div>
+                                <button class="inning-control-btn" onclick="updateInning(1)">
+                                    <i class="bi bi-plus"></i>
+                                </button>
+                            </div>
+                            
+                            <!-- 베이스 컨트롤 -->
+                            <div class="base-controls">
+                                <div class="diamond">
+                                    <div class="base first" id="first-base" onclick="toggleBase('first')"></div>
+                                    <div class="base second" id="second-base" onclick="toggleBase('second')"></div>
+                                    <div class="base third" id="third-base" onclick="toggleBase('third')"></div>
+                                    <div class="base home"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="game-status-right">
+                            <!-- 볼카운트 컨트롤 -->
+                            <div class="count-section">
+                                <div class="count-row">
+                                    <span class="count-label">B</span>
+                                    <div class="count-dots">
+                                        <div class="count-dot ball" id="ball-1" onclick="toggleCount('ball', 0)"></div>
+                                        <div class="count-dot ball" id="ball-2" onclick="toggleCount('ball', 1)"></div>
+                                        <div class="count-dot ball" id="ball-3" onclick="toggleCount('ball', 2)"></div>
+                                        <!-- <div class="count-dot ball" id="ball-4" onclick="toggleCount('ball', 3)"></div> -->
+                                    </div>
+                                    <div class="count-controls">
+                                        <button class="count-btn" onclick="decrementCount('ball')">
+                                            <i class="bi bi-dash"></i>
+                                        </button>
+                                        <button class="count-btn" onclick="incrementCount('ball')">
+                                            <i class="bi bi-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="count-row">
+                                    <span class="count-label">S</span>
+                                    <div class="count-dots">
+                                        <div class="count-dot strike" id="strike-1" onclick="toggleCount('strike', 0)"></div>
+                                        <div class="count-dot strike" id="strike-2" onclick="toggleCount('strike', 1)"></div>
+                                        <!-- <div class="count-dot strike" id="strike-3" onclick="toggleCount('strike', 2)"></div> -->
+                                    </div>
+                                    <div class="count-controls">
+                                        <button class="count-btn" onclick="decrementCount('strike')">
+                                            <i class="bi bi-dash"></i>
+                                        </button>
+                                        <button class="count-btn" onclick="incrementCount('strike')">
+                                            <i class="bi bi-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="count-row">
+                                    <span class="count-label">O</span>
+                                    <div class="count-dots">
+                                        <div class="count-dot out" id="out-1" onclick="toggleCount('out', 0)"></div>
+                                        <div class="count-dot out" id="out-2" onclick="toggleCount('out', 1)"></div>
+                                        <div class="count-dot out" id="out-3" onclick="toggleCount('out', 2)"></div>
+                                    </div>
+                                    <div class="count-controls">
+                                        <button class="count-btn" onclick="decrementCount('out')">
+                                            <i class="bi bi-dash"></i>
+                                        </button>
+                                        <button class="count-btn" onclick="incrementCount('out')">
+                                            <i class="bi bi-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <button class="reset-button" onclick="resetCounts()">
+                                    <i class="bi bi-arrow-counterclockwise"></i> 카운트 리셋
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 선수 정보 -->
+        <div class="row mb-3">
+            <div class="col-6">
+                <div class="player-section">
+                    <div class="player-title">타자 정보</div>
+                    <div class="player-form">
+                        <div class="player-input-group">
+                            <input type="text" id="batter-name" class="player-input" placeholder="타자 이름" value="<%= match.match_data?.batter_name || '' %>" readonly>
+                            <input type="text" id="batter-number" class="player-input" placeholder="등번호" value="<%= match.match_data?.batter_number || '' %>" readonly>
+                        </div>
+                        <div class="player-input-group">
+                            <input type="text" id="batter-position" class="player-input" placeholder="포지션" value="<%= match.match_data?.batter_position || '' %>" readonly>
+                            <input type="text" id="batter-avg" class="player-input" placeholder="타율" value="<%= match.match_data?.batter_avg || '' %>" readonly>
+                        </div>
+                        <button id="update-batter" class="player-btn" disabled>
+                            <i class="bi bi-check-lg"></i> 타자 정보 업데이트
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="player-section">
+                    <div class="player-title">투수 정보</div>
+                    <div class="player-form">
+                        <div class="player-input-group">
+                            <input type="text" id="pitcher-name" class="player-input" placeholder="투수 이름" value="<%= match.match_data?.pitcher_name || '' %>" readonly>
+                            <input type="text" id="pitcher-number" class="player-input" placeholder="등번호" value="<%= match.match_data?.pitcher_number || '' %>" readonly>
+                        </div>
+                        <div class="player-input-group">
+                            <input type="text" id="pitcher-position" class="player-input" placeholder="포지션" value="<%= match.match_data?.pitcher_position || '' %>" readonly>
+                            <input type="text" id="pitcher-era" class="player-input" placeholder="평균자책점" value="<%= match.match_data?.pitcher_era || '' %>" readonly>
+                        </div>
+                        <button id="update-pitcher" class="player-btn" disabled>
+                            <i class="bi bi-check-lg"></i> 투수 정보 업데이트
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 이닝 스코어 -->
+        <div class="row">
+            <div class="col-12">
+                <div class="innings-score-section">
+                    <div class="innings-title">이닝 스코어</div>
+                    <table class="innings-table">
+                        <thead>
+                            <tr>
+                                <th>팀</th>
+                                <th>1</th>
+                                <th>2</th>
+                                <th>3</th>
+                                <th>4</th>
+                                <th>5</th>
+                                <th>6</th>
+                                <th>7</th>
+                                <th>8</th>
+                                <th>9</th>
+                                <th>R</th>
+                                <th>H</th>
+                                <th>E</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><%= match.home_team %></td>
+                                <% for(let i = 1; i <= 9; i++) { %>
+                                    <td>
+                                        <input type="number" class="innings-input" id="home-inning-<%= i %>" 
+                                               value="<%= match.match_data?.innings?.[`home_${i}`] || '0' %>" min="0" readonly>
+                                    </td>
+                                <% } %>
+                                <td class="total"><%= match.home_score || '0' %></td>
+                                <td class="total">
+                                    <input type="number" class="innings-input" id="home-hits" 
+                                           value="<%= match.match_data?.home_hits || '0' %>" min="0" readonly>
+                                </td>
+                                <td class="total">
+                                    <input type="number" class="innings-input" id="home-errors" 
+                                           value="<%= match.match_data?.home_errors || '0' %>" min="0" readonly>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><%= match.away_team %></td>
+                                <% for(let i = 1; i <= 9; i++) { %>
+                                    <td>
+                                        <input type="number" class="innings-input" id="away-inning-<%= i %>" 
+                                               value="<%= match.match_data?.innings?.[`away_${i}`] || '0' %>" min="0" readonly>
+                                    </td>
+                                <% } %>
+                                <td class="total"><%= match.away_score || '0' %></td>
+                                <td class="total">
+                                    <input type="number" class="innings-input" id="away-hits" 
+                                           value="<%= match.match_data?.away_hits || '0' %>" min="0" readonly>
+                                </td>
+                                <td class="total">
+                                    <input type="number" class="innings-input" id="away-errors" 
+                                           value="<%= match.match_data?.away_errors || '0' %>" min="0" readonly>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <button class="update-innings-btn" onclick="updateMatchInfo()">
+                        <i class="bi bi-check-lg"></i> 이닝 스코어 업데이트
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- CSV 데이터 업로드 및 선수 관리 영역 -->
+    <div class="row mb-3">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5>플레이어 관리</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="player-csv-file" class="form-label">선수 명단 CSV 업로드</label>
+                        <input type="file" class="form-control" id="player-csv-file" accept=".csv,.txt">
+                        <div class="form-text">CSV 파일 형식: 선수명,팀명,포지션,타수,안타,홈런,볼넷,사구,희플,방어율,이닝</div>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="upload-player-csv">업로드</button>
+                    <div class="mt-3" id="player-upload-status"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        const matchId = '<%= match.id %>';
+        
+        // 소켓 연결
+        socket.on('connect', () => {
+            console.log('서버에 연결되었습니다.');
+            socket.emit('join', matchId);
+        });
+
+        socket.on('disconnect', () => {
+            console.log('서버와의 연결이 끊어졌습니다.');
+        });
+
+        // 에러 처리
+        socket.on('error', (error) => {
+            console.error('소켓 에러:', error);
+        });
+
+        // 팀 컬러 저장 버튼 이벤트
+        document.querySelectorAll('.save-team-color').forEach(button => {
+            button.addEventListener('click', function() {
+                const teamType = this.getAttribute('data-team-type');
+                const colorInput = document.querySelector(`.${teamType}-team-color`);
+                const teamColor = colorInput.value;
+                
+                // 버튼 상태 변경
+                this.disabled = true;
+                this.innerHTML = '<i class="bi bi-arrow-repeat"></i> 저장 중...';
+                
+                // 서버에 팀 컬러 업데이트 요청 (야구 경기임을 명시)
+                socket.emit('updateTeamColor', {
+                    matchId: matchId,
+                    teamType: teamType,
+                    teamColor: teamColor,
+                    sportType: 'baseball' // 야구 경기임을 명시
+                });
+                
+                // 3초 후 버튼 상태 복원
+                setTimeout(() => {
+                    this.disabled = false;
+                    this.innerHTML = '<i class="bi bi-check2"></i> 저장';
+                }, 3000);
+            });
+        });
+
+        // 팀 컬러 업데이트 응답 처리
+        socket.on('teamColorUpdated', function(response) {
+            if (response.success) {
+                alert('팀 색상이 저장되었습니다.');
+            } else {
+                alert('팀 색상 저장에 실패했습니다: ' + response.error);
+            }
+        });
+
+        // 팀 컬러 변경 이벤트 처리
+        socket.on('teamColorChanged', function(data) {
+            if (data.matchId === matchId) {
+                // 컨트롤 패널의 컬러 피커 값도 업데이트
+                const homeColorInput = document.querySelector('.home-team-color');
+                const awayColorInput = document.querySelector('.away-team-color');
+                
+                if (homeColorInput) homeColorInput.value = data.homeColor;
+                if (awayColorInput) awayColorInput.value = data.awayColor;
+            }
+        });
+
+        // 팀 헤더 업데이트 응답 처리
+        socket.on('teamHeaderUpdated', function(response) {
+            if (response.success) {
+                alert('팀 헤더 텍스트가 업데이트되었습니다.');
+            } else {
+                alert('팀 헤더 텍스트 업데이트 실패: ' + response.error);
+            }
+        });
+        
+        // 팀 헤더 변경 이벤트 처리
+        socket.on('teamHeaderChanged', function(data) {
+            if (data.matchId === matchId) {
+                const homeHeaderInput = document.querySelector('.home-team-name');
+                const awayHeaderInput = document.querySelector('.away-team-name');
+                
+                if (homeHeaderInput) homeHeaderInput.value = data.homeHeader;
+                if (awayHeaderInput) awayHeaderInput.value = data.awayHeader;
+            }
+        });
+
+        // 점수 업데이트 함수
+        function updateScore(team, change) {
+            const scoreInput = document.querySelector(`.${team}-score`);
+            const currentScore = parseInt(scoreInput.value) || 0;
+            const newScore = Math.max(0, currentScore + change);
+            scoreInput.value = newScore;
+            
+            // 서버에 점수 업데이트 전송
+            socket.emit('match_update', {
+                matchId: matchId,
+                data: {
+                    [`${team}_score`]: newScore
+                }
+            });
+            
+            // API를 통해서도 업데이트
+            updateMatchInfo();
+        }
+
+        // 이닝 업데이트 함수
+        function updateInning(change) {
+            const inningSpan = document.getElementById('current-inning');
+            const typeSpan = document.getElementById('inning-type');
+            let currentInning = parseInt(inningSpan.textContent);
+            let isBottom = typeSpan.textContent === '말';
+            
+            if (change > 0) {
+                if (isBottom) {
+                    currentInning++;
+                    isBottom = false;
+                } else {
+                    isBottom = true;
+                }
+            } else {
+                if (!isBottom) {
+                    currentInning--;
+                    isBottom = true;
+                } else {
+                    isBottom = false;
+                }
+            }
+            
+            if (currentInning < 1) currentInning = 1;
+            
+            inningSpan.textContent = currentInning;
+            typeSpan.textContent = isBottom ? '말' : '초';
+            
+            // 이닝 변경 시 베이스 상태와 볼카운트 초기화
+            resetBases();
+            resetCounts();
+            
+            updateMatchInfo();
+        }
+
+        // 베이스 초기화 함수
+        function resetBases() {
+            document.getElementById('first-base').classList.remove('active');
+            document.getElementById('second-base').classList.remove('active');
+            document.getElementById('third-base').classList.remove('active');
+        }
+
+        // 카운트 증가 함수
+        function incrementCount(type) {
+            const dots = document.querySelectorAll(`.count-dot.${type}`);
+            let activeCount = 0;
+            
+            // 현재 활성화된 점 개수 확인
+            dots.forEach(dot => {
+                if (dot.classList.contains('active')) {
+                    activeCount++;
+                }
+            });
+            
+            // 최대 개수 확인
+            const maxCount = type === 'ball' ? 4 : 3;
+            
+            // 활성화된 점이 최대 개수보다 적으면 하나 더 활성화
+            if (activeCount < maxCount) {
+                dots[activeCount].classList.add('active');
+                updateMatchInfo();
+            }
+        }
+
+        // 카운트 감소 함수
+        function decrementCount(type) {
+            const dots = document.querySelectorAll(`.count-dot.${type}`);
+            let lastActiveIndex = -1;
+            
+            // 마지막 활성화된 점의 인덱스 찾기
+            for (let i = dots.length - 1; i >= 0; i--) {
+                if (dots[i].classList.contains('active')) {
+                    lastActiveIndex = i;
+                    break;
+                }
+            }
+            
+            // 활성화된 점이 있으면 마지막 점 비활성화
+            if (lastActiveIndex >= 0) {
+                dots[lastActiveIndex].classList.remove('active');
+                updateMatchInfo();
+            }
+        }
+
+        // 카운트 리셋 함수
+        function resetCounts() {
+            document.querySelectorAll('.count-dot').forEach(dot => {
+                dot.classList.remove('active');
+            });
+            updateMatchInfo();
+        }
+
+        // 베이스 토글 함수
+        function toggleBase(baseId) {
+            const base = document.querySelector(`.base.${baseId}`);
+            base.classList.toggle('active');
+            updateMatchInfo();
+        }
+
+        // 카운트 토글 함수
+        function toggleCount(type, index) {
+            const dots = document.querySelectorAll(`.count-dot.${type}`);
+            const isActive = dots[index].classList.contains('active');
+            
+            // 현재 인덱스까지의 모든 점을 활성화/비활성화
+            for (let i = 0; i <= index; i++) {
+                dots[i].classList.toggle('active', !isActive);
+            }
+            // 이후의 점들은 비활성화
+            for (let i = index + 1; i < dots.length; i++) {
+                dots[i].classList.remove('active');
+            }
+            
+            updateMatchInfo();
+        }
+
+        // 경기 데이터 업데이트
+        async function updateMatchInfo() {
+            const formData = {
+                home_score: parseInt(document.querySelector('.home-score').value) || 0,
+                away_score: parseInt(document.querySelector('.away-score').value) || 0,
+                match_data: {
+                    current_inning: parseInt(document.getElementById('current-inning').textContent) || 1,
+                    inning_type: document.getElementById('inning-type').textContent === '말' ? 'bottom' : 'top',
+                    
+                    // 베이스 상태
+                    first_base: document.querySelector('.base.first').classList.contains('active'),
+                    second_base: document.querySelector('.base.second').classList.contains('active'),
+                    third_base: document.querySelector('.base.third').classList.contains('active'),
+                    
+                    // 볼카운트
+                    balls: document.querySelectorAll('.count-dot.ball.active').length,
+                    strikes: document.querySelectorAll('.count-dot.strike.active').length,
+                    outs: document.querySelectorAll('.count-dot.out.active').length,
+                    
+                    // 타자 정보
+                    batter_name: document.getElementById('batter-name').value,
+                    batter_number: document.getElementById('batter-number').value,
+                    batter_position: document.getElementById('batter-position').value,
+                    batter_avg: document.getElementById('batter-avg').value,
+                    
+                    // 투수 정보
+                    pitcher_name: document.getElementById('pitcher-name').value,
+                    pitcher_number: document.getElementById('pitcher-number').value,
+                    pitcher_position: document.getElementById('pitcher-position').value,
+                    pitcher_era: document.getElementById('pitcher-era').value,
+                    
+                    // 팀 기록
+                    home_hits: parseInt(document.getElementById('home-hits').value) || 0,
+                    away_hits: parseInt(document.getElementById('away-hits').value) || 0,
+                    home_errors: parseInt(document.getElementById('home-errors').value) || 0,
+                    away_errors: parseInt(document.getElementById('away-errors').value) || 0,
+                    
+                    // 이닝별 점수
+                    innings: {},
+
+                    // 팀 로고 정보
+                    home_team_logo: document.querySelector('#home-team-logo-preview img')?.src || '',
+                    away_team_logo: document.querySelector('#away-team-logo-preview img')?.src || '',
+                    
+                    // 팀 컬러 정보
+                    home_team_color: document.querySelector('.home-team-color')?.value || '#1d4ed8',
+                    away_team_color: document.querySelector('.away-team-color')?.value || '#dc2626'
+                }
+            };
+
+            // 이닝 스코어 추가
+            for (let i = 1; i <= 9; i++) {
+                formData.match_data.innings[`home_${i}`] = parseInt(document.getElementById(`home-inning-${i}`).value) || 0;
+                formData.match_data.innings[`away_${i}`] = parseInt(document.getElementById(`away-inning-${i}`).value) || 0;
+            }
+
+            try {
+                console.log('서버로 전송할 경기 정보:', formData);
+                const response = await fetch(`/api/match/${matchId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('업데이트 실패');
+                }
+
+                const updatedMatch = await response.json();
+                console.log('서버 응답:', updatedMatch);
+                
+                // 소켓으로 직접 업데이트 이벤트 발송
+                socket.emit('match_update', {
+                    matchId: matchId,
+                    data: formData
+                });
+                
+            } catch (error) {
+                console.error('경기 정보 업데이트 중 오류 발생:', error);
+                alert('데이터 업데이트 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 초기 상태 설정
+        document.addEventListener('DOMContentLoaded', async function() {
+            // 선수 정보 업데이트 버튼 이벤트
+            const updateBatterBtn = document.getElementById('update-batter');
+            const updatePitcherBtn = document.getElementById('update-pitcher');
+            
+            if (updateBatterBtn) {
+                updateBatterBtn.addEventListener('click', updateMatchInfo);
+            }
+            if (updatePitcherBtn) {
+                updatePitcherBtn.addEventListener('click', updateMatchInfo);
+            }
+            // 팀 로고 업로드 버튼 이벤트
+            document.querySelectorAll('.upload-logo-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const teamType = this.getAttribute('data-team-type');
+                    const fileInput = document.getElementById(`${teamType}-team-logo`);
+                    fileInput.click();
+                });
+            });
+
+            // 팀 로고 정보 가져오기
+            try {
+                const response = await fetch('/TEAMLOGO/BASEBALL/team_logo_map.json');
+                const teamLogoMap = await response.json();
+                
+                // 홈팀 로고 설정
+                const homeTeamName = '<%= match.home_team %>';
+                let homeTeamLogo = '<%= match.match_data?.home_team_logo || "" %>';
+                let homeBgColor = '<%= match.match_data?.home_team_colorbg || "#1d4ed8" %>';
+                
+                // 새 구조 (객체) 확인
+                if (teamLogoMap[homeTeamName]) {
+                    if (typeof teamLogoMap[homeTeamName] === 'object') {
+                        homeTeamLogo = teamLogoMap[homeTeamName].path;
+                        homeBgColor = teamLogoMap[homeTeamName].bgColor || '#ffffff';
+                        
+                        // 컬러 선택기에 배경색 값 설정
+                        const homeColorInput = document.querySelector('.home-team-colorbg');
+                        if (homeColorInput) {
+                            homeColorInput.value = homeBgColor;
+                        }
+                    } else {
+                        homeTeamLogo = teamLogoMap[homeTeamName];
+                    }
+                }
+                
+                const homeLogoPreview = document.getElementById('home-team-logo-preview');
+                if (homeLogoPreview) {
+                    if (homeTeamLogo) {
+                        homeLogoPreview.innerHTML = `<img src="${homeTeamLogo}" alt="홈팀 로고" class="img-fluid">`;
+                        homeLogoPreview.style.backgroundColor = homeBgColor;
+                        
+                        // 삭제 버튼 추가 (없는 경우)
+                        const container = homeLogoPreview.closest('.d-flex');
+                        if (container && !container.querySelector('.remove-logo-btn')) {
+                            const removeBtn = document.createElement('button');
+                            removeBtn.className = 'btn btn-sm btn-outline-danger remove-logo-btn';
+                            removeBtn.setAttribute('data-team-type', 'home');
+                            removeBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                            
+                            removeBtn.addEventListener('click', function() {
+                                removeTeamLogo('home');
+                            });
+                            
+                            container.appendChild(removeBtn);
+                        }
+                    } else {
+                        homeLogoPreview.innerHTML = '<div class="no-logo">로고 없음</div>';
+                    }
+                }
+                
+                // 원정팀 로고 설정
+                const awayTeamName = '<%= match.away_team %>';
+                let awayTeamLogo = '<%= match.match_data?.away_team_logo || "" %>';
+                let awayBgColor = '<%= match.match_data?.away_team_colorbg || "#dc2626" %>';
+                
+                // 새 구조 (객체) 확인
+                if (teamLogoMap[awayTeamName]) {
+                    if (typeof teamLogoMap[awayTeamName] === 'object') {
+                        awayTeamLogo = teamLogoMap[awayTeamName].path;
+                        awayBgColor = teamLogoMap[awayTeamName].bgColor || '#ffffff';
+                        
+                        // 컬러 선택기에 배경색 값 설정
+                        const awayColorInput = document.querySelector('.away-team-colorbg');
+                        if (awayColorInput) {
+                            awayColorInput.value = awayBgColor;
+                        }
+                    } else {
+                        awayTeamLogo = teamLogoMap[awayTeamName];
+                    }
+                }
+                
+                const awayLogoPreview = document.getElementById('away-team-logo-preview');
+                if (awayLogoPreview) {
+                    if (awayTeamLogo) {
+                        awayLogoPreview.innerHTML = `<img src="${awayTeamLogo}" alt="원정팀 로고" class="img-fluid">`;
+                        awayLogoPreview.style.backgroundColor = awayBgColor;
+                        
+                        // 삭제 버튼 추가 (없는 경우)
+                        const container = awayLogoPreview.closest('.d-flex');
+                        if (container && !container.querySelector('.remove-logo-btn')) {
+                            const removeBtn = document.createElement('button');
+                            removeBtn.className = 'btn btn-sm btn-outline-danger remove-logo-btn';
+                            removeBtn.setAttribute('data-team-type', 'away');
+                            removeBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                            
+                            removeBtn.addEventListener('click', function() {
+                                removeTeamLogo('away');
+                            });
+                            
+                            container.appendChild(removeBtn);
+                        }
+                    } else {
+                        awayLogoPreview.innerHTML = '<div class="no-logo">로고 없음</div>';
+                    }
+                }
+            } catch (error) {
+                console.error('팀 로고 정보를 가져오는 중 오류 발생:', error);
+            }
+
+            // 이닝 타입 설정
+            const inningType = '<%= match.match_data?.inning_type || "top" %>';
+            if (inningType === 'top') {
+                document.getElementById('inning-type').textContent = '초';
+            } else {
+                document.getElementById('inning-type').textContent = '말';
+            }
+            
+            // 베이스 상태 설정
+            const firstBase = document.getElementById('first-base');
+            const secondBase = document.getElementById('second-base');
+            const thirdBase = document.getElementById('third-base');
+            
+            if (firstBase && '<%= match.match_data?.first_base %>' === 'true') {
+                firstBase.classList.add('active');
+            }
+            
+            if (secondBase && '<%= match.match_data?.second_base %>' === 'true') {
+                secondBase.classList.add('active');
+            }
+            
+            if (thirdBase && '<%= match.match_data?.third_base %>' === 'true') {
+                thirdBase.classList.add('active');
+            }
+            
+            // 볼/스트라이크/아웃 상태 설정
+            const balls = parseInt('<%= match.match_data?.balls || 0 %>');
+            const strikes = parseInt('<%= match.match_data?.strikes || 0 %>');
+            const outs = parseInt('<%= match.match_data?.outs || 0 %>');
+            
+            for (let i = 1; i <= balls; i++) {
+                const ballDot = document.getElementById(`ball-${i}`);
+                if (ballDot) ballDot.classList.add('active');
+            }
+            
+            for (let i = 1; i <= strikes; i++) {
+                const strikeDot = document.getElementById(`strike-${i}`);
+                if (strikeDot) strikeDot.classList.add('active');
+            }
+            
+            for (let i = 1; i <= outs; i++) {
+                const outDot = document.getElementById(`out-${i}`);
+                if (outDot) outDot.classList.add('active');
+            }
+        });
+
+        // 팀 색상 업데이트 수신
+        socket.on('teamColorUpdate', (data) => {
+            if (data.matchId === matchId) {
+                const teamSection = data.teamType === 'home' ? 
+                    document.querySelector('.team-info.home-team') : 
+                    document.querySelector('.team-info.away-team');
+                
+                if (teamSection) {
+                    // 팀 컬러만 업데이트하고 팀명은 변경하지 않음
+                    teamSection.style.backgroundColor = data.teamColor;
+                }
+            }
+        });
+
+        // 파일 선택 이벤트
+        document.querySelectorAll('.team-logo-input').forEach(input => {
+            input.addEventListener('change', async function(e) {
+                const teamType = this.id.split('-')[0];
+                const file = this.files[0];
+                
+                if (file) {
+                    const formData = new FormData();
+                    formData.append('logo', file);
+                    
+                    // 팀 이름과 타입 정보 추가
+                    const teamName = teamType === 'home' ? 
+                        '<%= match.home_team %>' : 
+                        '<%= match.away_team %>';
+                    formData.append('teamName', teamName);
+                    formData.append('teamType', teamType);
+                    
+                    try {
+                        // 1. 로고 파일 업로드
+                        const response = await fetch('/api/team-logo', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        const result = await response.json();
+                        if (result.success) {
+                            // 2. 팀 로고 매핑 JSON 파일 업데이트
+                            try {
+                                // 기존 JSON 파일 읽기
+                                const logoMapResponse = await fetch('/TEAMLOGO/BASEBALL/team_logo_map.json');
+                                let teamLogoMap = {};
+                                
+                                if (logoMapResponse.ok) {
+                                    teamLogoMap = await logoMapResponse.json();
+                                }
+                                
+                                // 색상 선택기에서 배경색 가져오기
+                                const colorInput = document.querySelector(`.${teamType}-team-colorbg`);
+                                const bgColor = colorInput ? colorInput.value : '#ffffff';
+                                
+                                // 새로운 로고 정보 추가 (객체 형태로 저장)
+                                teamLogoMap[teamName] = {
+                                    path: result.logoPath,
+                                    bgColor: bgColor
+                                };
+                                
+                                // JSON 파일 업데이트
+                                const updateResponse = await fetch('/api/update-team-logo-map', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        sport: 'BASEBALL',
+                                        teamLogoMap: teamLogoMap
+                                    })
+                                });
+                                
+                                if (!updateResponse.ok) {
+                                    throw new Error('로고 매핑 업데이트 실패');
+                                }
+
+                                // 3. UI 업데이트
+                                const preview = document.getElementById(`${teamType}-team-logo-preview`);
+                                preview.innerHTML = `<img src="${result.logoPath}" alt="${teamType}팀 로고" class="img-fluid">`;
+                                preview.style.backgroundColor = bgColor;
+                                
+                                // 4. 소켓으로 로고 경로 업데이트
+                                socket.emit('updateTeamLogo', {
+                                    matchId: matchId,
+                                    teamType: teamType,
+                                    team: teamType,
+                                    logoPath: result.logoPath,
+                                    logoBgColor: bgColor,
+                                    teamName: teamName
+                                });
+                                
+                                // 5. 삭제 버튼 추가 (없는 경우)
+                                const container = preview.closest('.d-flex');
+                                if (container && !container.querySelector('.remove-logo-btn')) {
+                                    const removeBtn = document.createElement('button');
+                                    removeBtn.className = 'btn btn-sm btn-outline-danger remove-logo-btn';
+                                    removeBtn.setAttribute('data-team-type', teamType);
+                                    removeBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                                    
+                                    removeBtn.addEventListener('click', function() {
+                                        removeTeamLogo(teamType);
+                                    });
+                                    
+                                    container.appendChild(removeBtn);
+                                }
+
+                                // 6. match_data 업데이트
+                                updateMatchInfo();
+
+                                console.log('팀 로고가 성공적으로 업데이트되었습니다.');
+                            } catch (mapError) {
+                                console.error('로고 매핑 파일 업데이트 오류:', mapError);
+                                alert('로고 매핑 파일 업데이트 중 오류가 발생했습니다.');
+                            }
+                        } else {
+                            alert('로고 업로드에 실패했습니다.');
+                        }
+                    } catch (error) {
+                        console.error('로고 업로드 오류:', error);
+                        alert('로고 업로드 중 오류가 발생했습니다.');
+                    }
+                }
+            });
+        });
+        
+        // 로고 삭제 함수
+        async function removeTeamLogo(teamType) {
+            try {
+                const teamName = teamType === 'home' ? 
+                    '<%= match.home_team %>' : 
+                    '<%= match.away_team %>';
+                
+                // 1. JSON 파일에서 로고 정보 삭제
+                const logoMapResponse = await fetch('/TEAMLOGO/BASEBALL/team_logo_map.json');
+                let teamLogoMap = {};
+                
+                if (logoMapResponse.ok) {
+                    teamLogoMap = await logoMapResponse.json();
+                    delete teamLogoMap[teamName];
+                    
+                    // JSON 파일 업데이트
+                    const updateResponse = await fetch('/api/update-team-logo-map', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            sport: 'BASEBALL',
+                            teamLogoMap: teamLogoMap
+                        })
+                    });
+                    
+                    if (!updateResponse.ok) {
+                        throw new Error('로고 매핑 삭제 실패');
+                    }
+                }
+
+                // 2. UI 업데이트
+                const preview = document.getElementById(`${teamType}-team-logo-preview`);
+                preview.innerHTML = '<div class="no-logo">로고 없음</div>';
+                preview.style.backgroundColor = ''; // 배경색 초기화
+                
+                // 3. 서버에 로고 삭제 요청
+                socket.emit('removeTeamLogo', {
+                    matchId: matchId,
+                    team: teamType,
+                    teamName: teamName
+                });
+                
+                // 4. 삭제 버튼 제거
+                const removeBtn = document.querySelector(`.remove-logo-btn[data-team-type="${teamType}"]`);
+                if (removeBtn) {
+                    removeBtn.remove();
+                }
+
+                // 5. match_data 업데이트
+                updateMatchInfo();
+
+                console.log('팀 로고가 성공적으로 삭제되었습니다.');
+            } catch (error) {
+                console.error('로고 삭제 중 오류 발생:', error);
+                alert('로고 삭제 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 팀 색상 저장 버튼 이벤트 처리
+        document.querySelectorAll('.save-team-colorbg').forEach(button => {
+            button.addEventListener('click', async function() {
+                const teamType = this.getAttribute('data-team-type');
+                const colorInput = document.querySelector(`.${teamType}-team-colorbg`);
+                const logoBgColor = colorInput.value;
+                
+                const teamName = teamType === 'home' ? 
+                    '<%= match.home_team %>' : 
+                    '<%= match.away_team %>';
+                
+                try {
+                    // 1. 기존 JSON 파일 읽기
+                    const logoMapResponse = await fetch('/TEAMLOGO/BASEBALL/team_logo_map.json');
+                    let teamLogoMap = {};
+                    
+                    if (logoMapResponse.ok) {
+                        teamLogoMap = await logoMapResponse.json();
+                    }
+                    
+                    // 2. 팀 객체 찾기
+                    const teamKey = `${matchId}_${teamType}`;
+                    
+                    // 3. 배경색 업데이트
+                    if (teamLogoMap.teams && teamLogoMap.teams[teamKey]) {
+                        teamLogoMap.teams[teamKey].logoBgColor = logoBgColor;
+                    }
+                    
+                    // 4. 팀 이름 기반 로고 정보 업데이트
+                    if (teamLogoMap[teamName]) {
+                        if (typeof teamLogoMap[teamName] === 'object') {
+                            teamLogoMap[teamName].bgColor = logoBgColor;
+                        } else {
+                            // 기존 문자열을 객체로 변환
+                            const logoPath = teamLogoMap[teamName];
+                            teamLogoMap[teamName] = {
+                                path: logoPath,
+                                bgColor: logoBgColor
+                            };
+                        }
+                    } else {
+                        // 로고가 없는 경우에도 배경색 정보 생성
+                        teamLogoMap[teamName] = {
+                            path: "",
+                            bgColor: logoBgColor
+                        };
+                        
+                        // 팀 키로도 저장
+                        if (!teamLogoMap.teams) {
+                            teamLogoMap.teams = {};
+                        }
+                        teamLogoMap.teams[teamKey] = {
+                            logoBgColor: logoBgColor
+                        };
+                    }
+                    
+                    // 5. JSON 파일 업데이트
+                    const updateResponse = await fetch('/api/update-team-logo-map', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            sport: 'BASEBALL',
+                            teamLogoMap: teamLogoMap
+                        })
+                    });
+                    
+                    if (!updateResponse.ok) {
+                        throw new Error('로고 배경색 업데이트 실패');
+                    }
+                    
+                    // 6. 로고 미리보기 배경색 업데이트
+                    const preview = document.getElementById(`${teamType}-team-logo-preview`);
+                    if (preview) {
+                        preview.style.backgroundColor = logoBgColor;
+                    }
+                    
+                    // 7. 소켓으로 로고 배경색 업데이트 - 로고가 없어도 배경색은 업데이트
+                    const imgElement = preview.querySelector('img');
+                    const logoPath = imgElement ? imgElement.src : "";
+                    
+                    socket.emit('updateTeamLogo', {
+                        matchId: matchId,
+                        teamType: teamType,
+                        team: teamType,
+                        logoPath: logoPath,
+                        logoBgColor: logoBgColor,
+                        teamName: teamName
+                    });
+                    
+                    alert(`${teamType === 'home' ? '홈팀' : '원정팀'} 로고 배경색이 업데이트되었습니다.`);
+                } catch (error) {
+                    console.error('로고 배경색 업데이트 오류:', error);
+                    alert('로고 배경색 업데이트 중 오류가 발생했습니다.');
+                }
+            });
+        });
+
+        // 선수 데이터 업로드 처리
+        const playerCsvFile = document.getElementById('player-csv-file');
+        if (playerCsvFile) {
+            playerCsvFile.addEventListener('change', function(e) {
+                const file = this.files[0];
+                if (!file) {
+                    alert('CSV 파일을 선택해주세요.');
+                    return;
+                }
+                
+                const formData = new FormData();
+                formData.append('csvFile', file);
+                formData.append('matchId', matchId);
+                
+                fetch('/api/upload-player-data', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('선수 데이터가 성공적으로 업로드되었습니다.');
+                        
+                        // JSON 파일 경로 표시
+                        if (data.playerDataUrl) {
+                            const jsonInfoDiv = document.createElement('div');
+                            jsonInfoDiv.className = 'alert alert-info mt-3';
+                            jsonInfoDiv.innerHTML = `
+                                <strong>선수 데이터 JSON 파일 생성 완료:</strong><br>
+                                <a href="${data.playerDataUrl}" target="_blank">${data.playerDataUrl}</a>
+                            `;
+                            
+                            // 이전 알림이 있으면 제거
+                            const oldAlert = document.querySelector('#player-upload-status');
+                            if (oldAlert) {
+                                oldAlert.remove();
+                            }
+                            
+                            // 알림 추가
+                            document.getElementById('player-upload-status').prepend(jsonInfoDiv);
+                        }
+                        
+                        processCSVForDisplay(file);
+                    } else {
+                        alert('오류: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('선수 데이터 업로드 중 오류 발생:', error);
+                    alert('선수 데이터 업로드 중 오류가 발생했습니다.');
+                });
+            });
+        }
+        
+        // CSV 파일 처리 및 UI 업데이트
+        function processCSVForDisplay(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const csv = e.target.result;
+                const lines = csv.trim().split('\n');
+                
+                if (lines.length <= 1) {
+                    alert('유효한 선수 데이터가 없습니다.');
+                    return;
+                }
+                
+                // 구분자 자동 감지 (쉼표 또는 탭)
+                let delimiter = '\t';
+                if (lines[0].includes(',') && !lines[0].includes('\t')) {
+                    delimiter = ',';
+                }
+                
+                // 선수 데이터 UI 표시
+                document.getElementById('player-upload-status').style.display = 'block';
+                
+                // 선수 선택 옵션 초기화
+                const batterSelect = document.getElementById('current-batter');
+                const pitcherSelect = document.getElementById('current-pitcher');
+                batterSelect.innerHTML = '<option value="">선택하세요</option>';
+                pitcherSelect.innerHTML = '<option value="">선택하세요</option>';
+                
+                // 헤더 확인
+                const headers = lines[0].split(delimiter);
+                const numIdxPos = headers.indexOf('번호') >= 0 ? headers.indexOf('번호') : 1;
+                const nameIdxPos = headers.indexOf('이름') >= 0 ? headers.indexOf('이름') : 2;
+                const posIdxPos = headers.indexOf('포지션') >= 0 ? headers.indexOf('포지션') : 3;
+                
+                // 헤더 제외하고 선수 데이터 처리
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+                    
+                    const values = line.split(delimiter);
+                    if (values.length < 3) continue;
+                    
+                    const number = values[numIdxPos] || i;
+                    const name = values[nameIdxPos] || `선수${i}`;
+                    const position = values[posIdxPos] || '미정';
+                    
+                    // 타자 선택 옵션 추가
+                    const batterOption = document.createElement('option');
+                    batterOption.value = i;
+                    batterOption.textContent = `${number}번 ${name} (${position})`;
+                    batterSelect.appendChild(batterOption);
+                    
+                    // 투수 선택 옵션 추가
+                    const pitcherOption = document.createElement('option');
+                    pitcherOption.value = i;
+                    pitcherOption.textContent = `${number}번 ${name} (${position})`;
+                    pitcherSelect.appendChild(pitcherOption);
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        // 현재 타자/투수 업데이트
+        const updateCurrentPlayersBtn = document.getElementById('update-current-players');
+        if (updateCurrentPlayersBtn) {
+            updateCurrentPlayersBtn.addEventListener('click', function() {
+                const batterIndex = document.getElementById('current-batter').value;
+                const pitcherIndex = document.getElementById('current-pitcher').value;
+                
+                if (!batterIndex && !pitcherIndex) {
+                    alert('타자 또는 투수를 선택해주세요.');
+                    return;
+                }
+                
+                fetch('/api/update-current-players', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        matchId,
+                        batterIndex,
+                        pitcherIndex
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('현재 타자/투수 정보가 업데이트되었습니다.');
+                    } else {
+                        alert('오류: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('현재 타자/투수 업데이트 중 오류 발생:', error);
+                    alert('현재 타자/투수 업데이트 중 오류가 발생했습니다.');
+                });
+            });
+        }
+
+        socket.on('teamLogoUpdated', function(data) {
+            if (data.matchId === matchId) {
+                const teamType = data.teamType || data.team;
+                const logoPath = data.logoPath;
+                const logoBgColor = data.logoBgColor || '#ffffff';
+                
+                console.log('로고 업데이트 이벤트 수신:', teamType, logoPath, logoBgColor);
+                
+                if (teamType === 'home') {
+                    const logoContainer = document.querySelector('.team-info.home-team .team-logo-container');
+                    if (logoContainer) {
+                        logoContainer.style.backgroundColor = logoBgColor;
+                        
+                        if (logoPath) {
+                            logoContainer.innerHTML = `<img src="${logoPath}" alt="홈팀 로고" class="team-logo">`;
+                        } else {
+                            logoContainer.innerHTML = `<div class="team-logo-placeholder"></div>`;
+                        }
+                    }
+                } else if (teamType === 'away') {
+                    const logoContainer = document.querySelector('.team-info.away-team .team-logo-container');
+                    if (logoContainer) {
+                        logoContainer.style.backgroundColor = logoBgColor;
+                        
+                        if (logoPath) {
+                            logoContainer.innerHTML = `<img src="${logoPath}" alt="원정팀 로고" class="team-logo">`;
+                        } else {
+                            logoContainer.innerHTML = `<div class="team-logo-placeholder"></div>`;
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,236 @@
+/**
+ * 축구 경기 오버레이 애니메이션 스타일
+ * 각 섹션별 애니메이션 효과를 정의합니다.
+ */
+
+/* 슬라이드 애니메이션 (스코어보드용) */
+@keyframes slide {
+    0% {
+        transform: translateX(-170%);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(-170%);
+        opacity: 1;
+    }
+}
+
+/* 스코어보드 위로 사라지는 애니메이션 */
+@keyframes slideUp {
+    0% {
+        transform: translateX(-170%) translateY(0);
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(-170%) translateY(-100%);
+        opacity: 0;
+    }
+}
+
+.animate-slide {
+    animation: slide 0.5s ease-out forwards;
+}
+
+.animate-slide-up {
+    animation: slideUp 0.5s ease-out forwards;
+}
+
+/* 펄스 애니메이션 (팀 정보용) */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.animate-pulse {
+    animation: pulse 0.5s ease-in-out;
+}
+
+/* 깜빡임 애니메이션 (경기 시간용) */
+@keyframes blink {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+.animate-blink {
+    animation: blink 0.5s ease-in-out;
+}
+
+/* 페이드 애니메이션 (통계용) */
+@keyframes fade {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade {
+    animation: fade 0.5s ease-in-out;
+}
+
+/* 점수 변경 애니메이션 */
+@keyframes score-change {
+    0% {
+        transform: scale(1);
+        color: inherit;
+    }
+    50% {
+        transform: scale(1.2);
+        color: #ff0000;
+    }
+    100% {
+        transform: scale(1);
+        color: inherit;
+    }
+}
+
+.score-changed {
+    animation: score-change 0.5s ease-in-out;
+}
+
+/* 골 애니메이션 */
+@keyframes goal {
+    0% {
+        transform: scale(1);
+    }
+    25% {
+        transform: scale(1.1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    75% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.goal-animation {
+    animation: goal 1s ease-in-out;
+}
+
+/* 경고 애니메이션 */
+@keyframes warning {
+    0% {
+        background-color: inherit;
+    }
+    50% {
+        background-color: rgba(255, 165, 0, 0.3);
+    }
+    100% {
+        background-color: inherit;
+    }
+}
+
+.warning-animation {
+    animation: warning 1s ease-in-out;
+}
+
+/* 퇴장 애니메이션 */
+@keyframes red-card {
+    0% {
+        transform: translateX(0);
+    }
+    25% {
+        transform: translateX(-10px);
+    }
+    75% {
+        transform: translateX(10px);
+    }
+    100% {
+        transform: translateX(0);
+    }
+}
+
+.red-card-animation {
+    animation: red-card 0.5s ease-in-out;
+}
+
+/* 교체 애니메이션 */
+@keyframes substitution {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+.substitution-animation {
+    animation: substitution 1s ease-in-out;
+}
+
+/* 코너킥 애니메이션 */
+@keyframes corner-kick {
+    0% {
+        transform: rotate(0deg);
+    }
+    25% {
+        transform: rotate(5deg);
+    }
+    75% {
+        transform: rotate(-5deg);
+    }
+    100% {
+        transform: rotate(0deg);
+    }
+}
+
+.corner-kick-animation {
+    animation: corner-kick 0.5s ease-in-out;
+}
+
+/* 파울 애니메이션 */
+@keyframes foul {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.foul-animation {
+    animation: foul 0.5s ease-in-out;
+}
+
+/* 통계 섹션 슬라이드 애니메이션 */
+@keyframes slideIn {
+    0% {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.animate-slide {
+    animation: slideIn 0.5s ease-in-out;
+} 

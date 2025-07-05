@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baseball Overlay</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        /* 기본 스타일 */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: transparent;
+            color: white;
+            overflow: hidden;
+        }
+
+        .team-logo {
+            max-width: 100%;
+            max-height: 100%;
+            background-color: rgba(255, 255, 255, 0.5);
+            padding: 2px;
+        }
+
+                /* 실제 로고 영역: 원형 테두리 적용 */
+        .team-logo-container {
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 5px;
+        }
+
+              /* 로고가 없을 때 표시될 플레이스홀더 스타일 */
+        .team-logo-placeholder {
+            width: 100%;                                 /* 부모 크기에 맞춤 */
+            height: 100%;                                /* 부모 크기에 맞춤 */
+            border-radius: 5px;                          /* 살짝 둥근 모서리 */
+            background-color: rgba(0, 0, 0, 0.8);      /* 반투명 흰 배경 */
+            display: flex;                               /* 텍스트 정렬용 flex */
+            align-items: center;                         /* 세로 가운데 정렬 */
+            justify-content: center;                     /* 가로 가운데 정렬 */
+            font-weight: bold;                           /* 글씨 굵게 */
+            color: white;                                /* 글씨 색 흰색 */
+            font-size: 24px;                             /* 글씨 크기 24px */
+        }
+
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Noto Sans KR', Arial, sans-serif;
+        }
+        body {
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+            background-color: transparent;
+            position: relative;
+        }
+        .overlay-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        /* 상단 스코어보드 */
+        .scoreboard {
+            position: absolute;
+            top: 520px;
+            left: 20px;
+            width: 300px;
+            height: 120px;
+            background-color: rgb(208, 208, 208);
+            display: flex;
+            color: rgb(255, 255, 255);
+            overflow: hidden;            
+            border-top-left-radius: 10px;
+            border-bottom-left-radius: 10px;
+        }
+        .team-section {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+        .team-info {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            padding: 5px 10px;
+        }
+        .team-info.home-team {
+            background-color: rgb(57, 57, 57);
+        }
+        .team-info.away-team {
+            background-color: rgb(57, 57, 57);
+        }
+        .team-header {
+            width: 180px;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;            
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-left: 10px;
+        }
+        .team-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: flex;
+            align-items: center;       /* 수직 가운데 정렬 */
+            justify-content: center;   /* 수평 가운데 정렬 */
+        }
+        .team-logo.no-logo {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .team-header.long {
+            font-size: 20px;
+        }
+        .team-header.very-long {
+            font-size: 16px;
+        }
+        .team-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 20px;
+            min-width: 60px;
+        }
+        .team-score {
+            font-size: 32px;
+            font-weight: bold;
+            min-width: 40px;
+            text-align: right;
+            padding-left: 15px; /* 오른쪽 여백을 줄이기 위해 패딩 추가 */
+        }
+        
+        
+        /* 베이스 상태 */
+        .base-status {
+            position: absolute;
+            top: 20px;
+            left: 320px;
+            width: 120px;
+            height: 120px;
+            background-color: rgba(0, 0, 0, 0.98);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .inning-header {
+            font-size: 18px;
+            top: 50px;
+            left: 40px;
+            background-color: transparent;
+        }
+        .current-inning {
+            margin-top: 60px;
+            font-size: 28px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .inning-indicator {
+            margin-left: 5px;
+            font-size: 20px;
+        }
+        .inning-indicator.top:after {
+            content: "▲";
+            color: #3b82f6;
+        }
+        .inning-indicator.bottom:after {
+            content: "▼";
+            color: #3b82f6;
+        }
+        
+        /* 게임 상태 (볼/스트라이크/아웃 카운트) */
+        .game-status {
+            position: absolute;
+            top: 20px;
+            left: 440px;
+            width: 120px;
+            height: 120px;
+            background-color: rgba(0, 0, 0, 0.98);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 0;
+            border-top-right-radius: 10px;
+            border-bottom-right-radius: 10px;
+        }
+        .base-container {
+            width: 120px;
+            height: 120px;
+            position: relative;
+            margin: 0 auto;
+            background-color: transparent;
+            transform: rotate(-45deg); /* 전체 45도 회전 */
+        }
+        .diamond {
+            width: 80px;
+            height: 80px;
+            position: absolute; /* 요소를 절대 위치로 설정하여 부모 요소를 기준으로 위치를 조정합니다. */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+        .base {
+            width: 35px; /* 크기를 줄여서 간격을 좁힙니다. */
+            height: 35px; /* 크기를 줄여서 간격을 좁힙니다. */
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            transition: all 0.3s ease;
+        }
+        .base.active {
+            background-color: #f59e0b;
+            border-color: #d97706;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+        }
+        .base.first {
+            right: 15%;
+            bottom: 50%;
+            transform: translate(50%, 50%) rotate(45deg); /* 45도 회전 추가 */
+        }
+        .base.second {
+            top: 15%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+        .base.third {
+            left: 15%;
+            bottom: 50%;
+            transform: translate(-50%, 50%) rotate(45deg); /* 45도 회전 추가 */
+        }
+        
+        .count-section {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            width: 100%;
+            padding: 0 10px;
+        }
+        .count-row {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .count-label {
+            font-size: 20px;
+            width: 15px;
+            text-align: left;
+        }
+        .count-indicators {
+            display: flex;
+            gap: 4px;
+            flex: 1;
+            justify-content: flex-start;
+            margin-left: 0;
+            padding-left: 0;
+        }
+        .count-dot {
+            width: 23px;
+            height: 23px;
+            border-radius: 50%;
+            background-color: #666;
+            transition: background-color 0.3s ease;
+        }
+        .count-dot.ball.active {
+            background-color: #22c55e;
+        }
+        .count-dot.strike.active {
+            background-color: #eab308;
+        }
+        .count-dot.out.active {
+            background-color: #ef4444;
+        }
+        
+        /* 스트라이크와 아웃카운트 원들을 왼쪽으로 더 움직임 */
+        .count-row:nth-child(1) .count-indicators,
+        .count-row:nth-child(2) .count-indicators,
+        .count-row:nth-child(3) .count-indicators {
+            padding-left: -15px; /* 왼쪽으로 더 이동시키기 위해 패딩을 추가 */
+        }
+        
+        /* 타자 정보 */
+        .batter-info {
+            position: absolute;
+            left: -400px; /* 화면 밖으로 이동 */
+            top: 210px;
+            width: 320px;
+            height: 320px;
+            background-color: rgba(0, 0, 0, 0.8);
+            border-radius: 8px;
+            color: white;
+            overflow: hidden;
+        }
+        .panel-title {
+            background-color: rgb(219, 39, 120);
+            padding: 8px 12px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .player-content {
+            padding: 12px 15px;
+            display: flex;
+            align-items: center;
+        }
+        .player-number {
+            width: 50px;
+            height: 50px;
+            background-color: rgba(0, 0, 0, 0.8);
+            border-radius: 50%;
+            font-size: 20px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 15px;
+            align-self: flex-start; /* ← 부모 안에서 위로 붙이기 */
+        }
+        .player-info {
+            flex: 1;
+        }
+        .player-name {
+            font-size: 32px;
+            font-weight: bold;
+        }
+        .player-position {
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 3px;
+        }
+        .player-stats {
+            margin-top: 10px;
+            display: flex;
+            gap: 15px;
+            align-items: flex-start; /* ← 왼쪽 정렬 */
+            flex-direction: column; /* ← 세로로 나열 */
+            gap: 5px; /* 항목 간 간격 */
+        }
+        .stat-item {
+            display: flex;
+            flex-direction: row; /* ← 가로 정렬 */
+            align-items: center;
+            gap: 6px; /* 항목 간 간격 */
+        }
+        .stat-label {
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 3px;
+        }
+        
+        /* 투수 정보 */
+        .pitcher-info {
+            position: absolute;
+            left: -400px; /* 화면 밖으로 이동 */
+            top: 210px;
+            width: 320px;
+            height: 320px;
+            background-color: rgba(0, 0, 0, 0.8);
+            border-radius: 8px;
+            color: white;
+            overflow: hidden;
+        }
+        .pitcher-info .panel-title {
+            background-color: rgba(79, 70, 229, 0.6);
+        }
+        .pitcher-info .player-number {
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+        
+        /* 이닝 스코어 */
+        .innings-scoreboard {
+            position: absolute;
+            bottom: -200px; /* 화면 밖으로 이동 */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            background-color: rgba(0, 0, 0, 0.8);
+            border-radius: 8px;
+            color: white;
+            overflow: hidden;
+        }
+        .innings-title {
+            background-color: rgba(251, 191, 36, 0.6);
+            padding: 8px 12px;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .innings-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .innings-table th, .innings-table td {
+            padding: 8px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .innings-table th {
+            color: rgba(255, 255, 255, 0.7);
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .innings-table td {
+            font-weight: bold;
+        }
+        .innings-table td.team-name {
+            text-align: left;
+            width: 120px;
+        }
+        .innings-table td.total {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay-container">
+        <div class="scoreboard">
+            <div class="team-section">
+                <div class="team-info home-team" id="home-team-section">
+                    <div class="team-logo-container">
+                        <% if (match.match_data?.home_team_logo) { %>
+                            <img src="<%= match.match_data.home_team_logo %>" alt="홈팀 로고" class="team-logo">
+                        <% } else { %>
+                            <div class="team-logo-placeholder"></div>
+                        <% } %>
+                    </div>
+                    <div class="team-header"><%= match.home_team || 'HOME' %></div>
+                    <div class="team-content">
+                        <div class="team-score"><%= match.home_score || '0' %></div>
+                    </div>
+                </div>
+                <div class="team-info away-team" id="away-team-section">
+                    <div class="team-logo-container">
+                        <% if (match.match_data?.away_team_logo) { %>
+                            <img src="<%= match.match_data.away_team_logo %>" alt="원정팀 로고" class="team-logo">
+                        <% } else { %>
+                            <div class="team-logo-placeholder"></div>
+                        <% } %>
+                    </div>
+                    <div class="team-header"><%= match.away_team || 'AWAY' %></div>
+                    <div class="team-content">
+                        <div class="team-score"><%= match.away_score || '0' %></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="inning-section">
+            
+        </div>
+
+        <!-- 베이스 상태 섹션 -->
+        <div class="base-status">
+            <div class="base-container">
+                <div class="diamond">
+                    <div class="base first <%= match.match_data?.first_base ? 'active' : '' %>"></div>
+                    <div class="base second <%= match.match_data?.second_base ? 'active' : '' %>"></div>
+                    <div class="base third <%= match.match_data?.third_base ? 'active' : '' %>"></div>
+                    <div class="inning-header"></div>
+                    <div class="current-inning">
+                    <%= match.match_data?.current_inning || '1' %>
+                    <div class="inning-indicator <%= match.match_data?.inning_type === 'bottom' ? 'bottom' : 'top' %>"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 게임 상태 섹션 (볼/스트라이크/아웃 카운트) -->
+        <div class="game-status">
+            <div class="count-section">
+                <div class="count-row">
+                    <span class="count-label">B</span>
+                    <div class="count-indicators">
+                        <div class="count-dot ball <%= (match.match_data?.balls >= 1) ? 'active' : '' %>"></div>
+                        <div class="count-dot ball <%= (match.match_data?.balls >= 2) ? 'active' : '' %>"></div>
+                        <div class="count-dot ball <%= (match.match_data?.balls >= 3) ? 'active' : '' %>"></div>
+                        <!-- <div class="count-dot ball <%= (match.match_data?.balls >= 4) ? 'active' : '' %>"></div> -->
+                    </div>
+                </div>
+                <div class="count-row">
+                    <span class="count-label">S</span>
+                    <div class="count-indicators">
+                        <div class="count-dot strike <%= (match.match_data?.strikes >= 1) ? 'active' : '' %>"></div>
+                        <div class="count-dot strike <%= (match.match_data?.strikes >= 2) ? 'active' : '' %>"></div>
+                        <!-- <div class="count-dot strike <%= (match.match_data?.strikes >= 3) ? 'active' : '' %>"></div> -->
+                    </div>
+                </div>
+                <div class="count-row">
+                    <span class="count-label">O</span>
+                    <div class="count-indicators">
+                        <div class="count-dot out <%= (match.match_data?.outs >= 1) ? 'active' : '' %>"></div>
+                        <div class="count-dot out <%= (match.match_data?.outs >= 2) ? 'active' : '' %>"></div>
+                        <div class="count-dot out <%= (match.match_data?.outs >= 3) ? 'active' : '' %>"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 타자 정보 -->
+        <div class="batter-info">
+            <div class="panel-title">현재 타자</div>
+            <div class="player-content">
+                <div class="player-number"><%= match.match_data?.batter_number || '25' %></div>
+                <div class="player-info">
+                    <div class="player-name batter-name"><%= match.match_data?.batter_name || '타자' %></div>
+                    <div class="player-position"><%= match.match_data?.batter_position || '외야수' %></div>
+                    <div class="player-stats">
+                        <div class="stat-item">
+                            <div class="stat-label">타율</div>
+                            <div class="stat-value"><%= match.match_data?.batter_avg || '.342' %></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">홈런</div>
+                            <div class="stat-value"><%= match.match_data?.batter_hr || '15' %></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">타점</div>
+                            <div class="stat-value"><%= match.match_data?.batter_rbi || '52' %></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">출루율</div>
+                            <div class="stat-value"><%= match.match_data?.batter_obp || '.412' %></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 투수 정보 -->
+        <div class="pitcher-info">
+            <div class="panel-title">현재 투수</div>
+            <div class="player-content">
+                <div class="player-number"><%= match.match_data?.pitcher_number || '18' %></div>
+                <div class="player-info">
+                    <div class="player-name pitcher-name"><%= match.match_data?.pitcher_name || '투수' %></div>
+                    <div class="player-position"><%= match.match_data?.pitcher_position || '우완 투수' %></div>
+                    <div class="player-stats">
+                        <div class="stat-item">
+                            <div class="stat-label">평균자책점</div>
+                            <div class="stat-value"><%= match.match_data?.pitcher_era || '2.48' %></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">승패</div>
+                            <div class="stat-value"><%= match.match_data?.pitcher_wl || '7-3' %></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">투구 수</div>
+                            <div class="stat-value"><%= match.match_data?.pitcher_pitches || '53' %></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">탈삼진</div>
+                            <div class="stat-value"><%= match.match_data?.pitcher_so || '5' %></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 이닝 스코어 -->
+        <div class="innings-scoreboard">
+            <div class="innings-title">이닝 스코어</div>
+            <table class="innings-table">
+                <thead>
+                    <tr>
+                        <th>팀</th>
+                        <th>1</th>
+                        <th>2</th>
+                        <th>3</th>
+                        <th>4</th>
+                        <th>5</th>
+                        <th>6</th>
+                        <th>7</th>
+                        <th>8</th>
+                        <th>9</th>
+                        <th>R</th>
+                        <th>H</th>
+                        <th>E</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="team-name"><%= match.home_team %></td>
+                        <% for(let i = 1; i <= 9; i++) { %>
+                            <td id="teamA-inning-<%= i %>"><%= match.match_data?.innings?.[`home_${i}`] || 0 %></td>
+                        <% } %>
+                        <td class="total"><%= match.home_score || 0 %></td>
+                        <td class="total"><%= match.match_data?.home_hits || 0 %></td>
+                        <td class="total"><%= match.match_data?.home_errors || 0 %></td>
+                    </tr>
+                    <tr>
+                        <td class="team-name"><%= match.away_team %></td>
+                        <% for(let i = 1; i <= 9; i++) { %>
+                            <td id="teamB-inning-<%= i %>"><%= match.match_data?.innings?.[`away_${i}`] || 0 %></td>
+                        <% } %>
+                        <td class="total"><%= match.away_score || 0 %></td>
+                        <td class="total"><%= match.match_data?.away_hits || 0 %></td>
+                        <td class="total"><%= match.match_data?.away_errors || 0 %></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        const matchId = '<%= match.id %>';
+        
+        // 소켓 연결
+        socket.on('connect', () => {
+            console.log('서버에 연결되었습니다.');
+            socket.emit('join', matchId);
+        });
+
+        // CSV 파일 처리 및 타율, 출루율 계산 함수
+        function processPlayerCSV(csvData) {
+            // CSV 파일 파싱 (탭으로 구분된 CSV)
+            const lines = csvData.trim().split('\n');
+            const headers = lines[0].split('\t').map(h => h.trim());
+            const players = [];
+            
+            // 각 라인을 처리하여 선수 정보 추출
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue; // 빈 줄 건너뛰기
+                
+                const values = lines[i].split('\t').map(v => v.trim());
+                const player = {};
+                
+                // 헤더에 따라 각 값 매핑
+                headers.forEach((header, index) => {
+                    player[header] = values[index] || '';
+                });
+                
+                // 데이터 숫자 형식으로 변환
+                const atBats = parseInt(player['타수'] || 0);
+                const hits = parseInt(player['안타'] || 0);
+                const homeRuns = parseInt(player['홈런'] || 0);
+                const rbi = parseInt(player['타점'] || 0);
+                const steals = parseInt(player['도루'] || 0);
+                
+                // 추가 통계 (CSV에는 없지만 계산에 필요)
+                const walks = parseInt(player['볼넷'] || 0);  // 없으면 0으로 가정
+                const hbp = parseInt(player['사구'] || 0);     // 없으면 0으로 가정
+                const sf = parseInt(player['희생플라이'] || 0); // 없으면 0으로 가정
+                
+                // 타율 계산 (안타 / 타수)
+                if (atBats > 0) {
+                    player['타율'] = (hits / atBats).toFixed(3).substring(1);  // 앞의 0 제거, 소수점 3자리까지
+                    if (!player['타율'].startsWith('.')) player['타율'] = '.' + player['타율'];  // 앞에 점 추가
+                } else {
+                    player['타율'] = '.000';
+                }
+                
+                // 출루율 계산 (안타 + 볼넷 + 사구) / (타수 + 볼넷 + 사구 + 희생플라이)
+                const onBaseNumerator = hits + walks + hbp;
+                const onBaseDenominator = atBats + walks + hbp + sf;
+                
+                if (onBaseDenominator > 0) {
+                    player['출루율'] = (onBaseNumerator / onBaseDenominator).toFixed(3).substring(1);
+                    if (!player['출루율'].startsWith('.')) player['출루율'] = '.' + player['출루율'];
+                } else {
+                    player['출루율'] = '.000';
+                }
+                
+                // 추가 값 확인
+                if (!player['번호']) player['번호'] = i.toString();
+                if (!player['이름']) player['이름'] = `선수${i}`;
+                if (!player['포지션']) player['포지션'] = '미정';
+                
+                players.push(player);
+            }
+            
+            return players;
+        }
+        
+        // 선수 정보 업데이트 이벤트 처리
+        socket.on('playerDataUpdated', function(data) {
+            if (data.matchId === matchId) {
+                console.log('선수 데이터 업데이트:', data);
+                
+                if (data.playerDataUrl) {
+                    // JSON 파일에서 선수 데이터 가져오기
+                    fetch(data.playerDataUrl)
+                        .then(response => response.json())
+                        .then(playerData => {
+                            // 전역 변수에 선수 데이터 저장
+                            window.playerData = playerData.players;
+                            
+                            console.log('선수 데이터 로드 완료:', playerData.players.length, '명');
+                            
+                            // 현재 타자/투수 정보 업데이트
+                            if (data.batterIndex && playerData.players[data.batterIndex - 1]) {
+                                const batter = playerData.players[data.batterIndex - 1];
+                                updatePlayerInfo('.batter-info', batter);
+                            }
+                            
+                            if (data.pitcherIndex && playerData.players[data.pitcherIndex - 1]) {
+                                const pitcher = playerData.players[data.pitcherIndex - 1];
+                                updatePlayerInfo('.pitcher-info', pitcher);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('선수 데이터 불러오기 오류:', error);
+                        });
+                } else if (data.csvData) {
+                    try {
+                        // CSV 데이터 처리 (기존 방식 유지)
+                        const players = processPlayerCSV(data.csvData);
+                        
+                        // 전역 변수에 선수 데이터 저장 (나중에 참조할 수 있도록)
+                        window.playerData = players;
+                        
+                        console.log('선수 데이터 파싱 완료:', players.length, '명');
+                        
+                        // 현재 타자/투수 정보 업데이트
+                        if (data.batterIndex && players[data.batterIndex - 1]) {
+                            const batter = players[data.batterIndex - 1];
+                            updatePlayerInfo('.batter-info', batter);
+                        }
+                        
+                        if (data.pitcherIndex && players[data.pitcherIndex - 1]) {
+                            const pitcher = players[data.pitcherIndex - 1];
+                            updatePlayerInfo('.pitcher-info', pitcher);
+                        }
+                    } catch (error) {
+                        console.error('선수 데이터 처리 중 오류 발생:', error);
+                    }
+                }
+            }
+        });
+        
+        // 선수 정보 패널 업데이트 함수
+        function updatePlayerInfo(panelSelector, player) {
+            const panel = document.querySelector(panelSelector);
+            if (!panel) return;
+            
+            // 선수 번호 업데이트
+            const numberElement = panel.querySelector('.player-number');
+            if (numberElement) numberElement.textContent = player['번호'] || '';
+            
+            // 선수 이름 업데이트
+            const nameElement = panel.querySelector('.player-name');
+            if (nameElement) nameElement.textContent = player['이름'] || '';
+            
+            // 포지션 업데이트
+            const positionElement = panel.querySelector('.player-position');
+            if (positionElement) positionElement.textContent = player['포지션'] || '';
+            
+            // 타자 정보인 경우 통계 업데이트
+            if (panelSelector === '.batter-info') {
+                const stats = panel.querySelectorAll('.stat-item');
+                if (stats.length >= 4) {
+                    // 타율, 홈런, 타점, 출루율 업데이트
+                    stats[0].querySelector('.stat-value').textContent = player['타율'] || '.000';
+                    stats[1].querySelector('.stat-value').textContent = player['홈런'] || '0';
+                    stats[2].querySelector('.stat-value').textContent = player['타점'] || '0';
+                    stats[3].querySelector('.stat-value').textContent = player['출루율'] || '.000';
+                }
+            } 
+            // 투수 정보인 경우 통계 업데이트
+            else if (panelSelector === '.pitcher-info') {
+                const stats = panel.querySelectorAll('.stat-item');
+                if (stats.length >= 4) {
+                    // 평균자책점, 승패, 투구 수, 탈삼진 업데이트
+                    // 투수 관련 통계는 CSV에 없을 가능성이 높으므로 기본값 유지
+                    if (player['평균자책점']) stats[0].querySelector('.stat-value').textContent = player['평균자책점'];
+                    if (player['승패']) stats[1].querySelector('.stat-value').textContent = player['승패'];
+                    if (player['투구수']) stats[2].querySelector('.stat-value').textContent = player['투구수'];
+                    if (player['탈삼진']) stats[3].querySelector('.stat-value').textContent = player['탈삼진'];
+                }
+            }
+        }
+
+        // 현재 타자/투수 변경 이벤트 처리
+        socket.on('currentPlayerChanged', function(data) {
+            if (data.matchId === matchId) {
+                console.log('현재 타자/투수 변경:', data);
+                
+                // 선수 데이터가 이미 로드되어 있는 경우 처리
+                if (window.playerData) {
+                    const players = window.playerData;
+                    
+                    // 타자 정보 업데이트
+                    if (data.batterIndex && players[data.batterIndex - 1]) {
+                        const batter = players[data.batterIndex - 1];
+                        updatePlayerInfo('.batter-info', batter);
+                    }
+                    
+                    // 투수 정보 업데이트
+                    if (data.pitcherIndex && players[data.pitcherIndex - 1]) {
+                        const pitcher = players[data.pitcherIndex - 1];
+                        updatePlayerInfo('.pitcher-info', pitcher);
+                    }
+                }
+            }
+        });
+
+        // 초기 팀 색상 설정
+        document.addEventListener('DOMContentLoaded', async function() {
+            // 팀 로고 정보 가져오기
+            try {
+                const response = await fetch('/TEAMLOGO/BASEBALL/team_logo_map.json');
+                const teamLogoMap = await response.json();
+                console.log('팀 로고맵 로드:', teamLogoMap);
+                
+                // 홈팀 로고 설정
+                const homeTeamName = '<%= match.home_team %>';
+                let homeTeamLogo = '<%= match.match_data?.home_team_logo || "" %>';
+                let homeBgColor = '<%= match.match_data?.home_team_colorbg || "#1d4ed8" %>';
+                
+                // 새 구조 (객체) 확인
+                if (teamLogoMap[homeTeamName]) {
+                    if (typeof teamLogoMap[homeTeamName] === 'object') {
+                        homeTeamLogo = teamLogoMap[homeTeamName].path;
+                        homeBgColor = teamLogoMap[homeTeamName].bgColor || '#ffffff';
+                        console.log('홈팀 로고 정보(객체):', homeTeamLogo, homeBgColor);
+                    } else {
+                        homeTeamLogo = teamLogoMap[homeTeamName];
+                        console.log('홈팀 로고 정보(문자열):', homeTeamLogo);
+                    }
+                }
+                
+                const homeLogoContainer = document.querySelector('.team-info.home-team .team-logo-container');
+                if (homeLogoContainer) {
+                    // 배경색 적용
+                    homeLogoContainer.style.backgroundColor = homeBgColor;
+                    console.log('홈팀 로고 배경색 적용:', homeBgColor);
+                    
+                    if (homeTeamLogo) {
+                        homeLogoContainer.innerHTML = `<img src="${homeTeamLogo}" alt="홈팀 로고" class="team-logo">`;
+                    } else {
+                        homeLogoContainer.innerHTML = `<div class="team-logo-placeholder"></div>`;
+                    }
+                }
+                
+                // 원정팀 로고 설정
+                const awayTeamName = '<%= match.away_team %>';
+                let awayTeamLogo = '<%= match.match_data?.away_team_logo || "" %>';
+                let awayBgColor = '<%= match.match_data?.away_team_colorbg || "#dc2626" %>';
+                
+                // 새 구조 (객체) 확인
+                if (teamLogoMap[awayTeamName]) {
+                    if (typeof teamLogoMap[awayTeamName] === 'object') {
+                        awayTeamLogo = teamLogoMap[awayTeamName].path;
+                        awayBgColor = teamLogoMap[awayTeamName].bgColor || '#ffffff';
+                        console.log('원정팀 로고 정보(객체):', awayTeamLogo, awayBgColor);
+                    } else {
+                        awayTeamLogo = teamLogoMap[awayTeamName];
+                        console.log('원정팀 로고 정보(문자열):', awayTeamLogo);
+                    }
+                }
+                
+                const awayLogoContainer = document.querySelector('.team-info.away-team .team-logo-container');
+                if (awayLogoContainer) {
+                    // 배경색 적용
+                    awayLogoContainer.style.backgroundColor = awayBgColor;
+                    console.log('원정팀 로고 배경색 적용:', awayBgColor);
+                    
+                    if (awayTeamLogo) {
+                        awayLogoContainer.innerHTML = `<img src="${awayTeamLogo}" alt="원정팀 로고" class="team-logo">`;
+                    } else {
+                        awayLogoContainer.innerHTML = `<div class="team-logo-placeholder"></div>`;
+                    }
+                }
+                
+                // 타자/투수 패널 타이틀 업데이트
+                updatePanelTitles('<%= match.match_data?.inning_type %>');
+                
+            } catch (error) {
+                console.error('팀 로고 정보를 가져오는 중 오류 발생:', error);
+            }
+
+            // 팀 색상 초기화
+            const homeTeamSection = document.getElementById('home-team-section');
+            const awayTeamSection = document.getElementById('away-team-section');
+            
+            // 서버에서 받은 색상 값 적용
+            const homeTeamColor = '<%= match.home_team_color || match.match_data?.home_team_color || "#1d4ed8" %>';
+            const awayTeamColor = '<%= match.away_team_color || match.match_data?.away_team_color || "#dc2626" %>';
+            
+            if (homeTeamSection) homeTeamSection.style.backgroundColor = homeTeamColor;
+            if (awayTeamSection) awayTeamSection.style.backgroundColor = awayTeamColor;
+            
+            console.log('홈팀 색상:', homeTeamColor);
+            console.log('원정팀 색상:', awayTeamColor);
+            
+            // 팀 이름 가져오기
+            const homeTeamName = '<%= match.home_team %>';
+            const awayTeamName = '<%= match.away_team %>';
+            
+            // 페이지 로드 시 타자/투수 패널 배경색 초기화
+            const isTopInning = '<%= match.match_data?.inning_type %>' !== 'bottom';
+            const batterTitlePanel = document.querySelector('.batter-info .panel-title');
+            const pitcherTitlePanel = document.querySelector('.pitcher-info .panel-title');
+            
+            // 이닝 타입에 따라 색상 설정 및 패널 제목 변경
+            if (isTopInning) {
+                // 초(top) 이닝: 홈팀 타자, 어웨이팀 투수
+                batterTitlePanel.style.backgroundColor = convertToTransparentColor(homeTeamColor, 0.6);
+                pitcherTitlePanel.style.backgroundColor = convertToTransparentColor(awayTeamColor, 0.6);
+                
+                // 패널 제목을 팀명으로 변경
+                batterTitlePanel.textContent = homeTeamName;  // 홈팀 타자
+                pitcherTitlePanel.textContent = awayTeamName; // 어웨이팀 투수
+                
+                console.log('초기화: 초 이닝: 홈팀 타자:', homeTeamName, ', 어웨이팀 투수:', awayTeamName);
+            } else {
+                // 말(bottom) 이닝: 어웨이팀 타자, 홈팀 투수
+                batterTitlePanel.style.backgroundColor = convertToTransparentColor(awayTeamColor, 0.6);
+                pitcherTitlePanel.style.backgroundColor = convertToTransparentColor(homeTeamColor, 0.6);
+                
+                // 패널 제목을 팀명으로 변경
+                batterTitlePanel.textContent = awayTeamName;  // 어웨이팀 타자
+                pitcherTitlePanel.textContent = homeTeamName; // 홈팀 투수
+                
+                console.log('초기화: 말 이닝: 어웨이팀 타자:', awayTeamName, ', 홈팀 투수:', homeTeamName);
+            }
+            
+            // 팀 이름 크기 조절
+            adjustTeamNameSize();
+        });
+
+        // 경기 데이터 업데이트 수신
+        socket.on('match_update', (data) => {
+            if (data.id === matchId) {
+                // 점수 업데이트
+                document.querySelector('.team-section .team-info:first-child .team-score').textContent = data.home_score || '0';
+                document.querySelector('.team-section .team-info:last-child .team-score').textContent = data.away_score || '0';
+                
+                // 이닝 업데이트
+                const currentInning = document.querySelector('.current-inning');
+                currentInning.innerHTML = `${data.match_data.current_inning || '1'}
+                    <div class="inning-indicator ${data.match_data.inning_type === 'bottom' ? 'bottom' : 'top'}"></div>`;
+                
+                // 베이스 상태 업데이트
+                const firstBase = document.querySelector('.base.first');
+                const secondBase = document.querySelector('.base.second');
+                const thirdBase = document.querySelector('.base.third');
+                
+                if (firstBase) firstBase.classList.toggle('active', data.match_data.first_base);
+                if (secondBase) secondBase.classList.toggle('active', data.match_data.second_base);
+                if (thirdBase) thirdBase.classList.toggle('active', data.match_data.third_base);
+                
+                // 볼카운트 업데이트
+                const balls = parseInt(data.match_data.balls || 0);
+                const strikes = parseInt(data.match_data.strikes || 0);
+                const outs = parseInt(data.match_data.outs || 0);
+                
+                document.querySelectorAll('.count-dot.ball').forEach((dot, index) => {
+                    dot.classList.toggle('active', index < balls);
+                });
+                
+                document.querySelectorAll('.count-dot.strike').forEach((dot, index) => {
+                    dot.classList.toggle('active', index < strikes);
+                });
+                
+                document.querySelectorAll('.count-dot.out').forEach((dot, index) => {
+                    dot.classList.toggle('active', index < outs);
+                });
+                
+                // 타자/투수 패널 제목 배경색 업데이트 (이닝 타입에 따라)
+                const isTopInning = data.match_data.inning_type !== 'bottom';
+                const batterTitlePanel = document.querySelector('.batter-info .panel-title');
+                const pitcherTitlePanel = document.querySelector('.pitcher-info .panel-title');
+                
+                // 팀 색상 가져오기
+                const homeTeamSection = document.getElementById('home-team-section');
+                const awayTeamSection = document.getElementById('away-team-section');
+                const homeTeamColor = homeTeamSection ? homeTeamSection.style.backgroundColor : 'rgba(29, 78, 216, 0.6)';
+                const awayTeamColor = awayTeamSection ? awayTeamSection.style.backgroundColor : 'rgba(220, 38, 38, 0.6)';
+                
+                // 팀 이름 가져오기
+                const homeTeamName = '<%= match.home_team %>';
+                const awayTeamName = '<%= match.away_team %>';
+                
+                // 이닝 타입에 따라 패널 제목 색상 설정
+                if (isTopInning) {
+                    // 초(top) 이닝: 홈팀 타자, 어웨이팀 투수
+                    batterTitlePanel.style.backgroundColor = convertToTransparentColor(homeTeamColor, 0.6);
+                    pitcherTitlePanel.style.backgroundColor = convertToTransparentColor(awayTeamColor, 0.6);
+                    
+                    // 패널 제목을 팀명으로 변경
+                    batterTitlePanel.textContent = homeTeamName;  // 홈팀 타자
+                    pitcherTitlePanel.textContent = awayTeamName; // 어웨이팀 투수
+                    
+                    console.log('초 이닝: 홈팀 타자, 어웨이팀 투수');
+                } else {
+                    // 말(bottom) 이닝: 어웨이팀 타자, 홈팀 투수
+                    batterTitlePanel.style.backgroundColor = convertToTransparentColor(awayTeamColor, 0.6);
+                    pitcherTitlePanel.style.backgroundColor = convertToTransparentColor(homeTeamColor, 0.6);
+                    
+                    // 패널 제목을 팀명으로 변경
+                    batterTitlePanel.textContent = awayTeamName;  // 어웨이팀 타자
+                    pitcherTitlePanel.textContent = homeTeamName; // 홈팀 투수
+                    
+                    console.log('말 이닝: 어웨이팀 타자, 홈팀 투수');
+                }
+            }
+        });
+
+        // 색상을 투명도가 있는 색상으로 변환하는 헬퍼 함수
+        function convertToTransparentColor(color, alpha) {
+            // RGB 또는 RGBA 형식인 경우
+            if (color.startsWith('rgb')) {
+                const rgbValues = color.match(/\d+/g);
+                if (rgbValues && rgbValues.length >= 3) {
+                    return `rgba(${rgbValues[0]}, ${rgbValues[1]}, ${rgbValues[2]}, ${alpha})`;
+                }
+            }
+            
+            // HEX 형식인 경우
+            if (color.startsWith('#')) {
+                const r = parseInt(color.substr(1, 2), 16);
+                const g = parseInt(color.substr(3, 2), 16);
+                const b = parseInt(color.substr(5, 2), 16);
+                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            }
+            
+            // 기본값으로 검은색 반투명 배경 반환
+            return `rgba(0, 0, 0, ${alpha})`;
+        }
+
+        // 팀명 길이에 따른 폰트 크기 조절
+        function adjustTeamNameSize() {
+            const homeTeamHeader = document.querySelector('.team-section .team-info:first-child .team-header');
+            const awayTeamHeader = document.querySelector('.team-section .team-info:last-child .team-header');
+            
+            function adjustSize(element) {
+                const text = element.textContent;
+                if (text.length > 10) {
+                    element.classList.add('very-long');
+                    element.classList.remove('long');
+                } else if (text.length > 8) {
+                    element.classList.add('long');
+                    element.classList.remove('very-long');
+                } else {
+                    element.classList.remove('long', 'very-long');
+                }
+            }
+            
+            adjustSize(homeTeamHeader);
+            adjustSize(awayTeamHeader);
+        }
+        
+        // 팀명 업데이트 시 크기 조절
+        socket.on('teamHeaderChanged', function(data) {
+            if (data.matchId === matchId) {
+                const homeTeamHeader = document.querySelector('.team-section .team-info:first-child .team-header');
+                const awayTeamHeader = document.querySelector('.team-section .team-info:last-child .team-header');
+                
+                if (homeTeamHeader) homeTeamHeader.textContent = data.homeHeader;
+                if (awayTeamHeader) awayTeamHeader.textContent = data.awayHeader;
+                
+                adjustTeamNameSize();
+            }
+        });
+        
+        // 팀 로고 변경 이벤트 처리
+        socket.on('teamLogoUpdated', function(data) {
+            if (data.matchId === matchId) {
+                const teamType = data.teamType || data.team; // 이전 코드와의 호환성을 위해
+                const logoPath = data.logoPath;
+                const logoBgColor = data.logoBgColor || '#ffffff';
+                
+                console.log('로고 업데이트 이벤트 수신:', teamType, logoPath, logoBgColor);
+                
+                if (teamType === 'home') {
+                    const logoContainer = document.querySelector('.team-info.home-team .team-logo-container');
+                    if (logoContainer) {
+                        // 배경색 적용
+                        logoContainer.style.backgroundColor = logoBgColor;
+                        console.log('홈팀 로고 배경색 적용:', logoBgColor);
+                        
+                        // 로고 이미지 업데이트
+                        if (logoPath) {
+                            logoContainer.innerHTML = `<img src="${logoPath}" alt="홈팀 로고" class="team-logo">`;
+                        } else {
+                            logoContainer.innerHTML = `<div class="team-logo-placeholder"></div>`;
+                        }
+                    }
+                } else if (teamType === 'away') {
+                    const logoContainer = document.querySelector('.team-info.away-team .team-logo-container');
+                    if (logoContainer) {
+                        // 배경색 적용
+                        logoContainer.style.backgroundColor = logoBgColor;
+                        console.log('원정팀 로고 배경색 적용:', logoBgColor);
+                        
+                        // 로고 이미지 업데이트
+                        if (logoPath) {
+                            logoContainer.innerHTML = `<img src="${logoPath}" alt="원정팀 로고" class="team-logo">`;
+                        } else {
+                            logoContainer.innerHTML = `<div class="team-logo-placeholder"></div>`;
+                        }
+                    }
+                }
+            }
+        });
+
+        // 팀 로고 삭제 이벤트 처리
+        socket.on('teamLogoRemoved', function(data) {
+            if (data.matchId === matchId) {
+                const teamType = data.team;
+                
+                if (teamType === 'home') {
+                    const logoContainer = document.querySelector('.team-info.home-team .team-logo-container');
+                    if (logoContainer) {
+                        logoContainer.innerHTML = `<div class="team-logo-placeholder"></div>`;
+                    }
+                } else if (teamType === 'away') {
+                    const logoContainer = document.querySelector('.team-info.away-team .team-logo-container');
+                    if (logoContainer) {
+                        logoContainer.innerHTML = `<div class="team-logo-placeholder"></div>`;
+                    }
+                }
+            }
+        });
+        
+        // 팀 색상 업데이트 이벤트 처리
+        socket.on('teamColorUpdate', function(data) {
+            if (data.matchId === matchId) {
+                const teamType = data.teamType;
+                const teamColor = data.teamColor;
+                
+                if (teamType === 'home') {
+                    const homeTeamSection = document.getElementById('home-team-section');
+                    if (homeTeamSection) homeTeamSection.style.backgroundColor = teamColor;
+                    
+                    // 타자/투수 패널의 색상도 업데이트
+                    updatePanelTitles(document.querySelector('.inning-indicator').classList.contains('bottom') ? 'bottom' : 'top');
+                } else if (teamType === 'away') {
+                    const awayTeamSection = document.getElementById('away-team-section');
+                    if (awayTeamSection) awayTeamSection.style.backgroundColor = teamColor;
+                    
+                    // 타자/투수 패널의 색상도 업데이트
+                    updatePanelTitles(document.querySelector('.inning-indicator').classList.contains('bottom') ? 'bottom' : 'top');
+                }
+                
+                console.log('팀 색상 업데이트:', teamType, teamColor);
+            }
+        });
+
+        // 이닝 타입에 따라 패널 타이틀 변경 함수
+        function updatePanelTitles(inningType) {
+            const homeTeamName = document.querySelector('.team-info.home-team .team-header').textContent;
+            const awayTeamName = document.querySelector('.team-info.away-team .team-header').textContent;
+            const batterPanel = document.querySelector('.batter-info .panel-title');
+            const pitcherPanel = document.querySelector('.pitcher-info .panel-title');
+            
+            // 팀 색상 가져오기
+            const homeTeamSection = document.getElementById('home-team-section');
+            const awayTeamSection = document.getElementById('away-team-section');
+            const homeTeamColor = homeTeamSection ? homeTeamSection.style.backgroundColor : 'rgba(29, 78, 216, 0.6)';
+            const awayTeamColor = awayTeamSection ? awayTeamSection.style.backgroundColor : 'rgba(220, 38, 38, 0.6)';
+            
+            if (inningType === 'top') {
+                // 초(top) 이닝: 홈팀 타자, 어웨이팀 투수
+                batterPanel.textContent = homeTeamName;  // 홈팀 타자
+                batterPanel.style.backgroundColor = convertToTransparentColor(homeTeamColor, 0.6);
+                
+                pitcherPanel.textContent = awayTeamName; // 어웨이팀 투수
+                pitcherPanel.style.backgroundColor = convertToTransparentColor(awayTeamColor, 0.6);
+            } else {
+                // 말(bottom) 이닝: 어웨이팀 타자, 홈팀 투수
+                batterPanel.textContent = awayTeamName;  // 어웨이팀 타자
+                batterPanel.style.backgroundColor = convertToTransparentColor(awayTeamColor, 0.6);
+                
+                pitcherPanel.textContent = homeTeamName; // 홈팀 투수
+                pitcherPanel.style.backgroundColor = convertToTransparentColor(homeTeamColor, 0.6);
+            }
+        }
+
+        // 팀 이름 업데이트 이벤트
+        socket.on('teamNameUpdated', function(data) {
+            if (data.matchId === matchId) {
+                const homeTeamHeader = document.querySelector('.team-info.home-team .team-header');
+                const awayTeamHeader = document.querySelector('.team-info.away-team .team-header');
+                const homeTeamTableName = document.querySelector('.innings-table tbody tr:first-child .team-name');
+                const awayTeamTableName = document.querySelector('.innings-table tbody tr:last-child .team-name');
+                
+                if (data.homeTeamName && homeTeamHeader) {
+                    homeTeamHeader.textContent = data.homeTeamName;
+                    if (homeTeamTableName) homeTeamTableName.textContent = data.homeTeamName;
+                }
+                
+                if (data.awayTeamName && awayTeamHeader) {
+                    awayTeamHeader.textContent = data.awayTeamName;
+                    if (awayTeamTableName) awayTeamTableName.textContent = data.awayTeamName;
+                }
+                
+                // 팀 이름 크기 조절
+                adjustTeamNameSize();
+                
+                // 타자/투수 패널의 제목도 업데이트
+                updatePanelTitles(document.querySelector('.inning-indicator').classList.contains('bottom') ? 'bottom' : 'top');
+                
+                console.log('팀 이름 업데이트:', data.homeTeamName, data.awayTeamName);
+            }
+        });
+
+        // 스코어 업데이트 이벤트
+        socket.on('scoreUpdated', (data) => {
+            console.log('스코어 업데이트:', data);
+            
+            // 스코어와 기타 정보 업데이트
+            document.querySelector('.home-team .team-score').textContent = data.home_score || '0';
+            document.querySelector('.away-team .team-score').textContent = data.away_score || '0';
+            
+            // 베이스 상태 업데이트
+            document.querySelector('.base.first').classList.toggle('active', data.match_data?.first_base);
+            document.querySelector('.base.second').classList.toggle('active', data.match_data?.second_base);
+            document.querySelector('.base.third').classList.toggle('active', data.match_data?.third_base);
+            
+            // 볼/스트라이크/아웃 카운트 업데이트
+            document.querySelectorAll('.count-dot.ball').forEach((dot, index) => {
+                dot.classList.toggle('active', (data.match_data?.balls || 0) >= index + 1);
+            });
+            document.querySelectorAll('.count-dot.strike').forEach((dot, index) => {
+                dot.classList.toggle('active', (data.match_data?.strikes || 0) >= index + 1);
+            });
+            document.querySelectorAll('.count-dot.out').forEach((dot, index) => {
+                dot.classList.toggle('active', (data.match_data?.outs || 0) >= index + 1);
+            });
+            
+            // 이닝 표시 업데이트
+            document.querySelector('.current-inning').innerHTML = `
+                ${data.match_data?.current_inning || '1'}
+                <div class="inning-indicator ${data.match_data?.inning_type === 'bottom' ? 'bottom' : 'top'}"></div>
+            `;
+            
+            // 이닝 스코어 업데이트
+            if (data.match_data?.innings) {
+                for (let i = 1; i <= 9; i++) {
+                    document.getElementById(`teamA-inning-${i}`).textContent = data.match_data.innings[`home_${i}`] || '0';
+                    document.getElementById(`teamB-inning-${i}`).textContent = data.match_data.innings[`away_${i}`] || '0';
+                }
+            }
+            
+            // 히트와 에러 업데이트
+            document.querySelector('.innings-table tbody tr:first-child td.total:nth-child(11)').textContent = data.home_score || '0';
+            document.querySelector('.innings-table tbody tr:first-child td.total:nth-child(12)').textContent = data.match_data?.home_hits || '0';
+            document.querySelector('.innings-table tbody tr:first-child td.total:nth-child(13)').textContent = data.match_data?.home_errors || '0';
+            document.querySelector('.innings-table tbody tr:last-child td.total:nth-child(11)').textContent = data.away_score || '0';
+            document.querySelector('.innings-table tbody tr:last-child td.total:nth-child(12)').textContent = data.match_data?.away_hits || '0';
+            document.querySelector('.innings-table tbody tr:last-child td.total:nth-child(13)').textContent = data.match_data?.away_errors || '0';
+            
+            // 이닝 타입에 따라 패널 타이틀 업데이트
+            updatePanelTitles(data.match_data?.inning_type);
+        });
+    </script>
+</body>
+</html> 

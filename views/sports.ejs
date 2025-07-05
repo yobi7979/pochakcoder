@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>종목 관리 - SportsCoder</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .sports-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .sport-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+            padding: 15px;
+        }
+        .sport-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .sport-name {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .sport-code {
+            background-color: #e9ecef;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .sport-info {
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .sport-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 8px;
+        }
+        .empty-message {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/header') %>
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>종목 관리</h2>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newSportModal">
+                <i class="bi bi-plus-lg"></i> 새 종목
+            </button>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>종목명</th>
+                                <th>코드</th>
+                                <th>템플릿</th>
+                                <th>설명</th>
+                                <th>상태</th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% sports.forEach(sport => { %>
+                                <tr>
+                                    <td><%= sport.id %></td>
+                                    <td><%= sport.name %></td>
+                                    <td><%= sport.code %></td>
+                                    <td><%= sport.template %></td>
+                                    <td><%= sport.description || '' %></td>
+                                    <td><%= sport.is_active ? '활성' : '비활성' %></td>
+                                    <td>
+                                        <% if (!sport.is_default) { %>
+                                            <button class="btn btn-sm btn-danger" onclick="deleteSport('<%= sport.code %>')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        <% } %>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 새 종목 모달 -->
+    <div class="modal fade" id="newSportModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">새 종목 추가</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="newSportForm">
+                        <div class="mb-3">
+                            <label for="sportName" class="form-label">종목명</label>
+                            <input type="text" class="form-control" id="sportName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="sportCode" class="form-label">코드</label>
+                            <input type="text" class="form-control" id="sportCode" required
+                                   pattern="[A-Z]+" title="대문자 영문자만 사용 가능합니다">
+                            <div class="form-text">대문자 영문자만 사용 가능합니다</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="sportTemplate" class="form-label">템플릿</label>
+                            <select class="form-select" id="sportTemplate" required>
+                                <option value="">템플릿 선택</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="sportDescription" class="form-label">설명</label>
+                            <textarea class="form-control" id="sportDescription" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" id="createSportBtn">추가</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 템플릿 목록 로드
+        async function loadTemplates() {
+            try {
+                const response = await fetch('/api/templates');
+                const templates = await response.json();
+                
+                // 새 종목 모달의 템플릿 선택 옵션 업데이트
+                const templateSelect = document.getElementById('sportTemplate');
+                templateSelect.innerHTML = '<option value="">템플릿 선택</option>' +
+                    templates.map(template => `
+                        <option value="${template.name}">${template.name}</option>
+                    `).join('');
+                
+                // 각 종목의 템플릿 선택 옵션 업데이트 (기본 종목 제외)
+                document.querySelectorAll('.template-select').forEach(select => {
+                    const currentTemplate = select.dataset.currentTemplate;
+                    select.innerHTML = '<option value="">템플릿 선택</option>' +
+                        templates.map(template => `
+                            <option value="${template.name}" ${template.name === currentTemplate ? 'selected' : ''}>
+                                ${template.name}
+                            </option>
+                        `).join('');
+                });
+            } catch (error) {
+                console.error('템플릿 목록 로드 중 오류:', error);
+                alert('템플릿 목록을 불러오는데 실패했습니다.');
+            }
+        }
+
+        // 템플릿 변경 이벤트 처리
+        document.querySelectorAll('.template-select').forEach(select => {
+            select.addEventListener('change', async (e) => {
+                const sportId = e.target.dataset.sportId;
+                const template = e.target.value;
+                const originalValue = e.target.dataset.currentTemplate;
+                
+                try {
+                    const response = await fetch(`/api/sport/${sportId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ template })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('템플릿 업데이트에 실패했습니다.');
+                    }
+
+                    // 성공 시 현재 템플릿 값 업데이트
+                    e.target.dataset.currentTemplate = template;
+                    alert('템플릿이 성공적으로 변경되었습니다.');
+                } catch (error) {
+                    console.error('템플릿 변경 중 오류:', error);
+                    // 실패 시 이전 값으로 복원
+                    e.target.value = originalValue;
+                    alert('템플릿 변경에 실패했습니다: ' + error.message);
+                }
+            });
+        });
+
+        // 새 종목 생성
+        document.getElementById('createSportBtn').addEventListener('click', async () => {
+            const name = document.getElementById('sportName').value.trim();
+            const code = document.getElementById('sportCode').value.trim().toUpperCase();
+            const template = document.getElementById('sportTemplate').value;
+            const description = document.getElementById('sportDescription').value.trim();
+            
+            if (!name || !code || !template) {
+                alert('필수 항목을 모두 입력해주세요.');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/sport', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name,
+                        code,
+                        template,
+                        description
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error);
+                }
+                
+                // 모달 닫기
+                const modal = bootstrap.Modal.getInstance(document.getElementById('newSportModal'));
+                modal.hide();
+                
+                // 폼 초기화
+                document.getElementById('newSportForm').reset();
+                
+                // 페이지 새로고침
+                location.reload();
+            } catch (error) {
+                console.error('종목 생성 중 오류:', error);
+                alert(error.message || '종목 생성에 실패했습니다.');
+            }
+        });
+
+        // 종목 삭제
+        async function deleteSport(code) {
+            if (!code) {
+                alert('종목 코드가 유효하지 않습니다.');
+                return;
+            }
+
+            if (!confirm('정말로 이 종목을 삭제하시겠습니까?')) {
+                return;
+            }
+
+            console.log('삭제할 종목 코드:', code);
+            console.log('요청 URL:', `/api/sport/${code}`);
+
+            try {
+                const response = await fetch(`/api/sport/${code}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                console.log('응답 상태:', response.status);
+                const data = await response.json();
+                console.log('응답 데이터:', data);
+
+                if (!response.ok) {
+                    throw new Error(data.error || '종목 삭제에 실패했습니다.');
+                }
+
+                alert('종목이 삭제되었습니다.');
+                location.reload();
+            } catch (error) {
+                console.error('종목 삭제 중 오류:', error);
+                alert(error.message);
+            }
+        }
+
+        // 페이지 로드 시 템플릿 목록 로드
+        document.addEventListener('DOMContentLoaded', loadTemplates);
+    </script>
+</body>
+</html> 
