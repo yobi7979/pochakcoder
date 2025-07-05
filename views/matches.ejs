@@ -198,6 +198,48 @@
             color: #6c757d;
         }
         .empty-message h3 {
+        }
+        
+        /* URL 입력창 스타일 */
+        .url-input-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 4px;
+        }
+        
+        .url-input {
+            font-size: 11px;
+            padding: 4px 6px;
+            border-radius: 4px;
+            border: 1px solid #ced4da;
+            background-color: #f8f9fa;
+            color: #495057;
+            width: 200px;
+        }
+        
+        .copy-btn {
+            padding: 4px 6px;
+            font-size: 10px;
+            border-radius: 4px;
+            background-color: #6c757d;
+            border-color: #6c757d;
+            color: white;
+            min-width: 28px;
+        }
+        
+        .copy-btn:hover {
+            background-color: #5a6268;
+            border-color: #545b62;
+            color: white;
+        }
+        
+        .copy-btn.copied {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+        
+        .empty-message h3 {
             font-size: 18px;
             margin-top: 10px;
         }
@@ -390,11 +432,21 @@
                             <div class="match-cell-actions">
                                 <div class="control-url">
                                     <a href="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" class="btn btn-primary"><%= match.sport_type %> 컨트롤</a>
-                                    <input type="text" class="form-control" value="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" readonly>
+                                    <div class="url-input-group">
+                                        <input type="text" class="form-control url-input" value="https://sportscoder-production.up.railway.app/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" readonly>
+                                        <button class="btn btn-sm btn-outline-secondary copy-btn" onclick="copyToClipboard(this)" title="URL 복사">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="overlay-url">
                                     <a href="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" class="btn btn-success"><%= match.sport_type %> 오버레이</a>
-                                    <input type="text" class="form-control" value="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" readonly>
+                                    <div class="url-input-group">
+                                        <input type="text" class="form-control url-input" value="https://sportscoder-production.up.railway.app/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" readonly>
+                                        <button class="btn btn-sm btn-outline-secondary copy-btn" onclick="copyToClipboard(this)" title="URL 복사">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             <div class="delete-container">
@@ -445,11 +497,21 @@
                             <div class="match-cell-actions">
                                 <div class="control-url">
                                     <a href="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" class="btn btn-primary"><%= match.sport_type %> 컨트롤</a>
-                                    <input type="text" class="form-control" value="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" readonly>
+                                    <div class="url-input-group">
+                                        <input type="text" class="form-control url-input" value="https://sportscoder-production.up.railway.app/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" readonly>
+                                        <button class="btn btn-sm btn-outline-secondary copy-btn" onclick="copyToClipboard(this)" title="URL 복사">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="overlay-url">
                                     <a href="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" class="btn btn-success"><%= match.sport_type %> 오버레이</a>
-                                    <input type="text" class="form-control" value="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" readonly>
+                                    <div class="url-input-group">
+                                        <input type="text" class="form-control url-input" value="https://sportscoder-production.up.railway.app/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" readonly>
+                                        <button class="btn btn-sm btn-outline-secondary copy-btn" onclick="copyToClipboard(this)" title="URL 복사">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             <div class="delete-container">
@@ -502,11 +564,21 @@
                             <div class="match-cell-actions">
                                 <div class="control-url">
                                     <a href="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" class="btn btn-primary"><%= match.sport_type %> 컨트롤</a>
-                                    <input type="text" class="form-control" value="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" readonly>
+                                    <div class="url-input-group">
+                                        <input type="text" class="form-control url-input" value="https://sportscoder-production.up.railway.app/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" readonly>
+                                        <button class="btn btn-sm btn-outline-secondary copy-btn" onclick="copyToClipboard(this)" title="URL 복사">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="overlay-url">
                                     <a href="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" class="btn btn-success"><%= match.sport_type %> 오버레이</a>
-                                    <input type="text" class="form-control" value="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" readonly>
+                                    <div class="url-input-group">
+                                        <input type="text" class="form-control url-input" value="https://sportscoder-production.up.railway.app/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" readonly>
+                                        <button class="btn btn-sm btn-outline-secondary copy-btn" onclick="copyToClipboard(this)" title="URL 복사">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             <div class="delete-container">
@@ -768,14 +840,22 @@
             });
         }
 
-        function copyToClipboard(text) {
-            const fullUrl = window.location.origin + '/' + text;
-            navigator.clipboard.writeText(fullUrl).then(() => {
-                alert('URL이 클립보드에 복사되었습니다.');
-            }).catch(err => {
-                console.error('클립보드 복사 실패:', err);
-                alert('URL 복사에 실패했습니다.');
-            });
+        function copyToClipboard(button) {
+            const input = button.previousElementSibling; // 클립보드에 복사할 텍스트가 있는 input 요소
+            if (input) {
+                const fullUrl = window.location.origin + '/' + input.value;
+                navigator.clipboard.writeText(fullUrl).then(() => {
+                    button.classList.add('copied');
+                    button.title = '복사됨';
+                    setTimeout(() => {
+                        button.classList.remove('copied');
+                        button.title = 'URL 복사';
+                    }, 2000); // 2초 후 원래 타이틀로 변경
+                }).catch(err => {
+                    console.error('클립보드 복사 실패:', err);
+                    alert('URL 복사에 실패했습니다.');
+                });
+            }
         }
     </script>
 </body>
