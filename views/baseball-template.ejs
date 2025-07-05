@@ -55,24 +55,32 @@
             box-sizing: border-box;
             font-family: 'Noto Sans KR', Arial, sans-serif;
         }
+        html, body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
         body {
-            width: 1920px;
-            height: 1080px;
-            overflow: hidden;
-            background-color: transparent;
+            min-height: 100vh;
+            min-width: 100vw;
+            height: 100vh;
+            width: 100vw;
             position: relative;
         }
         .overlay-container {
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
+            min-width: 100vw;
+            min-height: 100vh;
             position: relative;
         }
         
-        /* 상단 스코어보드 */
+        /* 우측 하단 스코어보드 */
         .scoreboard {
-            position: absolute;
-            top: 20px;
-            left: 20px;
+            position: fixed;
+            bottom: 10px;
+            right: 260px;
             width: 300px;
             height: 120px;
             background-color: rgb(208, 208, 208);
@@ -148,9 +156,9 @@
         
         /* 베이스 상태 */
         .base-status {
-            position: absolute;
-            top: 20px;
-            left: 320px;
+            position: fixed;
+            bottom: 10px;
+            right: 140px;
             width: 120px;
             height: 120px;
             background-color: rgba(0, 0, 0, 0.98);
@@ -190,9 +198,9 @@
         
         /* 게임 상태 (볼/스트라이크/아웃 카운트) */
         .game-status {
-            position: absolute;
-            top: 20px;
-            left: 440px;
+            position: fixed;
+            bottom: 10px;
+            right: 20px;
             width: 120px;
             height: 120px;
             background-color: rgba(0, 0, 0, 0.98);
@@ -392,7 +400,7 @@
         /* 이닝 스코어 */
         .innings-scoreboard {
             position: absolute;
-            bottom: -200px; /* 화면 밖으로 이동 */
+            bottom: -2000px; /* 1920x1080 화면 밖으로 완전히 이동 */
             left: 50%;
             transform: translateX(-50%);
             width: 800px;

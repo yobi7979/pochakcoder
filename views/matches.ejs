@@ -844,8 +844,7 @@
         function copyToClipboard(button) {
             const input = button.previousElementSibling; // 클립보드에 복사할 텍스트가 있는 input 요소
             if (input) {
-                const fullUrl = window.location.origin + '/' + input.value;
-                navigator.clipboard.writeText(fullUrl).then(() => {
+                navigator.clipboard.writeText(input.value).then(() => {
                     button.classList.add('copied');
                     button.title = '복사됨';
                     setTimeout(() => {
