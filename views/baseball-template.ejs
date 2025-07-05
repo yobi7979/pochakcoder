@@ -450,7 +450,7 @@
                         <% if (match.match_data?.home_team_logo) { %>
                             <img src="<%= match.match_data.home_team_logo %>" alt="홈팀 로고" class="team-logo">
                         <% } else { %>
-                            <div class="team-logo-placeholder"></div>
+                            <img src="/TEAMLOGO/BASEBALL/hogak.png" alt="기본 로고" class="team-logo">
                         <% } %>
                     </div>
                     <div class="team-header"><%= match.home_team || 'HOME' %></div>
@@ -463,7 +463,7 @@
                         <% if (match.match_data?.away_team_logo) { %>
                             <img src="<%= match.match_data.away_team_logo %>" alt="원정팀 로고" class="team-logo">
                         <% } else { %>
-                            <div class="team-logo-placeholder"></div>
+                            <img src="/TEAMLOGO/BASEBALL/hogak.png" alt="기본 로고" class="team-logo">
                         <% } %>
                     </div>
                     <div class="team-header"><%= match.away_team || 'AWAY' %></div>
@@ -862,7 +862,7 @@
                     if (homeTeamLogo) {
                         homeLogoContainer.innerHTML = `<img src="${homeTeamLogo}" alt="홈팀 로고" class="team-logo">`;
                     } else {
-                        homeLogoContainer.innerHTML = `<div class="team-logo-placeholder"></div>`;
+                        homeLogoContainer.innerHTML = `<img src="/TEAMLOGO/BASEBALL/hogak.png" alt="기본 로고" class="team-logo">`;
                     }
                 }
                 
@@ -892,7 +892,7 @@
                     if (awayTeamLogo) {
                         awayLogoContainer.innerHTML = `<img src="${awayTeamLogo}" alt="원정팀 로고" class="team-logo">`;
                     } else {
-                        awayLogoContainer.innerHTML = `<div class="team-logo-placeholder"></div>`;
+                        awayLogoContainer.innerHTML = `<img src="/TEAMLOGO/BASEBALL/hogak.png" alt="기본 로고" class="team-logo">`;
                     }
                 }
                 
@@ -1108,7 +1108,7 @@
                         if (logoPath) {
                             logoContainer.innerHTML = `<img src="${logoPath}" alt="홈팀 로고" class="team-logo">`;
                         } else {
-                            logoContainer.innerHTML = `<div class="team-logo-placeholder"></div>`;
+                            logoContainer.innerHTML = `<img src="/TEAMLOGO/BASEBALL/hogak.png" alt="기본 로고" class="team-logo">`;
                         }
                     }
                 } else if (teamType === 'away') {
@@ -1122,7 +1122,7 @@
                         if (logoPath) {
                             logoContainer.innerHTML = `<img src="${logoPath}" alt="원정팀 로고" class="team-logo">`;
                         } else {
-                            logoContainer.innerHTML = `<div class="team-logo-placeholder"></div>`;
+                            logoContainer.innerHTML = `<img src="/TEAMLOGO/BASEBALL/hogak.png" alt="기본 로고" class="team-logo">`;
                         }
                     }
                 }
@@ -1137,12 +1137,12 @@
                 if (teamType === 'home') {
                     const logoContainer = document.querySelector('.team-info.home-team .team-logo-container');
                     if (logoContainer) {
-                        logoContainer.innerHTML = `<div class="team-logo-placeholder"></div>`;
+                        logoContainer.innerHTML = `<img src="/TEAMLOGO/BASEBALL/hogak.png" alt="기본 로고" class="team-logo">`;
                     }
                 } else if (teamType === 'away') {
                     const logoContainer = document.querySelector('.team-info.away-team .team-logo-container');
                     if (logoContainer) {
-                        logoContainer.innerHTML = `<div class="team-logo-placeholder"></div>`;
+                        logoContainer.innerHTML = `<img src="/TEAMLOGO/BASEBALL/hogak.png" alt="기본 로고" class="team-logo">`;
                     }
                 }
             }
