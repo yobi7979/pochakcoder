@@ -241,7 +241,17 @@ async function restoreMatchTimers() {
 
 // 라우트 설정
 app.get('/', (req, res) => {
+  logger.info('루트 경로 접속됨');
   res.redirect('/matches');
+});
+
+// 헬스체크 엔드포인트
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
 });
 
 // 경기 목록 페이지
@@ -2020,6 +2030,8 @@ const HOST = process.env.HOST || '0.0.0.0';
 const DOMAIN = process.env.DOMAIN || 'sportscoder-production.up.railway.app';
 server.listen(PORT, HOST, async () => {
   logger.info(`서버가 포트 ${PORT}에서 실행 중입니다.`);
+  logger.info(`도메인: ${DOMAIN}`);
+  logger.info(`환경: ${process.env.NODE_ENV || 'development'}`);
   
   // 기본 종목 초기화
   await initializeDefaultSports();
