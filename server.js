@@ -261,7 +261,11 @@ app.post('/api/match', async (req, res) => {
 
     // 기본 match_data 객체 설정
     let matchDataObj = match_data || {};
-    
+
+    // 팀 컬러 기본값(R0 G204 B51, #00cc33) 적용
+    if (!matchDataObj.home_team_color) matchDataObj.home_team_color = '#00cc33';
+    if (!matchDataObj.away_team_color) matchDataObj.away_team_color = '#00cc33';
+
     // 타이머 관련 초기 데이터 추가
     matchDataObj = {
       ...matchDataObj,
