@@ -89,62 +89,6 @@ body {
 
 /* 모바일에서 스코어와 타이머만 보이기 */
 @media (max-width: 768px) {
-  /* 숨길 섹션들 */
-  .team-color-section,
-  .team-logo-section,
-  .team-color-picker,
-  .stats-section,
-  .animation-controls,
-  .animation-btn-row,
-  .control-section,
-  .upload-section,
-  .team-upload,
-  .lineup-section,
-  .team-lineup,
-  .lineup-container,
-  .lineup-position,
-  .player-list-section,
-  .team-player-list,
-  .player-list,
-  .player-item,
-  .player-info,
-  .panel-header,
-  .match-state-controls,
-  .time-info,
-  .timer-status,
-  .connection-status,
-  .back-btn,
-  .logo-controls,
-  .color-control-section,
-  .logo-upload,
-  .logo-filename,
-  .save-logo-bg-color,
-  .save-team-color,
-  .apply-time-btn,
-  .match-info,
-  .match-state-btn,
-  .stat-label,
-  .stat-input,
-  .save-button,
-  .timer-btn:not(#start-timer):not(#stop-timer):not(#reset-timer):not(#edit-time-btn),
-  .score-controls,
-  .team-name:not(:first-child),
-  .team-section:not(:first-child):not(:nth-child(2)),
-  .control-section,
-  .upload-section,
-  .player-list-section,
-  .lineup-section {
-    display: none !important;
-  }
-  /* 스코어와 타이머만 보이도록 */
-  .score-section,
-  #timer-display {
-    display: block !important;
-  }
-  /* 점수 입력창, 타이머 입력창은 유지 */
-  .score-input,
-  #minutes,
-  #seconds {
-    display: inline-block !important;
-  }
+  .control-panel > * { display: none !important; }
+  .score-section, #timer-display { display: block !important; }
 } 
