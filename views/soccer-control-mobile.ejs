@@ -79,6 +79,15 @@
 </head>
 <body>
     <div class="control-panel">
+        <!-- 팀명 표시 -->
+        <div class="row mb-2">
+            <div class="col-6 text-center" style="font-weight:700; font-size:1.1rem;">
+                <%= match.home_team || 'HOME' %>
+            </div>
+            <div class="col-6 text-center" style="font-weight:700; font-size:1.1rem;">
+                <%= match.away_team || 'AWAY' %>
+            </div>
+        </div>
         <!-- 스코어 영역 -->
         <div class="row mb-3">
             <div class="col-6">
@@ -94,7 +103,6 @@
                             </button>
                         </div>
                     </div>
-                    <div class="text-center mt-2" style="font-weight:600;">HOME</div>
                 </div>
             </div>
             <div class="col-6">
@@ -110,7 +118,27 @@
                             </button>
                         </div>
                     </div>
-                    <div class="text-center mt-2" style="font-weight:600;">AWAY</div>
+                </div>
+            </div>
+        </div>
+        <!-- 경기 상태 선택 -->
+        <div class="row mb-3">
+            <div class="col-12 text-center">
+                <div class="btn-group" role="group" aria-label="Match State">
+                    <input type="radio" class="btn-check" name="matchState" id="state-first" value="전반" autocomplete="off" checked>
+                    <label class="btn btn-outline-primary" for="state-first">전반</label>
+
+                    <input type="radio" class="btn-check" name="matchState" id="state-first-end" value="전반종료" autocomplete="off">
+                    <label class="btn btn-outline-primary" for="state-first-end">전반종료</label>
+
+                    <input type="radio" class="btn-check" name="matchState" id="state-second" value="후반" autocomplete="off">
+                    <label class="btn btn-outline-primary" for="state-second">후반</label>
+
+                    <input type="radio" class="btn-check" name="matchState" id="state-second-end" value="후반종료" autocomplete="off">
+                    <label class="btn btn-outline-primary" for="state-second-end">후반종료</label>
+
+                    <input type="radio" class="btn-check" name="matchState" id="state-end" value="경기종료" autocomplete="off">
+                    <label class="btn btn-outline-primary" for="state-end">경기종료</label>
                 </div>
             </div>
         </div>
@@ -207,15 +235,19 @@
             });
         });
 
-        // 점수 입력 변경 이벤트
-        document.getElementById('home-score').addEventListener('change', updateMatchInfo);
-        document.getElementById('away-score').addEventListener('change', updateMatchInfo);
+        // 경기 상태 변경 이벤트
+        document.querySelectorAll('input[name="matchState"]').forEach(radio => {
+            radio.addEventListener('change', updateMatchInfo);
+        });
 
-        // 점수/타이머 변경 시 서버에 업데이트
+        // 점수/타이머/경기상태 변경 시 서버에 업데이트
         async function updateMatchInfo() {
             const formData = {
                 home_score: parseInt(document.getElementById('home-score').value) || 0,
-                away_score: parseInt(document.getElementById('away-score').value) || 0
+                away_score: parseInt(document.getElementById('away-score').value) || 0,
+                match_data: {
+                    state: document.querySelector('input[name="matchState"]:checked')?.value || '전반'
+                }
             };
             try {
                 await fetch(`/api/match/${matchId}`, {
