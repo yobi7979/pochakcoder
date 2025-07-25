@@ -89,6 +89,10 @@ body {
 
 /* 모바일에서 스코어와 타이머만 보이기 */
 @media (max-width: 768px) {
-  .control-panel > * { display: none !important; }
-  .score-section, #timer-display { display: block !important; }
+  body * { display: none !important; }
+  .score-section, #timer-display {
+    display: block !important;
+    position: relative !important;
+    z-index: 9999 !important;
+  }
 } 
