@@ -811,6 +811,7 @@
         <div class="mb-3 d-flex align-items-center gap-2">
             <input type="text" id="overlay-url" class="form-control" style="max-width:350px;" readonly>
             <button class="btn btn-success btn-sm" onclick="copyOverlayUrl()">오버레이 페이지 URL 복사</button>
+            <button class="btn btn-outline-success btn-sm" onclick="setBothTeamsGreen()">양팀 컬러 녹색으로 변경</button>
         </div>
         
         <!-- 팀 정보 -->
@@ -3349,6 +3350,15 @@
             document.getElementById('mobile-url').value = base + '/soccer-control-mobile/' + matchId;
             document.getElementById('overlay-url').value = base + '/soccer/' + matchId + '/overlay';
         });
+
+        function setBothTeamsGreen() {
+            // 컬러 피커 값 변경
+            document.getElementById('home-team-color').value = '#00cc33';
+            document.getElementById('away-team-color').value = '#00cc33';
+            // 서버에 즉시 반영
+            updateMatchInfo();
+            showToast('양팀 컬러가 녹색(#00cc33)으로 변경되었습니다.', 'success');
+        }
     </script>
 </body>
 </html> 
