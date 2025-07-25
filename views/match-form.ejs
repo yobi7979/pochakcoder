@@ -5,98 +5,389 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>새 경기 생성</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <style>
         body {
             background-color: #f8f9fa;
             padding: 20px;
         }
         .form-container {
-            max-width: 600px;
-            margin: 0 auto;
             background-color: white;
             padding: 30px;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
+        .list-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            min-height: 350px;
+        }
+        .match-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .match-row .badge { font-size: 0.9em; }
     </style>
 </head>
 <body>
-    <div class="form-container">
-        <h2 class="mb-4">새 경기 생성</h2>
-        <form id="matchForm">
-            <div class="mb-3">
-                <label for="sport_type" class="form-label">종목</label>
-                <select class="form-select" id="sport_type" name="sport_type" required>
-                    <% if (sports && sports.length > 0) { %>
-                        <% sports.forEach(function(sport) { %>
-                            <option value="<%= sport.code.toLowerCase() %>"><%= sport.name %></option>
-                        <% }); %>
-                    <% } else { %>
-                        <option value="soccer">축구</option>
-                        <option value="baseball">야구</option>
-                    <% } %>
-                </select>
+<div class="container">
+    <%- include('partials/header', { title: '새 경기 생성' }) %>
+    
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="form-container">
+                <h2 class="mb-4">새 경기 생성</h2>
+                <div class="mb-3">
+                </div>
+                <form id="matchForm" onsubmit="return false;">
+                    <div class="mb-3">
+                        <label for="sport_type" class="form-label">종목</label>
+                        <select class="form-select" id="sport_type" name="sport_type" required>
+                            <% if (sports && sports.length > 0) { %>
+                                <% sports.forEach(function(sport) { %>
+                                    <option value="<%= sport.code.toLowerCase() %>"><%= sport.name %></option>
+                                <% }); %>
+                            <% } else { %>
+                                <option value="soccer">축구</option>
+                                <option value="baseball">야구</option>
+                            <% } %>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="home_team" class="form-label">홈팀</label>
+                        <input type="text" class="form-control" id="home_team" name="home_team" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="away_team" class="form-label">원정팀</label>
+                        <input type="text" class="form-control" id="away_team" name="away_team" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="addToList" class="form-label">리스트에 추가</label>
+                        <select class="form-select" id="addToList"></select>
+                        <button type="button" class="btn btn-outline-primary mt-2" onclick="addMatchToList()">리스트에 추가</button>
+                    </div>
+                </form>
             </div>
-            <div class="mb-3">
-                <label for="home_team" class="form-label">홈팀</label>
-                <input type="text" class="form-control" id="home_team" name="home_team" required>
+        </div>
+        <div class="col-md-6">
+            <div class="list-container">
+                <h4 class="mb-3">선택한 리스트</h4>
+                <div class="mb-2">
+                    <select class="form-select" id="sideListSelect"></select>
+                    <button class="btn btn-outline-primary mt-2" onclick="createNewList()">새 리스트 생성</button>
+                </div>
+                <div id="sideListContent" class="mt-3 text-muted">리스트를 선택하세요.</div>
+                
+                <div class="mt-4">
+                    <h5>기존 경기 목록</h5>
+                    <div class="mb-2">
+                        <input type="text" class="form-control" id="matchSearch" placeholder="경기 검색...">
+                    </div>
+                    <ul class="nav nav-tabs mb-3" id="matchTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab">전체</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="soccer-tab" data-bs-toggle="tab" data-bs-target="#soccer" type="button" role="tab">축구</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="baseball-tab" data-bs-toggle="tab" data-bs-target="#baseball" type="button" role="tab">야구</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="matchTabContent">
+                        <div class="tab-pane fade show active" id="all" role="tabpanel">
+                            <div id="allMatches" style="max-height: 300px; overflow-y: auto;"></div>
+                        </div>
+                        <div class="tab-pane fade" id="soccer" role="tabpanel">
+                            <div id="soccerMatches" style="max-height: 300px; overflow-y: auto;"></div>
+                        </div>
+                        <div class="tab-pane fade" id="baseball" role="tabpanel">
+                            <div id="baseballMatches" style="max-height: 300px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="mb-3">
-                <label for="away_team" class="form-label">원정팀</label>
-                <input type="text" class="form-control" id="away_team" name="away_team" required>
-            </div>
-            <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary">경기 생성</button>
-                <a href="/matches" class="btn btn-secondary">취소</a>
-            </div>
-        </form>
+        </div>
     </div>
+</div>
+<script>
+// 리스트 불러오기 및 드롭박스 채우기
+function loadListOptions() {
+    const lists = JSON.parse(localStorage.getItem('matchLists') || '[]');
+    const addToList = document.getElementById('addToList');
+    const sideListSelect = document.getElementById('sideListSelect');
+    
+    // "리스트 추가 안함" 옵션 추가
+    addToList.innerHTML = '<option value="none">리스트 추가 안함</option>' + 
+        lists.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+    sideListSelect.innerHTML = lists.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+}
 
-    <script>
-        // 종목 선택에 따라 팀 라벨 텍스트 변경
-        document.getElementById('sport_type').addEventListener('change', function() {
-            const homeTeamLabel = document.querySelector('label[for="home_team"]');
-            const awayTeamLabel = document.querySelector('label[for="away_team"]');
-            
-            if (this.value === 'baseball') {
-                // 야구 선택 시 텍스트 반대로 변경
-                homeTeamLabel.textContent = '원정팀';
-                awayTeamLabel.textContent = '홈팀';
-            } else {
-                // 축구 선택 시 원래대로 변경
-                homeTeamLabel.textContent = '홈팀';
-                awayTeamLabel.textContent = '원정팀';
-            }
-        });
+// 리스트 내용 표시
+function renderSideListContent() {
+    const lists = JSON.parse(localStorage.getItem('matchLists') || '[]');
+    const sideListSelect = document.getElementById('sideListSelect');
+    const sideListContent = document.getElementById('sideListContent');
+    const selectedId = sideListSelect.value;
+    const list = lists.find(l => l.id === selectedId);
+    if (!list) {
+        sideListContent.innerHTML = '<span class="text-muted">리스트를 선택하세요.</span>';
+        return;
+    }
+    if (!list.matches.length) {
+        sideListContent.innerHTML = '<span class="text-muted">경기가 없습니다.</span>';
+        return;
+    }
+    sideListContent.innerHTML = list.matches.map((m, idx) =>
+        `<div class='match-row'>
+            <span>${m.home_team} vs ${m.away_team} <span class='badge bg-secondary'>${m.sport_type}</span></span>
+            <button class='btn btn-outline-danger btn-sm' onclick='removeMatchFromList(${idx})'>삭제</button>
+            <button class='btn btn-outline-secondary btn-sm' onclick='moveMatchInList(${idx},-1)'>↑</button>
+            <button class='btn btn-outline-secondary btn-sm' onclick='moveMatchInList(${idx},1)'>↓</button>
+        </div>`
+    ).join('');
+}
+
+// 기존 경기 목록 로드
+async function loadExistingMatches() {
+    try {
+        const response = await fetch('/api/matches');
+        const matches = await response.json();
         
-        document.getElementById('matchForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const formData = {
-                sport_type: document.getElementById('sport_type').value,
-                home_team: document.getElementById('home_team').value,
-                away_team: document.getElementById('away_team').value
-            };
+        // 종목별로 경기 분류
+        const soccerMatches = matches.filter(match => match.sport_type.toLowerCase() === 'soccer');
+        const baseballMatches = matches.filter(match => match.sport_type.toLowerCase() === 'baseball');
+        
+        // 각 종목별 경기 목록 렌더링
+        renderMatchesByCategory('allMatches', matches);
+        renderMatchesByCategory('soccerMatches', soccerMatches);
+        renderMatchesByCategory('baseballMatches', baseballMatches);
 
-            try {
-                const response = await fetch('/api/match', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
-                });
-
-                if (response.ok) {
-                    window.location.href = '/matches';
-                } else {
-                    const error = await response.json();
-                    alert(error.error || '경기 생성 중 오류가 발생했습니다.');
-                }
-            } catch (error) {
-                alert('서버 오류가 발생했습니다.');
-            }
+        // 탭 이벤트 리스너 추가
+        const tabEls = document.querySelectorAll('button[data-bs-toggle="tab"]');
+        tabEls.forEach(tabEl => {
+            tabEl.addEventListener('shown.bs.tab', function (event) {
+                const targetId = event.target.getAttribute('data-bs-target').substring(1);
+                const searchText = document.getElementById('matchSearch').value.toLowerCase();
+                filterMatches(targetId, searchText);
+            });
         });
-    </script>
+    } catch (error) {
+        console.error('경기 목록 로드 실패:', error);
+    }
+}
+
+function renderMatchesByCategory(containerId, matches) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = matches.map(match => `
+        <div class="match-row mb-2">
+            <span>${match.home_team} vs ${match.away_team} <span class="badge bg-secondary">${match.sport_type}</span></span>
+            <button class="btn btn-outline-primary btn-sm" onclick="addExistingMatchToList('${match.id}')">추가</button>
+        </div>
+    `).join('');
+}
+
+// 경기 필터링 함수
+function filterMatches(tabId, searchText) {
+    const matchRows = document.querySelectorAll(`#${tabId} .match-row`);
+    matchRows.forEach(row => {
+        const matchText = row.textContent.toLowerCase();
+        row.style.display = matchText.includes(searchText) ? '' : 'none';
+    });
+}
+
+// 기존 경기 검색
+document.getElementById('matchSearch').addEventListener('input', function(e) {
+    const searchText = e.target.value.toLowerCase();
+    const activeTab = document.querySelector('.tab-pane.active');
+    const activeTabId = activeTab.id;
+    filterMatches(activeTabId, searchText);
+});
+
+// 기존 경기를 리스트에 추가
+async function addExistingMatchToList(matchId) {
+    try {
+        const response = await fetch(`/api/match/${matchId}`);
+        const match = await response.json();
+        
+        const listId = document.getElementById('sideListSelect').value;
+        if (!listId) {
+            alert('리스트를 선택해주세요.');
+            return;
+        }
+
+        const lists = JSON.parse(localStorage.getItem('matchLists') || '[]');
+        const list = lists.find(l => l.id === listId);
+        
+        if (!list) {
+            alert('선택한 리스트를 찾을 수 없습니다.');
+            return;
+        }
+
+        if (!list.matches.some(m => m.id === match.id)) {
+            list.matches.push({
+                id: match.id,
+                sport_type: match.sport_type,
+                home_team: match.home_team,
+                away_team: match.away_team
+            });
+            localStorage.setItem('matchLists', JSON.stringify(lists));
+            renderSideListContent();
+        } else {
+            alert('이미 리스트에 추가된 경기입니다.');
+        }
+    } catch (error) {
+        console.error('경기 추가 실패:', error);
+        alert('경기 추가 중 오류가 발생했습니다.');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadListOptions();
+    renderSideListContent();
+    loadExistingMatches(); // 기존 경기 목록 로드
+    document.getElementById('sideListSelect').addEventListener('change', renderSideListContent);
+    // 리스트 선택 시 좌측 드롭박스도 동기화
+    document.getElementById('sideListSelect').addEventListener('change', function() {
+        document.getElementById('addToList').value = this.value;
+    });
+    document.getElementById('addToList').addEventListener('change', function() {
+        document.getElementById('sideListSelect').value = this.value;
+        renderSideListContent();
+    });
+});
+
+// 리스트 생성 함수 추가
+function createNewList() {
+    const name = prompt('새 리스트 이름을 입력하세요');
+    if (!name || !name.trim()) return;
+    const lists = JSON.parse(localStorage.getItem('matchLists') || '[]');
+    const id = 'list-' + Date.now();
+    lists.push({ id, name, matches: [] });
+    localStorage.setItem('matchLists', JSON.stringify(lists));
+    loadListOptions();
+    document.getElementById('addToList').value = id;
+    document.getElementById('sideListSelect').value = id;
+    renderSideListContent();
+}
+
+// 리스트에서 경기 삭제 함수
+function removeMatchFromList(idx) {
+    const lists = JSON.parse(localStorage.getItem('matchLists') || '[]');
+    const sideListSelect = document.getElementById('sideListSelect');
+    const list = lists.find(l => l.id === sideListSelect.value);
+    if (list) {
+        list.matches.splice(idx, 1);
+        localStorage.setItem('matchLists', JSON.stringify(lists));
+        renderSideListContent();
+    }
+}
+
+// 리스트에서 경기 순서 변경 함수
+function moveMatchInList(idx, dir) {
+    const lists = JSON.parse(localStorage.getItem('matchLists') || '[]');
+    const sideListSelect = document.getElementById('sideListSelect');
+    const list = lists.find(l => l.id === sideListSelect.value);
+    if (list) {
+        const newIdx = idx + dir;
+        if (newIdx < 0 || newIdx >= list.matches.length) return;
+        const temp = list.matches[idx];
+        list.matches[idx] = list.matches[newIdx];
+        list.matches[newIdx] = temp;
+        localStorage.setItem('matchLists', JSON.stringify(lists));
+        renderSideListContent();
+    }
+}
+
+// 엔터키 이벤트 처리
+document.getElementById('away_team').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault(); // 기본 엔터키 동작 방지
+        addMatchToList();
+    }
+});
+
+// 리스트에 경기 추가 함수
+async function addMatchToList() {
+    const sport_type = document.getElementById('sport_type').value;
+    const home_team = document.getElementById('home_team').value;
+    const away_team = document.getElementById('away_team').value;
+    if (!home_team || !away_team) {
+        alert('홈팀과 원정팀을 입력하세요.');
+        return;
+    }
+
+    try {
+        console.log('경기 생성 요청:', { sport_type, home_team, away_team });
+        
+        // 서버에 경기 생성 요청
+        const response = await fetch('/api/match', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                sport_type,
+                home_team,
+                away_team
+            })
+        });
+
+        console.log('서버 응답 상태:', response.status);
+        
+        let result;
+        try {
+            result = await response.json();
+            console.log('서버 응답 데이터:', result);
+        } catch (e) {
+            console.error('응답 파싱 오류:', e);
+            throw new Error('서버 응답을 처리할 수 없습니다.');
+        }
+
+        if (!response.ok) {
+            console.error('서버 오류:', result);
+            throw new Error(result.error || `서버 오류 (${response.status})`);
+        }
+
+        if (!result || !result.id) {
+            console.error('잘못된 응답 형식:', result);
+            throw new Error('서버에서 잘못된 응답을 받았습니다.');
+        }
+
+        // 리스트에 추가 (리스트 추가 안함이 선택되지 않은 경우에만)
+        const listId = document.getElementById('addToList').value;
+        if (listId && listId !== 'none') {
+            const lists = JSON.parse(localStorage.getItem('matchLists') || '[]');
+            const list = lists.find(l => l.id === listId);
+            
+            if (!list) {
+                throw new Error('선택한 리스트를 찾을 수 없습니다.');
+            }
+
+            if (!list.matches.some(m => m.id === result.id)) {
+                list.matches.push({
+                    id: result.id,
+                    sport_type: result.sport_type,
+                    home_team: result.home_team,
+                    away_team: result.away_team
+                });
+                localStorage.setItem('matchLists', JSON.stringify(lists));
+                
+                // 리스트 내용 업데이트
+                renderSideListContent();
+            }
+        }
+        
+        // 홈팀과 원정팀 입력 필드 클리어 및 홈팀에 포커스
+        document.getElementById('home_team').value = '';
+        document.getElementById('away_team').value = '';
+        document.getElementById('home_team').focus();
+        
+        console.log('경기 추가 완료:', result);
+        await loadExistingMatches();
+    } catch (error) {
+        console.error('경기 추가 중 오류:', error);
+        alert(error.message || '서버 오류가 발생했습니다.');
+    }
+}
+</script>
 </body>
 </html> 

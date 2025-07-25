@@ -1,22 +1,59 @@
 <!DOCTYPE html>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container">
-        <a class="navbar-brand" href="/">SportsCoder</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav">
-                <li class="nav-item">
-                    <a class="nav-link" href="/matches">경기</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/sports">종목</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/templates">템플릿</a>
-                </li>
-            </ul>
+<style>
+    body {
+        background-color: #f8f9fa;
+        font-size: 0.9rem;
+        margin: 0;
+        padding: 0;
+    }
+    .page-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    .header-container {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    .header-title {
+        font-size: 24px;
+        font-weight: bold;
+        margin: 0;
+    }
+    .header-buttons .btn {
+        font-size: 0.9rem;
+        padding: 5px 10px;
+    }
+    .content-container {
+        padding: 15px;
+    }
+</style>
+
+<!-- 공통 헤더 -->
+<div class="page-container">
+    <div class="header-container">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="header-title"><%= title %></h2>
+            <div class="d-flex gap-2 header-buttons">
+                <a href="/matches" class="btn btn-outline-secondary">
+                    <i class="bi bi-list-ul"></i> 경기 목록
+                </a>
+                <a href="#" class="btn btn-outline-primary" onclick="event.preventDefault();">
+                    <i class="bi bi-trophy"></i> 종목 관리
+                </a>
+                <a href="#" class="btn btn-outline-success" onclick="event.preventDefault();">
+                    <i class="bi bi-file-earmark-text"></i> 템플릿 관리
+                </a>
+                <a href="/match-list-manager" class="btn btn-outline-info">
+                    <i class="bi bi-collection"></i> 리스트 관리
+                </a>
+                <a href="/matches/new" class="btn btn-primary">
+                    <i class="bi bi-plus-lg"></i> 새 경기 생성
+                </a>
+            </div>
         </div>
     </div>
-</nav> 
+    <div class="content-container">
+</div> 
