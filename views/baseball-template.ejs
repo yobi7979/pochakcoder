@@ -989,8 +989,8 @@
                 // 팀 색상 가져오기
                 const homeTeamSection = document.getElementById('home-team-section');
                 const awayTeamSection = document.getElementById('away-team-section');
-                const homeTeamColor = homeTeamSection ? homeTeamSection.style.backgroundColor : 'rgba(29, 78, 216, 0.6)';
-                const awayTeamColor = awayTeamSection ? awayTeamSection.style.backgroundColor : 'rgba(220, 38, 38, 0.6)';
+                const homeTeamColor = homeTeamSection ? homeTeamSection.style.backgroundColor : 'rgba(0, 204, 51, 0.6)';
+                const awayTeamColor = awayTeamSection ? awayTeamSection.style.backgroundColor : 'rgba(0, 204, 51, 0.6)';
                 
                 // 팀 이름 가져오기
                 const homeTeamName = '<%= match.home_team %>';
@@ -1218,8 +1218,8 @@
                     return;
                 }
                 
-                const homeTeamColor = homeTeamSection.style.backgroundColor || 'rgba(29, 78, 216, 0.6)';
-                const awayTeamColor = awayTeamSection.style.backgroundColor || 'rgba(220, 38, 38, 0.6)';
+                const homeTeamColor = homeTeamSection.style.backgroundColor || 'rgba(0, 204, 51, 0.6)';
+                const awayTeamColor = awayTeamSection.style.backgroundColor || 'rgba(0, 204, 51, 0.6)';
                 
                 console.log('패널 타이틀 업데이트:', {
                     inningType,

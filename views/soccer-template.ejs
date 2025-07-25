@@ -91,7 +91,7 @@
             border-radius: 8px 0 0 8px;
         }
         .team-section.away {
-            background-color: rgb(255, 255, 255); /* rgba 대신 rgb 사용으로 완전 불투명 */
+            background-color: rgb(0, 204, 51); /* rgba 대신 rgb 사용으로 완전 불투명 */
             border-radius: 0 8px 8px 0;
         }
         .team-header {
@@ -168,7 +168,7 @@
         .away .team-logo {
             margin-right: 0;
             margin-left: 10px;
-            background-color: rgb(255, 255, 255); /* 어웨이팀 로고 배경 완전 불투명 */
+            background-color: rgb(0, 204, 51); /* 어웨이팀 로고 배경 완전 불투명 */
         }
         .team-logo img {
             width: 100%;
@@ -428,7 +428,7 @@
             background-color: rgba(0, 204, 51, 0.4);
         }
         .away .player-header {
-            background-color: rgba(220, 38, 38, 0.4);
+            background-color: rgba(0, 204, 51, 0.4);
         }
         .player-number {
             font-size: 36px;
@@ -753,8 +753,8 @@
         let lastServerTime = 0;
         let lastUpdateTime = 0;
         let localTimer = null;
-        let homeTeamColor = '<%= match.home_team_color || "#1d4ed8" %>';
-        let awayTeamColor = '<%= match.away_team_color || "#dc2626" %>';
+        let homeTeamColor = '<%= match.home_team_color || "#00cc33" %>';
+        let awayTeamColor = '<%= match.away_team_color || "#00cc33" %>';
 
         // 전역 상태 관리 객체
         const logoState = {

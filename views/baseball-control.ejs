@@ -749,12 +749,12 @@
                     <div class="team-name"><%= match.home_team || 'HOME' %></div>
                     <div class="team-color-picker">
                         <label>팀 컬러:</label>
-                        <input type="color" class="home-team-color" value="<%= match.home_team_color || match.match_data?.home_team_color || '#1d4ed8' %>">
+                        <input type="color" class="home-team-color" value="<%= match.home_team_color || match.match_data?.home_team_color || '#00cc33' %>">
                         <button class="btn btn-sm btn-primary save-team-color" data-team-type="home">
                             <i class="bi bi-check2"></i> 저장
                         </button>
                         <label>로고:</label>
-                        <input type="color" class="home-team-colorbg" value="<%= match.home_team_colorbg || match.match_data?.home_team_colorbg || '#1d4ed8' %>">
+                        <input type="color" class="home-team-colorbg" value="<%= match.match_data?.home_team_colorbg || '#00cc33' %>">
                         <button class="btn btn-sm btn-primary save-team-colorbg" data-team-type="home">
                             <i class="bi bi-check2"></i> 저장
                         </button>
@@ -788,12 +788,12 @@
                     <div class="team-name"><%= match.away_team || 'AWAY' %></div>
                     <div class="team-color-picker">
                         <label>팀 컬러:</label>
-                        <input type="color" class="away-team-color" value="<%= match.away_team_color || match.match_data?.away_team_color || '#dc2626' %>">
+                        <input type="color" class="away-team-color" value="<%= match.away_team_color || match.match_data?.away_team_color || '#00cc33' %>">
                         <button class="btn btn-sm btn-primary save-team-color" data-team-type="away">
                             <i class="bi bi-check2"></i> 저장
                         </button>
                         <label>로고:</label>
-                        <input type="color" class="away-team-colorbg" value="<%=match.away_team_colorbg||match.match_data?.away_team_colorbg||'#dc2626'%>">
+                        <input type="color" class="away-team-colorbg" value="<%=match.away_team_colorbg||match.match_data?.away_team_colorbg||'#00cc33'%>">
                         <button class="btn btn-sm btn-primary save-team-colorbg" data-team-type="away">
                             <i class="bi bi-check2"></i> 저장
                         </button>
@@ -1357,8 +1357,8 @@
                     away_team_logo: document.querySelector('#away-team-logo-preview img')?.src || '',
                     
                     // 팀 컬러 정보
-                    home_team_color: document.querySelector('.home-team-color')?.value || '#1d4ed8',
-                    away_team_color: document.querySelector('.away-team-color')?.value || '#dc2626'
+                    home_team_color: document.querySelector('.home-team-color')?.value || '#00cc33',
+                    away_team_color: document.querySelector('.away-team-color')?.value || '#00cc33'
                 }
             };
 
@@ -1594,7 +1594,7 @@
                 // 홈팀 로고 설정
                 const homeTeamName = '<%= match.home_team %>';
                 let homeTeamLogo = '<%= match.match_data?.home_team_logo || "" %>';
-                let homeBgColor = '<%= match.match_data?.home_team_colorbg || "#1d4ed8" %>';
+                let homeBgColor = '<%= match.match_data?.home_team_colorbg || "#00cc33" %>';
                 
                 if (teamLogoMap.teamLogoMap && teamLogoMap.teamLogoMap[homeTeamName]) {
                     const homeLogoInfo = teamLogoMap.teamLogoMap[homeTeamName];
@@ -1616,7 +1616,7 @@
                 // 원정팀 로고 설정
                 const awayTeamName = '<%= match.away_team %>';
                 let awayTeamLogo = '<%= match.match_data?.away_team_logo || "" %>';
-                let awayBgColor = '<%= match.match_data?.away_team_colorbg || "#dc2626" %>';
+                let awayBgColor = '<%= match.match_data?.away_team_colorbg || "#00cc33" %>';
                 
                 if (teamLogoMap.teamLogoMap && teamLogoMap.teamLogoMap[awayTeamName]) {
                     const awayLogoInfo = teamLogoMap.teamLogoMap[awayTeamName];
