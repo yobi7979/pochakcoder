@@ -1483,6 +1483,19 @@ app.delete('/api/match/:id', async (req, res) => {
     }
 });
 
+// 모바일 전용 축구 컨트롤 패널 라우트
+app.get('/soccer-control-mobile/:id', async (req, res) => {
+  try {
+    const match = await Match.findByPk(req.params.id);
+    if (!match) {
+      return res.status(404).send('경기를 찾을 수 없습니다.');
+    }
+    res.render('soccer-control-mobile', { match });
+  } catch (error) {
+    res.status(500).send('서버 오류가 발생했습니다.');
+  }
+});
+
 // 404 에러 핸들러 추가
 app.use((req, res, next) => {
   res.status(404).json({ error: '요청한 리소스를 찾을 수 없습니다.' });
