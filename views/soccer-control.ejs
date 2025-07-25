@@ -803,10 +803,14 @@
                 <i class="bi bi-arrow-left"></i> 목록
             </a>
         </div>
-        <!-- 모바일 버전 URL 복사 버튼 -->
+        <!-- 모바일/오버레이 버전 URL 복사 버튼 -->
         <div class="mb-3 d-flex align-items-center gap-2">
-            <input type="text" id="mobile-url" class="form-control" style="max-width:350px;" readonly value="<%= (typeof window !== 'undefined' ? window.location.origin : '') + '/soccer-control-mobile/' + match.id %>">
+            <input type="text" id="mobile-url" class="form-control" style="max-width:350px;" readonly>
             <button class="btn btn-primary btn-sm" onclick="copyMobileUrl()">모바일 버전 URL 복사</button>
+        </div>
+        <div class="mb-3 d-flex align-items-center gap-2">
+            <input type="text" id="overlay-url" class="form-control" style="max-width:350px;" readonly>
+            <button class="btn btn-success btn-sm" onclick="copyOverlayUrl()">오버레이 페이지 URL 복사</button>
         </div>
         
         <!-- 팀 정보 -->
@@ -3330,6 +3334,21 @@
             document.execCommand('copy');
             alert('모바일 버전 URL이 복사되었습니다!');
         }
+
+        function copyOverlayUrl() {
+            const input = document.getElementById('overlay-url');
+            input.select();
+            input.setSelectionRange(0, 99999);
+            document.execCommand('copy');
+            alert('오버레이 페이지 URL이 복사되었습니다!');
+        }
+
+        window.addEventListener('DOMContentLoaded', function() {
+            var base = window.location.origin;
+            var matchId = '<%= match.id %>';
+            document.getElementById('mobile-url').value = base + '/soccer-control-mobile/' + matchId;
+            document.getElementById('overlay-url').value = base + '/soccer/' + matchId + '/overlay';
+        });
     </script>
 </body>
 </html> 
