@@ -805,7 +805,7 @@
         </div>
         <!-- 모바일 버전 URL 복사 버튼 -->
         <div class="mb-3 d-flex align-items-center gap-2">
-            <input type="text" id="mobile-url" class="form-control" style="max-width:350px;" readonly value="<%= '/soccer-control-mobile/' + match.id %>">
+            <input type="text" id="mobile-url" class="form-control" style="max-width:350px;" readonly value="<%= (typeof window !== 'undefined' ? window.location.origin : '') + '/soccer-control-mobile/' + match.id %>">
             <button class="btn btn-primary btn-sm" onclick="copyMobileUrl()">모바일 버전 URL 복사</button>
         </div>
         
@@ -3319,6 +3319,12 @@
 
         function copyMobileUrl() {
             const input = document.getElementById('mobile-url');
+            // 전체 URL 동적으로 생성
+            let url = input.value;
+            if (!url.startsWith('http')) {
+                url = window.location.origin + '/soccer-control-mobile/' + '<%= match.id %>';
+                input.value = url;
+            }
             input.select();
             input.setSelectionRange(0, 99999); // 모바일 대응
             document.execCommand('copy');
