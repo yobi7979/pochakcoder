@@ -803,6 +803,11 @@
                 <i class="bi bi-arrow-left"></i> 목록
             </a>
         </div>
+        <!-- 모바일 버전 URL 복사 버튼 -->
+        <div class="mb-3 d-flex align-items-center gap-2">
+            <input type="text" id="mobile-url" class="form-control" style="max-width:350px;" readonly value="<%= '/soccer-control-mobile/' + match.id %>">
+            <button class="btn btn-primary btn-sm" onclick="copyMobileUrl()">모바일 버전 URL 복사</button>
+        </div>
         
         <!-- 팀 정보 -->
         <div class="row mb-3">
@@ -3311,6 +3316,14 @@
                 document.getElementById('away-score').value = data.away_score;
             }
         });
+
+        function copyMobileUrl() {
+            const input = document.getElementById('mobile-url');
+            input.select();
+            input.setSelectionRange(0, 99999); // 모바일 대응
+            document.execCommand('copy');
+            alert('모바일 버전 URL이 복사되었습니다!');
+        }
     </script>
 </body>
 </html> 
