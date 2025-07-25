@@ -3356,8 +3356,7 @@
             document.getElementById('home-team-color').value = '#00cc33';
             document.getElementById('away-team-color').value = '#00cc33';
 
-            // 서버에 즉시 저장(소켓 emit)
-            // 홈팀
+            // 홈팀 emit
             const homeHeaderInput = document.getElementById('home-team-header');
             const homeHeaderText = homeHeaderInput ? homeHeaderInput.value : '';
             socket.emit('updateTeamColor', {
@@ -3367,18 +3366,20 @@
                 headerText: homeHeaderText,
                 sportType: 'soccer'
             });
-            // 어웨이팀
-            const awayHeaderInput = document.getElementById('away-team-header');
-            const awayHeaderText = awayHeaderInput ? awayHeaderInput.value : '';
-            socket.emit('updateTeamColor', {
-                matchId: '<%= match.id %>',
-                teamType: 'away',
-                teamColor: '#00cc33',
-                headerText: awayHeaderText,
-                sportType: 'soccer'
-            });
 
-            showToast('양팀 컬러가 녹색(#00cc33)으로 저장되었습니다.', 'success');
+            // 0.5초 후 어웨이팀 emit
+            setTimeout(function() {
+                const awayHeaderInput = document.getElementById('away-team-header');
+                const awayHeaderText = awayHeaderInput ? awayHeaderInput.value : '';
+                socket.emit('updateTeamColor', {
+                    matchId: '<%= match.id %>',
+                    teamType: 'away',
+                    teamColor: '#00cc33',
+                    headerText: awayHeaderText,
+                    sportType: 'soccer'
+                });
+                showToast('양팀 컬러가 녹색(#00cc33)으로 저장되었습니다.', 'success');
+            }, 500);
         }
     </script>
 </body>
