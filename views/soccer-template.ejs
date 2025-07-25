@@ -87,7 +87,7 @@
             text-overflow: ellipsis;
         }
         .team-section.home {
-            background-color: rgb(29, 78, 216); /* rgba 대신 rgb 사용으로 완전 불투명 */
+            background-color: rgb(0, 204, 51); /* rgba 대신 rgb 사용으로 완전 불투명 */
             border-radius: 8px 0 0 8px;
         }
         .team-section.away {
@@ -163,7 +163,7 @@
             justify-content: center;
             border-radius: 5px;
             overflow: hidden;
-            background-color: rgb(29, 78, 216); /* 홈팀 로고 배경 완전 불투명 */
+            background-color: rgb(0, 204, 51); /* 홈팀 로고 배경 완전 불투명 */
         }
         .away .team-logo {
             margin-right: 0;
@@ -303,7 +303,7 @@
         }
         
         .lineup-header.home {
-            background-color: rgba(29, 78, 216, 0.6);
+            background-color: rgba(0, 204, 51, 0.6);
         }
         
         .lineup-header.away {
@@ -351,7 +351,7 @@
         }
         
         .home .player-number {
-            background-color: rgba(29, 78, 216, 0.8);
+            background-color: rgb(0, 204, 51);
         }
         
         .away .player-number {
@@ -425,7 +425,7 @@
             padding: 10px;
         }
         .home .player-header {
-            background-color: rgba(29, 78, 216, 0.4);
+            background-color: rgba(0, 204, 51, 0.4);
         }
         .away .player-header {
             background-color: rgba(220, 38, 38, 0.4);
@@ -638,7 +638,7 @@
         
         <!-- 홈팀 로고 섹션 -->
         <div class="team-logo-section home-logo">
-            <div class="team-logo" style="background-color: rgb(29, 78, 216);">
+            <div class="team-logo" style="background-color: rgb(0, 204, 51);">
                 <% if (match.match_data?.home_team_logo) { %>
                     <img src="<%= match.match_data.home_team_logo %>" alt="홈팀 로고">
                 <% } else { %>
