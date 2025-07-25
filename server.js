@@ -1500,6 +1500,32 @@ app.get('/soccer-control-mobile/:id', async (req, res) => {
   }
 });
 
+// 모든 축구 경기의 팀컬러를 일괄 변경 (관리자용)
+app.post('/admin/update-all-soccer-team-colors', async (req, res) => {
+  const { color } = req.body; // 예: "#00cc33"
+  if (!color) return res.status(400).json({ error: 'color 값이 필요합니다.' });
+
+  try {
+    // 모든 축구 경기 조회
+    const matches = await Match.findAll({ where: { sport_type: 'SOCCER' } });
+    for (const match of matches) {
+      // match_data도 함께 업데이트
+      const matchData = match.match_data || {};
+      matchData.home_team_color = color;
+      matchData.away_team_color = color;
+
+      await match.update({
+        home_team_color: color,
+        away_team_color: color,
+        match_data: matchData
+      });
+    }
+    res.json({ success: true, count: matches.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 404 에러 핸들러 추가
 app.use((req, res, next) => {
   res.status(404).json({ error: '요청한 리소스를 찾을 수 없습니다.' });
