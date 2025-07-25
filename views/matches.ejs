@@ -200,7 +200,6 @@
         .empty-message p {
             font-size: 14px;
         }
-        
         /* URL 입력창 스타일 */
         .url-input-group {
             display: flex;
@@ -208,7 +207,6 @@
             gap: 4px;
             margin-top: 4px;
         }
-        
         .url-input {
             font-size: 11px;
             padding: 4px 6px;
@@ -218,7 +216,6 @@
             color: #495057;
             width: 200px;
         }
-        
         .copy-btn {
             padding: 4px 6px;
             font-size: 10px;
@@ -228,24 +225,18 @@
             color: white;
             min-width: 28px;
         }
-        
         .copy-btn:hover {
             background-color: #5a6268;
             border-color: #545b62;
             color: white;
         }
-        
         .copy-btn.copied {
             background-color: #28a745;
             border-color: #28a745;
         }
-        
         .empty-message h3 {
             font-size: 18px;
             margin-top: 10px;
-        }
-        .empty-message p {
-            font-size: 14px;
         }
         /* URL 텍스트 박스 스타일 추가 */
         .url-container {
@@ -321,21 +312,8 @@
 </head>
 <body>
     <div class="match-list">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>경기 목록</h1>
-            <div class="d-flex gap-2">
-                <a href="/sports" class="btn btn-outline-primary">
-                    <i class="bi bi-trophy"></i> 종목 관리
-                </a>
-                <a href="/templates" class="btn btn-outline-success">
-                    <i class="bi bi-file-earmark-text"></i> 템플릿 관리
-                </a>
-                <a href="/matches/new" class="btn btn-primary">
-                    <i class="bi bi-plus-lg"></i> 새 경기 생성
-                </a>
-            </div>
-        </div>
-
+        <%- include('partials/header', { title: '경기 목록' }) %>
+        
         <!-- 직접 경기 ID로 삭제하는 폼 추가 -->
         <div class="card mb-3">
             <div class="card-header bg-danger text-white">
@@ -627,6 +605,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <script>
         let matchIdToDelete = null;
         const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
@@ -857,6 +836,38 @@
                 });
             }
         }
+
+        // Socket.IO 연결
+        const socket = io();
+        
+        // match_update 이벤트 수신
+        socket.on('match_update', function(data) {
+            const matchCell = document.querySelector(`[data-match-id="${data.matchId}"]`);
+            if (matchCell) {
+                // 스코어 업데이트
+                const homeScoreElement = matchCell.querySelector('.home-score');
+                const awayScoreElement = matchCell.querySelector('.away-score');
+                
+                if (homeScoreElement) homeScoreElement.textContent = data.home_score;
+                if (awayScoreElement) awayScoreElement.textContent = data.away_score;
+            }
+        });
+
+        // match_update_response 이벤트 수신
+        socket.on('match_update_response', function(response) {
+            if (!response.success) {
+                console.error('스코어 업데이트 실패:', response.error);
+            }
+        });
+
+        // 각 경기 셀에 matchId 속성 추가
+        document.addEventListener('DOMContentLoaded', () => {
+            const matchCells = document.querySelectorAll('.match-cell');
+            matchCells.forEach(cell => {
+                const matchId = cell.id.replace('match-cell-', '');
+                cell.setAttribute('data-match-id', matchId);
+            });
+        });
     </script>
 </body>
 </html> 

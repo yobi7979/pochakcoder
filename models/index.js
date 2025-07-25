@@ -106,7 +106,7 @@ const Template = sequelize.define('Template', {
 });
 
 // 경기 생성 시 스포츠 타입에 따른 기본 데이터 구조 설정
-Match.beforeCreate(async (match, options) => {
+Match.beforeCreate((match) => {
   // 날짜와 종목 코드를 조합한 ID 생성
   const today = new Date();
   const month = String(today.getMonth() + 1).padStart(2, '0');
@@ -121,17 +121,9 @@ Match.beforeCreate(async (match, options) => {
     sportCode = 'BB';
   }
   
-  // 오늘 날짜에 생성된 같은 종목의 경기 수 조회
-  const todayMatches = await Match.findAll({
-    where: {
-      id: {
-        [Op.like]: `${dateCode}${sportCode}%`
-      }
-    }
-  });
-  
-  // 순번 생성 (기존 경기 수 + 1)
-  const sequence = String(todayMatches.length + 1).padStart(2, '0');
+  // 현재 시간을 밀리초로 가져와서 순번으로 사용
+  const timestamp = Date.now();
+  const sequence = String(timestamp % 100).padStart(2, '0');  // 항상 2자리 숫자가 되도록 수정
   
   // 새 ID 설정: 날짜 + 종목코드 + 순번
   match.id = `${dateCode}${sportCode}${sequence}`;
@@ -139,6 +131,7 @@ Match.beforeCreate(async (match, options) => {
   // 기본 경기 데이터 설정
   if (match.sport_type === 'soccer') {
     match.match_data = {
+      ...match.match_data,
       state: '전반',
       home_shots: 0,
       away_shots: 0,
@@ -147,10 +140,14 @@ Match.beforeCreate(async (match, options) => {
       home_corners: 0,
       away_corners: 0,
       home_fouls: 0,
-      away_fouls: 0
+      away_fouls: 0,
+      timer: 0,
+      lastUpdateTime: Date.now(),
+      isRunning: false
     };
   } else if (match.sport_type === 'baseball') {
     match.match_data = {
+      ...match.match_data,
       current_inning: 1,
       inning_type: 'top',
       first_base: false,
@@ -171,7 +168,10 @@ Match.beforeCreate(async (match, options) => {
       away_hits: 0,
       home_errors: 0,
       away_errors: 0,
-      innings: {}
+      innings: {},
+      timer: 0,
+      lastUpdateTime: Date.now(),
+      isRunning: false
     };
   }
 });

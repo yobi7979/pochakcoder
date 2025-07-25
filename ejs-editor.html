@@ -160,10 +160,11 @@
         
         <div class="file-selector">
             <div class="input-group">
-                <input type="text" class="form-control" id="file-path" placeholder="EJS 파일 경로 (예: views/soccer-template.ejs)" readonly>
-                <button class="btn btn-primary" id="browse-btn">파일 찾기</button>
+                <select class="form-select" id="file-select">
+                    <option value="">EJS 파일을 선택하세요</option>
+                </select>
+                <button class="btn btn-primary" id="load-btn">불러오기</button>
             </div>
-            <input type="file" id="file-input" style="display: none;" accept=".ejs">
         </div>
         
         <div class="editor-container">
@@ -258,9 +259,9 @@
         });
         
         // 파일 선택 관련 요소
-        const fileInput = document.getElementById('file-input');
+        const fileSelect = document.getElementById('file-select');
         const filePathInput = document.getElementById('file-path');
-        const browseBtn = document.getElementById('browse-btn');
+        const loadBtn = document.getElementById('load-btn');
         const currentFileDisplay = document.getElementById('current-file');
         const saveBtn = document.getElementById('save-btn');
         const saveAsBtn = document.getElementById('save-as-btn');
@@ -296,27 +297,65 @@
             layoutToggleBtn.classList.toggle('active');
         });
         
-        // 파일 찾기 버튼 클릭 이벤트
-        browseBtn.addEventListener('click', () => {
-            fileInput.click();
-        });
-        
-        // 파일 선택 이벤트
-        fileInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    editor.setValue(e.target.result);
-                    filePathInput.value = file.name;
-                    currentFileDisplay.textContent = `선택된 파일: ${file.name}`;
-                };
-                reader.readAsText(file);
+        // 파일 목록 가져오기
+        async function loadEjsFiles() {
+            try {
+                const response = await fetch('/views/');
+                const text = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(text, 'text/html');
+                const links = Array.from(doc.querySelectorAll('a'));
+                
+                const fileSelect = document.getElementById('file-select');
+                fileSelect.innerHTML = '<option value="">EJS 파일을 선택하세요</option>';
+                
+                links.forEach(link => {
+                    const fileName = link.textContent;
+                    if (fileName.endsWith('.ejs') && 
+                        !fileName.startsWith('soccer-') && 
+                        !fileName.startsWith('baseball-')) {
+                        const option = document.createElement('option');
+                        option.value = fileName;
+                        option.textContent = fileName;
+                        fileSelect.appendChild(option);
+                    }
+                });
+            } catch (error) {
+                console.error('파일 목록을 가져오는데 실패했습니다:', error);
+                alert('파일 목록을 가져오는데 실패했습니다.');
+            }
+        }
+
+        // 페이지 로드 시 파일 목록 가져오기
+        document.addEventListener('DOMContentLoaded', loadEjsFiles);
+
+        // 불러오기 버튼 클릭 이벤트
+        document.getElementById('load-btn').addEventListener('click', async () => {
+            const fileSelect = document.getElementById('file-select');
+            const selectedFile = fileSelect.value;
+            
+            if (!selectedFile) {
+                alert('파일을 선택해주세요.');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/views/${selectedFile}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const content = await response.text();
+                editor.setValue(content);
+                filePathInput.value = selectedFile;
+                currentFileDisplay.textContent = `선택된 파일: ${selectedFile}`;
+            } catch (error) {
+                console.error('파일을 불러오는데 실패했습니다:', error);
+                alert('파일을 불러오는데 실패했습니다.');
             }
         });
         
         // 저장 버튼 클릭 이벤트
-        saveBtn.addEventListener('click', () => {
+        saveBtn.addEventListener('click', async () => {
             const content = editor.getValue();
             const fileName = filePathInput.value;
             
@@ -325,18 +364,24 @@
                 return;
             }
             
-            // 파일 저장 로직 (브라우저에서는 다운로드로 구현)
-            const blob = new Blob([content], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            alert('파일이 다운로드되었습니다.');
+            try {
+                const response = await fetch(`/views/${fileName}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ content: content })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                alert('파일이 저장되었습니다.');
+            } catch (error) {
+                console.error('파일 저장에 실패했습니다:', error);
+                alert('파일 저장에 실패했습니다.');
+            }
         });
         
         // 다른 이름으로 저장 버튼 클릭 이벤트
@@ -409,10 +454,9 @@
                 alert('파일을 선택해주세요.');
                 return;
             }
-            
             // 파일 다시 로드
-            fileInput.value = '';
-            fileInput.click();
+            fileSelect.value = '';
+            fileSelect.click();
         });
         
         // 요소 추가 버튼 클릭 이벤트

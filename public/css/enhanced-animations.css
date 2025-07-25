@@ -1,0 +1,234 @@
+/* 스코어보드 애니메이션 */
+@keyframes scoreboardIn {
+    0% {
+        transform: translateY(100%) scale(0.8);
+        opacity: 0;
+    }
+    60% {
+        transform: translateY(0) scale(1.1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes scoreboardOut {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    40% {
+        transform: translateY(0) scale(0.9);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateY(100%) scale(0.8);
+        opacity: 0;
+    }
+}
+
+/* 경기 상태 애니메이션 */
+@keyframes matchStateIn {
+    0% {
+        transform: translateX(-100%) rotate(-10deg);
+        opacity: 0;
+    }
+    60% {
+        transform: translateX(0) rotate(5deg);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateX(0) rotate(0);
+        opacity: 1;
+    }
+}
+
+@keyframes matchStateOut {
+    0% {
+        transform: translateX(0) rotate(0);
+        opacity: 1;
+    }
+    40% {
+        transform: translateX(0) rotate(-5deg);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateX(100%) rotate(10deg);
+        opacity: 0;
+    }
+}
+
+/* 팀 정보 애니메이션 */
+@keyframes teamIn {
+    0% {
+        transform: translateX(100%) scale(0.8);
+        opacity: 0;
+    }
+    60% {
+        transform: translateX(0) scale(1.1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes teamOut {
+    0% {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+    }
+    40% {
+        transform: translateX(0) scale(0.9);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateX(100%) scale(0.8);
+        opacity: 0;
+    }
+}
+
+/* 경기 시간 애니메이션 */
+@keyframes timeIn {
+    0% {
+        transform: translateY(100%) rotate(-15deg);
+        opacity: 0;
+    }
+    60% {
+        transform: translateY(0) rotate(5deg);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateY(0) rotate(0);
+        opacity: 1;
+    }
+}
+
+@keyframes timeOut {
+    0% {
+        transform: translateY(0) rotate(0);
+        opacity: 1;
+    }
+    40% {
+        transform: translateY(0) rotate(-5deg);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateY(100%) rotate(15deg);
+        opacity: 0;
+    }
+}
+
+/* 통계 섹션 애니메이션 */
+@keyframes statsIn {
+    0% {
+        transform: translateX(-100px) scale(0.8);
+        opacity: 0;
+    }
+    60% {
+        transform: translateX(0) scale(1.1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes statsOut {
+    0% {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+    }
+    40% {
+        transform: translateX(0) scale(0.9);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateX(100px) scale(0.8);
+        opacity: 0;
+    }
+}
+
+/* 전체 애니메이션 */
+@keyframes allIn {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    60% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes allOut {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    40% {
+        transform: scale(0.9);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+}
+
+/* 애니메이션 클래스 */
+.animate-scoreboard-in {
+    animation: scoreboardIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-scoreboard-out {
+    animation: scoreboardOut 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-match-state-in {
+    animation: matchStateIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-match-state-out {
+    animation: matchStateOut 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-team-in {
+    animation: teamIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-team-out {
+    animation: teamOut 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-time-in {
+    animation: timeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-time-out {
+    animation: timeOut 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-stats-in {
+    animation: statsIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-stats-out {
+    animation: statsOut 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-all-in {
+    animation: allIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-all-out {
+    animation: allOut 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
