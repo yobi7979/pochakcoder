@@ -23,6 +23,10 @@
 </head>
 <body>
     <%- include('partials/header', { title: '경기 리스트 관리' }) %>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>경기 리스트 관리</h2>
+        <button class="btn btn-success btn-sm" onclick="updateAllSoccerTeamColors()">모든 축구 경기 팀컬러 일괄 녹색변경</button>
+    </div>
     <div class="row">
         <div class="col-md-4">
             <div class="mb-3 d-flex gap-2">
@@ -232,6 +236,24 @@ function addMatchToList(matchId) {
         renderAddMatchList(); // 팝업 목록 갱신
     }
     // 팝업창 닫는 코드 없음
+}
+function updateAllSoccerTeamColors() {
+  if (!confirm('정말로 모든 축구 경기의 팀컬러를 녹색(#00cc33)으로 일괄 변경하시겠습니까?')) return;
+  fetch('/admin/update-all-soccer-team-colors', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ color: '#00cc33' })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      alert('모든 축구 경기의 팀컬러가 녹색(#00cc33)으로 변경되었습니다.');
+      location.reload();
+    } else {
+      alert('변경 실패: ' + (data.error || '알 수 없는 오류'));
+    }
+  })
+  .catch(err => alert('요청 중 오류 발생: ' + err));
 }
 // 초기 렌더링
 renderLists();
