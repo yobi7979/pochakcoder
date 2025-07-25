@@ -132,7 +132,7 @@
             color: rgba(255, 255, 255, 0.7);
         }
         .team-header.long {
-            font-size: 20px;
+            font-size: 18px;
         }
         .team-header.very-long {
             font-size: 16px;
@@ -156,9 +156,9 @@
         
         /* 베이스 상태 */
         .base-status {
-            position: fixed;
-            bottom: 10px;
-            right: 140px;
+            position: absolute;
+            top: 20px;
+            left: 320px;
             width: 120px;
             height: 120px;
             background-color: rgba(0, 0, 0, 0.98);
@@ -198,9 +198,9 @@
         
         /* 게임 상태 (볼/스트라이크/아웃 카운트) */
         .game-status {
-            position: fixed;
-            bottom: 10px;
-            right: 20px;
+            position: absolute;
+            top: 20px;
+            left: 440px;
             width: 120px;
             height: 120px;
             background-color: rgba(0, 0, 0, 0.98);
@@ -309,7 +309,7 @@
         /* 타자 정보 */
         .batter-info {
             position: absolute;
-            left: -400px; /* 화면 밖으로 이동 */
+            left: 20px;
             top: 210px;
             width: 320px;
             height: 320px;
@@ -381,7 +381,7 @@
         /* 투수 정보 */
         .pitcher-info {
             position: absolute;
-            left: -400px; /* 화면 밖으로 이동 */
+            left: 420px;
             top: 210px;
             width: 320px;
             height: 320px;
@@ -400,7 +400,7 @@
         /* 이닝 스코어 */
         .innings-scoreboard {
             position: absolute;
-            bottom: -2000px; /* 1920x1080 화면 밖으로 완전히 이동 */
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             width: 800px;
@@ -450,7 +450,7 @@
                         <% if (match.match_data?.home_team_logo) { %>
                             <img src="<%= match.match_data.home_team_logo %>" alt="홈팀 로고" class="team-logo">
                         <% } else { %>
-                            <img src="/TEAMLOGO/BASEBALL/hogak.png" alt="기본 로고" class="team-logo">
+                            <div class="team-logo-placeholder"></div>
                         <% } %>
                     </div>
                     <div class="team-header"><%= match.home_team || 'HOME' %></div>
@@ -463,7 +463,7 @@
                         <% if (match.match_data?.away_team_logo) { %>
                             <img src="<%= match.match_data.away_team_logo %>" alt="원정팀 로고" class="team-logo">
                         <% } else { %>
-                            <img src="/TEAMLOGO/BASEBALL/hogak.png" alt="기본 로고" class="team-logo">
+                            <div class="team-logo-placeholder"></div>
                         <% } %>
                     </div>
                     <div class="team-header"><%= match.away_team || 'AWAY' %></div>
@@ -631,18 +631,90 @@
     </div>
 
     <script>
-        // Railway 도메인에 맞는 Socket.IO 연결
-        const socket = io({
-            transports: ['websocket', 'polling'],
-            upgrade: true,
-            rememberUpgrade: true
-        });
+        const socket = io();
         const matchId = '<%= match.id %>';
         
         // 소켓 연결
         socket.on('connect', () => {
             console.log('서버에 연결되었습니다.');
             socket.emit('join', matchId);
+        });
+
+        // match_update 이벤트 구독
+        socket.on('match_update', function(data) {
+            if (data.matchId === matchId) {
+                console.log('경기 정보 업데이트 수신:', data);
+                
+                // 점수 업데이트
+                const homeScoreEl = document.querySelector('.home-team .team-score');
+                if (homeScoreEl) homeScoreEl.textContent = data.home_score ?? '0';
+                const awayScoreEl = document.querySelector('.away-team .team-score');
+                if (awayScoreEl) awayScoreEl.textContent = data.away_score ?? '0';
+                
+                // 이닝 정보 업데이트
+                if (data.match_data) {
+                    // 현재 이닝
+                    const inningEl = document.querySelector('.current-inning');
+                    if (inningEl && data.match_data.current_inning) {
+                        inningEl.textContent = data.match_data.current_inning;
+                        // 이닝 인디케이터도 같이 갱신
+                        let indicator = inningEl.querySelector('.inning-indicator');
+                        if (!indicator) {
+                            indicator = document.createElement('div');
+                            indicator.className = 'inning-indicator';
+                            inningEl.appendChild(indicator);
+                        }
+                        indicator.className = `inning-indicator ${data.match_data.inning_type === 'bottom' ? 'bottom' : 'top'}`;
+                    }
+                    
+                    // 베이스 상태
+                    const firstBase = document.querySelector('.base.first');
+                    if (firstBase && data.match_data.first_base !== undefined) firstBase.classList.toggle('active', data.match_data.first_base);
+                    const secondBase = document.querySelector('.base.second');
+                    if (secondBase && data.match_data.second_base !== undefined) secondBase.classList.toggle('active', data.match_data.second_base);
+                    const thirdBase = document.querySelector('.base.third');
+                    if (thirdBase && data.match_data.third_base !== undefined) thirdBase.classList.toggle('active', data.match_data.third_base);
+                    
+                    // 볼/스트라이크/아웃 카운트
+                    if (data.match_data.balls !== undefined) {
+                        document.querySelectorAll('.count-dot.ball').forEach((el, index) => {
+                            el.classList.toggle('active', index < data.match_data.balls);
+                        });
+                    }
+                    if (data.match_data.strikes !== undefined) {
+                        document.querySelectorAll('.count-dot.strike').forEach((el, index) => {
+                            el.classList.toggle('active', index < data.match_data.strikes);
+                        });
+                    }
+                    if (data.match_data.outs !== undefined) {
+                        document.querySelectorAll('.count-dot.out').forEach((el, index) => {
+                            el.classList.toggle('active', index < data.match_data.outs);
+                        });
+                    }
+                    
+                    // 타자/투수 정보
+                    const batterName = document.querySelector('.batter-info .player-name');
+                    if (batterName && data.match_data.batter_name) batterName.textContent = data.match_data.batter_name;
+                    const batterNumber = document.querySelector('.batter-info .player-number');
+                    if (batterNumber && data.match_data.batter_number) batterNumber.textContent = data.match_data.batter_number;
+                    const batterPosition = document.querySelector('.batter-info .player-position');
+                    if (batterPosition && data.match_data.batter_position) batterPosition.textContent = data.match_data.batter_position;
+                    const batterAvg = document.querySelector('.batter-info .stat-value');
+                    if (batterAvg && data.match_data.batter_avg) batterAvg.textContent = data.match_data.batter_avg;
+                    
+                    const pitcherName = document.querySelector('.pitcher-info .player-name');
+                    if (pitcherName && data.match_data.pitcher_name) pitcherName.textContent = data.match_data.pitcher_name;
+                    const pitcherNumber = document.querySelector('.pitcher-info .player-number');
+                    if (pitcherNumber && data.match_data.pitcher_number) pitcherNumber.textContent = data.match_data.pitcher_number;
+                    const pitcherPosition = document.querySelector('.pitcher-info .player-position');
+                    if (pitcherPosition && data.match_data.pitcher_position) pitcherPosition.textContent = data.match_data.pitcher_position;
+                    const pitcherEra = document.querySelector('.pitcher-info .stat-value');
+                    if (pitcherEra && data.match_data.pitcher_era) pitcherEra.textContent = data.match_data.pitcher_era;
+                    
+                    // 팀 통계 (이닝 스코어보드 등)
+                    // 필요시 추가 구현
+                }
+            }
         });
 
         // CSV 파일 처리 및 타율, 출루율 계산 함수
@@ -830,127 +902,45 @@
 
         // 초기 팀 색상 설정
         document.addEventListener('DOMContentLoaded', async function() {
-            // 팀 로고 정보 가져오기
             try {
-                const response = await fetch('/TEAMLOGO/BASEBALL/team_logo_map.json');
-                const teamLogoMap = await response.json();
-                console.log('팀 로고맵 로드:', teamLogoMap);
+                // 팀 로고 정보 가져오기
+                const response = await fetch('/api/team-logo-map/BASEBALL');
+                if (!response.ok) {
+                    throw new Error(`팀 로고 맵 로드 실패: ${response.status}`);
+                }
+                const data = await response.json();
+                console.log('팀 로고맵 로드 성공:', data);
                 
                 // 홈팀 로고 설정
                 const homeTeamName = '<%= match.home_team %>';
-                let homeTeamLogo = '<%= match.match_data?.home_team_logo || "" %>';
-                let homeBgColor = '<%= match.match_data?.home_team_colorbg || "#1d4ed8" %>';
+                const homeLogoInfo = data.teamLogoMap?.[homeTeamName];
                 
-                // 새 구조 (객체) 확인
-                if (teamLogoMap[homeTeamName]) {
-                    if (typeof teamLogoMap[homeTeamName] === 'object') {
-                        homeTeamLogo = teamLogoMap[homeTeamName].path;
-                        homeBgColor = teamLogoMap[homeTeamName].bgColor || '#ffffff';
-                        console.log('홈팀 로고 정보(객체):', homeTeamLogo, homeBgColor);
-                    } else {
-                        homeTeamLogo = teamLogoMap[homeTeamName];
-                        console.log('홈팀 로고 정보(문자열):', homeTeamLogo);
-                    }
-                }
-                
-                const homeLogoContainer = document.querySelector('.team-info.home-team .team-logo-container');
-                if (homeLogoContainer) {
-                    // 배경색 적용
-                    homeLogoContainer.style.backgroundColor = homeBgColor;
-                    console.log('홈팀 로고 배경색 적용:', homeBgColor);
-                    
-                    if (homeTeamLogo) {
-                        homeLogoContainer.innerHTML = `<img src="${homeTeamLogo}" alt="홈팀 로고" class="team-logo">`;
-                    } else {
-                        homeLogoContainer.innerHTML = `<img src="/TEAMLOGO/BASEBALL/hogak.png" alt="기본 로고" class="team-logo">`;
+                if (homeLogoInfo) {
+                    const homeLogoContainer = document.querySelector('.team-info.home-team .team-logo-container');
+                    if (homeLogoContainer) {
+                        homeLogoContainer.style.backgroundColor = homeLogoInfo.bgColor || '#ffffff';
+                        homeLogoContainer.innerHTML = `
+                            <img src="${homeLogoInfo.path}" alt="${homeTeamName} 로고" style="width: 100%; height: 100%; object-fit: contain;">
+                        `;
                     }
                 }
                 
                 // 원정팀 로고 설정
                 const awayTeamName = '<%= match.away_team %>';
-                let awayTeamLogo = '<%= match.match_data?.away_team_logo || "" %>';
-                let awayBgColor = '<%= match.match_data?.away_team_colorbg || "#dc2626" %>';
+                const awayLogoInfo = data.teamLogoMap?.[awayTeamName];
                 
-                // 새 구조 (객체) 확인
-                if (teamLogoMap[awayTeamName]) {
-                    if (typeof teamLogoMap[awayTeamName] === 'object') {
-                        awayTeamLogo = teamLogoMap[awayTeamName].path;
-                        awayBgColor = teamLogoMap[awayTeamName].bgColor || '#ffffff';
-                        console.log('원정팀 로고 정보(객체):', awayTeamLogo, awayBgColor);
-                    } else {
-                        awayTeamLogo = teamLogoMap[awayTeamName];
-                        console.log('원정팀 로고 정보(문자열):', awayTeamLogo);
+                if (awayLogoInfo) {
+                    const awayLogoContainer = document.querySelector('.team-info.away-team .team-logo-container');
+                    if (awayLogoContainer) {
+                        awayLogoContainer.style.backgroundColor = awayLogoInfo.bgColor || '#ffffff';
+                        awayLogoContainer.innerHTML = `
+                            <img src="${awayLogoInfo.path}" alt="${awayTeamName} 로고" style="width: 100%; height: 100%; object-fit: contain;">
+                        `;
                     }
                 }
-                
-                const awayLogoContainer = document.querySelector('.team-info.away-team .team-logo-container');
-                if (awayLogoContainer) {
-                    // 배경색 적용
-                    awayLogoContainer.style.backgroundColor = awayBgColor;
-                    console.log('원정팀 로고 배경색 적용:', awayBgColor);
-                    
-                    if (awayTeamLogo) {
-                        awayLogoContainer.innerHTML = `<img src="${awayTeamLogo}" alt="원정팀 로고" class="team-logo">`;
-                    } else {
-                        awayLogoContainer.innerHTML = `<img src="/TEAMLOGO/BASEBALL/hogak.png" alt="기본 로고" class="team-logo">`;
-                    }
-                }
-                
-                // 타자/투수 패널 타이틀 업데이트
-                updatePanelTitles('<%= match.match_data?.inning_type %>');
-                
             } catch (error) {
-                console.error('팀 로고 정보를 가져오는 중 오류 발생:', error);
+                console.error('팀 로고 정보 로드 중 오류 발생:', error);
             }
-
-            // 팀 색상 초기화
-            const homeTeamSection = document.getElementById('home-team-section');
-            const awayTeamSection = document.getElementById('away-team-section');
-            
-            // 서버에서 받은 색상 값 적용
-            const homeTeamColor = '<%= match.home_team_color || match.match_data?.home_team_color || "#1d4ed8" %>';
-            const awayTeamColor = '<%= match.away_team_color || match.match_data?.away_team_color || "#dc2626" %>';
-            
-            if (homeTeamSection) homeTeamSection.style.backgroundColor = homeTeamColor;
-            if (awayTeamSection) awayTeamSection.style.backgroundColor = awayTeamColor;
-            
-            console.log('홈팀 색상:', homeTeamColor);
-            console.log('원정팀 색상:', awayTeamColor);
-            
-            // 팀 이름 가져오기
-            const homeTeamName = '<%= match.home_team %>';
-            const awayTeamName = '<%= match.away_team %>';
-            
-            // 페이지 로드 시 타자/투수 패널 배경색 초기화
-            const isTopInning = '<%= match.match_data?.inning_type %>' !== 'bottom';
-            const batterTitlePanel = document.querySelector('.batter-info .panel-title');
-            const pitcherTitlePanel = document.querySelector('.pitcher-info .panel-title');
-            
-            // 이닝 타입에 따라 색상 설정 및 패널 제목 변경
-            if (isTopInning) {
-                // 초(top) 이닝: 홈팀 타자, 어웨이팀 투수
-                batterTitlePanel.style.backgroundColor = convertToTransparentColor(homeTeamColor, 0.6);
-                pitcherTitlePanel.style.backgroundColor = convertToTransparentColor(awayTeamColor, 0.6);
-                
-                // 패널 제목을 팀명으로 변경
-                batterTitlePanel.textContent = homeTeamName;  // 홈팀 타자
-                pitcherTitlePanel.textContent = awayTeamName; // 어웨이팀 투수
-                
-                console.log('초기화: 초 이닝: 홈팀 타자:', homeTeamName, ', 어웨이팀 투수:', awayTeamName);
-            } else {
-                // 말(bottom) 이닝: 어웨이팀 타자, 홈팀 투수
-                batterTitlePanel.style.backgroundColor = convertToTransparentColor(awayTeamColor, 0.6);
-                pitcherTitlePanel.style.backgroundColor = convertToTransparentColor(homeTeamColor, 0.6);
-                
-                // 패널 제목을 팀명으로 변경
-                batterTitlePanel.textContent = awayTeamName;  // 어웨이팀 타자
-                pitcherTitlePanel.textContent = homeTeamName; // 홈팀 투수
-                
-                console.log('초기화: 말 이닝: 어웨이팀 타자:', awayTeamName, ', 홈팀 투수:', homeTeamName);
-            }
-            
-            // 팀 이름 크기 조절
-            adjustTeamNameSize();
         });
 
         // 경기 데이터 업데이트 수신
@@ -1055,24 +1045,43 @@
 
         // 팀명 길이에 따른 폰트 크기 조절
         function adjustTeamNameSize() {
-            const homeTeamHeader = document.querySelector('.team-section .team-info:first-child .team-header');
-            const awayTeamHeader = document.querySelector('.team-section .team-info:last-child .team-header');
-            
-            function adjustSize(element) {
-                const text = element.textContent;
-                if (text.length > 10) {
-                    element.classList.add('very-long');
-                    element.classList.remove('long');
-                } else if (text.length > 8) {
-                    element.classList.add('long');
-                    element.classList.remove('very-long');
-                } else {
-                    element.classList.remove('long', 'very-long');
+            try {
+                const homeTeamHeader = document.querySelector('.team-section .team-info:first-child .team-header');
+                const awayTeamHeader = document.querySelector('.team-section .team-info:last-child .team-header');
+                
+                if (!homeTeamHeader || !awayTeamHeader) {
+                    console.error('팀 헤더 요소를 찾을 수 없음');
+                    return;
                 }
+                
+                function adjustSize(element) {
+                    const text = element.textContent;
+                    console.log('팀 이름 크기 조절:', {
+                        team: element.closest('.team-info').classList.contains('home-team') ? '홈팀' : '원정팀',
+                        text,
+                        length: text.length
+                    });
+                    
+                    // 기존 클래스 제거
+                    element.classList.remove('long', 'very-long');
+                    
+                    // 텍스트 길이에 따라 클래스 추가
+                    if (text.length > 10) {
+                        element.classList.add('very-long');
+                        console.log('매우 긴 텍스트 적용');
+                    } else if (text.length > 8) {
+                        element.classList.add('long');
+                        console.log('긴 텍스트 적용');
+                    }
+                }
+                
+                adjustSize(homeTeamHeader);
+                adjustSize(awayTeamHeader);
+                
+                console.log('팀 이름 크기 조절 완료');
+            } catch (error) {
+                console.error('팀 이름 크기 조절 중 오류 발생:', error);
             }
-            
-            adjustSize(homeTeamHeader);
-            adjustSize(awayTeamHeader);
         }
         
         // 팀명 업데이트 시 크기 조절
@@ -1091,40 +1100,48 @@
         // 팀 로고 변경 이벤트 처리
         socket.on('teamLogoUpdated', function(data) {
             if (data.matchId === matchId) {
-                const teamType = data.teamType || data.team; // 이전 코드와의 호환성을 위해
+                const teamType = data.teamType || data.team;
                 const logoPath = data.logoPath;
                 const logoBgColor = data.logoBgColor || '#ffffff';
                 
-                console.log('로고 업데이트 이벤트 수신:', teamType, logoPath, logoBgColor);
+                console.log('로고 업데이트 이벤트 수신:', {
+                    teamType,
+                    logoPath,
+                    logoBgColor,
+                    matchId: data.matchId
+                });
                 
-                if (teamType === 'home') {
-                    const logoContainer = document.querySelector('.team-info.home-team .team-logo-container');
-                    if (logoContainer) {
-                        // 배경색 적용
-                        logoContainer.style.backgroundColor = logoBgColor;
-                        console.log('홈팀 로고 배경색 적용:', logoBgColor);
-                        
-                        // 로고 이미지 업데이트
-                        if (logoPath) {
-                            logoContainer.innerHTML = `<img src="${logoPath}" alt="홈팀 로고" class="team-logo">`;
-                        } else {
-                            logoContainer.innerHTML = `<img src="/TEAMLOGO/BASEBALL/hogak.png" alt="기본 로고" class="team-logo">`;
-                        }
+                const logoContainer = document.querySelector(`.team-info.${teamType}-team .team-logo-container`);
+                if (logoContainer) {
+                    // 배경색 적용
+                    logoContainer.style.backgroundColor = logoBgColor;
+                    console.log(`${teamType}팀 로고 컨테이너 배경색 적용:`, {
+                        container: logoContainer,
+                        bgColor: logoBgColor,
+                        appliedColor: logoContainer.style.backgroundColor
+                    });
+                    
+                    // 로고 이미지 업데이트
+                    if (logoPath) {
+                        const img = document.createElement('img');
+                        img.src = logoPath;
+                        img.alt = `${teamType}팀 로고`;
+                        img.className = 'team-logo';
+                        img.onload = () => {
+                            console.log(`${teamType}팀 로고 이미지 로드 완료:`, logoPath);
+                        };
+                        img.onerror = (error) => {
+                            console.error(`${teamType}팀 로고 이미지 로드 실패:`, error);
+                            logoContainer.innerHTML = `<div class="team-logo-placeholder"></div>`;
+                        };
+                        logoContainer.innerHTML = '';
+                        logoContainer.appendChild(img);
+                    } else {
+                        logoContainer.innerHTML = `<div class="team-logo-placeholder"></div>`;
+                        console.log(`${teamType}팀 로고 제거됨`);
                     }
-                } else if (teamType === 'away') {
-                    const logoContainer = document.querySelector('.team-info.away-team .team-logo-container');
-                    if (logoContainer) {
-                        // 배경색 적용
-                        logoContainer.style.backgroundColor = logoBgColor;
-                        console.log('원정팀 로고 배경색 적용:', logoBgColor);
-                        
-                        // 로고 이미지 업데이트
-                        if (logoPath) {
-                            logoContainer.innerHTML = `<img src="${logoPath}" alt="원정팀 로고" class="team-logo">`;
-                        } else {
-                            logoContainer.innerHTML = `<img src="/TEAMLOGO/BASEBALL/hogak.png" alt="기본 로고" class="team-logo">`;
-                        }
-                    }
+                } else {
+                    console.error(`${teamType}팀 로고 컨테이너를 찾을 수 없음`);
                 }
             }
         });
@@ -1132,18 +1149,19 @@
         // 팀 로고 삭제 이벤트 처리
         socket.on('teamLogoRemoved', function(data) {
             if (data.matchId === matchId) {
-                const teamType = data.team;
+                const teamType = data.teamType || data.team;
                 
-                if (teamType === 'home') {
-                    const logoContainer = document.querySelector('.team-info.home-team .team-logo-container');
-                    if (logoContainer) {
-                        logoContainer.innerHTML = `<img src="/TEAMLOGO/BASEBALL/hogak.png" alt="기본 로고" class="team-logo">`;
-                    }
-                } else if (teamType === 'away') {
-                    const logoContainer = document.querySelector('.team-info.away-team .team-logo-container');
-                    if (logoContainer) {
-                        logoContainer.innerHTML = `<img src="/TEAMLOGO/BASEBALL/hogak.png" alt="기본 로고" class="team-logo">`;
-                    }
+                console.log('팀 로고 삭제 이벤트 수신:', {
+                    teamType,
+                    matchId: data.matchId
+                });
+                
+                const logoContainer = document.querySelector(`.team-info.${teamType}-team .team-logo-container`);
+                if (logoContainer) {
+                    logoContainer.innerHTML = `<div class="team-logo-placeholder"></div>`;
+                    console.log(`${teamType}팀 로고 삭제 완료`);
+                } else {
+                    console.error(`${teamType}팀 로고 컨테이너를 찾을 수 없음`);
                 }
             }
         });
@@ -1154,51 +1172,86 @@
                 const teamType = data.teamType;
                 const teamColor = data.teamColor;
                 
-                if (teamType === 'home') {
-                    const homeTeamSection = document.getElementById('home-team-section');
-                    if (homeTeamSection) homeTeamSection.style.backgroundColor = teamColor;
-                    
-                    // 타자/투수 패널의 색상도 업데이트
-                    updatePanelTitles(document.querySelector('.inning-indicator').classList.contains('bottom') ? 'bottom' : 'top');
-                } else if (teamType === 'away') {
-                    const awayTeamSection = document.getElementById('away-team-section');
-                    if (awayTeamSection) awayTeamSection.style.backgroundColor = teamColor;
-                    
-                    // 타자/투수 패널의 색상도 업데이트
-                    updatePanelTitles(document.querySelector('.inning-indicator').classList.contains('bottom') ? 'bottom' : 'top');
-                }
+                console.log('팀 색상 업데이트 이벤트 수신:', {
+                    teamType,
+                    teamColor,
+                    matchId: data.matchId
+                });
                 
-                console.log('팀 색상 업데이트:', teamType, teamColor);
+                const teamSection = document.getElementById(`${teamType}-team-section`);
+                if (teamSection) {
+                    teamSection.style.backgroundColor = teamColor;
+                    console.log(`${teamType}팀 섹션 색상 업데이트:`, {
+                        section: teamSection,
+                        color: teamColor,
+                        appliedColor: teamSection.style.backgroundColor
+                    });
+                    
+                    // 타자/투수 패널의 색상도 업데이트
+                    const inningType = document.querySelector('.inning-indicator').classList.contains('bottom') ? 'bottom' : 'top';
+                    updatePanelTitles(inningType);
+                } else {
+                    console.error(`${teamType}팀 섹션을 찾을 수 없음`);
+                }
             }
         });
 
         // 이닝 타입에 따라 패널 타이틀 변경 함수
         function updatePanelTitles(inningType) {
-            const homeTeamName = document.querySelector('.team-info.home-team .team-header').textContent;
-            const awayTeamName = document.querySelector('.team-info.away-team .team-header').textContent;
-            const batterPanel = document.querySelector('.batter-info .panel-title');
-            const pitcherPanel = document.querySelector('.pitcher-info .panel-title');
-            
-            // 팀 색상 가져오기
-            const homeTeamSection = document.getElementById('home-team-section');
-            const awayTeamSection = document.getElementById('away-team-section');
-            const homeTeamColor = homeTeamSection ? homeTeamSection.style.backgroundColor : 'rgba(29, 78, 216, 0.6)';
-            const awayTeamColor = awayTeamSection ? awayTeamSection.style.backgroundColor : 'rgba(220, 38, 38, 0.6)';
-            
-            if (inningType === 'top') {
-                // 초(top) 이닝: 홈팀 타자, 어웨이팀 투수
-                batterPanel.textContent = homeTeamName;  // 홈팀 타자
-                batterPanel.style.backgroundColor = convertToTransparentColor(homeTeamColor, 0.6);
+            try {
+                const homeTeamName = document.querySelector('.team-info.home-team .team-header')?.textContent || 'HOME';
+                const awayTeamName = document.querySelector('.team-info.away-team .team-header')?.textContent || 'AWAY';
+                const batterPanel = document.querySelector('.batter-info .panel-title');
+                const pitcherPanel = document.querySelector('.pitcher-info .panel-title');
                 
-                pitcherPanel.textContent = awayTeamName; // 어웨이팀 투수
-                pitcherPanel.style.backgroundColor = convertToTransparentColor(awayTeamColor, 0.6);
-            } else {
-                // 말(bottom) 이닝: 어웨이팀 타자, 홈팀 투수
-                batterPanel.textContent = awayTeamName;  // 어웨이팀 타자
-                batterPanel.style.backgroundColor = convertToTransparentColor(awayTeamColor, 0.6);
+                if (!batterPanel || !pitcherPanel) {
+                    console.error('패널 타이틀 요소를 찾을 수 없음');
+                    return;
+                }
                 
-                pitcherPanel.textContent = homeTeamName; // 홈팀 투수
-                pitcherPanel.style.backgroundColor = convertToTransparentColor(homeTeamColor, 0.6);
+                // 팀 색상 가져오기
+                const homeTeamSection = document.getElementById('home-team-section');
+                const awayTeamSection = document.getElementById('away-team-section');
+                
+                if (!homeTeamSection || !awayTeamSection) {
+                    console.error('팀 섹션 요소를 찾을 수 없음');
+                    return;
+                }
+                
+                const homeTeamColor = homeTeamSection.style.backgroundColor || 'rgba(29, 78, 216, 0.6)';
+                const awayTeamColor = awayTeamSection.style.backgroundColor || 'rgba(220, 38, 38, 0.6)';
+                
+                console.log('패널 타이틀 업데이트:', {
+                    inningType,
+                    homeTeamName,
+                    awayTeamName,
+                    homeTeamColor,
+                    awayTeamColor
+                });
+                
+                if (inningType === 'top') {
+                    // 초(top) 이닝: 홈팀 타자, 어웨이팀 투수
+                    batterPanel.style.backgroundColor = convertToTransparentColor(homeTeamColor, 0.6);
+                    pitcherPanel.style.backgroundColor = convertToTransparentColor(awayTeamColor, 0.6);
+                    
+                    // 패널 제목을 팀명으로 변경
+                    batterPanel.textContent = homeTeamName;  // 홈팀 타자
+                    pitcherPanel.textContent = awayTeamName; // 어웨이팀 투수
+                    
+                    console.log('초 이닝: 홈팀 타자, 어웨이팀 투수');
+                } else {
+                    // 말(bottom) 이닝: 어웨이팀 타자, 홈팀 투수
+                    batterPanel.style.backgroundColor = convertToTransparentColor(awayTeamColor, 0.6);
+                    pitcherPanel.style.backgroundColor = convertToTransparentColor(homeTeamColor, 0.6);
+                    
+                    // 패널 제목을 팀명으로 변경
+                    batterPanel.textContent = awayTeamName;  // 어웨이팀 타자
+                    pitcherPanel.textContent = homeTeamName; // 홈팀 투수
+                    
+                    console.log('말 이닝: 어웨이팀 타자, 홈팀 투수');
+                }
+            } catch (error) {
+                console.error('패널 타이틀 업데이트 중 오류 발생:', error);
             }
         }
 
@@ -1278,6 +1331,25 @@
             
             // 이닝 타입에 따라 패널 타이틀 업데이트
             updatePanelTitles(data.match_data?.inning_type);
+        });
+
+        // 야구 전용 팀 로고/컬러/배경색 실시간 반영
+        socket.on('baseballTeamLogoUpdated', function(data) {
+            if (data.matchId !== matchId) return;
+            const { teamType, path, bgColor, teamColor } = data;
+            // 로고 및 배경색 반영
+            const logoContainer = document.querySelector(`.team-info.${teamType}-team .team-logo-container`);
+            if (logoContainer) {
+                if (bgColor) logoContainer.style.backgroundColor = bgColor;
+                if (path) {
+                    logoContainer.innerHTML = `<img src="${path}" alt="${teamType}팀 로고" class="team-logo">`;
+                }
+            }
+            // 팀 섹션 컬러 반영
+            if (teamColor) {
+                const teamSection = document.getElementById(`${teamType}-team-section`);
+                if (teamSection) teamSection.style.backgroundColor = teamColor;
+            }
         });
     </script>
 </body>
