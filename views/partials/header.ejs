@@ -38,19 +38,22 @@
             <h2 class="header-title"><%= title %></h2>
             <div class="d-flex gap-2 header-buttons">
                 <a href="/matches" class="btn btn-outline-secondary">
-                    <i class="bi bi-list-ul"></i> 경기 목록
+                    <i class="bi bi-list-ul"></i> 경기목록
                 </a>
-                <a href="#" class="btn btn-outline-primary" onclick="event.preventDefault();">
-                    <i class="bi bi-trophy"></i> 종목 관리
+                <a href="#" class="btn btn-outline-secondary disabled" style="opacity: 0.3; pointer-events: none;" onclick="event.preventDefault();">
+                    <i class="bi bi-trophy"></i> 종목관리
                 </a>
-                <a href="#" class="btn btn-outline-success" onclick="event.preventDefault();">
-                    <i class="bi bi-file-earmark-text"></i> 템플릿 관리
+                <a href="#" class="btn btn-outline-secondary disabled" style="opacity: 0.3; pointer-events: none;" onclick="event.preventDefault();">
+                    <i class="bi bi-file-earmark-text"></i> 템플릿관리
                 </a>
-                <a href="/match-list-manager" class="btn btn-outline-info">
-                    <i class="bi bi-collection"></i> 리스트 관리
+                <a href="/match-list-manager" class="btn btn-warning">
+                    <i class="bi bi-collection"></i> 리스트관리
                 </a>
                 <a href="/matches/new" class="btn btn-primary">
-                    <i class="bi bi-plus-lg"></i> 새 경기 생성
+                    <i class="bi bi-plus-lg"></i> 새경기생성
+                </a>
+                <a href="/settings" class="btn btn-outline-secondary">
+                    <i class="bi bi-gear-fill"></i> 설정
                 </a>
             </div>
         </div>

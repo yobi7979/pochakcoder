@@ -79,6 +79,17 @@
 </head>
 <body>
     <div class="control-panel">
+        <!-- 리스트 정보 표시 -->
+        <% if (typeof listId !== 'undefined' && listId) { %>
+        <div class="row mb-2">
+            <div id="list-info-box" class="col-12 text-center" style="background-color: #e9ecef; padding: 8px; border-radius: 8px; margin-bottom: 10px;">
+                <div style="font-weight: 600; font-size: 0.9rem; color: #495057;">
+                    <%= listName %> (경기 <%= currentMatchIndex + 1 %> / <%= totalMatches %>)
+                </div>
+            </div>
+        </div>
+        <% } %>
+        
         <!-- 팀명 표시 -->
         <div class="row mb-2">
             <div class="col-6 text-center" style="font-weight:700; font-size:1.1rem;">
@@ -162,6 +173,27 @@
                 <button id="apply-time-btn" class="btn btn-primary btn-sm">적용</button>
             </div>
         </div>
+        
+        <!-- 리스트 네비게이션 버튼 -->
+        <% if (typeof listId !== 'undefined' && listId) { %>
+        <div class="row mt-3">
+            <div class="col-12">
+                <div class="d-flex justify-content-between gap-2 mb-2">
+                    <button class="btn btn-outline-secondary" onclick="prevMatch()" style="flex: 1;">
+                        <i class="bi bi-chevron-left"></i> 이전경기
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="nextMatch()" style="flex: 1;">
+                        다음경기 <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+                <div class="d-flex justify-content-center">
+                    <button class="btn btn-success" onclick="pushToIntegratedOverlay()" style="width: 100%;">
+                        <i class="bi bi-display"></i> 통합 URL에 푸시
+                    </button>
+                </div>
+            </div>
+        </div>
+        <% } %>
     </div>
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -192,7 +224,13 @@
 
         // 서버와 소켓 연결
         socket.on('connect', () => {
+            console.log('=== 소켓 연결됨 ===');
+            console.log('matchId:', matchId);
             socket.emit('join', matchId);
+        });
+
+        socket.on('disconnect', () => {
+            console.log('=== 소켓 연결 끊어짐 ===');
         });
 
         // 서버로부터 타이머 상태 수신
@@ -220,20 +258,47 @@
             }
         });
 
+        socket.on('timer_updated', (data) => {
+            console.log('=== 타이머 업데이트 이벤트 수신 ===');
+            console.log('수신된 데이터:', data);
+            
+            currentSeconds = data.currentSeconds;
+            isRunning = data.isRunning;
+            lastServerTime = data.currentSeconds;
+            lastUpdateTime = data.lastUpdateTime || Date.now();
+            updateTimerDisplay();
+            if (data.isRunning && !localTimer) {
+                startLocalTimer();
+            } else if (!data.isRunning && localTimer) {
+                stopLocalTimer();
+            }
+            
+            console.log('타이머 업데이트 완료:', { currentSeconds, isRunning });
+        });
+
         // 타이머 컨트롤 버튼 이벤트
         document.getElementById('start-timer').addEventListener('click', function() {
+            console.log('=== 타이머 시작 버튼 클릭 ===');
+            console.log('matchId:', matchId);
             socket.emit('timer_control', {
                 matchId: matchId,
                 action: 'start'
             });
         });
         document.getElementById('stop-timer').addEventListener('click', function() {
+            console.log('=== 타이머 정지 버튼 클릭 ===');
+            console.log('matchId:', matchId, 'currentTime:', currentSeconds);
+            // 현재 로컬 타이머의 시간을 서버로 전송
+            const currentTime = currentSeconds;
             socket.emit('timer_control', {
                 matchId: matchId,
-                action: 'stop'
+                action: 'stop',
+                currentTime: currentTime
             });
         });
         document.getElementById('reset-timer').addEventListener('click', function() {
+            console.log('=== 타이머 리셋 버튼 클릭 ===');
+            console.log('matchId:', matchId);
             socket.emit('timer_control', {
                 matchId: matchId,
                 action: 'reset'
@@ -260,26 +325,20 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
                 });
+                
+                // 실시간 업데이트를 위한 WebSocket 이벤트 발생
+                socket.emit('match_updated', {
+                    matchId: matchId,
+                    home_score: formData.home_score,
+                    away_score: formData.away_score,
+                    state: formData.match_data.state
+                });
+                
+                console.log('점수/상태 업데이트 완료:', formData);
             } catch (error) {
-                // 에러 무시
+                console.error('업데이트 중 오류:', error);
             }
         }
-
-        // 시간 입력란 자동 포맷팅 제거 (입력 자유롭게)
-        // document.getElementById('time-edit-input').addEventListener('input', function(e) {
-        //     let val = this.value.replace(/[^0-9]/g, '');
-        //     if (val.length === 0) {
-        //         this.value = '';
-        //         return;
-        //     }
-        //     if (val.length <= 2) {
-        //         this.value = '00:' + val.padStart(2, '0');
-        //     } else if (val.length === 3) {
-        //         this.value = '0' + val[0] + ':' + val.slice(1, 3);
-        //     } else if (val.length >= 4) {
-        //         this.value = val.slice(0, val.length - 2).padStart(2, '0') + ':' + val.slice(-2);
-        //     }
-        // });
 
         // 시간 수정 적용 버튼 이벤트
         document.getElementById('apply-time-btn').addEventListener('click', function() {
@@ -336,6 +395,134 @@
                 localTimer = null;
             }
         }
+
+        // 리스트 기능 관련 변수
+        let currentMatchIndex = 0;
+        let totalMatches = 0;
+        let listId = null;
+        let listName = null;
+        
+        // 현재 경기가 푸시되어 있는지 확인하고 리스트 박스 색상 업데이트
+        async function checkPushedMatchStatus() {
+            if (!listId) return;
+            
+            try {
+                const response = await fetch(`/api/pushed-match/${listId}`);
+                const result = await response.json();
+                
+                const listInfoBox = document.getElementById('list-info-box');
+                if (listInfoBox) {
+                    if (result.success && result.data && result.data.matchId === matchId) {
+                        // 현재 경기가 푸시되어 있음 - 빨간색
+                        listInfoBox.style.backgroundColor = '#dc3545';
+                        listInfoBox.querySelector('div').style.color = '#ffffff';
+                    } else {
+                        // 현재 경기가 푸시되어 있지 않음 - 회색
+                        listInfoBox.style.backgroundColor = '#e9ecef';
+                        listInfoBox.querySelector('div').style.color = '#495057';
+                    }
+                }
+            } catch (error) {
+                console.error('푸시된 경기 상태 확인 실패:', error);
+            }
+        }
+
+        // 통합 URL에 현재 경기 푸시 (항상 사용 가능)
+        function pushToIntegratedOverlay() {
+            console.log('=== 통합 URL 푸시 시작 ===');
+            console.log('현재 matchId:', matchId);
+            console.log('현재 listId:', listId);
+            console.log('현재 listName:', listName);
+            console.log('현재 matchIndex:', currentMatchIndex);
+            console.log('현재 totalMatches:', totalMatches);
+            
+            // listId가 없으면 경고
+            if (!listId) {
+                alert('리스트 정보가 없습니다. 리스트 모드에서만 사용 가능합니다.');
+                return;
+            }
+            
+            // WebSocket을 통해 리스트 오버레이에 경기 변경 알림
+            const pushData = {
+                listId: listId,
+                matchIndex: currentMatchIndex,
+                matchId: matchId  // 현재 선택된 경기의 ID 추가
+            };
+            
+            console.log('전송할 데이터:', pushData);
+            console.log('listId 타입:', typeof listId);
+            console.log('listId 값:', listId);
+            socket.emit('push_to_list_overlay', pushData);
+            
+            console.log('통합 오버레이에 경기 푸시 완료');
+        }
+        
+        // 서버 응답 처리
+        socket.on('push_to_list_overlay_response', (response) => {
+            console.log('푸시 응답 수신:', response);
+            if (response.success) {
+                alert('통합 URL에 경기가 성공적으로 푸시되었습니다!');
+                // 푸시 성공 후 색상 업데이트
+                checkPushedMatchStatus();
+            } else {
+                alert('푸시 실패: ' + (response.error || '알 수 없는 오류'));
+            }
+        });
+
+        // 경기 수정 이벤트
+        socket.on('match_updated', (data) => {
+            if (data.matchId === matchId) {
+                console.log('경기 수정 이벤트 수신:', data);
+                
+                // 팀명 업데이트
+                document.getElementById('home-team-name').textContent = data.home_team;
+                document.getElementById('away-team-name').textContent = data.away_team;
+                
+                // 종목 업데이트 (필요한 경우)
+                if (data.sport_type && data.sport_type !== currentSportType) {
+                    currentSportType = data.sport_type;
+                    console.log('종목 변경됨:', currentSportType);
+                }
+                
+                // 경기 정보 업데이트
+                updateMatchDisplay(data);
+            }
+        });
+        
+        <% if (typeof listId !== 'undefined' && listId) { %>
+        currentMatchIndex = <%- currentMatchIndex || 0 %>;
+        totalMatches = <%- totalMatches || 0 %>;
+        listId = '<%- listId %>';
+        listName = '<%- listName %>';
+        
+        console.log('리스트 모드 초기화:', { listId, listName, currentMatchIndex, totalMatches });
+        
+        // 페이지 로드 시 푸시된 경기 상태 확인
+        document.addEventListener('DOMContentLoaded', function() {
+            checkPushedMatchStatus();
+        });
+        
+        // 다음 경기로 이동
+        async function nextMatch() {
+            if (currentMatchIndex < totalMatches - 1) {
+                currentMatchIndex++;
+                window.location.href = `/list/${listId}/control-mobile?index=${currentMatchIndex}`;
+            }
+        }
+        
+        // 이전 경기로 이동
+        async function prevMatch() {
+            if (currentMatchIndex > 0) {
+                currentMatchIndex--;
+                window.location.href = `/list/${listId}/control-mobile?index=${currentMatchIndex}`;
+            }
+        }
+        
+        // 경기 리스트 페이지로 이동
+        function goToList() {
+            window.location.href = '/match-list-manager';
+        }
+        <% } %>
     </script>
 </body>
 </html> 

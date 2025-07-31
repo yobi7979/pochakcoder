@@ -6,7 +6,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const morgan = require('morgan');
 const winston = require('winston');
-const { sequelize, Match } = require('./models');
+const { sequelize, Match, Settings, MatchList } = require('./models');
 const multer = require('multer');
 const fs = require('fs').promises;
 const fsSync = require('fs');
@@ -17,22 +17,54 @@ const { Op } = require('sequelize');
 const session = require('express-session');
 const ejs = require('ejs');
 
+// 로그 디렉토리 생성
+const logDir = path.join(__dirname, 'logs');
+if (!fsSync.existsSync(logDir)) {
+  fsSync.mkdirSync(logDir, { recursive: true });
+}
+
 // 로깅 설정
 const logger = winston.createLogger({
   level: 'debug',
   format: winston.format.combine(
-    winston.format.timestamp(),
+    winston.format.timestamp({
+      format: 'YYYY-MM-DD HH:mm:ss'
+    }),
+    winston.format.errors({ stack: true }),
     winston.format.json()
   ),
   transports: [
-    new winston.transports.File({ filename: 'app.log' }),
-    new winston.transports.Console()
+    // 에러 로그 (별도 파일)
+    new winston.transports.File({ 
+      filename: path.join(logDir, 'error.log'),
+      level: 'error',
+      maxsize: 10 * 1024 * 1024, // 10MB
+      maxFiles: 5,
+      tailable: true
+    }),
+    // 일반 로그 (자동 로테이션)
+    new winston.transports.File({ 
+      filename: path.join(logDir, 'app.log'),
+      maxsize: 10 * 1024 * 1024, // 10MB
+      maxFiles: 10,
+      tailable: true
+    }),
+    // 콘솔 출력
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.simple()
+      )
+    })
   ]
 });
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
+
+// 현재 푸시된 경기 정보를 저장하는 객체
+const pushedMatches = new Map(); // listId -> { matchId, matchIndex, timestamp }
 
 // 팀 로고 업로드를 위한 multer 설정
 const upload = multer({
@@ -96,6 +128,29 @@ function hexToRgb(hex) {
     const b = parseInt(hex.substring(4, 6), 16);
     
     return `${r}, ${g}, ${b}`;
+}
+
+// 기본 팀 컬러 가져오기 함수
+async function getDefaultTeamColors() {
+  try {
+    const settings = await Settings.findAll();
+    const settingsObj = {};
+    
+    settings.forEach(setting => {
+      settingsObj[setting.key] = setting.value;
+    });
+    
+    return {
+      home: settingsObj.default_home_color || '#1e40af',
+      away: settingsObj.default_away_color || '#1e40af'
+    };
+  } catch (error) {
+    logger.error('기본 팀 컬러 조회 실패:', error);
+    return {
+      home: '#1e40af',
+      away: '#1e40af'
+    };
+  }
 }
 
 // EJS 템플릿 엔진 설정
@@ -262,9 +317,10 @@ app.post('/api/match', async (req, res) => {
     // 기본 match_data 객체 설정
     let matchDataObj = match_data || {};
 
-    // 팀 컬러 기본값(R0 G204 B51, #00cc33) 적용
-    if (!matchDataObj.home_team_color) matchDataObj.home_team_color = '#00cc33';
-    if (!matchDataObj.away_team_color) matchDataObj.away_team_color = '#00cc33';
+    // 동적 기본 팀 컬러 적용
+    const defaultColors = await getDefaultTeamColors();
+    if (!matchDataObj.home_team_color) matchDataObj.home_team_color = defaultColors.home;
+    if (!matchDataObj.away_team_color) matchDataObj.away_team_color = defaultColors.away;
 
     // 타이머 관련 초기 데이터 추가
     matchDataObj = {
@@ -309,6 +365,7 @@ app.post('/api/match', async (req, res) => {
       sport_type,
       home_team,
       away_team,
+
       match_data: matchDataObj,
       url
     });
@@ -320,8 +377,25 @@ app.post('/api/match', async (req, res) => {
     const overlay_url = `/${sport_type.toLowerCase()}/${match.id}/overlay`;
     const control_url = `/${sport_type.toLowerCase()}/${match.id}/control`;
 
+    const matchData = match.toJSON();
+
+    
     res.status(201).json({
-      ...match.toJSON(),
+      id: matchData.id,
+      sport_type: matchData.sport_type,
+      home_team: matchData.home_team,
+      away_team: matchData.away_team,
+      home_team_color: matchData.home_team_color,
+      away_team_color: matchData.away_team_color,
+      home_team_header: matchData.home_team_header,
+      away_team_header: matchData.away_team_header,
+      home_score: matchData.home_score,
+      away_score: matchData.away_score,
+      status: matchData.status,
+      match_data: matchData.match_data,
+      created_at: matchData.created_at,
+      updated_at: matchData.updated_at,
+
       overlay_url,
       control_url
     });
@@ -341,6 +415,79 @@ app.get('/api/match/:id', async (req, res) => {
     res.json(match);
   } catch (error) {
     logger.error('경기 조회 실패:', error);
+    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+  }
+});
+
+// 경기 수정 API
+app.put('/api/match/:id', async (req, res) => {
+  try {
+    const { sport_type, home_team, away_team } = req.body;
+    
+    if (!sport_type || !home_team || !away_team) {
+      return res.status(400).json({ error: '필수 필드가 누락되었습니다.' });
+    }
+
+    const match = await Match.findByPk(req.params.id);
+    if (!match) {
+      return res.status(404).json({ error: '경기를 찾을 수 없습니다.' });
+    }
+
+    // 경기 정보 업데이트
+    await match.update({
+      sport_type,
+      home_team,
+      away_team
+    });
+
+    // 리스트에 등록된 경기 정보도 함께 업데이트
+    const matchLists = await MatchList.findAll();
+    let updatedLists = [];
+    
+    for (const list of matchLists) {
+      if (list.matches && Array.isArray(list.matches)) {
+        let updated = false;
+        const updatedMatches = list.matches.map(listMatch => {
+          if (listMatch.id === req.params.id) {
+            updated = true;
+            return {
+              ...listMatch,
+              sport_type,
+              home_team,
+              away_team
+            };
+          }
+          return listMatch;
+        });
+        
+        if (updated) {
+          await list.update({ matches: updatedMatches });
+          updatedLists.push(list.name);
+          logger.info(`리스트 "${list.name}"의 경기 정보 업데이트 완료: ${req.params.id}`);
+        }
+      }
+    }
+    
+    if (updatedLists.length > 0) {
+      logger.info(`총 ${updatedLists.length}개 리스트에서 경기 정보 업데이트: ${updatedLists.join(', ')}`);
+    }
+
+    // 수정된 경기 정보를 모든 클라이언트에 브로드캐스트
+    const updatedMatch = await Match.findByPk(req.params.id);
+    io.emit('match_updated', {
+      matchId: updatedMatch.id,
+      sport_type: updatedMatch.sport_type,
+      home_team: updatedMatch.home_team,
+      away_team: updatedMatch.away_team,
+      home_score: updatedMatch.home_score,
+      away_score: updatedMatch.away_score,
+      match_data: updatedMatch.match_data
+    });
+
+    logger.info(`경기 수정 완료: ${match.id} (${home_team} vs ${away_team})`);
+    res.json(match);
+  } catch (error) {
+    logger.error('경기 수정 실패:', error);
     res.status(500).json({ error: '서버 오류가 발생했습니다.' });
   }
 });
@@ -371,6 +518,203 @@ app.post('/api/team-logo', upload.single('logo'), async (req, res) => {
       message: '서버 오류가 발생했습니다.',
       error: error.message
     });
+  }
+});
+
+// CSV 일괄 등록 API
+app.post('/api/bulk-create-matches', csvUpload.single('csvFile'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'CSV 파일이 없습니다.' });
+    }
+
+    const csvContent = req.file.buffer.toString('utf-8');
+    const lines = csvContent.split('\n').filter(line => line.trim());
+    
+    if (lines.length < 2) {
+      return res.status(400).json({ error: 'CSV 파일이 비어있거나 헤더만 있습니다.' });
+    }
+
+    // 헤더 확인
+    const header = lines[0].split(',').map(col => col.trim());
+    if (header.length < 3) {
+      return res.status(400).json({ error: 'CSV 형식이 올바르지 않습니다. 형식: 리스트명,홈팀명,어웨이팀명' });
+    }
+
+    let createdMatches = 0;
+    let createdLists = 0;
+    let updatedLists = 0;
+    const processedLists = new Set();
+    const successRows = [];
+    const errors = [];
+
+    // 각 행을 순차적으로 처리
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+
+      const columns = line.split(',').map(col => col.trim());
+      if (columns.length < 3) {
+        logger.warn(`행 ${i + 1}: 컬럼 수가 부족합니다. 건너뜁니다.`);
+        errors.push(`행 ${i + 1}: 컬럼 수가 부족합니다.`);
+        continue;
+      }
+
+      const [listName, homeTeam, awayTeam] = columns;
+
+      try {
+        logger.info(`행 ${i + 1} 처리 시작: ${listName} - ${homeTeam} vs ${awayTeam}`);
+        
+        // 리스트 찾기 또는 생성 (트랜잭션 내에서)
+        let list = await MatchList.findOne({ 
+          where: { name: listName }
+        });
+        let isNewList = false;
+
+        if (!list) {
+          logger.info(`새 리스트 생성: ${listName}`);
+          list = await MatchList.create({
+            name: listName,
+            matches: []
+          });
+          createdLists++;
+          isNewList = true;
+          logger.info(`리스트 생성 완료: ${listName} (ID: ${list.id})`);
+        } else {
+          logger.info(`기존 리스트 사용: ${listName} (ID: ${list.id})`);
+        }
+
+        // 고유한 경기 ID 생성
+        const today = new Date();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const dateCode = `${month}${day}`;
+        const sportCode = 'SC'; // 축구
+        
+        // 중복되지 않는 ID 생성
+        let uniqueId;
+        let attempts = 0;
+        const maxAttempts = 100;
+        
+        do {
+          const timestamp = Date.now() + attempts;
+          const sequence = String(timestamp % 10000).padStart(4, '0');
+          uniqueId = `${dateCode}${sportCode}${sequence}`;
+          attempts++;
+          
+          // 기존 ID 확인
+          const existingMatch = await Match.findByPk(uniqueId);
+          if (!existingMatch) break;
+          
+          if (attempts >= maxAttempts) {
+            throw new Error('고유한 경기 ID를 생성할 수 없습니다.');
+          }
+        } while (true);
+        
+        // 경기 생성 (트랜잭션 내에서)
+        logger.info(`경기 생성 시작: ${homeTeam} vs ${awayTeam} (ID: ${uniqueId})`);
+        const match = await Match.create({
+          id: uniqueId,
+          sport_type: 'soccer', // 기본값으로 축구 설정
+          home_team: homeTeam,
+          away_team: awayTeam,
+          home_score: 0,
+          away_score: 0,
+          status: 'pending',
+          match_data: {
+            state: '경기 전',
+            home_shots: 0,
+            away_shots: 0,
+            home_shots_on_target: 0,
+            away_shots_on_target: 0,
+            home_corners: 0,
+            away_corners: 0,
+            home_fouls: 0,
+            away_fouls: 0,
+            timer: 0,
+            lastUpdateTime: Date.now(),
+            isRunning: false
+          }
+        });
+        logger.info(`경기 생성 완료: ${match.id} (${homeTeam} vs ${awayTeam})`);
+
+        // 리스트에 경기 추가 (트랜잭션 내에서)
+        logger.info(`리스트에 경기 추가 시작: ${listName}`);
+        const currentMatches = list.matches || [];
+        const matchInfo = {
+          id: match.id,
+          sport_type: match.sport_type,
+          home_team: match.home_team,
+          away_team: match.away_team,
+          home_score: match.home_score,
+          away_score: match.away_score
+        };
+        
+        // 중복 체크
+        if (!currentMatches.some(m => m.id === match.id)) {
+          currentMatches.push(matchInfo);
+          
+          logger.info(`리스트 업데이트 전: ${listName}, 경기 수: ${currentMatches.length}`);
+          logger.info(`추가할 경기 정보:`, matchInfo);
+          
+          // 리스트 새로고침 후 업데이트
+          const freshList = await MatchList.findByPk(list.id);
+          await freshList.update({ matches: currentMatches });
+          
+          // 업데이트 확인
+          const updatedList = await MatchList.findByPk(list.id);
+          logger.info(`리스트 업데이트 후: ${updatedList.name}, 경기 수: ${updatedList.matches ? updatedList.matches.length : 0}`);
+          
+          createdMatches++;
+          successRows.push(`행 ${i + 1}: ${listName} - ${homeTeam} vs ${awayTeam} (ID: ${match.id})`);
+
+          if (!isNewList && !processedLists.has(list.id)) {
+            updatedLists++;
+            processedLists.add(list.id);
+          }
+
+          logger.info(`경기 생성 및 리스트 추가 완료: ${match.id} (${homeTeam} vs ${awayTeam}) -> 리스트: ${listName}`);
+        } else {
+          logger.info(`경기 ${match.id}는 이미 리스트 ${listName}에 존재합니다.`);
+          successRows.push(`행 ${i + 1}: ${listName} - ${homeTeam} vs ${awayTeam} (이미 존재)`);
+        }
+
+        // 각 행 처리 후 잠시 대기 (데이터베이스 안정화)
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+      } catch (error) {
+        logger.error(`행 ${i + 1} 처리 중 오류:`, error);
+        errors.push(`행 ${i + 1}: ${listName} - ${homeTeam} vs ${awayTeam} - ${error.message}`);
+        // 개별 행 오류는 로그만 남기고 계속 진행
+      }
+    }
+
+    // 처리 완료 후 리스트 상태 확인
+    logger.info('=== 처리 완료 후 리스트 상태 확인 ===');
+    const allLists = await MatchList.findAll();
+    for (const list of allLists) {
+      logger.info(`리스트 "${list.name}": ${list.matches ? list.matches.length : 0}개 경기`);
+      if (list.matches && list.matches.length > 0) {
+        logger.info(`  경기 목록: ${list.matches.map(m => `${m.home_team} vs ${m.away_team} (${m.id})`).join(', ')}`);
+      }
+    }
+    
+    logger.info(`CSV 일괄 등록 완료: 경기 ${createdMatches}개, 새 리스트 ${createdLists}개, 업데이트된 리스트 ${updatedLists}개`);
+    logger.info(`성공한 행: ${successRows.length}개, 실패한 행: ${errors.length}개`);
+    
+    res.json({
+      success: true,
+      createdMatches,
+      createdLists,
+      updatedLists,
+      successRows,
+      errors,
+      message: 'CSV 일괄 등록이 완료되었습니다.'
+    });
+
+  } catch (error) {
+    logger.error('CSV 일괄 등록 실패:', error);
+    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
   }
 });
 
@@ -419,6 +763,277 @@ io.on('connection', (socket) => {
         const roomName = `match_${matchId}`;
         socket.join(roomName);
         logger.info(`클라이언트 ${socket.id}가 방 ${roomName}에 참가함`);
+    });
+
+    // 리스트 오버레이 join 이벤트 처리
+    socket.on('join_list_overlay', (listId) => {
+        const roomName = `list_overlay_${listId}`;
+        socket.join(roomName);
+        logger.info(`클라이언트 ${socket.id}가 리스트 오버레이 방 ${roomName}에 참가함`);
+    });
+
+    // 경기 업데이트 이벤트 처리 (점수, 상태 등)
+    socket.on('match_updated', async (data) => {
+        try {
+            const { matchId, home_score, away_score, state } = data;
+            logger.info(`경기 업데이트: matchId=${matchId}, home_score=${home_score}, away_score=${away_score}, state=${state}`);
+            
+            // 해당 경기의 모든 클라이언트에게 업데이트 전송
+            const roomName = `match_${matchId}`;
+            io.to(roomName).emit('match_data_updated', {
+                matchId: matchId,
+                home_score: home_score,
+                away_score: away_score,
+                state: state
+            });
+            
+            // 리스트 오버레이에도 업데이트 전송 (해당 경기가 현재 표시 중인 경우)
+            // 모든 리스트 오버레이 방에 업데이트 전송
+            const rooms = Array.from(io.sockets.adapter.rooms.keys()).filter(room => room.startsWith('list_overlay_'));
+            rooms.forEach(room => {
+                io.to(room).emit('match_data_updated', {
+                    matchId: matchId,
+                    home_score: home_score,
+                    away_score: away_score,
+                    state: state
+                });
+            });
+            
+        } catch (error) {
+            logger.error('match_updated 이벤트 처리 중 오류 발생:', error);
+        }
+    });
+
+    // 타이머 제어 이벤트 처리
+    socket.on('timer_control', async (data) => {
+        try {
+            const { matchId, action, minutes, seconds, currentTime } = data;
+            logger.info(`타이머 제어: matchId=${matchId}, action=${action}, minutes=${minutes}, seconds=${seconds}, currentTime=${currentTime}`);
+            
+            // 경기 데이터 업데이트
+            const match = await Match.findByPk(matchId);
+            if (!match) {
+                throw new Error('경기를 찾을 수 없습니다.');
+            }
+            
+            const matchData = match.match_data || {};
+            let timerData = {};
+            
+            if (action === 'set') {
+                matchData.minute = minutes;
+                matchData.second = seconds;
+                matchData.timer = minutes * 60 + seconds;
+                matchData.currentSeconds = minutes * 60 + seconds;
+                timerData = {
+                    matchId: matchId,
+                    minute: minutes,
+                    second: seconds,
+                    timer: minutes * 60 + seconds,
+                    currentSeconds: minutes * 60 + seconds
+                };
+            } else if (action === 'start') {
+                matchData.isRunning = true;
+                // 현재 타이머 값을 유지하면서 시작
+                const currentSeconds = matchData.currentSeconds || matchData.timer || 0;
+                matchData.currentSeconds = currentSeconds;
+                timerData = {
+                    matchId: matchId,
+                    isRunning: true,
+                    currentSeconds: currentSeconds,
+                    timer: currentSeconds,
+                    minute: Math.floor(currentSeconds / 60),
+                    second: currentSeconds % 60
+                };
+            } else if (action === 'stop') {
+                matchData.isRunning = false;
+                // 클라이언트에서 전송된 현재 시간을 사용
+                const currentSeconds = currentTime || matchData.currentSeconds || matchData.timer || 0;
+                matchData.currentSeconds = currentSeconds;
+                matchData.timer = currentSeconds;
+                matchData.minute = Math.floor(currentSeconds / 60);
+                matchData.second = currentSeconds % 60;
+                timerData = {
+                    matchId: matchId,
+                    isRunning: false,
+                    currentSeconds: currentSeconds,
+                    timer: currentSeconds,
+                    minute: Math.floor(currentSeconds / 60),
+                    second: currentSeconds % 60
+                };
+            }
+            
+            await match.update({
+                match_data: matchData
+            });
+            
+            // 해당 경기의 모든 클라이언트에게 타이머 업데이트 전송
+            const roomName = `match_${matchId}`;
+            io.to(roomName).emit('timer_updated', timerData);
+            
+            // 리스트 오버레이에도 타이머 업데이트 전송
+            const rooms = Array.from(io.sockets.adapter.rooms.keys()).filter(room => room.startsWith('list_overlay_'));
+            rooms.forEach(room => {
+                io.to(room).emit('timer_updated', timerData);
+            });
+            
+            logger.info(`타이머 업데이트 전송 완료: matchId=${matchId}, action=${action}, currentSeconds=${timerData.currentSeconds}`);
+        } catch (error) {
+            logger.error('timer_control 이벤트 처리 중 오류 발생:', error);
+        }
+    });
+
+    // 리스트 오버레이 경기 변경 이벤트 처리
+    socket.on('push_to_list_overlay', async (data) => {
+        try {
+            const { listId, matchIndex, matchId } = data;
+            const roomName = `list_overlay_${listId}`;
+            
+            logger.info(`=== 푸시 요청 수신 ===`);
+            logger.info(`listId: ${listId}, matchIndex: ${matchIndex}, matchId: ${matchId}`);
+            
+            // matchId로 경기 정보를 직접 가져오기
+            let actualMatch;
+            if (matchId) {
+                logger.info(`matchId로 경기 조회: ${matchId}`);
+                actualMatch = await Match.findByPk(matchId);
+                if (!actualMatch) {
+                    throw new Error('경기를 찾을 수 없습니다.');
+                }
+                logger.info(`경기 조회 성공:`, JSON.stringify(actualMatch.toJSON(), null, 2));
+            } else {
+                // 기존 방식: 리스트에서 경기 정보 가져오기
+                const list = await MatchList.findByPk(listId);
+                if (!list || !list.matches || matchIndex >= list.matches.length) {
+                    throw new Error('리스트 또는 경기를 찾을 수 없습니다.');
+                }
+                
+                const currentMatch = list.matches[matchIndex];
+                actualMatch = await Match.findByPk(currentMatch.id);
+                if (!actualMatch) {
+                    throw new Error('경기를 찾을 수 없습니다.');
+                }
+            }
+            
+            // 실제 경기 데이터를 완전히 구성 (최신 타이머 정보 포함)
+            const actualMatchData = actualMatch.match_data || {};
+            
+            // 타이머 정보를 명확하게 구성
+            const currentSeconds = actualMatchData.currentSeconds || actualMatchData.timer || 0;
+            const minute = actualMatchData.minute || Math.floor(currentSeconds / 60);
+            const second = actualMatchData.second || (currentSeconds % 60);
+            const isRunning = actualMatchData.isRunning || false;
+            
+            const matchData = {
+                id: actualMatch.id,
+                sport_type: actualMatch.sport_type || 'soccer',
+                home_team: actualMatch.home_team || 'HOME',
+                away_team: actualMatch.away_team || 'AWAY',
+                home_score: actualMatch.home_score || actualMatchData.home_score || 0,
+                away_score: actualMatch.away_score || actualMatchData.away_score || 0,
+                home_team_color: actualMatch.home_team_color || '#1e40af',
+                away_team_color: actualMatch.away_team_color || '#1e40af',
+                match_data: {
+                    state: actualMatchData.state || '전반',
+                    timer: currentSeconds,
+                    minute: minute,
+                    second: second,
+                    currentSeconds: currentSeconds,
+                    isRunning: isRunning,
+                    // 야구 특화 데이터
+                    current_inning: actualMatchData.current_inning || 1,
+                    inning_type: actualMatchData.inning_type || 'top',
+                    first_base: actualMatchData.first_base || false,
+                    second_base: actualMatchData.second_base || false,
+                    third_base: actualMatchData.third_base || false,
+                    balls: actualMatchData.balls || 0,
+                    strikes: actualMatchData.strikes || 0,
+                    outs: actualMatchData.outs || 0,
+                    // 모든 추가 데이터 포함
+                    ...actualMatchData
+                }
+            };
+            
+            // 해당 리스트 오버레이 방의 모든 클라이언트에게 경기 변경 알림
+            const eventData = {
+                listId: listId,
+                matchIndex: matchIndex,
+                match: matchData,
+                timestamp: Date.now()
+            };
+            
+            // 통합 오버레이와 기존 리스트 오버레이 모두에 전송
+            io.to(roomName).emit('list_overlay_match_changed', eventData);
+            
+            logger.info(`=== 푸시 완료 ===`);
+            logger.info(`listId: ${listId}, matchIndex: ${matchIndex}, matchId: ${matchId || 'N/A'}`);
+            logger.info(`전송할 경기 데이터:`, JSON.stringify(matchData, null, 2));
+            
+            // 현재 푸시된 경기 정보 저장
+            pushedMatches.set(listId, {
+                matchId: actualMatch.id,
+                matchIndex: matchIndex,
+                timestamp: Date.now()
+            });
+            
+            // 성공 응답
+            socket.emit('push_to_list_overlay_response', { 
+                success: true, 
+                message: '경기가 성공적으로 푸시되었습니다.',
+                matchId: actualMatch.id
+            });
+        } catch (error) {
+            logger.error('push_to_list_overlay 이벤트 처리 중 오류 발생:', error);
+            socket.emit('push_to_list_overlay_response', { success: false, error: error.message });
+        }
+    });
+
+    // 통합 오버레이 방 조인 이벤트 처리
+    socket.on('join_unified_overlay', (data) => {
+        try {
+            const { listId } = data;
+            const roomName = `list_overlay_${listId}`;
+            
+            logger.info(`=== 통합 오버레이 방 조인 ===`);
+            logger.info(`listId: ${listId}, roomName: ${roomName}`);
+            
+            socket.join(roomName);
+            
+            logger.info(`통합 오버레이 방 조인 완료: ${roomName}`);
+        } catch (error) {
+            logger.error('join_unified_overlay 이벤트 처리 중 오류 발생:', error);
+        }
+    });
+
+
+
+    // 타이머 상태 요청 이벤트 처리
+    socket.on('request_timer_state', async (data) => {
+        try {
+            const { matchId } = data;
+            logger.info(`타이머 상태 요청: matchId=${matchId}`);
+            
+            const match = await Match.findByPk(matchId);
+            if (!match) {
+                throw new Error('경기를 찾을 수 없습니다.');
+            }
+            
+            const matchData = match.match_data || {};
+            const timerState = {
+                matchId: matchId,
+                currentSeconds: matchData.currentSeconds || matchData.timer || 0,
+                minute: matchData.minute || Math.floor((matchData.currentSeconds || matchData.timer || 0) / 60),
+                second: matchData.second || ((matchData.currentSeconds || matchData.timer || 0) % 60),
+                isRunning: matchData.isRunning || false,
+                lastUpdateTime: Date.now()
+            };
+            
+            // 요청한 클라이언트에게 타이머 상태 전송
+            socket.emit('timer_state', timerState);
+            logger.info(`타이머 상태 전송 완료:`, timerState);
+        } catch (error) {
+            logger.error('request_timer_state 이벤트 처리 중 오류 발생:', error);
+            socket.emit('timer_state', { error: error.message });
+        }
     });
 
     // match_update 이벤트 처리
@@ -1089,6 +1704,37 @@ async function initializeDefaultSports() {
   }
 }
 
+// 기본 설정 초기화 함수
+async function initializeDefaultSettings() {
+  try {
+    // 기본 팀 컬러 설정이 없으면 생성
+    const [homeColorSetting, homeCreated] = await Settings.findOrCreate({
+      where: { key: 'default_home_color' },
+      defaults: {
+        value: '#1e40af',
+        description: '홈팀 기본 컬러'
+      }
+    });
+
+    const [awayColorSetting, awayCreated] = await Settings.findOrCreate({
+      where: { key: 'default_away_color' },
+      defaults: {
+        value: '#1e40af',
+        description: '원정팀 기본 컬러'
+      }
+    });
+
+    if (homeCreated) {
+      logger.info('홈팀 기본 컬러 설정 초기화됨');
+    }
+    if (awayCreated) {
+      logger.info('원정팀 기본 컬러 설정 초기화됨');
+    }
+  } catch (error) {
+    logger.error('기본 설정 초기화 중 오류 발생:', error);
+  }
+}
+
 // 서버 시작
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', async () => {
@@ -1096,6 +1742,9 @@ server.listen(PORT, '0.0.0.0', async () => {
   
   // 기본 종목 초기화
   await initializeDefaultSports();
+  
+  // 기본 설정 초기화
+  await initializeDefaultSettings();
   
   await restoreMatchTimers();
   await sequelize.sync({ alter: true });
@@ -1349,11 +1998,29 @@ app.get('/api/matches', async (req, res) => {
     
     console.log(`조회된 경기 수: ${matches.length}`);
 
-    const matchesWithUrls = matches.map(match => ({
-      ...match.toJSON(),
-      overlay_url: `/${match.sport_type.toLowerCase()}/${match.id}/overlay`,
-      control_url: `/${match.sport_type.toLowerCase()}/${match.id}/control`
-    }));
+    const matchesWithUrls = matches.map(match => {
+      const matchData = match.toJSON();
+
+      return {
+        id: matchData.id,
+        sport_type: matchData.sport_type,
+        home_team: matchData.home_team,
+        away_team: matchData.away_team,
+        home_team_color: matchData.home_team_color,
+        away_team_color: matchData.away_team_color,
+        home_team_header: matchData.home_team_header,
+        away_team_header: matchData.away_team_header,
+        home_score: matchData.home_score,
+        away_score: matchData.away_score,
+        status: matchData.status,
+        match_data: matchData.match_data,
+        created_at: matchData.created_at,
+        updated_at: matchData.updated_at,
+
+        overlay_url: `/${match.sport_type.toLowerCase()}/${match.id}/overlay`,
+        control_url: `/${match.sport_type.toLowerCase()}/${match.id}/control`
+      };
+    });
 
     console.log('경기 목록 조회 성공');
     res.json(matchesWithUrls);
@@ -1399,17 +2066,416 @@ app.get('/:sport/:id/control', async (req, res) => {
     const homeScore = match.home_score || 0;
     const awayScore = match.away_score || 0;
     
+    // 기본 팀 컬러 가져오기
+    const defaultColors = await getDefaultTeamColors();
+    
     // 해당 스포츠의 컨트롤 템플릿 렌더링
     res.render(`${req.params.sport}-control`, { 
       match: {
         ...match.toJSON(),
         home_score: homeScore,
         away_score: awayScore
-      }
+      },
+      defaultColors
     });
   } catch (error) {
     logger.error('컨트롤 패널 로드 실패:', error);
     res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+  }
+});
+
+// 로그 관리 API
+app.get('/api/logs', (req, res) => {
+  try {
+    const logFiles = [];
+    const files = fsSync.readdirSync(logDir);
+    
+    files.forEach(file => {
+      if (file.endsWith('.log')) {
+        const filePath = path.join(logDir, file);
+        const stats = fsSync.statSync(filePath);
+        logFiles.push({
+          name: file,
+          size: stats.size,
+          modified: stats.mtime,
+          sizeMB: (stats.size / (1024 * 1024)).toFixed(2)
+        });
+      }
+    });
+    
+    res.json({
+      success: true,
+      logs: logFiles,
+      logDir: logDir
+    });
+  } catch (error) {
+    logger.error('로그 파일 목록 조회 실패:', error);
+    res.status(500).json({ error: '로그 조회 실패' });
+  }
+});
+
+// 로그 파일 다운로드 API
+app.get('/api/logs/:filename', (req, res) => {
+  try {
+    const { filename } = req.params;
+    const filePath = path.join(logDir, filename);
+    
+    if (!fsSync.existsSync(filePath)) {
+      return res.status(404).json({ error: '로그 파일을 찾을 수 없습니다.' });
+    }
+    
+    res.download(filePath);
+  } catch (error) {
+    logger.error('로그 파일 다운로드 실패:', error);
+    res.status(500).json({ error: '로그 다운로드 실패' });
+  }
+});
+
+// 로그 파일 삭제 API
+app.delete('/api/logs/:filename', (req, res) => {
+  try {
+    const { filename } = req.params;
+    const filePath = path.join(logDir, filename);
+    
+    if (!fsSync.existsSync(filePath)) {
+      return res.status(404).json({ error: '로그 파일을 찾을 수 없습니다.' });
+    }
+    
+    fsSync.unlinkSync(filePath);
+    logger.info(`로그 파일 삭제: ${filename}`);
+    
+    res.json({ success: true, message: '로그 파일이 삭제되었습니다.' });
+  } catch (error) {
+    logger.error('로그 파일 삭제 실패:', error);
+    res.status(500).json({ error: '로그 삭제 실패' });
+  }
+});
+
+// 로그 백업 API
+app.post('/api/logs/backup', (req, res) => {
+  try {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupDir = path.join(__dirname, 'logs', 'backup', timestamp);
+    
+    if (!fsSync.existsSync(backupDir)) {
+      fsSync.mkdirSync(backupDir, { recursive: true });
+    }
+    
+    const files = fsSync.readdirSync(logDir);
+    let backedUpFiles = 0;
+    
+    files.forEach(file => {
+      if (file.endsWith('.log') && !file.includes('backup')) {
+        const sourcePath = path.join(logDir, file);
+        const destPath = path.join(backupDir, file);
+        fsSync.copyFileSync(sourcePath, destPath);
+        backedUpFiles++;
+      }
+    });
+    
+    logger.info(`로그 백업 완료: ${backedUpFiles}개 파일, 경로: ${backupDir}`);
+    
+    res.json({
+      success: true,
+      message: `${backedUpFiles}개 로그 파일이 백업되었습니다.`,
+      backupPath: backupDir
+    });
+  } catch (error) {
+    logger.error('로그 백업 실패:', error);
+    res.status(500).json({ error: '로그 백업 실패' });
+  }
+});
+
+// 로그 정리 API (오래된 로그 삭제)
+app.post('/api/logs/cleanup', (req, res) => {
+  try {
+    const { days = 30 } = req.body; // 기본 30일
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+    
+    const files = fsSync.readdirSync(logDir);
+    let deletedFiles = 0;
+    
+    files.forEach(file => {
+      if (file.endsWith('.log')) {
+        const filePath = path.join(logDir, file);
+        const stats = fsSync.statSync(filePath);
+        
+        if (stats.mtime < cutoffDate) {
+          fsSync.unlinkSync(filePath);
+          deletedFiles++;
+        }
+      }
+    });
+    
+    logger.info(`로그 정리 완료: ${deletedFiles}개 파일 삭제 (${days}일 이전)`);
+    
+    res.json({
+      success: true,
+      message: `${deletedFiles}개 오래된 로그 파일이 삭제되었습니다.`
+    });
+  } catch (error) {
+    logger.error('로그 정리 실패:', error);
+    res.status(500).json({ error: '로그 정리 실패' });
+  }
+});
+
+// 로그 내용 읽기 API
+app.get('/api/logs/:filename/content', (req, res) => {
+  try {
+    const { filename } = req.params;
+    const filePath = path.join(logDir, filename);
+    
+    if (!fsSync.existsSync(filePath)) {
+      return res.status(404).json({ error: '로그 파일을 찾을 수 없습니다.' });
+    }
+    
+    // 파일 크기 확인 (너무 큰 파일은 읽지 않음)
+    const stats = fsSync.statSync(filePath);
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    
+    if (stats.size > maxSize) {
+      return res.status(413).json({ 
+        error: '파일이 너무 큽니다. 다운로드하여 확인하세요.',
+        size: stats.size,
+        maxSize: maxSize
+      });
+    }
+    
+    const content = fsSync.readFileSync(filePath, 'utf8');
+    
+    res.json({
+      success: true,
+      content: content,
+      size: stats.size,
+      lines: content.split('\n').length
+    });
+  } catch (error) {
+    logger.error('로그 내용 읽기 실패:', error);
+    res.status(500).json({ error: '로그 내용 읽기 실패' });
+  }
+});
+
+// 모든 로그 삭제 API
+app.delete('/api/logs/clear-all', (req, res) => {
+  try {
+    const files = fsSync.readdirSync(logDir);
+    let deletedFiles = 0;
+    
+    files.forEach(file => {
+      if (file.endsWith('.log')) {
+        const filePath = path.join(logDir, file);
+        fsSync.unlinkSync(filePath);
+        deletedFiles++;
+      }
+    });
+    
+    logger.info(`모든 로그 삭제 완료: ${deletedFiles}개 파일 삭제`);
+    
+    res.json({
+      success: true,
+      message: `${deletedFiles}개 로그 파일이 모두 삭제되었습니다.`
+    });
+  } catch (error) {
+    logger.error('모든 로그 삭제 실패:', error);
+    res.status(500).json({ error: '모든 로그 삭제 실패' });
+  }
+});
+
+// 리스트 정보 확인 API (디버깅용)
+app.get('/api/debug/list/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const list = await MatchList.findByPk(id);
+    
+    if (!list) {
+      return res.status(404).json({ error: '리스트를 찾을 수 없습니다.' });
+    }
+    
+    res.json({
+      success: true,
+      list: {
+        id: list.id,
+        name: list.name,
+        matches: list.matches,
+        matchCount: list.matches ? list.matches.length : 0
+      }
+    });
+  } catch (error) {
+    logger.error('리스트 정보 조회 실패:', error);
+    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+  }
+});
+
+// 현재 푸시된 경기 정보 확인 API
+app.get('/api/pushed-match/:listId', (req, res) => {
+  try {
+    const { listId } = req.params;
+    const pushedMatch = pushedMatches.get(listId);
+    
+    if (pushedMatch) {
+      res.json({
+        success: true,
+        data: pushedMatch
+      });
+    } else {
+      res.json({
+        success: false,
+        data: null
+      });
+    }
+  } catch (error) {
+    logger.error('푸시된 경기 정보 조회 실패:', error);
+    res.status(500).json({ success: false, error: '서버 오류가 발생했습니다.' });
+  }
+});
+
+// 통합 오버레이 페이지 (통합 컨트롤 패널에서 푸시한 경기용)
+app.get('/unified/:listId/overlay', async (req, res) => {
+  try {
+    const { listId } = req.params;
+    
+    console.log(`[DEBUG] 통합 오버레이 요청: listId=${listId}`);
+    
+    const list = await MatchList.findByPk(listId);
+    
+    if (!list) {
+      console.log(`[DEBUG] 리스트를 찾을 수 없음: ${listId}`);
+      return res.status(404).send('리스트를 찾을 수 없습니다.');
+    }
+    
+    console.log(`[DEBUG] 리스트 찾음: ${list.name}, 경기 수: ${list.matches ? list.matches.length : 0}`);
+    
+    if (!list.matches || list.matches.length === 0) {
+      console.log(`[DEBUG] 리스트에 등록된 경기가 없음`);
+      return res.status(404).send('리스트에 등록된 경기가 없습니다.');
+    }
+    
+    // 첫 번째 경기를 기본으로 사용 (푸시 시 변경됨)
+    const currentMatch = list.matches[0];
+    console.log(`[DEBUG] 기본 경기 정보:`, currentMatch);
+    
+    // 데이터베이스에서 실제 경기 정보 가져오기
+    const actualMatch = await Match.findByPk(currentMatch.id);
+    if (!actualMatch) {
+      console.log(`[DEBUG] 데이터베이스에서 경기를 찾을 수 없음: ${currentMatch.id}`);
+      return res.status(404).send('경기를 찾을 수 없습니다.');
+    }
+    
+    // 실제 경기 데이터 사용 (최신 정보 포함)
+    const matchData = actualMatch.match_data || {};
+    const match = {
+      id: actualMatch.id,
+      sport_type: actualMatch.sport_type || 'soccer',
+      home_team: actualMatch.home_team || 'HOME',
+      away_team: actualMatch.away_team || 'AWAY',
+      home_score: actualMatch.home_score || matchData.home_score || 0,
+      away_score: actualMatch.away_score || matchData.away_score || 0,
+      home_team_color: actualMatch.home_team_color || '#1e40af',
+      away_team_color: actualMatch.away_team_color || '#1e40af',
+      match_data: {
+        state: matchData.state || '전반',
+        timer: matchData.timer || 0,
+        isRunning: matchData.isRunning || false,
+        ...matchData  // 모든 match_data 정보 포함
+      }
+    };
+    
+    console.log(`[DEBUG] 통합 오버레이 경기 데이터 생성: ${match.id}, sport_type: ${match.sport_type}`);
+    
+    res.render('unified-overlay', { 
+      matchId: match.id,
+      sport_type: match.sport_type,
+      listId: listId,
+      listName: list.name,
+      currentMatchIndex: 0,
+      totalMatches: list.matches.length,
+      isListMode: true
+    });
+  } catch (error) {
+    console.error('[DEBUG] 통합 오버레이 로드 실패:', error);
+    logger.error('통합 오버레이 로드 실패:', error);
+    res.status(500).send('서버 오류가 발생했습니다.');
+  }
+});
+
+// 경기 리스트별 오버레이 페이지 (더 구체적인 라우트를 먼저 배치)
+app.get('/list/:id/overlay', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { index = 0 } = req.query;
+    
+    console.log(`[DEBUG] 리스트 오버레이 요청: listId=${id}, index=${index}`);
+    
+    const list = await MatchList.findByPk(id);
+    
+    if (!list) {
+      console.log(`[DEBUG] 리스트를 찾을 수 없음: ${id}`);
+      return res.status(404).send('리스트를 찾을 수 없습니다.');
+    }
+    
+    console.log(`[DEBUG] 리스트 찾음: ${list.name}, 경기 수: ${list.matches ? list.matches.length : 0}`);
+    
+    if (!list.matches || list.matches.length === 0) {
+      console.log(`[DEBUG] 리스트에 등록된 경기가 없음`);
+      return res.status(404).send('리스트에 등록된 경기가 없습니다.');
+    }
+    
+    const matchIndex = parseInt(index);
+    if (matchIndex < 0 || matchIndex >= list.matches.length) {
+      console.log(`[DEBUG] 잘못된 경기 인덱스: ${matchIndex}, 총 경기 수: ${list.matches.length}`);
+      return res.status(400).send('잘못된 경기 인덱스입니다.');
+    }
+    
+    const currentMatch = list.matches[matchIndex];
+    console.log(`[DEBUG] 현재 경기 정보:`, currentMatch);
+    
+    // 데이터베이스에서 실제 경기 정보 가져오기
+    const actualMatch = await Match.findByPk(currentMatch.id);
+    if (!actualMatch) {
+      console.log(`[DEBUG] 데이터베이스에서 경기를 찾을 수 없음: ${currentMatch.id}`);
+      return res.status(404).send('경기를 찾을 수 없습니다.');
+    }
+    
+    // 실제 경기 데이터 사용 (최신 정보 포함)
+    const matchData = actualMatch.match_data || {};
+    const match = {
+      id: actualMatch.id,
+      sport_type: actualMatch.sport_type || 'soccer',
+      home_team: actualMatch.home_team || 'HOME',
+      away_team: actualMatch.away_team || 'AWAY',
+      home_score: actualMatch.home_score || matchData.home_score || 0,
+      away_score: actualMatch.away_score || matchData.away_score || 0,
+      home_team_color: actualMatch.home_team_color || '#1e40af',
+      away_team_color: actualMatch.away_team_color || '#1e40af',
+      match_data: {
+        state: matchData.state || '전반',
+        timer: matchData.timer || 0,
+        isRunning: matchData.isRunning || false,
+        ...matchData  // 모든 match_data 정보 포함
+      }
+    };
+    
+    console.log(`[DEBUG] 경기 데이터 생성: ${match.id}, sport_type: ${match.sport_type}`);
+    
+    // 스포츠 타입에 따라 적절한 템플릿 선택
+    const sportType = currentMatch.sport_type || 'soccer';
+    const templateName = `${sportType}-template`;
+    
+    console.log(`[DEBUG] 템플릿 선택: ${templateName}`);
+    
+    res.render(templateName, { 
+      match: match,
+      listId: id,
+      listName: list.name,
+      currentMatchIndex: matchIndex,
+      totalMatches: list.matches.length,
+      isListMode: true  // 리스트 모드 플래그 추가
+    });
+  } catch (error) {
+    console.error('[DEBUG] 리스트 오버레이 로드 실패:', error);
+    logger.error('리스트 오버레이 로드 실패:', error);
+    res.status(500).send('서버 오류가 발생했습니다.');
   }
 });
 
@@ -1426,7 +2492,14 @@ app.get('/:sport/:id/overlay', async (req, res) => {
     }
     
     // 해당 스포츠의 오버레이 템플릿 렌더링
-    res.render(`${req.params.sport}-template`, { match });
+    res.render(`${req.params.sport}-template`, { 
+      match: match,
+      isListMode: false,  // 원본 오버레이는 리스트 모드가 아님
+      listId: null,
+      listName: null,
+      currentMatchIndex: 0,
+      totalMatches: 0
+    });
   } catch (error) {
     logger.error('오버레이 로드 실패:', error);
     res.status(500).json({ error: '서버 오류가 발생했습니다.' });
@@ -1469,6 +2542,40 @@ app.get('/api/team-logo-map/:sportType', async (req, res) => {
             details: error.message
         });
     }
+});
+
+// 모든 경기 데이터 삭제 API
+app.delete('/api/matches/all', async (req, res) => {
+  try {
+    logger.info('=== 모든 경기 데이터 삭제 시작 ===');
+    
+    // 모든 경기 삭제
+    const deletedMatches = await Match.destroy({
+      where: {},
+      truncate: false
+    });
+    
+    // 모든 리스트 삭제
+    const deletedLists = await MatchList.destroy({
+      where: {},
+      truncate: false
+    });
+    
+    // 푸시된 경기 정보 초기화
+    pushedMatches.clear();
+    
+    logger.info(`모든 경기 데이터 삭제 완료: 경기 ${deletedMatches}개, 리스트 ${deletedLists}개 삭제됨`);
+    
+    res.json({
+      success: true,
+      message: `모든 경기 데이터가 삭제되었습니다. (경기 ${deletedMatches}개, 리스트 ${deletedLists}개)`,
+      deletedMatches,
+      deletedLists
+    });
+  } catch (error) {
+    logger.error('모든 경기 데이터 삭제 실패:', error);
+    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+  }
 });
 
 // 경기 삭제 API
@@ -1523,6 +2630,219 @@ app.post('/admin/update-all-soccer-team-colors', async (req, res) => {
     res.json({ success: true, count: matches.length });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// 설정 API - 설정 조회
+app.get('/api/settings', async (req, res) => {
+  try {
+    const settings = await Settings.findAll();
+    const settingsObj = {};
+    
+    settings.forEach(setting => {
+      settingsObj[setting.key] = setting.value;
+    });
+    
+    res.json(settingsObj);
+  } catch (error) {
+    logger.error('설정 조회 실패:', error);
+    res.status(500).json({ error: '설정 조회에 실패했습니다.' });
+  }
+});
+
+// 설정 API - 설정 저장
+app.post('/api/settings', async (req, res) => {
+  try {
+    const { default_home_color, default_away_color } = req.body;
+    
+    // 홈팀 기본 컬러 설정
+    if (default_home_color) {
+      await Settings.upsert({
+        key: 'default_home_color',
+        value: default_home_color,
+        description: '홈팀 기본 컬러'
+      });
+    }
+    
+    // 원정팀 기본 컬러 설정
+    if (default_away_color) {
+      await Settings.upsert({
+        key: 'default_away_color',
+        value: default_away_color,
+        description: '원정팀 기본 컬러'
+      });
+    }
+    
+    res.json({ success: true, message: '설정이 저장되었습니다.' });
+  } catch (error) {
+    logger.error('설정 저장 실패:', error);
+    res.status(500).json({ error: '설정 저장에 실패했습니다.' });
+  }
+});
+
+// 설정 페이지 라우트
+app.get('/settings', (req, res) => {
+  res.render('settings');
+});
+
+// 경기 리스트 API - 리스트 조회
+app.get('/api/match-lists', async (req, res) => {
+  try {
+    const lists = await MatchList.findAll({
+      order: [['created_at', 'DESC']]
+    });
+    res.json(lists);
+  } catch (error) {
+    logger.error('리스트 조회 실패:', error);
+    res.status(500).json({ error: '리스트 조회에 실패했습니다.' });
+  }
+});
+
+// 경기 리스트 API - 리스트 생성
+app.post('/api/match-lists', async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: '리스트 이름이 필요합니다.' });
+    }
+    
+    const list = await MatchList.create({
+      name: name.trim(),
+      matches: [],
+      created_by: req.ip || 'unknown'
+    });
+    
+    res.json(list);
+  } catch (error) {
+    logger.error('리스트 생성 실패:', error);
+    res.status(500).json({ error: '리스트 생성에 실패했습니다.' });
+  }
+});
+
+// 경기 리스트 API - 리스트 수정
+app.put('/api/match-lists/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, matches } = req.body;
+    
+    const list = await MatchList.findByPk(id);
+    if (!list) {
+      return res.status(404).json({ error: '리스트를 찾을 수 없습니다.' });
+    }
+    
+    if (name !== undefined) {
+      list.name = name.trim();
+    }
+    if (matches !== undefined) {
+      list.matches = matches;
+    }
+    
+    await list.save();
+    res.json(list);
+  } catch (error) {
+    logger.error('리스트 수정 실패:', error);
+    res.status(500).json({ error: '리스트 수정에 실패했습니다.' });
+  }
+});
+
+// 경기 리스트 API - 리스트 삭제
+app.delete('/api/match-lists/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const list = await MatchList.findByPk(id);
+    if (!list) {
+      return res.status(404).json({ error: '리스트를 찾을 수 없습니다.' });
+    }
+    
+    await list.destroy();
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('리스트 삭제 실패:', error);
+    res.status(500).json({ error: '리스트 삭제에 실패했습니다.' });
+  }
+});
+
+
+
+// 경기 리스트별 모바일 컨트롤 페이지
+app.get('/list/:id/control-mobile', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { index = 0 } = req.query;
+    const list = await MatchList.findByPk(id);
+    
+    if (!list) {
+      return res.status(404).send('리스트를 찾을 수 없습니다.');
+    }
+    
+    if (!list.matches || list.matches.length === 0) {
+      return res.status(404).send('리스트에 등록된 경기가 없습니다.');
+    }
+    
+    const matchIndex = parseInt(index);
+    if (matchIndex < 0 || matchIndex >= list.matches.length) {
+      return res.status(400).send('잘못된 경기 인덱스입니다.');
+    }
+    
+    const currentMatch = list.matches[matchIndex];
+    const match = await Match.findByPk(currentMatch.id);
+    
+    if (!match) {
+      return res.status(404).send('경기를 찾을 수 없습니다.');
+    }
+    
+    // 디버깅 로그 추가
+    logger.info(`리스트 모바일 컨트롤 렌더링: listId=${id}, matchId=${match.id}, sport_type=${match.sport_type}, template=${match.sport_type}-control-mobile`);
+    
+    // sport_type이 없으면 기본값 설정
+    const sportType = match.sport_type || 'soccer';
+    
+    res.render(`${sportType}-control-mobile`, { 
+      match: match,
+      listId: id,
+      listName: list.name,
+      currentMatchIndex: matchIndex,
+      totalMatches: list.matches.length
+    });
+  } catch (error) {
+    logger.error('리스트 모바일 컨트롤 로드 실패:', error);
+    res.status(500).send('서버 오류가 발생했습니다.');
+  }
+});
+
+// 경기 리스트 API - 현재 경기 정보 조회
+app.get('/api/list/:id/current-match', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { index = 0 } = req.query;
+    
+    const list = await MatchList.findByPk(id);
+    if (!list || !list.matches || list.matches.length === 0) {
+      return res.status(404).json({ error: '리스트를 찾을 수 없습니다.' });
+    }
+    
+    const matchIndex = parseInt(index);
+    if (matchIndex < 0 || matchIndex >= list.matches.length) {
+      return res.status(400).json({ error: '잘못된 경기 인덱스입니다.' });
+    }
+    
+    const currentMatch = list.matches[matchIndex];
+    const match = await Match.findByPk(currentMatch.id);
+    
+    if (!match) {
+      return res.status(404).json({ error: '경기를 찾을 수 없습니다.' });
+    }
+    
+    res.json({
+      match: match,
+      currentIndex: matchIndex,
+      totalMatches: list.matches.length,
+      listName: list.name
+    });
+  } catch (error) {
+    logger.error('현재 경기 정보 조회 실패:', error);
+    res.status(500).json({ error: '경기 정보 조회에 실패했습니다.' });
   }
 });
 

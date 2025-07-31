@@ -14,18 +14,22 @@
         .match-card { background: #fff; border: 1px solid #dee2e6; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); padding: 8px 14px; display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 0; }
         .match-card.selected { border: 2px solid #0d6efd; background: #e9ecef; }
         .match-card-title { font-weight: 600; font-size: 1.05rem; }
+        .match-card-note { font-size: 0.85rem; color: #6c757d; margin-top: 4px; font-style: italic; }
         .match-card .btn-group { display: flex; gap: 4px; }
         /* 추가: 경기 추가 모달용 스타일 */
         .add-match-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
         .add-match-row { display: flex; align-items: center; justify-content: space-between; background: #f8f9fa; border-radius: 6px; padding: 8px 12px; border: 1px solid #e2e3e5; }
+        .add-match-info { flex: 1; }
         .add-match-title { font-size: 1rem; font-weight: 500; }
+        .add-match-note { font-size: 0.8rem; color: #6c757d; margin-top: 2px; font-style: italic; }
+        .loading { text-align: center; color: #6c757d; }
+        .error { color: #dc3545; }
     </style>
 </head>
 <body>
     <%- include('partials/header', { title: '경기 리스트 관리' }) %>
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2>경기 리스트 관리</h2>
-        <button class="btn btn-success btn-sm" onclick="updateAllSoccerTeamColors()">모든 축구 경기 팀컬러 일괄 녹색변경</button>
     </div>
     <div class="row">
         <div class="col-md-4">
@@ -33,7 +37,9 @@
                 <input type="text" id="newListName" class="form-control" placeholder="새 리스트 이름">
                 <button class="btn btn-primary" onclick="createList()">리스트 추가</button>
             </div>
-            <ul class="list-group" id="listGroup"></ul>
+            <ul class="list-group" id="listGroup">
+                <li class="list-group-item loading">리스트를 불러오는 중...</li>
+            </ul>
         </div>
         <div class="col-md-8">
             <div class="card match-list-card">
@@ -43,6 +49,25 @@
                         <button class="btn btn-sm btn-outline-secondary" onclick="renameList()">이름변경</button>
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteList()">삭제</button>
                         <button class="btn btn-sm btn-success" onclick="openAddMatchModal()">경기 추가</button>
+                    </div>
+                </div>
+                <!-- 리스트 URL 정보 -->
+                <div class="card-body" id="listUrlInfo" style="display: none; background-color: #f8f9fa; border-top: 1px solid #dee2e6;">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">통합 오버레이 URL:</small>
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control" id="overlayUrl" readonly>
+                                <button class="btn btn-outline-primary btn-sm" onclick="copyToClipboard('overlayUrl')">복사</button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">모바일 컨트롤 URL:</small>
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control" id="mobileControlUrl" readonly>
+                                <button class="btn btn-outline-primary btn-sm" onclick="copyToClipboard('mobileControlUrl')">복사</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body" id="matchListBody">
@@ -72,86 +97,214 @@
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
 <script>
+    const socket = io();
+    
+    // 경기 수정 이벤트 처리
+    socket.on('match_updated', (data) => {
+        console.log('경기 수정 이벤트 수신:', data);
+        
+        // 현재 선택된 리스트의 경기 정보 업데이트
+        if (selectedList && selectedList.matches) {
+            const updatedMatches = selectedList.matches.map(match => {
+                if (match.id === data.matchId) {
+                    return {
+                        ...match,
+                        sport_type: data.sport_type,
+                        home_team: data.home_team,
+                        away_team: data.away_team
+                    };
+                }
+                return match;
+            });
+            
+            selectedList.matches = updatedMatches;
+            
+            // UI 업데이트
+            if (selectedListId === selectedList.id) {
+                renderMatchList(selectedList);
+            }
+        }
+        
+        // 경기 추가 모달의 경기 목록도 업데이트
+        if (window.allMatches) {
+            const updatedAllMatches = window.allMatches.map(match => {
+                if (match.id === data.matchId) {
+                    return {
+                        ...match,
+                        sport_type: data.sport_type,
+                        home_team: data.home_team,
+                        away_team: data.away_team
+                    };
+                }
+                return match;
+            });
+            window.allMatches = updatedAllMatches;
+        }
+    });
 // 데이터 관리
-function getLists() {
-    return JSON.parse(localStorage.getItem('matchLists') || '[]');
-}
-function saveLists(lists) {
-    localStorage.setItem('matchLists', JSON.stringify(lists));
-}
+let allLists = [];
 let selectedListId = null;
 let selectedMatchIdx = 0;
+let allMatches = [];
 
+// 서버에서 리스트 가져오기
+async function loadLists() {
+    try {
+        const response = await fetch('/api/match-lists');
+        if (!response.ok) throw new Error('리스트 로드 실패');
+        allLists = await response.json();
+        renderLists();
+    } catch (error) {
+        console.error('리스트 로드 오류:', error);
+        document.getElementById('listGroup').innerHTML = '<li class="list-group-item error">리스트 로드에 실패했습니다.</li>';
+    }
+}
+
+// 리스트 렌더링
 function renderLists() {
-    const lists = getLists();
     const listGroup = document.getElementById('listGroup');
     listGroup.innerHTML = '';
-    lists.forEach(list => {
+    
+    if (allLists.length === 0) {
+        listGroup.innerHTML = '<li class="list-group-item text-muted">리스트가 없습니다.</li>';
+        return;
+    }
+    
+    // 리스트를 이름 순으로 정렬
+    const sortedLists = [...allLists].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+    
+    sortedLists.forEach(list => {
         const li = document.createElement('li');
         li.className = 'list-group-item' + (list.id === selectedListId ? ' active' : '');
         li.textContent = list.name;
-        li.onclick = () => { selectedListId = list.id; selectedMatchIdx = 0; renderLists(); renderMatchList(); };
+        li.onclick = () => { 
+            selectedListId = list.id; 
+            selectedMatchIdx = 0; 
+            renderLists(); 
+            renderMatchList(); 
+        };
         listGroup.appendChild(li);
     });
 }
 
-function createList() {
+// 리스트 생성
+async function createList() {
     const name = document.getElementById('newListName').value.trim();
     if (!name) return alert('리스트 이름을 입력하세요.');
-    const lists = getLists();
-    const id = 'list-' + Date.now();
-    lists.push({ id, name, matches: [] });
-    saveLists(lists);
-    document.getElementById('newListName').value = '';
-    selectedListId = id;
-    renderLists();
-    renderMatchList();
-}
-function renameList() {
-    if (!selectedListId) return;
-    const lists = getLists();
-    const list = lists.find(l => l.id === selectedListId);
-    const newName = prompt('새 리스트 이름을 입력하세요', list.name);
-    if (newName && newName.trim()) {
-        list.name = newName.trim();
-        saveLists(lists);
+    
+    try {
+        const response = await fetch('/api/match-lists', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
+        
+        if (!response.ok) throw new Error('리스트 생성 실패');
+        
+        const newList = await response.json();
+        allLists.unshift(newList);
+        document.getElementById('newListName').value = '';
+        selectedListId = newList.id;
         renderLists();
         renderMatchList();
+    } catch (error) {
+        console.error('리스트 생성 오류:', error);
+        alert('리스트 생성에 실패했습니다.');
     }
 }
-function deleteList() {
+
+// 리스트 이름 변경
+async function renameList() {
+    if (!selectedListId) return;
+    
+    const list = allLists.find(l => l.id === selectedListId);
+    const newName = prompt('새 리스트 이름을 입력하세요', list.name);
+    if (!newName || !newName.trim()) return;
+    
+    try {
+        const response = await fetch(`/api/match-lists/${selectedListId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: newName.trim() })
+        });
+        
+        if (!response.ok) throw new Error('리스트 수정 실패');
+        
+        const updatedList = await response.json();
+        const index = allLists.findIndex(l => l.id === selectedListId);
+        allLists[index] = updatedList;
+        renderLists();
+        renderMatchList();
+    } catch (error) {
+        console.error('리스트 수정 오류:', error);
+        alert('리스트 수정에 실패했습니다.');
+    }
+}
+
+// 리스트 삭제
+async function deleteList() {
     if (!selectedListId) return;
     if (!confirm('정말 삭제하시겠습니까?')) return;
-    let lists = getLists();
-    lists = lists.filter(l => l.id !== selectedListId);
-    saveLists(lists);
-    selectedListId = null;
-    renderLists();
-    renderMatchList();
+    
+    try {
+        const response = await fetch(`/api/match-lists/${selectedListId}`, {
+            method: 'DELETE'
+        });
+        
+        if (!response.ok) throw new Error('리스트 삭제 실패');
+        
+        allLists = allLists.filter(l => l.id !== selectedListId);
+        selectedListId = null;
+        renderLists();
+        renderMatchList();
+    } catch (error) {
+        console.error('리스트 삭제 오류:', error);
+        alert('리스트 삭제에 실패했습니다.');
+    }
 }
+
+// 경기 리스트 렌더링
 function renderMatchList() {
-    const lists = getLists();
+    const lists = allLists;
     const list = lists.find(l => l.id === selectedListId);
     const body = document.getElementById('matchListBody');
     const nav = document.getElementById('matchNavFooter');
     const nameSpan = document.getElementById('selectedListName');
+    const urlInfo = document.getElementById('listUrlInfo');
+    
     if (!list) {
         body.innerHTML = '<div class="text-muted">리스트를 선택하면 경기가 표시됩니다.</div>';
         nav.style.display = 'none';
+        urlInfo.style.display = 'none';
         nameSpan.textContent = '리스트를 선택하세요';
         return;
     }
+    
     nameSpan.textContent = list.name;
-    if (!list.matches.length) {
+    
+    // URL 정보 표시
+    if (list.matches && list.matches.length > 0) {
+        const baseUrl = window.location.origin;
+        document.getElementById('overlayUrl').value = `${baseUrl}/unified/${list.id}/overlay`;
+        document.getElementById('mobileControlUrl').value = `${baseUrl}/list/${list.id}/control-mobile`;
+        urlInfo.style.display = 'block';
+    } else {
+        urlInfo.style.display = 'none';
+    }
+    
+    if (!list.matches || !list.matches.length) {
         body.innerHTML = '<div class="text-muted">경기를 추가하세요.</div>';
         nav.style.display = 'none';
         return;
     }
-    // 한 줄에 하나씩 카드 렌더링, 대진 왼쪽, 버튼 오른쪽
+    
+    // 한 줄에 하나씩 카드 렌더링
     body.innerHTML = `<div class="match-grid">${list.matches.map((m, idx) => `
         <div class="match-card${idx === selectedMatchIdx ? ' selected' : ''}" onclick="if(event.target.tagName!=='BUTTON'){selectedMatchIdx=${idx};renderMatchList();}">
             <div class="match-card-title">${m.home_team} vs ${m.away_team} <span class="badge bg-secondary">${m.sport_type}</span></div>
+
             <div class="btn-group">
             <button class="btn btn-outline-primary btn-sm" onclick="goControl('${m.sport_type}','${m.id}')">컨트롤</button>
             <button class="btn btn-outline-success btn-sm" onclick="goOverlay('${m.sport_type}','${m.id}')">오버레이</button>
@@ -161,103 +314,209 @@ function renderMatchList() {
             </div>
         </div>
     `).join('')}</div>`;
+    
     nav.style.display = 'flex';
-    document.getElementById('prevMatchBtn').onclick = () => { if (selectedMatchIdx > 0) { selectedMatchIdx--; renderMatchList(); } };
-    document.getElementById('nextMatchBtn').onclick = () => { if (selectedMatchIdx < list.matches.length - 1) { selectedMatchIdx++; renderMatchList(); } };
+    document.getElementById('prevMatchBtn').onclick = () => { 
+        if (selectedMatchIdx > 0) { 
+            selectedMatchIdx--; 
+            renderMatchList(); 
+        } 
+    };
+    document.getElementById('nextMatchBtn').onclick = () => { 
+        if (selectedMatchIdx < list.matches.length - 1) { 
+            selectedMatchIdx++; 
+            renderMatchList(); 
+        } 
+    };
 }
-function removeMatch(idx) {
-    const lists = getLists();
-    const list = lists.find(l => l.id === selectedListId);
+
+// 경기 삭제
+async function removeMatch(idx) {
+    const list = allLists.find(l => l.id === selectedListId);
     list.matches.splice(idx, 1);
-    saveLists(lists);
-    if (selectedMatchIdx >= list.matches.length) selectedMatchIdx = list.matches.length - 1;
-    renderMatchList();
-}
-function moveMatch(idx, dir) {
-    const lists = getLists();
-    const list = lists.find(l => l.id === selectedListId);
-    const newIdx = idx + dir;
-    if (newIdx < 0 || newIdx >= list.matches.length) return;
-    const temp = list.matches[idx];
-    list.matches[idx] = list.matches[newIdx];
-    list.matches[newIdx] = temp;
-    saveLists(lists);
-    if (selectedMatchIdx === idx) selectedMatchIdx = newIdx;
-    renderMatchList();
-}
-function goControl(sport, id) {
-    window.open(`/${sport}/${String(id).padStart(6, '0')}/control`, '_blank');
-}
-function goOverlay(sport, id) {
-    window.open(`/${sport}/${String(id).padStart(6, '0')}/overlay`, '_blank');
-}
-// 경기 추가 모달
-let allMatches = [];
-// 팝업 내 추가 가능한 경기 목록 렌더링 함수
-function renderAddMatchList() {
-    const lists = getLists();
-    const list = lists.find(l => l.id === selectedListId);
-    const addedIds = list ? list.matches.map(m => m.id) : [];
-    const filtered = allMatches.filter(m => !addedIds.includes(m.id));
-    const listDiv = document.getElementById('allMatchesList');
-    if(filtered.length === 0) {
-        listDiv.innerHTML = '<div class="text-muted">추가할 수 있는 경기가 없습니다.</div>';
-    } else {
-        listDiv.innerHTML = `<div class=\"add-match-list\">${filtered.map(m => `
-            <div class=\"add-match-row\">
-                <span class=\"add-match-title\">${m.home_team} vs ${m.away_team} <span class=\"badge bg-secondary\">${m.sport_type}</span></span>
-                <button class=\"btn btn-sm btn-outline-primary\" onclick=\"addMatchToList('${m.id}')\">추가</button>
-            </div>
-        `).join('')}</div>`;
+    
+    try {
+        const response = await fetch(`/api/match-lists/${selectedListId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ matches: list.matches })
+        });
+        
+        if (!response.ok) throw new Error('경기 삭제 실패');
+        
+        if (selectedMatchIdx >= list.matches.length) {
+            selectedMatchIdx = list.matches.length - 1;
+        }
+        renderMatchList();
+        
+        // 모달이 열려있다면 경기 목록 다시 렌더링
+        const modal = document.getElementById('addMatchModal');
+        if (modal && modal.classList.contains('show')) {
+            renderAddMatchList();
+        }
+    } catch (error) {
+        console.error('경기 삭제 오류:', error);
+        alert('경기 삭제에 실패했습니다.');
     }
 }
 
-function openAddMatchModal() {
-    fetch('/api/matches', { cache: 'no-store' }).then(r=>r.json()).then(matches => {
-        allMatches = matches;
+// 경기 순서 변경
+async function moveMatch(idx, dir) {
+    const list = allLists.find(l => l.id === selectedListId);
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= list.matches.length) return;
+    
+    const temp = list.matches[idx];
+    list.matches[idx] = list.matches[newIdx];
+    list.matches[newIdx] = temp;
+    
+    try {
+        const response = await fetch(`/api/match-lists/${selectedListId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ matches: list.matches })
+        });
+        
+        if (!response.ok) throw new Error('경기 순서 변경 실패');
+        
+        if (selectedMatchIdx === idx) {
+            selectedMatchIdx = newIdx;
+        }
+        renderMatchList();
+    } catch (error) {
+        console.error('경기 순서 변경 오류:', error);
+        alert('경기 순서 변경에 실패했습니다.');
+    }
+}
+
+// 컨트롤 페이지로 이동
+function goControl(sport, id) {
+    window.open(`/${sport}/${String(id).padStart(6, '0')}/control`, '_blank');
+}
+
+// 오버레이 페이지로 이동
+function goOverlay(sport, id) {
+    window.open(`/${sport}/${String(id).padStart(6, '0')}/overlay`, '_blank');
+}
+
+// 경기 추가 모달
+function renderAddMatchList() {
+    // 모든 리스트에서 이미 추가된 경기 ID들을 수집
+    const allAddedIds = new Set();
+    allLists.forEach(list => {
+        if (list.matches && list.matches.length > 0) {
+            list.matches.forEach(match => {
+                allAddedIds.add(match.id);
+            });
+        }
+    });
+    
+    // 아직 어떤 리스트에도 추가되지 않은 경기들만 필터링
+    const filtered = allMatches.filter(m => !allAddedIds.has(m.id));
+    const listDiv = document.getElementById('allMatchesList');
+    
+    if (filtered.length === 0) {
+        listDiv.innerHTML = '<div class="text-muted">추가할 수 있는 경기가 없습니다. 모든 경기가 이미 리스트에 추가되어 있습니다.</div>';
+    } else {
+        listDiv.innerHTML = `<div class="add-match-list">${filtered.map(m => `
+            <div class="add-match-row">
+                <div class="add-match-info">
+                    <span class="add-match-title">${m.home_team} vs ${m.away_team} <span class="badge bg-secondary">${m.sport_type}</span></span>
+
+                </div>
+                <button class="btn btn-sm btn-outline-primary" onclick="addMatchToList('${m.id}')">추가</button>
+            </div>
+        `).join('')}</div>`;
+    }
+    
+    console.log(`총 ${allMatches.length}개 경기 중 ${filtered.length}개 경기만 추가 가능 (${allAddedIds.size}개 이미 추가됨)`);
+}
+
+// 경기 추가 모달 열기
+async function openAddMatchModal() {
+    try {
+        const response = await fetch('/api/matches', { cache: 'no-store' });
+        if (!response.ok) throw new Error('경기 목록 로드 실패');
+        
+        allMatches = await response.json();
+
         renderAddMatchList();
         new bootstrap.Modal(document.getElementById('addMatchModal')).show();
-    });
+    } catch (error) {
+        console.error('경기 목록 로드 오류:', error);
+        alert('경기 목록을 불러오는데 실패했습니다.');
+    }
 }
-function addMatchToList(matchId) {
+
+// 리스트에 경기 추가
+async function addMatchToList(matchId) {
     const match = allMatches.find(m => m.id === matchId);
     if (!match) return;
-    const lists = getLists();
-    const list = lists.find(l => l.id === selectedListId);
+    
+
+    
+    const list = allLists.find(l => l.id === selectedListId);
     if (!list.matches.some(m => m.id === match.id)) {
-        list.matches.push({
+        const matchToAdd = {
             id: match.id,
             sport_type: match.sport_type,
             home_team: match.home_team,
-            away_team: match.away_team
-        });
-        saveLists(lists);
-        renderMatchList();
-        renderAddMatchList(); // 팝업 목록 갱신
-    }
-    // 팝업창 닫는 코드 없음
-}
-function updateAllSoccerTeamColors() {
-  if (!confirm('정말로 모든 축구 경기의 팀컬러를 녹색(#00cc33)으로 일괄 변경하시겠습니까?')) return;
-  fetch('/admin/update-all-soccer-team-colors', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ color: '#00cc33' })
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.success) {
-      alert('모든 축구 경기의 팀컬러가 녹색(#00cc33)으로 변경되었습니다.');
-      location.reload();
+            away_team: match.away_team,
+
+        };
+
+        list.matches.push(matchToAdd);
+        
+        try {
+            const response = await fetch(`/api/match-lists/${selectedListId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ matches: list.matches })
+            });
+            
+            if (!response.ok) throw new Error('경기 추가 실패');
+            
+            // 리스트 렌더링 업데이트
+            renderMatchList();
+            
+            // 모달 내 경기 목록 다시 렌더링 (중복 제거된 목록으로 업데이트)
+            renderAddMatchList();
+            
+            console.log(`경기 "${match.home_team} vs ${match.away_team}" 추가 완료`);
+        } catch (error) {
+            console.error('경기 추가 오류:', error);
+            alert('경기 추가에 실패했습니다.');
+        }
     } else {
-      alert('변경 실패: ' + (data.error || '알 수 없는 오류'));
+        console.log('이미 추가된 경기입니다.');
     }
-  })
-  .catch(err => alert('요청 중 오류 발생: ' + err));
 }
-// 초기 렌더링
-renderLists();
-renderMatchList();
+
+
+
+// URL 복사 함수
+function copyToClipboard(elementId) {
+    const element = document.getElementById(elementId);
+    element.select();
+    element.setSelectionRange(0, 99999); // 모바일을 위한 설정
+    document.execCommand('copy');
+    
+    // 복사 완료 알림
+    const button = element.nextElementSibling;
+    const originalText = button.textContent;
+    button.textContent = '복사됨!';
+    button.classList.remove('btn-outline-primary');
+    button.classList.add('btn-success');
+    
+    setTimeout(() => {
+        button.textContent = originalText;
+        button.classList.remove('btn-success');
+        button.classList.add('btn-outline-primary');
+    }, 2000);
+}
+
+// 초기 로드
+loadLists();
 </script>
 </body>
 </html> 

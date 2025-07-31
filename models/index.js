@@ -29,11 +29,11 @@ const Match = sequelize.define('Match', {
   },
   home_team_color: {
     type: DataTypes.STRING,
-    defaultValue: '#1d4ed8'
+    defaultValue: '#1e40af'
   },
   away_team_color: {
     type: DataTypes.STRING,
-    defaultValue: '#dc2626'
+    defaultValue: '#1e40af'
   },
   home_team_header: {
     type: DataTypes.STRING,
@@ -105,6 +105,59 @@ const Template = sequelize.define('Template', {
   underscored: true
 });
 
+// Settings 모델 정의
+const Settings = sequelize.define('Settings', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  key: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true
+  },
+  value: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  description: {
+    type: DataTypes.STRING,
+    allowNull: true
+  }
+}, {
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  tableName: 'Settings'
+});
+
+// MatchList 모델 정의
+const MatchList = sequelize.define('MatchList', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  matches: {
+    type: DataTypes.JSON,
+    defaultValue: []
+  },
+  created_by: {
+    type: DataTypes.STRING,
+    allowNull: true
+  }
+}, {
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  tableName: 'MatchLists'
+});
+
 // 경기 생성 시 스포츠 타입에 따른 기본 데이터 구조 설정
 Match.beforeCreate((match) => {
   // 날짜와 종목 코드를 조합한 ID 생성
@@ -123,7 +176,7 @@ Match.beforeCreate((match) => {
   
   // 현재 시간을 밀리초로 가져와서 순번으로 사용
   const timestamp = Date.now();
-  const sequence = String(timestamp % 100).padStart(2, '0');  // 항상 2자리 숫자가 되도록 수정
+  const sequence = String(timestamp % 10000).padStart(4, '0');  // 4자리 숫자로 확장
   
   // 새 ID 설정: 날짜 + 종목코드 + 순번
   match.id = `${dateCode}${sportCode}${sequence}`;
@@ -189,5 +242,7 @@ module.exports = {
   sequelize,
   Match,
   Template,
+  Settings,
+  MatchList,
   Op
 }; 

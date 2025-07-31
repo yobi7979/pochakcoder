@@ -244,10 +244,9 @@ const SoccerAnimationManager = {
     }
 };
 
-// 소켓 이벤트 리스너 등록 (페이지 로드 시)
-document.addEventListener('DOMContentLoaded', function() {
-    // 소켓이 존재하는지 확인
-    if (typeof io !== 'undefined' && typeof socket !== 'undefined') {
+// 애니메이션 이벤트 리스너 등록 함수 (외부에서 호출)
+window.registerAnimationListeners = function(socket) {
+    if (socket) {
         // 애니메이션 이벤트 수신
         socket.on('animation', function(data) {
             console.log('애니메이션 이벤트 수신:', data);
@@ -263,9 +262,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         console.log('애니메이션 이벤트 리스너 등록됨');
     } else {
-        console.warn('소켓이 정의되지 않아 애니메이션 이벤트 리스너를 등록할 수 없습니다.');
+        console.warn('소켓이 제공되지 않아 애니메이션 이벤트 리스너를 등록할 수 없습니다.');
     }
-});
+};
 
 // 전역 객체로 내보내기
 window.SoccerAnimationManager = SoccerAnimationManager; 

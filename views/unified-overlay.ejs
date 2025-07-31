@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>통합 오버레이</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        .overlay-iframe {
+            width: 100vw;
+            height: 100vh;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <iframe class="overlay-iframe" id="overlay-iframe" src=""></iframe>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let matchId = '<%= matchId %>';
+        let isListMode = <%= isListMode %>;
+        let listId = '<%= listId %>';
+        let sportType = '<%= sport_type %>';
+        
+        const socket = io();
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('=== 통합 오버레이 페이지 로드 ===');
+            console.log('matchId:', matchId);
+            console.log('listId:', listId);
+            
+            // 초기 iframe 로드
+            if (matchId && sportType) {
+                loadOriginalOverlay();
+            }
+            
+            if (isListMode && listId) {
+                socket.emit('join_unified_overlay', { listId: listId });
+            }
+        });
+        
+        function loadOriginalOverlay() {
+            const iframe = document.getElementById('overlay-iframe');
+            if (iframe && matchId && sportType) {
+                const originalUrl = `/${sportType}/${matchId}/overlay`;
+                iframe.src = originalUrl;
+                console.log('원본 오버레이 로드:', originalUrl);
+            }
+        }
+        
+                            socket.on('list_overlay_match_changed', (data) => {
+                        console.log('=== 리스트 오버레이 경기 변경 이벤트 수신 ===');
+                        console.log('전체 데이터:', data);
+                        
+                        if (isListMode && listId && data.listId === listId) {
+                            if (data.match && data.match.id) {
+                                matchId = data.match.id;
+                                sportType = data.match.sport_type || sportType;
+                                
+                                // 새로운 경기의 원본 오버레이 로드
+                                loadOriginalOverlay();
+                                
+                                console.log('새 경기 오버레이 로드 완료:', matchId);
+                            }
+                        }
+                    });
+
+                    // 경기 수정 이벤트
+                    socket.on('match_updated', (data) => {
+                        if (data.matchId === matchId) {
+                            console.log('경기 수정 이벤트 수신:', data);
+                            
+                            // iframe 내부의 경기 정보 업데이트를 위해 iframe 새로고침
+                            loadOriginalOverlay();
+                            
+                            console.log('경기 수정으로 인한 오버레이 새로고침 완료');
+                        }
+                    });
+    </script>
+</body>
+</html> 

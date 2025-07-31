@@ -49,11 +49,11 @@ const Match = sequelize.define('Match', {
   },
   home_team_color: {
     type: DataTypes.STRING,
-    defaultValue: '#1d4ed8'
+    defaultValue: '#1e40af'
   },
   away_team_color: {
     type: DataTypes.STRING,
-    defaultValue: '#dc2626'
+    defaultValue: '#1e40af'
   },
   home_score: {
     type: DataTypes.INTEGER,

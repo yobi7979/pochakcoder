@@ -26,7 +26,35 @@
             width: 100%;
             height: 100%;
             position: relative;
-        }        
+        }
+
+        /* 리스트 정보 표시 영역 */
+        .list-info {
+            position: absolute;
+            top: 20px;
+            right: 50px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .list-info.show {
+            display: block;
+        }
+        
+        .list-info .list-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .list-info .match-counter {
+            font-size: 12px;
+            opacity: 0.8;
+        }
 
         /* 상단 스코어보드 */
         .scoreboard {
@@ -630,6 +658,14 @@
 </head>
 <body>
     <div class="overlay-container">
+        <!-- 리스트 정보 표시 -->
+        <% if (typeof listId !== 'undefined' && listId) { %>
+        <div class="list-info" id="listInfo">
+            <div class="list-name" id="listName"></div>
+            <div class="match-counter" id="matchCounter"></div>
+        </div>
+        <% } %>
+        
         <!-- 팀 헤더 섹션 -->
         <div class="team-headers-section">
             <div class="team-header home">HOME</div>
@@ -749,12 +785,16 @@
     <script src="/js/animations.js"></script>
     <script>
         const socket = io();
-        const matchId = '<%= match.id %>';
+        // 전역 변수로 설정하여 animations.js에서 접근 가능하도록 함
+        window.socket = socket;
+        let matchId = '<%= match.id %>';
         let lastServerTime = 0;
         let lastUpdateTime = 0;
         let localTimer = null;
         let homeTeamColor = '<%= match.home_team_color || "#00cc33" %>';
         let awayTeamColor = '<%= match.away_team_color || "#00cc33" %>';
+        
+
 
         // 전역 상태 관리 객체
         const logoState = {
@@ -872,6 +912,11 @@
         socket.on('connect', () => {
             console.log('소켓 연결됨');
             socket.emit('join', matchId);
+            
+            if (typeof isListMode !== 'undefined' && isListMode && typeof listId !== 'undefined' && listId) { 
+            // 리스트 오버레이 모드일 때 리스트 오버레이 방에도 참가
+            socket.emit('join_list_overlay', '<%= listId %>');
+            }
         });
 
         socket.on('disconnect', () => {
@@ -908,6 +953,131 @@
                         stateElement.textContent = data.match_data.state;
                     }
                 }
+            }
+        });
+
+
+
+        // 실시간 경기 데이터 업데이트 이벤트 처리
+        socket.on('match_data_updated', (data) => {
+            console.log('=== 실시간 경기 데이터 업데이트 수신 ===');
+            console.log('업데이트 데이터:', data);
+            console.log('현재 matchId:', matchId);
+            console.log('데이터 matchId:', data.matchId);
+            console.log('matchId 일치 여부:', data.matchId === matchId);
+            
+            if (data.matchId === matchId) {
+                // 점수 업데이트
+                const homeScoreElement = document.querySelector('.home-score');
+                const awayScoreElement = document.querySelector('.away-score');
+                
+                console.log('홈팀 점수 요소:', homeScoreElement);
+                console.log('원정팀 점수 요소:', awayScoreElement);
+                
+                if (homeScoreElement && data.home_score !== undefined) {
+                    homeScoreElement.textContent = data.home_score;
+                    console.log('홈팀 점수 실시간 업데이트:', data.home_score);
+                }
+                if (awayScoreElement && data.away_score !== undefined) {
+                    awayScoreElement.textContent = data.away_score;
+                    console.log('원정팀 점수 실시간 업데이트:', data.away_score);
+                }
+                
+                // 경기 상태 업데이트
+                const stateElement = document.querySelector('.state-text');
+                if (stateElement && data.state) {
+                    stateElement.textContent = data.state;
+                    console.log('경기 상태 실시간 업데이트:', data.state);
+                }
+            } else {
+                console.log('matchId가 일치하지 않아 업데이트를 건너뜀');
+            }
+        });
+
+        // 경기 수정 이벤트
+        socket.on('match_updated', (data) => {
+            if (data.matchId === matchId) {
+                console.log('경기 수정 이벤트 수신:', data);
+                
+                // 팀명 업데이트
+                const homeTeamElement = document.getElementById('home-team-name');
+                const awayTeamElement = document.getElementById('away-team-name');
+                
+                if (homeTeamElement && data.home_team) {
+                    homeTeamElement.textContent = data.home_team;
+                    console.log('홈팀명 업데이트:', data.home_team);
+                }
+                if (awayTeamElement && data.away_team) {
+                    awayTeamElement.textContent = data.away_team;
+                    console.log('원정팀명 업데이트:', data.away_team);
+                }
+                
+                // 종목 업데이트 (필요한 경우)
+                if (data.sport_type && data.sport_type !== currentSportType) {
+                    currentSportType = data.sport_type;
+                    console.log('종목 변경됨:', currentSportType);
+                }
+                
+                // 점수 업데이트
+                const homeScoreElement = document.querySelector('.home-score');
+                const awayScoreElement = document.querySelector('.away-score');
+                
+                if (homeScoreElement && data.home_score !== undefined) {
+                    homeScoreElement.textContent = data.home_score;
+                }
+                if (awayScoreElement && data.away_score !== undefined) {
+                    awayScoreElement.textContent = data.away_score;
+                }
+            }
+        });
+
+        // 실시간 타이머 업데이트 이벤트 처리
+        socket.on('timer_updated', (data) => {
+            console.log('=== 실시간 타이머 업데이트 수신 ===');
+            console.log('타이머 업데이트 데이터:', data);
+            console.log('현재 matchId:', matchId);
+            console.log('수신된 matchId:', data.matchId);
+            console.log('matchId 일치 여부:', data.matchId === matchId);
+            
+            // 현재 표시 중인 경기의 타이머만 업데이트
+            if (data.matchId === matchId) {
+                console.log('현재 경기의 타이머 업데이트 처리');
+                
+                // 타이머 정보 추출
+                let currentSeconds = data.currentSeconds || data.timer || 0;
+                if (data.minute !== undefined || data.second !== undefined) {
+                    currentSeconds = (data.minute || 0) * 60 + (data.second || 0);
+                }
+                const isRunning = data.isRunning || false;
+                
+                console.log('추출된 타이머 정보:', { currentSeconds, isRunning });
+                
+                // UI 업데이트
+                const timerElement = document.querySelector('.match-time');
+                if (timerElement) {
+                    const minute = Math.floor(currentSeconds / 60);
+                    const second = currentSeconds % 60;
+                    const formattedMinute = minute.toString().padStart(2, '0');
+                    const formattedSecond = second.toString().padStart(2, '0');
+                    timerElement.textContent = `${formattedMinute}:${formattedSecond}`;
+                    console.log('타이머 실시간 업데이트:', `${formattedMinute}:${formattedSecond}`);
+                    
+                    // 로컬 타이머 변수들 업데이트
+                    lastServerTime = currentSeconds;
+                    lastUpdateTime = Date.now();
+                    console.log('로컬 타이머 변수 업데이트:', { lastServerTime, lastUpdateTime });
+                    
+                    // 타이머 실행 상태에 따라 로컬 타이머 제어
+                    if (isRunning && !localTimer) {
+                        console.log('타이머 실행 중 - 로컬 타이머 시작');
+                        startLocalTimer();
+                    } else if (!isRunning && localTimer) {
+                        console.log('타이머 정지 상태 - 로컬 타이머 중지');
+                        stopLocalTimer();
+                    }
+                }
+            } else {
+                console.log('matchId가 일치하지 않아 타이머 업데이트를 건너뜀');
             }
         });
 
@@ -1004,11 +1174,46 @@
 
         // 서버로부터 타이머 상태 수신
         socket.on('timer_state', (data) => {
-            lastServerTime = data.currentSeconds;
-            lastUpdateTime = data.lastUpdateTime || Date.now();
-            updateTimerDisplay(data.currentSeconds);
-            if (data.isRunning) {
-                startLocalTimer();
+            console.log('=== 서버 타이머 상태 수신 ===');
+            console.log('수신된 타이머 데이터:', data);
+            
+            if (data.error) {
+                console.error('타이머 상태 요청 오류:', data.error);
+                return;
+            }
+            
+            // 현재 표시 중인 경기의 타이머만 처리
+            if (data.matchId === matchId) {
+                console.log('현재 경기의 타이머 상태 업데이트');
+                
+                // 로컬 타이머 변수 업데이트
+                lastServerTime = data.currentSeconds || 0;
+                lastUpdateTime = data.lastUpdateTime || Date.now();
+                
+                // UI 업데이트
+                const timerElement = document.querySelector('.match-time');
+                if (timerElement) {
+                    const minute = Math.floor(lastServerTime / 60);
+                    const second = lastServerTime % 60;
+                    const formattedMinute = minute.toString().padStart(2, '0');
+                    const formattedSecond = second.toString().padStart(2, '0');
+                    timerElement.textContent = `${formattedMinute}:${formattedSecond}`;
+                    console.log('서버 타이머 상태로 UI 업데이트:', `${formattedMinute}:${formattedSecond}`);
+                }
+                
+                // 타이머 실행 상태에 따라 로컬 타이머 제어
+                if (data.isRunning) {
+                    console.log('서버 타이머가 실행 중이므로 로컬 타이머 시작');
+                    startLocalTimer();
+                } else {
+                    console.log('서버 타이머가 정지 상태이므로 로컬 타이머 중지');
+                    if (localTimer) {
+                        clearInterval(localTimer);
+                        localTimer = null;
+                    }
+                }
+            } else {
+                console.log('다른 경기의 타이머 상태이므로 무시:', data.matchId);
             }
         });
 
@@ -1025,6 +1230,11 @@
             }
         });
 
+                // 애니메이션 이벤트 리스너 등록
+        if (typeof window.registerAnimationListeners === 'function') {
+            window.registerAnimationListeners(socket);
+        }
+        
         // 애니메이션 이벤트 수신
         socket.on('animation', (data) => {
             const section = data.section;
@@ -1053,7 +1263,7 @@
                     }
                 }
             }           
-            
+                
             if (section === 'homeTeam') {
                 toggleLineupVisibility('home');
             }
@@ -1074,23 +1284,84 @@
             }
         });
 
-        // 로컬 타이머 시작
-        function startLocalTimer() {
-            if (localTimer) return;
+        // 타이머 동기화 전용 함수
+        function syncTimerWithMatch(matchData) {
+            console.log('=== 타이머 동기화 시작 ===');
+            console.log('동기화할 타이머 데이터:', matchData);
             
-            localTimer = setInterval(() => {
-                if (!socket.connected) {
-                    const currentTime = Date.now();
-                    const timeDiff = Math.floor((currentTime - lastUpdateTime) / 1000);
-                    const newSeconds = lastServerTime + timeDiff;
-                    updateTimerDisplay(newSeconds);
-                }
-            }, 1000);
+            // 1. 기존 타이머 정리
+            if (localTimer) {
+                clearInterval(localTimer);
+                localTimer = null;
+                console.log('기존 로컬 타이머 정리 완료');
+            }
+            
+            // 2. 새 경기의 타이머 정보 추출
+            const currentSeconds = matchData.currentSeconds || matchData.timer || 0;
+            const isRunning = matchData.isRunning || false;
+            
+            console.log('추출된 타이머 정보:', { currentSeconds, isRunning });
+            
+            // 3. UI 업데이트
+            const timerElement = document.querySelector('.match-time');
+            if (timerElement) {
+                const minute = Math.floor(currentSeconds / 60);
+                const second = currentSeconds % 60;
+                const formattedMinute = minute.toString().padStart(2, '0');
+                const formattedSecond = second.toString().padStart(2, '0');
+                timerElement.textContent = `${formattedMinute}:${formattedSecond}`;
+                console.log('UI 타이머 업데이트:', `${formattedMinute}:${formattedSecond}`);
+            }
+            
+            // 4. 로컬 타이머 변수 동기화
+            lastServerTime = currentSeconds;
+            lastUpdateTime = Date.now();
+            console.log('로컬 타이머 변수 동기화:', { lastServerTime, lastUpdateTime });
+            
+            // 5. 타이머 상태에 따라 로컬 타이머 제어
+            if (isRunning) {
+                console.log('타이머가 실행 중이므로 로컬 타이머 시작');
+                startLocalTimer();
+            } else {
+                console.log('타이머가 정지 상태이므로 로컬 타이머 중지');
+            }
+            
+            console.log('타이머 동기화 완료:', { currentSeconds, isRunning });
+        }
+        
+        // 서버에서 타이머 상태 요청 함수
+        function requestTimerStateFromServer(matchId) {
+            console.log('=== 서버에 타이머 상태 요청 ===');
+            console.log('요청할 matchId:', matchId);
+            
+            // 서버에 타이머 상태 요청
+            socket.emit('request_timer_state', { matchId: matchId });
         }
 
-        // 로컬 타이머 정지
+        // 로컬 타이머 시작
+        function startLocalTimer() {
+            if (localTimer) {
+                console.log('기존 로컬 타이머 중지 후 재시작');
+                clearInterval(localTimer);
+                localTimer = null;
+            }
+            
+            console.log('로컬 타이머 시작:', { lastServerTime, lastUpdateTime });
+            
+            localTimer = setInterval(() => {
+                const currentTime = Date.now();
+                const timeDiff = Math.floor((currentTime - lastUpdateTime) / 1000);
+                const newSeconds = lastServerTime + timeDiff;
+                updateTimerDisplay(newSeconds);
+            }, 1000);
+            
+            console.log('로컬 타이머 시작 완료');
+        }
+        
+                // 로컬 타이머 중지
         function stopLocalTimer() {
             if (localTimer) {
+                console.log('로컬 타이머 중지');
                 clearInterval(localTimer);
                 localTimer = null;
             }
@@ -1100,8 +1371,31 @@
         function updateTimerDisplay(currentSeconds) {
             const minutes = Math.floor(currentSeconds / 60);
             const seconds = currentSeconds % 60;
-            document.querySelector('.match-time').textContent = 
-                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            const timerElement = document.querySelector('.match-time');
+            if (timerElement) {
+                const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                timerElement.textContent = formattedTime;
+                console.log('로컬 타이머 업데이트:', formattedTime, '(현재 경기:', matchId, ')');
+            } else {
+                console.error('타이머 요소를 찾을 수 없습니다.');
+            }
+        }
+        
+        // 강제 타이머 업데이트 함수 (디버깅용)
+        function forceUpdateTimer(seconds) {
+            console.log('=== 강제 타이머 업데이트 ===');
+            console.log('업데이트할 시간:', seconds);
+            
+            const timerElement = document.querySelector('.match-time');
+            if (timerElement) {
+                const minutes = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                const formattedTime = `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                timerElement.textContent = formattedTime;
+                console.log('강제 타이머 업데이트 완료:', formattedTime);
+            } else {
+                console.error('타이머 요소를 찾을 수 없습니다.');
+            }
         }
 
         // 팀 색상 업데이트 함수
@@ -1249,6 +1543,7 @@
                 }
             }
         }
+        
     </script>
 </body>
 </html> 

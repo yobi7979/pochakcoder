@@ -37,7 +37,8 @@ Match.init({
             home_fouls: 0,
             away_fouls: 0
         }
-    }
+    },
+
 }, {
     sequelize,
     modelName: 'Match',
