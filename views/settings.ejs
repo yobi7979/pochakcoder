@@ -280,6 +280,70 @@
                 </div>
             </div>
 
+            <!-- 오버레이 이미지 관리 섹션 -->
+            <div class="setting-item">
+                <div class="setting-label">
+                    <i class="bi bi-image"></i> 오버레이 이미지 관리
+                </div>
+                <div class="setting-description">
+                    축구 오버레이 페이지에 표시할 이미지를 업로드하고 관리할 수 있습니다. 
+                    업로드된 이미지는 좌측 상단에 표시됩니다.
+                </div>
+                
+                <!-- 이미지 업로드 -->
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <div class="card border-primary">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0"><i class="bi bi-cloud-upload"></i> 이미지 업로드</h6>
+                            </div>
+                            <div class="card-body">
+                                <form id="overlayImageForm" enctype="multipart/form-data">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <div class="mb-3">
+                                                <label for="overlayImage" class="form-label">이미지 파일 선택</label>
+                                                <input type="file" class="form-control" id="overlayImage" name="image" accept="image/*" required>
+                                                <div class="form-text">지원 형식: JPEG, PNG, GIF, WEBP (최대 10MB)</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="mb-3">
+                                                <label class="form-label">&nbsp;</label>
+                                                <button type="submit" class="btn btn-primary w-100">
+                                                    <i class="bi bi-upload"></i> 업로드
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 업로드된 이미지 목록 -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">업로드된 이미지 목록</h6>
+                                <button class="btn btn-outline-primary btn-sm" onclick="refreshOverlayImages()">
+                                    <i class="bi bi-arrow-clockwise"></i> 새로고침
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div id="overlayImagesList" class="row">
+                                    <div class="col-12 text-center text-muted">
+                                        <i class="bi bi-hourglass-split"></i> 이미지 목록을 불러오는 중...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- 로그 내용 모달 -->
             <div class="modal fade" id="logContentModal" tabindex="-1">
                 <div class="modal-dialog modal-xl">
@@ -752,11 +816,145 @@
             }
         }
 
+        // 오버레이 이미지 업로드
+        document.getElementById('overlayImageForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            const fileInput = document.getElementById('overlayImage');
+            
+            if (!fileInput.files[0]) {
+                showToast('이미지 파일을 선택해주세요.', 'warning');
+                return;
+            }
+            
+            formData.append('image', fileInput.files[0]);
+            
+            try {
+                const response = await fetch('/api/overlay-image', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast(result.message, 'success');
+                    fileInput.value = ''; // 파일 입력 초기화
+                    refreshOverlayImages(); // 이미지 목록 새로고침
+                } else {
+                    showToast(result.message || '업로드에 실패했습니다.', 'error');
+                }
+            } catch (error) {
+                console.error('이미지 업로드 오류:', error);
+                showToast('업로드 중 오류가 발생했습니다.', 'error');
+            }
+        });
+
+        // 오버레이 이미지 목록 로드
+        async function loadOverlayImages() {
+            try {
+                const response = await fetch('/api/overlay-images');
+                const result = await response.json();
+                
+                const imagesList = document.getElementById('overlayImagesList');
+                
+                if (result.success) {
+                    if (result.images.length === 0) {
+                        imagesList.innerHTML = `
+                            <div class="col-12 text-center text-muted">
+                                <i class="bi bi-image"></i> 업로드된 이미지가 없습니다.
+                            </div>
+                        `;
+                    } else {
+                        imagesList.innerHTML = result.images.map(image => `
+                            <div class="col-md-4 col-lg-3 mb-3">
+                                <div class="card h-100">
+                                    <img src="${image.path}" class="card-img-top" alt="오버레이 이미지" style="height: 150px; object-fit: cover;">
+                                    <div class="card-body">
+                                        <h6 class="card-title">${image.filename}</h6>
+                                        <p class="card-text">
+                                            <small class="text-muted">
+                                                업로드: ${new Date(image.uploadTime).toLocaleString()}
+                                            </small>
+                                        </p>
+                                    </div>
+                                    <div class="card-footer">
+                                        <div class="btn-group w-100" role="group">
+                                            <button class="btn btn-outline-primary btn-sm" onclick="copyImagePath('${image.path}')">
+                                                <i class="bi bi-clipboard"></i> 경로 복사
+                                            </button>
+                                            <button class="btn btn-outline-danger btn-sm" onclick="deleteOverlayImage('${image.filename}')">
+                                                <i class="bi bi-trash"></i> 삭제
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                } else {
+                    imagesList.innerHTML = `
+                        <div class="col-12 text-center text-danger">
+                            <i class="bi bi-exclamation-triangle"></i> 이미지 목록을 불러올 수 없습니다.
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('오버레이 이미지 목록 로드 오류:', error);
+                document.getElementById('overlayImagesList').innerHTML = `
+                    <div class="col-12 text-center text-danger">
+                        <i class="bi bi-exclamation-triangle"></i> 이미지 목록을 불러오는 중 오류가 발생했습니다.
+                    </div>
+                `;
+            }
+        }
+
+        // 오버레이 이미지 목록 새로고침
+        function refreshOverlayImages() {
+            loadOverlayImages();
+        }
+
+        // 이미지 경로 복사
+        function copyImagePath(path) {
+            navigator.clipboard.writeText(path).then(() => {
+                showToast('이미지 경로가 클립보드에 복사되었습니다.', 'success');
+            }).catch(() => {
+                showToast('클립보드 복사에 실패했습니다.', 'error');
+            });
+        }
+
+        // 오버레이 이미지 삭제
+        async function deleteOverlayImage(filename) {
+            if (!confirm('정말로 이 이미지를 삭제하시겠습니까?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/overlay-image/${filename}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast(result.message, 'success');
+                    refreshOverlayImages(); // 이미지 목록 새로고침
+                } else {
+                    showToast(result.message || '삭제에 실패했습니다.', 'error');
+                }
+            } catch (error) {
+                console.error('이미지 삭제 오류:', error);
+                showToast('삭제 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
         // 이벤트 리스너
         document.addEventListener('DOMContentLoaded', function() {
             loadSettings();
             loadLogFiles(); // 로그 파일 목록 로드
             loadAutoManagementStatus(); // 자동 로그 관리 상태 로드
+            loadOverlayImages(); // 오버레이 이미지 목록 로드
             
             // 컬러 변경 이벤트
             document.getElementById('default-home-color').addEventListener('change', function() {

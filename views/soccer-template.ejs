@@ -254,6 +254,29 @@
             border-radius: 3px;
         }
         
+        /* 오버레이 이미지 */
+        .overlay-image {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 200px;
+            height: 150px;
+            z-index: 1000;
+            display: none; /* 기본적으로 숨김 */
+        }
+
+        .overlay-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .overlay-image.show {
+            display: block;
+        }
+
         /* 경기 상태 표시 */
         .match-state {
             position: absolute;
@@ -694,6 +717,11 @@
             </div>
         </div>
         
+        <!-- 오버레이 이미지 -->
+        <div class="overlay-image" id="overlayImage">
+            <!-- 이미지는 JavaScript로 동적으로 로드됩니다 -->
+        </div>
+
         <!-- 스코어보드+타이머 수평 정렬 래퍼 -->
         <div class="scoreboard-row">
             <div class="scoreboard">
@@ -864,6 +892,41 @@
                     }
                     teamHeader.style.backgroundColor = color;
                 }
+            }
+        }
+
+        // 오버레이 이미지 로드 함수
+        async function loadOverlayImage() {
+            try {
+                const response = await fetch('/api/overlay-images');
+                const result = await response.json();
+                
+                const overlayImageContainer = document.getElementById('overlayImage');
+                
+                if (result.success && result.images.length > 0) {
+                    // 가장 최근에 업로드된 이미지를 사용
+                    const latestImage = result.images[0];
+                    
+                    const img = document.createElement('img');
+                    img.src = latestImage.path;
+                    img.alt = '오버레이 이미지';
+                    img.onload = () => {
+                        console.log('오버레이 이미지 로드 완료:', latestImage.path);
+                        overlayImageContainer.classList.add('show');
+                    };
+                    img.onerror = (error) => {
+                        console.error('오버레이 이미지 로드 실패:', error);
+                        overlayImageContainer.classList.remove('show');
+                    };
+                    
+                    overlayImageContainer.innerHTML = '';
+                    overlayImageContainer.appendChild(img);
+                } else {
+                    overlayImageContainer.classList.remove('show');
+                }
+            } catch (error) {
+                console.error('오버레이 이미지 로드 오류:', error);
+                document.getElementById('overlayImage').classList.remove('show');
             }
         }
 
@@ -1609,6 +1672,15 @@
                 }
             }
         }
+        
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            // 오버레이 이미지 로드
+            loadOverlayImage();
+            
+            // 기타 초기화 작업들...
+            console.log('축구 오버레이 페이지 로드 완료');
+        });
         
     </script>
 </body>

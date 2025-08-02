@@ -261,6 +261,38 @@ const csvUpload = multer({
   }
 });
 
+// 오버레이 이미지 업로드를 위한 multer 설정
+const overlayImageUpload = multer({
+    storage: multer.diskStorage({
+        destination: function (req, file, cb) {
+            const dir = path.join(__dirname, 'public', 'overlay-images');
+            if (!fsSync.existsSync(dir)) {
+                fsSync.mkdirSync(dir, { recursive: true });
+            }
+            cb(null, dir);
+        },
+        filename: function (req, file, cb) {
+            // 원본 파일명을 안전하게 처리하고 타임스탬프 추가
+            const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+            const ext = path.extname(originalName);
+            const nameWithoutExt = path.basename(originalName, ext);
+            const timestamp = Date.now();
+            cb(null, `${nameWithoutExt}_${timestamp}${ext}`);
+        }
+    }),
+    limits: {
+        fileSize: 10 * 1024 * 1024 // 10MB
+    },
+    fileFilter: function (req, file, cb) {
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (allowedTypes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('지원하지 않는 파일 형식입니다. JPEG, PNG, GIF, WEBP 파일만 업로드 가능합니다.'));
+        }
+    }
+});
+
 // HEX 색상을 RGB로 변환하는 함수
 function hexToRgb(hex) {
     // # 제거
@@ -657,6 +689,95 @@ app.post('/api/team-logo', upload.single('logo'), async (req, res) => {
     logger.info(`팀 로고 업로드 성공: ${logoPath}, 팀: ${req.body.teamName}, 타입: ${req.body.teamType}`);
   } catch (error) {
     logger.error('로고 업로드 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 오버레이 이미지 업로드 API
+app.post('/api/overlay-image', overlayImageUpload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: '파일이 없습니다.' });
+    }
+
+    // 이미지 파일 경로 생성 (public 폴더 기준 상대 경로)
+    const imagePath = `/overlay-images/${req.file.filename}`;
+    
+    res.json({ 
+      success: true, 
+      imagePath: imagePath,
+      filename: req.file.filename,
+      message: '오버레이 이미지가 성공적으로 업로드되었습니다.'
+    });
+    
+    logger.info(`오버레이 이미지 업로드 성공: ${imagePath}`);
+  } catch (error) {
+    logger.error('오버레이 이미지 업로드 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 오버레이 이미지 목록 조회 API
+app.get('/api/overlay-images', async (req, res) => {
+  try {
+    const overlayImagesDir = path.join(__dirname, 'public', 'overlay-images');
+    
+    if (!fsSync.existsSync(overlayImagesDir)) {
+      return res.json({ success: true, images: [] });
+    }
+    
+    const files = fsSync.readdirSync(overlayImagesDir);
+    const images = files
+      .filter(file => {
+        const ext = path.extname(file).toLowerCase();
+        return ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext);
+      })
+      .map(file => ({
+        filename: file,
+        path: `/overlay-images/${file}`,
+        uploadTime: fsSync.statSync(path.join(overlayImagesDir, file)).mtime
+      }))
+      .sort((a, b) => b.uploadTime - a.uploadTime); // 최신순 정렬
+    
+    res.json({ success: true, images });
+  } catch (error) {
+    logger.error('오버레이 이미지 목록 조회 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 오버레이 이미지 삭제 API
+app.delete('/api/overlay-image/:filename', async (req, res) => {
+  try {
+    const { filename } = req.params;
+    const filePath = path.join(__dirname, 'public', 'overlay-images', filename);
+    
+    if (!fsSync.existsSync(filePath)) {
+      return res.status(404).json({ success: false, message: '파일을 찾을 수 없습니다.' });
+    }
+    
+    fsSync.unlinkSync(filePath);
+    
+    res.json({ 
+      success: true, 
+      message: '이미지가 성공적으로 삭제되었습니다.'
+    });
+    
+    logger.info(`오버레이 이미지 삭제 성공: ${filename}`);
+  } catch (error) {
+    logger.error('오버레이 이미지 삭제 오류:', error);
     res.status(500).json({ 
       success: false, 
       message: '서버 오류가 발생했습니다.',
