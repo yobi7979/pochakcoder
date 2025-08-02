@@ -98,33 +98,30 @@
 
         /* 축구 오버레이 디자인 설정 스타일 */
         .soccer-overlay-preview-small {
-            width: 100%;
-            height: 200px;
+            width: 320px;
+            height: 180px;
             background-color: #000;
             position: relative;
             border-radius: 8px;
             overflow: hidden;
-            transform: scale(0.15);
-            transform-origin: top left;
-            margin: -60px 0 -60px -60px;
             cursor: pointer;
             border: 2px solid #dee2e6;
+            margin: 0 auto;
         }
 
         .soccer-overlay-preview-small:hover {
             border-color: #007bff;
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.3);
         }
 
         .soccer-overlay-preview-full {
-            width: 100%;
-            height: 600px;
+            width: 640px;
+            height: 360px;
             background-color: #000;
             position: relative;
             border-radius: 8px;
             overflow: hidden;
-            transform: scale(0.5);
-            transform-origin: top left;
-            margin: -150px 0 -150px -150px;
+            margin: 0 auto;
         }
 
         .preview-element {
@@ -134,11 +131,14 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 10px;
+            font-size: 8px;
             font-weight: bold;
             color: white;
             cursor: pointer;
             transition: all 0.3s ease;
+            text-align: center;
+            padding: 2px;
+            word-break: break-word;
         }
 
         .preview-element:hover {
@@ -153,43 +153,43 @@
         .preview-scoreboard {
             background-color: rgba(0, 204, 51, 0.8);
             border-color: #00cc33;
-            width: 420px;
-            height: 90px;
+            width: 280px;
+            height: 60px;
         }
 
         .preview-home-logo {
             background-color: rgba(0, 204, 51, 0.6);
             border-color: #00cc33;
-            width: 40px;
-            height: 40px;
+            width: 30px;
+            height: 30px;
         }
 
         .preview-away-logo {
             background-color: rgba(255, 255, 255, 0.6);
             border-color: #ffffff;
-            width: 40px;
-            height: 40px;
+            width: 30px;
+            height: 30px;
         }
 
         .preview-match-state {
             background-color: rgba(0, 0, 0, 0.8);
             border-color: #333;
-            width: 150px;
-            height: 30px;
+            width: 100px;
+            height: 25px;
         }
 
         .preview-lineup {
             background-color: rgba(0, 0, 0, 0.6);
             border-color: #666;
-            width: 350px;
-            height: 200px;
+            width: 200px;
+            height: 120px;
         }
 
         .preview-overlay-image {
             background-color: rgba(255, 255, 255, 0.1);
             border-color: #fff;
-            width: 200px;
-            height: 150px;
+            width: 150px;
+            height: 100px;
         }
 
         .position-control {
@@ -1186,6 +1186,10 @@
                 { id: 'overlayImage', class: 'preview-overlay-image', text: '이미지' }
             ];
             
+            // 비율 계산 (1920x1080 -> 미리보기 크기)
+            const scaleX = containerId === 'soccerOverlayPreviewSmall' ? 320 / 1920 : 640 / 1920;
+            const scaleY = containerId === 'soccerOverlayPreviewSmall' ? 180 / 1080 : 360 / 1080;
+            
             elements.forEach(element => {
                 const div = document.createElement('div');
                 div.className = `preview-element ${element.class}`;
@@ -1194,18 +1198,19 @@
                 
                 const pos = currentDesign[element.id];
                 if (pos) {
-                    div.style.top = `${pos.top}px`;
+                    // 위치를 비율에 맞게 조정
+                    div.style.top = `${pos.top * scaleY}px`;
                     if (pos.left !== undefined) {
-                        div.style.left = `${pos.left}px`;
+                        div.style.left = `${pos.left * scaleX}px`;
                     }
                     if (pos.right !== undefined) {
-                        div.style.right = `${pos.right}px`;
+                        div.style.right = `${pos.right * scaleX}px`;
                     }
                     if (pos.width !== undefined) {
-                        div.style.width = `${pos.width}px`;
+                        div.style.width = `${pos.width * scaleX}px`;
                     }
                     if (pos.height !== undefined) {
-                        div.style.height = `${pos.height}px`;
+                        div.style.height = `${pos.height * scaleY}px`;
                     }
                 }
                 
@@ -1322,16 +1327,30 @@
             
             currentDesign[selectedElement][property] = parseInt(value);
             
+            // 비율 계산
+            const scaleXSmall = 320 / 1920;
+            const scaleYSmall = 180 / 1080;
+            const scaleXFull = 640 / 1920;
+            const scaleYFull = 360 / 1080;
+            
             // 작은 미리보기 업데이트
             const previewElementSmall = document.getElementById(`soccerOverlayPreviewSmall-${selectedElement}`);
             if (previewElementSmall) {
-                previewElementSmall.style[property] = `${value}px`;
+                if (property === 'top' || property === 'height') {
+                    previewElementSmall.style[property] = `${value * scaleYSmall}px`;
+                } else {
+                    previewElementSmall.style[property] = `${value * scaleXSmall}px`;
+                }
             }
             
             // 큰 미리보기 업데이트
             const previewElementFull = document.getElementById(`soccerOverlayPreviewFull-${selectedElement}`);
             if (previewElementFull) {
-                previewElementFull.style[property] = `${value}px`;
+                if (property === 'top' || property === 'height') {
+                    previewElementFull.style[property] = `${value * scaleYFull}px`;
+                } else {
+                    previewElementFull.style[property] = `${value * scaleXFull}px`;
+                }
             }
         }
 
