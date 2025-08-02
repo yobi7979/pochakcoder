@@ -804,7 +804,8 @@ app.get('/api/soccer-overlay-design', async (req, res) => {
       matchState: { top: 65, left: 230 },
       homeLineup: { top: 200, left: 80 },
       awayLineup: { top: 200, right: 50 },
-      overlayImage: { top: 0, left: 0, width: 1920, height: 1080 }
+      overlayImage: { top: 0, left: 0, width: 1920, height: 1080 },
+      timer: { marginLeft: 8 }
     };
     
     // 저장된 설정이 있으면 사용, 없으면 기본값 사용
@@ -815,7 +816,8 @@ app.get('/api/soccer-overlay-design', async (req, res) => {
       matchState: settingsObj.soccer_match_state_position ? JSON.parse(settingsObj.soccer_match_state_position) : defaultDesign.matchState,
       homeLineup: settingsObj.soccer_home_lineup_position ? JSON.parse(settingsObj.soccer_home_lineup_position) : defaultDesign.homeLineup,
       awayLineup: settingsObj.soccer_away_lineup_position ? JSON.parse(settingsObj.soccer_away_lineup_position) : defaultDesign.awayLineup,
-      overlayImage: settingsObj.soccer_overlay_image_position ? JSON.parse(settingsObj.soccer_overlay_image_position) : defaultDesign.overlayImage
+      overlayImage: settingsObj.soccer_overlay_image_position ? JSON.parse(settingsObj.soccer_overlay_image_position) : defaultDesign.overlayImage,
+      timer: settingsObj.soccer_timer_position ? JSON.parse(settingsObj.soccer_timer_position) : defaultDesign.timer
     };
     
     res.json({ success: true, design: designSettings, default: defaultDesign });
@@ -842,7 +844,8 @@ app.post('/api/soccer-overlay-design', async (req, res) => {
       { key: 'soccer_match_state_position', value: JSON.stringify(design.matchState) },
       { key: 'soccer_home_lineup_position', value: JSON.stringify(design.homeLineup) },
       { key: 'soccer_away_lineup_position', value: JSON.stringify(design.awayLineup) },
-      { key: 'soccer_overlay_image_position', value: JSON.stringify(design.overlayImage) }
+      { key: 'soccer_overlay_image_position', value: JSON.stringify(design.overlayImage) },
+      { key: 'soccer_timer_position', value: JSON.stringify(design.timer) }
     ];
     
     for (const setting of settingsToSave) {
@@ -879,7 +882,8 @@ app.post('/api/soccer-overlay-design/reset', async (req, res) => {
       'soccer_match_state_position',
       'soccer_home_lineup_position',
       'soccer_away_lineup_position',
-      'soccer_overlay_image_position'
+      'soccer_overlay_image_position',
+      'soccer_timer_position'
     ];
     
     for (const key of keysToDelete) {

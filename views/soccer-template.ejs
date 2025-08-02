@@ -962,6 +962,13 @@
                             overlayImage.style.height = `${design.overlayImage.height}px`;
                         }
                     }
+                    
+                    if (design.timer) {
+                        const matchTimerSection = document.querySelector('.match-timer-section');
+                        if (matchTimerSection) {
+                            matchTimerSection.style.marginLeft = `${design.timer.marginLeft}px`;
+                        }
+                    }
                 }
             } catch (error) {
                 console.error('디자인 설정 로드 오류:', error);
