@@ -97,16 +97,34 @@
         }
 
         /* 축구 오버레이 디자인 설정 스타일 */
-        .soccer-overlay-preview {
+        .soccer-overlay-preview-small {
             width: 100%;
-            height: 400px;
+            height: 200px;
             background-color: #000;
             position: relative;
             border-radius: 8px;
             overflow: hidden;
-            transform: scale(0.3);
+            transform: scale(0.15);
             transform-origin: top left;
-            margin: -120px 0 -120px -120px;
+            margin: -60px 0 -60px -60px;
+            cursor: pointer;
+            border: 2px solid #dee2e6;
+        }
+
+        .soccer-overlay-preview-small:hover {
+            border-color: #007bff;
+        }
+
+        .soccer-overlay-preview-full {
+            width: 100%;
+            height: 600px;
+            background-color: #000;
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            transform: scale(0.5);
+            transform-origin: top left;
+            margin: -150px 0 -150px -150px;
         }
 
         .preview-element {
@@ -447,42 +465,44 @@
                 </div>
                 
                 <div class="row">
-                    <div class="col-md-8">
-                        <!-- 실시간 미리보기 -->
-                        <div class="card">
-                            <div class="card-header">
-                                <h6 class="mb-0">실시간 미리보기</h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="soccer-overlay-preview" id="soccerOverlayPreview">
-                                    <!-- 미리보기 요소들이 여기에 동적으로 생성됩니다 -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-4">
+                    <div class="col-md-12">
                         <!-- 위치 조정 컨트롤 -->
                         <div class="card">
-                            <div class="card-header">
+                            <div class="card-header d-flex justify-content-between align-items-center">
                                 <h6 class="mb-0">위치 조정</h6>
+                                <button class="btn btn-info btn-sm" onclick="openPreviewModal()">
+                                    <i class="bi bi-eye"></i> 미리보기 보기
+                                </button>
                             </div>
                             <div class="card-body">
-                                <div class="mb-3">
-                                    <label class="form-label">요소 선택</label>
-                                    <select class="form-select" id="elementSelect" onchange="selectElement()">
-                                        <option value="scoreboard">스코어보드</option>
-                                        <option value="homeLogo">홈팀 로고</option>
-                                        <option value="awayLogo">어웨이팀 로고</option>
-                                        <option value="matchState">경기 상태</option>
-                                        <option value="homeLineup">홈팀 라인업</option>
-                                        <option value="awayLineup">어웨이팀 라인업</option>
-                                        <option value="overlayImage">오버레이 이미지</option>
-                                    </select>
-                                </div>
-                                
-                                <div id="positionControls">
-                                    <!-- 선택된 요소에 따른 위치 조정 컨트롤이 여기에 표시됩니다 -->
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label">요소 선택</label>
+                                            <select class="form-select" id="elementSelect" onchange="selectElement()">
+                                                <option value="scoreboard">스코어보드</option>
+                                                <option value="homeLogo">홈팀 로고</option>
+                                                <option value="awayLogo">어웨이팀 로고</option>
+                                                <option value="matchState">경기 상태</option>
+                                                <option value="homeLineup">홈팀 라인업</option>
+                                                <option value="awayLineup">어웨이팀 라인업</option>
+                                                <option value="overlayImage">오버레이 이미지</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div id="positionControls">
+                                            <!-- 선택된 요소에 따른 위치 조정 컨트롤이 여기에 표시됩니다 -->
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-8">
+                                        <div class="small-preview-container">
+                                            <h6 class="text-muted mb-2">작은 미리보기 (클릭하여 확대)</h6>
+                                            <div class="soccer-overlay-preview-small" id="soccerOverlayPreviewSmall" onclick="openPreviewModal()">
+                                                <!-- 작은 미리보기 요소들이 여기에 동적으로 생성됩니다 -->
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 <div class="d-grid gap-2 mt-3">
@@ -494,6 +514,29 @@
                                     </button>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 축구 오버레이 미리보기 모달 -->
+            <div class="modal fade" id="soccerOverlayPreviewModal" tabindex="-1">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">축구 오버레이 미리보기</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="soccer-overlay-preview-full" id="soccerOverlayPreviewFull">
+                                <!-- 큰 미리보기 요소들이 여기에 동적으로 생성됩니다 -->
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                            <button type="button" class="btn btn-primary" onclick="refreshPreview()">
+                                <i class="bi bi-arrow-clockwise"></i> 새로고침
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1118,7 +1161,7 @@
                 if (result.success) {
                     currentDesign = result.design;
                     defaultDesign = result.default;
-                    renderSoccerOverlayPreview();
+                    renderSmallPreview();
                     selectElement();
                 }
             } catch (error) {
@@ -1127,9 +1170,9 @@
             }
         }
 
-        // 축구 오버레이 미리보기 렌더링
-        function renderSoccerOverlayPreview() {
-            const preview = document.getElementById('soccerOverlayPreview');
+        // 축구 오버레이 미리보기 렌더링 (공통 함수)
+        function renderSoccerOverlayPreview(containerId) {
+            const preview = document.getElementById(containerId);
             preview.innerHTML = '';
             
             // 각 요소들을 미리보기에 추가
@@ -1146,7 +1189,7 @@
             elements.forEach(element => {
                 const div = document.createElement('div');
                 div.className = `preview-element ${element.class}`;
-                div.id = `preview-${element.id}`;
+                div.id = `${containerId}-${element.id}`;
                 div.textContent = element.text;
                 
                 const pos = currentDesign[element.id];
@@ -1166,13 +1209,27 @@
                     }
                 }
                 
-                div.onclick = () => {
-                    document.getElementById('elementSelect').value = element.id;
-                    selectElement();
-                };
+                // 작은 미리보기에서만 클릭 이벤트 추가
+                if (containerId === 'soccerOverlayPreviewSmall') {
+                    div.onclick = (e) => {
+                        e.stopPropagation();
+                        document.getElementById('elementSelect').value = element.id;
+                        selectElement();
+                    };
+                }
                 
                 preview.appendChild(div);
             });
+        }
+
+        // 작은 미리보기 렌더링
+        function renderSmallPreview() {
+            renderSoccerOverlayPreview('soccerOverlayPreviewSmall');
+        }
+
+        // 큰 미리보기 렌더링
+        function renderFullPreview() {
+            renderSoccerOverlayPreview('soccerOverlayPreviewFull');
         }
 
         // 요소 선택
@@ -1184,10 +1241,16 @@
                 el.classList.remove('selected');
             });
             
-            // 선택된 요소 하이라이트
-            const selectedPreview = document.getElementById(`preview-${selectedElement}`);
-            if (selectedPreview) {
-                selectedPreview.classList.add('selected');
+            // 선택된 요소 하이라이트 (작은 미리보기)
+            const selectedPreviewSmall = document.getElementById(`soccerOverlayPreviewSmall-${selectedElement}`);
+            if (selectedPreviewSmall) {
+                selectedPreviewSmall.classList.add('selected');
+            }
+            
+            // 선택된 요소 하이라이트 (큰 미리보기)
+            const selectedPreviewFull = document.getElementById(`soccerOverlayPreviewFull-${selectedElement}`);
+            if (selectedPreviewFull) {
+                selectedPreviewFull.classList.add('selected');
             }
             
             // 위치 조정 컨트롤 업데이트
@@ -1259,10 +1322,16 @@
             
             currentDesign[selectedElement][property] = parseInt(value);
             
-            // 미리보기 업데이트
-            const previewElement = document.getElementById(`preview-${selectedElement}`);
-            if (previewElement) {
-                previewElement.style[property] = `${value}px`;
+            // 작은 미리보기 업데이트
+            const previewElementSmall = document.getElementById(`soccerOverlayPreviewSmall-${selectedElement}`);
+            if (previewElementSmall) {
+                previewElementSmall.style[property] = `${value}px`;
+            }
+            
+            // 큰 미리보기 업데이트
+            const previewElementFull = document.getElementById(`soccerOverlayPreviewFull-${selectedElement}`);
+            if (previewElementFull) {
+                previewElementFull.style[property] = `${value}px`;
             }
         }
 
@@ -1288,6 +1357,19 @@
                 console.error('디자인 설정 저장 오류:', error);
                 showToast('저장 중 오류가 발생했습니다.', 'error');
             }
+        }
+
+        // 미리보기 모달 열기
+        function openPreviewModal() {
+            renderFullPreview();
+            const modal = new bootstrap.Modal(document.getElementById('soccerOverlayPreviewModal'));
+            modal.show();
+        }
+
+        // 미리보기 새로고침
+        function refreshPreview() {
+            renderFullPreview();
+            renderSmallPreview();
         }
 
         // 디자인 설정 초기화
