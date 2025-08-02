@@ -786,6 +786,124 @@ app.delete('/api/overlay-image/:filename', async (req, res) => {
   }
 });
 
+// 축구 오버레이 디자인 설정 조회 API
+app.get('/api/soccer-overlay-design', async (req, res) => {
+  try {
+    const settings = await Settings.findAll();
+    const settingsObj = {};
+    
+    settings.forEach(setting => {
+      settingsObj[setting.key] = setting.value;
+    });
+    
+    // 기본값 정의
+    const defaultDesign = {
+      scoreboard: { top: 20, left: 80 },
+      homeLogo: { top: -120, left: 80 },
+      awayLogo: { top: -120, right: 1420 },
+      matchState: { top: 65, left: 230 },
+      homeLineup: { top: 200, left: 80 },
+      awayLineup: { top: 200, right: 50 },
+      overlayImage: { top: 0, left: 0, width: 1920, height: 1080 }
+    };
+    
+    // 저장된 설정이 있으면 사용, 없으면 기본값 사용
+    const designSettings = {
+      scoreboard: settingsObj.soccer_scoreboard_position ? JSON.parse(settingsObj.soccer_scoreboard_position) : defaultDesign.scoreboard,
+      homeLogo: settingsObj.soccer_home_logo_position ? JSON.parse(settingsObj.soccer_home_logo_position) : defaultDesign.homeLogo,
+      awayLogo: settingsObj.soccer_away_logo_position ? JSON.parse(settingsObj.soccer_away_logo_position) : defaultDesign.awayLogo,
+      matchState: settingsObj.soccer_match_state_position ? JSON.parse(settingsObj.soccer_match_state_position) : defaultDesign.matchState,
+      homeLineup: settingsObj.soccer_home_lineup_position ? JSON.parse(settingsObj.soccer_home_lineup_position) : defaultDesign.homeLineup,
+      awayLineup: settingsObj.soccer_away_lineup_position ? JSON.parse(settingsObj.soccer_away_lineup_position) : defaultDesign.awayLineup,
+      overlayImage: settingsObj.soccer_overlay_image_position ? JSON.parse(settingsObj.soccer_overlay_image_position) : defaultDesign.overlayImage
+    };
+    
+    res.json({ success: true, design: designSettings, default: defaultDesign });
+  } catch (error) {
+    logger.error('축구 오버레이 디자인 설정 조회 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 축구 오버레이 디자인 설정 저장 API
+app.post('/api/soccer-overlay-design', async (req, res) => {
+  try {
+    const { design } = req.body;
+    
+    // 각 요소별로 설정 저장
+    const settingsToSave = [
+      { key: 'soccer_scoreboard_position', value: JSON.stringify(design.scoreboard) },
+      { key: 'soccer_home_logo_position', value: JSON.stringify(design.homeLogo) },
+      { key: 'soccer_away_logo_position', value: JSON.stringify(design.awayLogo) },
+      { key: 'soccer_match_state_position', value: JSON.stringify(design.matchState) },
+      { key: 'soccer_home_lineup_position', value: JSON.stringify(design.homeLineup) },
+      { key: 'soccer_away_lineup_position', value: JSON.stringify(design.awayLineup) },
+      { key: 'soccer_overlay_image_position', value: JSON.stringify(design.overlayImage) }
+    ];
+    
+    for (const setting of settingsToSave) {
+      await Settings.upsert({
+        key: setting.key,
+        value: setting.value
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: '축구 오버레이 디자인 설정이 저장되었습니다.'
+    });
+    
+    logger.info('축구 오버레이 디자인 설정 저장 완료');
+  } catch (error) {
+    logger.error('축구 오버레이 디자인 설정 저장 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 축구 오버레이 디자인 설정 초기화 API
+app.post('/api/soccer-overlay-design/reset', async (req, res) => {
+  try {
+    // 기본값으로 설정 키들 삭제
+    const keysToDelete = [
+      'soccer_scoreboard_position',
+      'soccer_home_logo_position',
+      'soccer_away_logo_position',
+      'soccer_match_state_position',
+      'soccer_home_lineup_position',
+      'soccer_away_lineup_position',
+      'soccer_overlay_image_position'
+    ];
+    
+    for (const key of keysToDelete) {
+      await Settings.destroy({
+        where: { key: key }
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: '축구 오버레이 디자인 설정이 기본값으로 초기화되었습니다.'
+    });
+    
+    logger.info('축구 오버레이 디자인 설정 초기화 완료');
+  } catch (error) {
+    logger.error('축구 오버레이 디자인 설정 초기화 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
 // CSV 일괄 등록 API
 app.post('/api/bulk-create-matches', csvUpload.single('csvFile'), async (req, res) => {
   try {

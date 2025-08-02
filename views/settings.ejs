@@ -95,6 +95,98 @@
         .toast.error {
             border-left-color: #ef4444;
         }
+
+        /* 축구 오버레이 디자인 설정 스타일 */
+        .soccer-overlay-preview {
+            width: 100%;
+            height: 400px;
+            background-color: #000;
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            transform: scale(0.3);
+            transform-origin: top left;
+            margin: -120px 0 -120px -120px;
+        }
+
+        .preview-element {
+            position: absolute;
+            border: 2px solid;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .preview-element:hover {
+            opacity: 0.8;
+        }
+
+        .preview-element.selected {
+            border-width: 3px;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .preview-scoreboard {
+            background-color: rgba(0, 204, 51, 0.8);
+            border-color: #00cc33;
+            width: 420px;
+            height: 90px;
+        }
+
+        .preview-home-logo {
+            background-color: rgba(0, 204, 51, 0.6);
+            border-color: #00cc33;
+            width: 40px;
+            height: 40px;
+        }
+
+        .preview-away-logo {
+            background-color: rgba(255, 255, 255, 0.6);
+            border-color: #ffffff;
+            width: 40px;
+            height: 40px;
+        }
+
+        .preview-match-state {
+            background-color: rgba(0, 0, 0, 0.8);
+            border-color: #333;
+            width: 150px;
+            height: 30px;
+        }
+
+        .preview-lineup {
+            background-color: rgba(0, 0, 0, 0.6);
+            border-color: #666;
+            width: 350px;
+            height: 200px;
+        }
+
+        .preview-overlay-image {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: #fff;
+            width: 200px;
+            height: 150px;
+        }
+
+        .position-control {
+            margin-bottom: 15px;
+        }
+
+        .position-control label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .position-control input {
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
@@ -337,6 +429,69 @@
                                     <div class="col-12 text-center text-muted">
                                         <i class="bi bi-hourglass-split"></i> 이미지 목록을 불러오는 중...
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 축구 오버레이 디자인 설정 섹션 -->
+            <div class="setting-item">
+                <div class="setting-label">
+                    <i class="bi bi-layout-text-window"></i> 축구 오버레이 디자인 설정
+                </div>
+                <div class="setting-description">
+                    축구 오버레이 페이지의 각 요소들의 위치를 조정할 수 있습니다. 
+                    실시간 미리보기로 변경사항을 확인할 수 있습니다.
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-8">
+                        <!-- 실시간 미리보기 -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">실시간 미리보기</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="soccer-overlay-preview" id="soccerOverlayPreview">
+                                    <!-- 미리보기 요소들이 여기에 동적으로 생성됩니다 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <!-- 위치 조정 컨트롤 -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">위치 조정</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">요소 선택</label>
+                                    <select class="form-select" id="elementSelect" onchange="selectElement()">
+                                        <option value="scoreboard">스코어보드</option>
+                                        <option value="homeLogo">홈팀 로고</option>
+                                        <option value="awayLogo">어웨이팀 로고</option>
+                                        <option value="matchState">경기 상태</option>
+                                        <option value="homeLineup">홈팀 라인업</option>
+                                        <option value="awayLineup">어웨이팀 라인업</option>
+                                        <option value="overlayImage">오버레이 이미지</option>
+                                    </select>
+                                </div>
+                                
+                                <div id="positionControls">
+                                    <!-- 선택된 요소에 따른 위치 조정 컨트롤이 여기에 표시됩니다 -->
+                                </div>
+                                
+                                <div class="d-grid gap-2 mt-3">
+                                    <button class="btn btn-primary btn-sm" onclick="saveDesignSettings()">
+                                        <i class="bi bi-save"></i> 설정 저장
+                                    </button>
+                                    <button class="btn btn-warning btn-sm" onclick="resetDesignSettings()">
+                                        <i class="bi bi-arrow-clockwise"></i> 기본값으로 초기화
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -949,12 +1104,224 @@
             }
         }
 
+        // 축구 오버레이 디자인 설정 관련 변수
+        let currentDesign = {};
+        let defaultDesign = {};
+        let selectedElement = 'scoreboard';
+
+        // 축구 오버레이 디자인 설정 로드
+        async function loadSoccerOverlayDesign() {
+            try {
+                const response = await fetch('/api/soccer-overlay-design');
+                const result = await response.json();
+                
+                if (result.success) {
+                    currentDesign = result.design;
+                    defaultDesign = result.default;
+                    renderSoccerOverlayPreview();
+                    selectElement();
+                }
+            } catch (error) {
+                console.error('축구 오버레이 디자인 설정 로드 오류:', error);
+                showToast('디자인 설정을 불러올 수 없습니다.', 'error');
+            }
+        }
+
+        // 축구 오버레이 미리보기 렌더링
+        function renderSoccerOverlayPreview() {
+            const preview = document.getElementById('soccerOverlayPreview');
+            preview.innerHTML = '';
+            
+            // 각 요소들을 미리보기에 추가
+            const elements = [
+                { id: 'scoreboard', class: 'preview-scoreboard', text: '스코어보드' },
+                { id: 'homeLogo', class: 'preview-home-logo', text: '홈로고' },
+                { id: 'awayLogo', class: 'preview-away-logo', text: '어웨이로고' },
+                { id: 'matchState', class: 'preview-match-state', text: '경기상태' },
+                { id: 'homeLineup', class: 'preview-lineup', text: '홈라인업' },
+                { id: 'awayLineup', class: 'preview-lineup', text: '어웨이라인업' },
+                { id: 'overlayImage', class: 'preview-overlay-image', text: '이미지' }
+            ];
+            
+            elements.forEach(element => {
+                const div = document.createElement('div');
+                div.className = `preview-element ${element.class}`;
+                div.id = `preview-${element.id}`;
+                div.textContent = element.text;
+                
+                const pos = currentDesign[element.id];
+                if (pos) {
+                    div.style.top = `${pos.top}px`;
+                    if (pos.left !== undefined) {
+                        div.style.left = `${pos.left}px`;
+                    }
+                    if (pos.right !== undefined) {
+                        div.style.right = `${pos.right}px`;
+                    }
+                    if (pos.width !== undefined) {
+                        div.style.width = `${pos.width}px`;
+                    }
+                    if (pos.height !== undefined) {
+                        div.style.height = `${pos.height}px`;
+                    }
+                }
+                
+                div.onclick = () => {
+                    document.getElementById('elementSelect').value = element.id;
+                    selectElement();
+                };
+                
+                preview.appendChild(div);
+            });
+        }
+
+        // 요소 선택
+        function selectElement() {
+            selectedElement = document.getElementById('elementSelect').value;
+            
+            // 모든 요소의 선택 상태 제거
+            document.querySelectorAll('.preview-element').forEach(el => {
+                el.classList.remove('selected');
+            });
+            
+            // 선택된 요소 하이라이트
+            const selectedPreview = document.getElementById(`preview-${selectedElement}`);
+            if (selectedPreview) {
+                selectedPreview.classList.add('selected');
+            }
+            
+            // 위치 조정 컨트롤 업데이트
+            updatePositionControls();
+        }
+
+        // 위치 조정 컨트롤 업데이트
+        function updatePositionControls() {
+            const controls = document.getElementById('positionControls');
+            const element = currentDesign[selectedElement];
+            
+            if (!element) return;
+            
+            let controlsHTML = '';
+            
+            if (element.top !== undefined) {
+                controlsHTML += `
+                    <div class="position-control">
+                        <label>Top (Y축)</label>
+                        <input type="number" class="form-control" id="posTop" value="${element.top}" onchange="updateElementPosition('top', this.value)">
+                    </div>
+                `;
+            }
+            
+            if (element.left !== undefined) {
+                controlsHTML += `
+                    <div class="position-control">
+                        <label>Left (X축)</label>
+                        <input type="number" class="form-control" id="posLeft" value="${element.left}" onchange="updateElementPosition('left', this.value)">
+                    </div>
+                `;
+            }
+            
+            if (element.right !== undefined) {
+                controlsHTML += `
+                    <div class="position-control">
+                        <label>Right (오른쪽)</label>
+                        <input type="number" class="form-control" id="posRight" value="${element.right}" onchange="updateElementPosition('right', this.value)">
+                    </div>
+                `;
+            }
+            
+            if (element.width !== undefined) {
+                controlsHTML += `
+                    <div class="position-control">
+                        <label>Width (너비)</label>
+                        <input type="number" class="form-control" id="posWidth" value="${element.width}" onchange="updateElementPosition('width', this.value)">
+                    </div>
+                `;
+            }
+            
+            if (element.height !== undefined) {
+                controlsHTML += `
+                    <div class="position-control">
+                        <label>Height (높이)</label>
+                        <input type="number" class="form-control" id="posHeight" value="${element.height}" onchange="updateElementPosition('height', this.value)">
+                    </div>
+                `;
+            }
+            
+            controls.innerHTML = controlsHTML;
+        }
+
+        // 요소 위치 업데이트
+        function updateElementPosition(property, value) {
+            if (!currentDesign[selectedElement]) {
+                currentDesign[selectedElement] = {};
+            }
+            
+            currentDesign[selectedElement][property] = parseInt(value);
+            
+            // 미리보기 업데이트
+            const previewElement = document.getElementById(`preview-${selectedElement}`);
+            if (previewElement) {
+                previewElement.style[property] = `${value}px`;
+            }
+        }
+
+        // 디자인 설정 저장
+        async function saveDesignSettings() {
+            try {
+                const response = await fetch('/api/soccer-overlay-design', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ design: currentDesign })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast(result.message, 'success');
+                } else {
+                    showToast(result.message || '저장에 실패했습니다.', 'error');
+                }
+            } catch (error) {
+                console.error('디자인 설정 저장 오류:', error);
+                showToast('저장 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // 디자인 설정 초기화
+        async function resetDesignSettings() {
+            if (!confirm('정말로 기본값으로 초기화하시겠습니까?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/soccer-overlay-design/reset', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast(result.message, 'success');
+                    loadSoccerOverlayDesign(); // 설정 다시 로드
+                } else {
+                    showToast(result.message || '초기화에 실패했습니다.', 'error');
+                }
+            } catch (error) {
+                console.error('디자인 설정 초기화 오류:', error);
+                showToast('초기화 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
         // 이벤트 리스너
         document.addEventListener('DOMContentLoaded', function() {
             loadSettings();
             loadLogFiles(); // 로그 파일 목록 로드
             loadAutoManagementStatus(); // 자동 로그 관리 상태 로드
             loadOverlayImages(); // 오버레이 이미지 목록 로드
+            loadSoccerOverlayDesign(); // 축구 오버레이 디자인 설정 로드
             
             // 컬러 변경 이벤트
             document.getElementById('default-home-color').addEventListener('change', function() {

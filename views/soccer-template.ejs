@@ -257,10 +257,10 @@
         /* 오버레이 이미지 */
         .overlay-image {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            width: 200px;
-            height: 150px;
+            top: 0;
+            left: 0;
+            width: 1920px;
+            height: 1080px;
             z-index: 1000;
             display: none; /* 기본적으로 숨김 */
         }
@@ -268,9 +268,9 @@
         .overlay-image img {
             width: 100%;
             height: 100%;
-            object-fit: contain;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            object-fit: cover;
+            border-radius: 0;
+            box-shadow: none;
         }
 
         .overlay-image.show {
@@ -892,6 +892,79 @@
                     }
                     teamHeader.style.backgroundColor = color;
                 }
+            }
+        }
+
+        // 축구 오버레이 디자인 설정 로드 및 적용
+        async function loadAndApplyDesignSettings() {
+            try {
+                const response = await fetch('/api/soccer-overlay-design');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const design = result.design;
+                    
+                    // 각 요소에 설정 적용
+                    if (design.scoreboard) {
+                        const scoreboard = document.querySelector('.scoreboard');
+                        if (scoreboard) {
+                            scoreboard.style.top = `${design.scoreboard.top}px`;
+                            scoreboard.style.left = `${design.scoreboard.left}px`;
+                        }
+                    }
+                    
+                    if (design.homeLogo) {
+                        const homeLogo = document.querySelector('.team-logo-section.home-logo');
+                        if (homeLogo) {
+                            homeLogo.style.top = `${design.homeLogo.top}px`;
+                            homeLogo.style.left = `${design.homeLogo.left}px`;
+                        }
+                    }
+                    
+                    if (design.awayLogo) {
+                        const awayLogo = document.querySelector('.team-logo-section.away-logo');
+                        if (awayLogo) {
+                            awayLogo.style.top = `${design.awayLogo.top}px`;
+                            awayLogo.style.right = `${design.awayLogo.right}px`;
+                        }
+                    }
+                    
+                    if (design.matchState) {
+                        const matchState = document.querySelector('.match-state');
+                        if (matchState) {
+                            matchState.style.top = `${design.matchState.top}px`;
+                            matchState.style.left = `${design.matchState.left}px`;
+                        }
+                    }
+                    
+                    if (design.homeLineup) {
+                        const homeLineup = document.querySelector('.lineup-container.home');
+                        if (homeLineup) {
+                            homeLineup.style.top = `${design.homeLineup.top}px`;
+                            homeLineup.style.left = `${design.homeLineup.left}px`;
+                        }
+                    }
+                    
+                    if (design.awayLineup) {
+                        const awayLineup = document.querySelector('.lineup-container.away');
+                        if (awayLineup) {
+                            awayLineup.style.top = `${design.awayLineup.top}px`;
+                            awayLineup.style.right = `${design.awayLineup.right}px`;
+                        }
+                    }
+                    
+                    if (design.overlayImage) {
+                        const overlayImage = document.getElementById('overlayImage');
+                        if (overlayImage) {
+                            overlayImage.style.top = `${design.overlayImage.top}px`;
+                            overlayImage.style.left = `${design.overlayImage.left}px`;
+                            overlayImage.style.width = `${design.overlayImage.width}px`;
+                            overlayImage.style.height = `${design.overlayImage.height}px`;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('디자인 설정 로드 오류:', error);
             }
         }
 
@@ -1675,6 +1748,9 @@
         
         // 페이지 로드 시 초기화
         document.addEventListener('DOMContentLoaded', function() {
+            // 디자인 설정 로드 및 적용
+            loadAndApplyDesignSettings();
+            
             // 오버레이 이미지 로드
             loadOverlayImage();
             
