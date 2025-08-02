@@ -84,6 +84,23 @@
             margin: 10px 0;
             color: #28a745;
         }
+        
+        .team-name-edit-section {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        
+        .team-name-edit-section input {
+            flex: 1;
+            font-size: 0.8rem;
+        }
+        
+        .team-name-edit-section .btn {
+            padding: 4px 8px;
+            font-size: 0.8rem;
+        }
     </style>
 </head>
 <body>
@@ -99,13 +116,31 @@
         </div>
         <% } %>
         
-        <!-- 팀명 표시 -->
+        <!-- 팀명 표시 및 수정 -->
         <div class="row mb-2">
-            <div class="col-6 text-center" style="font-weight:700; font-size:1.1rem;">
-                <%= match.home_team || 'HOME' %>
+            <div class="col-6 text-center">
+                <div style="font-weight:700; font-size:1.1rem; margin-bottom: 5px;" id="home-team-display">
+                    <%= match.home_team || 'HOME' %>
+                </div>
+                <button class="btn btn-sm btn-outline-primary" onclick="openTeamNameModal('home', '<%= match.home_team || 'HOME' %>')">
+                    <i class="bi bi-pencil"></i> 수정
+                </button>
             </div>
-            <div class="col-6 text-center" style="font-weight:700; font-size:1.1rem;">
-                <%= match.away_team || 'AWAY' %>
+            <div class="col-6 text-center">
+                <div style="font-weight:700; font-size:1.1rem; margin-bottom: 5px;" id="away-team-display">
+                    <%= match.away_team || 'AWAY' %>
+                </div>
+                <button class="btn btn-sm btn-outline-primary" onclick="openTeamNameModal('away', '<%= match.away_team || 'AWAY' %>')">
+                    <i class="bi bi-pencil"></i> 수정
+                </button>
+            </div>
+        </div>
+        <!-- 팀 위치 변경 버튼 -->
+        <div class="row mb-2">
+            <div class="col-12 text-center">
+                <button class="btn btn-warning btn-sm" onclick="swapTeams()">
+                    <i class="bi bi-arrow-left-right"></i> 위치변경
+                </button>
             </div>
         </div>
         
@@ -248,6 +283,7 @@
         <% } %>
     </div>
     
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
@@ -447,14 +483,126 @@
             }
         });
 
+        // 팀명 수정 모달 열기
+        function openTeamNameModal(team, currentName) {
+            document.getElementById('modal-team-name').value = currentName;
+            document.getElementById('teamNameModal').setAttribute('data-team', team);
+            new bootstrap.Modal(document.getElementById('teamNameModal')).show();
+        }
+
+        // 팀명 변경 확인
+        async function confirmTeamNameChange() {
+            const team = document.getElementById('teamNameModal').getAttribute('data-team');
+            const newTeamName = document.getElementById('modal-team-name').value.trim();
+            
+            if (newTeamName) {
+                await updateTeamName(team, newTeamName);
+                bootstrap.Modal.getInstance(document.getElementById('teamNameModal')).hide();
+            } else {
+                alert('팀명을 입력해주세요.');
+            }
+        }
+
+        // 팀 위치 변경 함수
+        async function swapTeams() {
+            if (!confirm('홈팀과 어웨이팀의 정보를 서로 바꾸시겠습니까?')) {
+                return;
+            }
+            
+            try {
+                // 현재 팀 정보 가져오기
+                const homeTeamName = document.getElementById('home-team-display').textContent;
+                const awayTeamName = document.getElementById('away-team-display').textContent;
+                const homeScore = document.getElementById('home-score').value;
+                const awayScore = document.getElementById('away-score').value;
+                
+                // 서버에 위치 변경 요청
+                const response = await fetch(`/api/match/${matchId}/swap-teams`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('팀 위치 변경 실패');
+                }
+                
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error(result.error || '팀 위치 변경 실패');
+                }
+                
+                // 성공 메시지
+                alert('팀 위치가 성공적으로 변경되었습니다.');
+                
+                // 소켓을 통해 오버레이에 실시간 업데이트 전송
+                socket.emit('swapTeams', { matchId: matchId });
+                
+            } catch (error) {
+                console.error('팀 위치 변경 중 오류 발생:', error);
+                alert('팀 위치 변경 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 팀명 업데이트 함수
+        async function updateTeamName(team, newTeamName) {
+            try {
+                const response = await fetch(`/api/match/${matchId}/team-name`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        team: team,
+                        teamName: newTeamName
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('팀명 업데이트 실패');
+                }
+
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error(result.error || '팀명 업데이트 실패');
+                }
+
+                // 성공 메시지 표시
+                alert(`${team === 'home' ? '홈팀' : '원정팀'}명이 '${newTeamName}'으로 변경되었습니다.`);
+                
+                // 팀명 표시 업데이트
+                const teamNameDisplay = document.getElementById(`${team}-team-display`);
+                if (teamNameDisplay) {
+                    teamNameDisplay.textContent = newTeamName;
+                }
+                
+                // 소켓을 통해 오버레이에 실시간 업데이트 전송
+                socket.emit('updateTeamName', {
+                    matchId: matchId,
+                    team: team,
+                    teamName: newTeamName
+                });
+
+            } catch (error) {
+                console.error('팀명 업데이트 중 오류 발생:', error);
+                alert('팀명 업데이트 중 오류가 발생했습니다.');
+            }
+        }
+
         // 경기 수정 이벤트
         socket.on('match_updated', (data) => {
             if (data.matchId === matchId) {
                 console.log('경기 수정 이벤트 수신:', data);
                 
                 // 팀명 업데이트
-                document.getElementById('home-team-name').textContent = data.home_team;
-                document.getElementById('away-team-name').textContent = data.away_team;
+                const homeTeamDisplay = document.getElementById('home-team-display');
+                const awayTeamDisplay = document.getElementById('away-team-display');
+                
+                if (homeTeamDisplay) {
+                    homeTeamDisplay.textContent = data.home_team;
+                }
+                if (awayTeamDisplay) {
+                    awayTeamDisplay.textContent = data.away_team;
+                }
                 
                 // 종목 업데이트 (필요한 경우)
                 if (data.sport_type && data.sport_type !== currentSportType) {
@@ -466,7 +614,60 @@
                 updateMatchDisplay(data);
             }
         });
+
+        // 팀 위치 변경 이벤트
+        socket.on('teamsSwapped', (data) => {
+            if (data.matchId === matchId) {
+                console.log('팀 위치 변경 이벤트 수신:', data);
+                
+                // 팀명 업데이트
+                const homeTeamDisplay = document.getElementById('home-team-display');
+                const awayTeamDisplay = document.getElementById('away-team-display');
+                
+                if (homeTeamDisplay) {
+                    homeTeamDisplay.textContent = data.home_team;
+                }
+                if (awayTeamDisplay) {
+                    awayTeamDisplay.textContent = data.away_team;
+                }
+                
+                // 점수 업데이트
+                const homeScoreInput = document.getElementById('home-score');
+                const awayScoreInput = document.getElementById('away-score');
+                
+                if (homeScoreInput) {
+                    homeScoreInput.value = data.home_score;
+                }
+                if (awayScoreInput) {
+                    awayScoreInput.value = data.away_score;
+                }
+                
+                console.log('팀 위치 변경 완료');
+            }
+        });
         }
     </script>
+    
+    <!-- 팀명 수정 모달 -->
+    <div class="modal fade" id="teamNameModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title">팀명 수정</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">팀명</label>
+                        <input type="text" id="modal-team-name" class="form-control" placeholder="팀명 입력">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmTeamNameChange()">확인</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html> 

@@ -66,6 +66,150 @@ const io = socketIo(server);
 // 현재 푸시된 경기 정보를 저장하는 객체
 const pushedMatches = new Map(); // listId -> { matchId, matchIndex, timestamp }
 
+// 자동 로그 관리 설정
+const LOG_MANAGEMENT_CONFIG = {
+  AUTO_BACKUP_INTERVAL: 24 * 60 * 60 * 1000, // 24시간 (밀리초)
+  MAX_LOG_SIZE_MB: 50, // 로그 파일 최대 크기 (MB)
+  MAX_TOTAL_LOG_SIZE_MB: 200, // 전체 로그 최대 크기 (MB)
+  BACKUP_RETENTION_DAYS: 30 // 백업 파일 보관 기간 (일)
+};
+
+// 자동 로그 백업 함수
+async function autoBackupLogs() {
+  try {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupDir = path.join(__dirname, 'logs', 'auto-backup', timestamp);
+    
+    if (!fsSync.existsSync(backupDir)) {
+      fsSync.mkdirSync(backupDir, { recursive: true });
+    }
+    
+    const files = fsSync.readdirSync(logDir);
+    let backedUpFiles = 0;
+    
+    files.forEach(file => {
+      if (file.endsWith('.log') && !file.includes('backup')) {
+        const sourcePath = path.join(logDir, file);
+        const destPath = path.join(backupDir, file);
+        fsSync.copyFileSync(sourcePath, destPath);
+        backedUpFiles++;
+      }
+    });
+    
+    logger.info(`자동 로그 백업 완료: ${backedUpFiles}개 파일, 경로: ${backupDir}`);
+    
+    // 오래된 백업 파일 정리
+    cleanupOldBackups();
+    
+  } catch (error) {
+    logger.error('자동 로그 백업 실패:', error);
+  }
+}
+
+// 오래된 백업 파일 정리
+async function cleanupOldBackups() {
+  try {
+    const backupDir = path.join(__dirname, 'logs', 'auto-backup');
+    if (!fsSync.existsSync(backupDir)) return;
+    
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - LOG_MANAGEMENT_CONFIG.BACKUP_RETENTION_DAYS);
+    
+    const backupFolders = fsSync.readdirSync(backupDir);
+    let deletedFolders = 0;
+    
+    backupFolders.forEach(folder => {
+      const folderPath = path.join(backupDir, folder);
+      const stats = fsSync.statSync(folderPath);
+      
+      if (stats.isDirectory() && stats.mtime < cutoffDate) {
+        // 폴더 내 모든 파일 삭제 후 폴더 삭제
+        const files = fsSync.readdirSync(folderPath);
+        files.forEach(file => {
+          fsSync.unlinkSync(path.join(folderPath, file));
+        });
+        fsSync.rmdirSync(folderPath);
+        deletedFolders++;
+      }
+    });
+    
+    if (deletedFolders > 0) {
+      logger.info(`오래된 백업 폴더 정리 완료: ${deletedFolders}개 폴더 삭제`);
+    }
+  } catch (error) {
+    logger.error('오래된 백업 파일 정리 실패:', error);
+  }
+}
+
+// 로그 크기 체크 및 자동 관리
+async function checkAndManageLogs() {
+  try {
+    const files = fsSync.readdirSync(logDir);
+    let totalSize = 0;
+    const logFiles = [];
+    
+    // 로그 파일 크기 계산
+    files.forEach(file => {
+      if (file.endsWith('.log') && !file.includes('backup')) {
+        const filePath = path.join(logDir, file);
+        const stats = fsSync.statSync(filePath);
+        const sizeMB = stats.size / (1024 * 1024);
+        totalSize += sizeMB;
+        logFiles.push({ name: file, sizeMB, path: filePath });
+      }
+    });
+    
+    // 전체 로그 크기가 제한을 초과하면 자동 백업 후 초기화
+    if (totalSize > LOG_MANAGEMENT_CONFIG.MAX_TOTAL_LOG_SIZE_MB) {
+      logger.warn(`로그 크기 제한 초과: ${totalSize.toFixed(2)}MB > ${LOG_MANAGEMENT_CONFIG.MAX_TOTAL_LOG_SIZE_MB}MB`);
+      
+      // 자동 백업 실행
+      await autoBackupLogs();
+      
+      // 로그 파일들 초기화
+      logFiles.forEach(logFile => {
+        fsSync.writeFileSync(logFile.path, '');
+      });
+      
+      logger.info(`로그 자동 초기화 완료: ${logFiles.length}개 파일`);
+    }
+    
+    // 개별 로그 파일 크기 체크
+    logFiles.forEach(logFile => {
+      if (logFile.sizeMB > LOG_MANAGEMENT_CONFIG.MAX_LOG_SIZE_MB) {
+        logger.warn(`개별 로그 파일 크기 제한 초과: ${logFile.name} (${logFile.sizeMB.toFixed(2)}MB)`);
+        
+        // 개별 파일 백업 후 초기화
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const backupDir = path.join(__dirname, 'logs', 'auto-backup', timestamp);
+        if (!fsSync.existsSync(backupDir)) {
+          fsSync.mkdirSync(backupDir, { recursive: true });
+        }
+        
+        const backupPath = path.join(backupDir, logFile.name);
+        fsSync.copyFileSync(logFile.path, backupPath);
+        fsSync.writeFileSync(logFile.path, '');
+        
+        logger.info(`개별 로그 파일 자동 백업 및 초기화: ${logFile.name}`);
+      }
+    });
+    
+  } catch (error) {
+    logger.error('로그 크기 체크 및 관리 실패:', error);
+  }
+}
+
+// 자동 로그 관리 스케줄러 시작
+function startLogManagementScheduler() {
+  // 1일마다 자동 백업
+  setInterval(autoBackupLogs, LOG_MANAGEMENT_CONFIG.AUTO_BACKUP_INTERVAL);
+  
+  // 1시간마다 로그 크기 체크
+  setInterval(checkAndManageLogs, 60 * 60 * 1000);
+  
+  logger.info('자동 로그 관리 스케줄러가 시작되었습니다.');
+}
+
 // 팀 로고 업로드를 위한 multer 설정
 const upload = multer({
     storage: multer.diskStorage({
@@ -1335,7 +1479,7 @@ io.on('connection', (socket) => {
 
     // 팀 이름 업데이트 이벤트 처리
     socket.on('updateTeamName', async (data) => {
-        const { matchId, teamType, teamName } = data;
+        const { matchId, team, teamName } = data;
         const roomName = `match_${matchId}`;
         
         logger.info(`클라이언트 ${socket.id}에서 팀 이름 업데이트 요청: ${JSON.stringify(data)}`);
@@ -1348,20 +1492,20 @@ io.on('connection', (socket) => {
             }
             
             // 팀 이름 업데이트
-            const updateField = teamType === 'home' ? 'home_team' : 'away_team';
+            const updateField = team === 'home' ? 'home_team' : 'away_team';
             await match.update({ [updateField]: teamName });
             
             // 모든 클라이언트에게 팀 이름 업데이트 알림
-            io.to(roomName).emit('teamNameUpdate', {
+            io.to(roomName).emit('teamNameUpdated', {
                 matchId: matchId,
-                teamType: teamType,
+                team: team,
                 teamName: teamName
             });
             
             // 성공 응답 전송
             socket.emit('teamNameUpdated', { success: true });
             
-            logger.info(`팀 이름 업데이트 성공: ${teamType}팀, 이름: ${teamName}`);
+            logger.info(`팀 이름 업데이트 성공: ${team}팀, 이름: ${teamName}`);
         } catch (error) {
             logger.error('팀 이름 업데이트 중 오류 발생:', error);
             socket.emit('teamNameUpdated', { success: false, error: error.message });
@@ -1748,6 +1892,9 @@ server.listen(PORT, '0.0.0.0', async () => {
   
   await restoreMatchTimers();
   await sequelize.sync({ alter: true });
+  
+  // 자동 로그 관리 스케줄러 시작
+  startLogManagementScheduler();
 });
 
 // 템플릿 미리보기 API
@@ -2131,7 +2278,7 @@ app.get('/api/logs/:filename', (req, res) => {
   }
 });
 
-// 로그 파일 삭제 API
+// 로그 파일 초기화 API
 app.delete('/api/logs/:filename', (req, res) => {
   try {
     const { filename } = req.params;
@@ -2141,13 +2288,14 @@ app.delete('/api/logs/:filename', (req, res) => {
       return res.status(404).json({ error: '로그 파일을 찾을 수 없습니다.' });
     }
     
-    fsSync.unlinkSync(filePath);
-    logger.info(`로그 파일 삭제: ${filename}`);
+    // 파일 내용을 빈 문자열로 초기화
+    fsSync.writeFileSync(filePath, '');
+    logger.info(`로그 파일 초기화: ${filename}`);
     
-    res.json({ success: true, message: '로그 파일이 삭제되었습니다.' });
+    res.json({ success: true, message: '로그 파일의 내용이 초기화되었습니다.' });
   } catch (error) {
-    logger.error('로그 파일 삭제 실패:', error);
-    res.status(500).json({ error: '로그 삭제 실패' });
+    logger.error('로그 파일 초기화 실패:', error);
+    res.status(500).json({ error: '로그 초기화 실패' });
   }
 });
 
@@ -2256,29 +2404,206 @@ app.get('/api/logs/:filename/content', (req, res) => {
   }
 });
 
-// 모든 로그 삭제 API
+// 모든 로그 초기화 API
 app.delete('/api/logs/clear-all', (req, res) => {
   try {
     const files = fsSync.readdirSync(logDir);
-    let deletedFiles = 0;
+    let clearedFiles = 0;
     
     files.forEach(file => {
       if (file.endsWith('.log')) {
         const filePath = path.join(logDir, file);
-        fsSync.unlinkSync(filePath);
-        deletedFiles++;
+        // 파일 내용을 빈 문자열로 초기화
+        fsSync.writeFileSync(filePath, '');
+        clearedFiles++;
       }
     });
     
-    logger.info(`모든 로그 삭제 완료: ${deletedFiles}개 파일 삭제`);
+    logger.info(`모든 로그 초기화 완료: ${clearedFiles}개 파일 초기화`);
     
     res.json({
       success: true,
-      message: `${deletedFiles}개 로그 파일이 모두 삭제되었습니다.`
+      message: `${clearedFiles}개 로그 파일의 내용이 모두 초기화되었습니다.`
     });
   } catch (error) {
-    logger.error('모든 로그 삭제 실패:', error);
-    res.status(500).json({ error: '모든 로그 삭제 실패' });
+    logger.error('모든 로그 초기화 실패:', error);
+    res.status(500).json({ error: '모든 로그 초기화 실패' });
+  }
+});
+
+// 팀 위치 변경 API
+app.post('/api/match/:id/swap-teams', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const match = await Match.findByPk(id);
+    if (!match) {
+      return res.status(404).json({ success: false, error: '경기를 찾을 수 없습니다.' });
+    }
+    
+    // 팀 정보 교환
+    const tempHomeTeam = match.home_team;
+    const tempHomeScore = match.home_score;
+    const tempHomeColor = match.home_team_color;
+    const tempHomeLogo = match.home_team_logo;
+    
+    await match.update({
+      home_team: match.away_team,
+      home_score: match.away_score,
+      home_team_color: match.away_team_color,
+      home_team_logo: match.away_team_logo,
+      away_team: tempHomeTeam,
+      away_score: tempHomeScore,
+      away_team_color: tempHomeColor,
+      away_team_logo: tempHomeLogo
+    });
+    
+    // 소켓을 통해 실시간 업데이트 전송
+    io.to(`match_${id}`).emit('teamsSwapped', {
+      matchId: id,
+      home_team: match.home_team,
+      away_team: match.away_team,
+      home_score: match.home_score,
+      away_score: match.away_score,
+      home_team_color: match.home_team_color,
+      away_team_color: match.away_team_color
+    });
+    
+    logger.info(`팀 위치 변경: ${id} 경기`);
+    
+    res.json({
+      success: true,
+      message: '팀 위치가 성공적으로 변경되었습니다.'
+    });
+  } catch (error) {
+    logger.error('팀 위치 변경 실패:', error);
+    res.status(500).json({ success: false, error: '팀 위치 변경 중 오류가 발생했습니다.' });
+  }
+});
+
+// 팀명 업데이트 API
+app.post('/api/match/:id/team-name', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { team, teamName } = req.body;
+    
+    if (!team || !teamName) {
+      return res.status(400).json({ success: false, error: '팀 정보와 팀명이 필요합니다.' });
+    }
+    
+    const match = await Match.findByPk(id);
+    if (!match) {
+      return res.status(404).json({ success: false, error: '경기를 찾을 수 없습니다.' });
+    }
+    
+    // 팀명 업데이트
+    if (team === 'home') {
+      match.home_team = teamName;
+    } else if (team === 'away') {
+      match.away_team = teamName;
+    } else {
+      return res.status(400).json({ success: false, error: '잘못된 팀 정보입니다.' });
+    }
+    
+    await match.save();
+    
+    // 소켓을 통해 실시간 업데이트 전송
+    io.to(`match_${id}`).emit('teamNameUpdated', {
+      matchId: id,
+      team: team,
+      teamName: teamName
+    });
+    
+    logger.info(`팀명 업데이트: ${id} 경기 ${team}팀 -> ${teamName}`);
+    
+    res.json({
+      success: true,
+      message: '팀명이 성공적으로 업데이트되었습니다.',
+      data: {
+        matchId: id,
+        team: team,
+        teamName: teamName
+      }
+    });
+  } catch (error) {
+    logger.error('팀명 업데이트 실패:', error);
+    res.status(500).json({ success: false, error: '팀명 업데이트 중 오류가 발생했습니다.' });
+  }
+});
+
+// 자동 로그 관리 상태 확인 API
+app.get('/api/logs/auto-management-status', (req, res) => {
+  try {
+    const autoBackupDir = path.join(__dirname, 'logs', 'auto-backup');
+    let backupCount = 0;
+    let totalBackupSize = 0;
+    let oldestBackup = null;
+    let newestBackup = null;
+    
+    if (fsSync.existsSync(autoBackupDir)) {
+      const backupFolders = fsSync.readdirSync(autoBackupDir);
+      backupCount = backupFolders.length;
+      
+      if (backupCount > 0) {
+        const backupDates = [];
+        
+        backupFolders.forEach(folder => {
+          const folderPath = path.join(autoBackupDir, folder);
+          const stats = fsSync.statSync(folderPath);
+          backupDates.push(stats.mtime);
+          
+          // 폴더 내 파일들의 크기 계산
+          if (fsSync.existsSync(folderPath)) {
+            const files = fsSync.readdirSync(folderPath);
+            files.forEach(file => {
+              const filePath = path.join(folderPath, file);
+              const fileStats = fsSync.statSync(filePath);
+              totalBackupSize += fileStats.size;
+            });
+          }
+        });
+        
+        oldestBackup = new Date(Math.min(...backupDates));
+        newestBackup = new Date(Math.max(...backupDates));
+      }
+    }
+    
+    // 현재 로그 파일들의 크기 계산
+    const files = fsSync.readdirSync(logDir);
+    let currentLogSize = 0;
+    let logFileCount = 0;
+    
+    files.forEach(file => {
+      if (file.endsWith('.log') && !file.includes('backup')) {
+        const filePath = path.join(logDir, file);
+        const stats = fsSync.statSync(filePath);
+        currentLogSize += stats.size;
+        logFileCount++;
+      }
+    });
+    
+    res.json({
+      success: true,
+      data: {
+        config: {
+          autoBackupInterval: LOG_MANAGEMENT_CONFIG.AUTO_BACKUP_INTERVAL,
+          maxLogSizeMB: LOG_MANAGEMENT_CONFIG.MAX_LOG_SIZE_MB,
+          maxTotalLogSizeMB: LOG_MANAGEMENT_CONFIG.MAX_TOTAL_LOG_SIZE_MB,
+          backupRetentionDays: LOG_MANAGEMENT_CONFIG.BACKUP_RETENTION_DAYS
+        },
+        current: {
+          logFileCount,
+          currentLogSizeMB: (currentLogSize / (1024 * 1024)).toFixed(2),
+          backupCount,
+          totalBackupSizeMB: (totalBackupSize / (1024 * 1024)).toFixed(2),
+          oldestBackup: oldestBackup ? oldestBackup.toISOString() : null,
+          newestBackup: newestBackup ? newestBackup.toISOString() : null
+        }
+      }
+    });
+  } catch (error) {
+    logger.error('자동 로그 관리 상태 확인 실패:', error);
+    res.status(500).json({ error: '자동 로그 관리 상태 확인 실패' });
   }
 });
 

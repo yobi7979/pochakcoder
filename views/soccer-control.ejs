@@ -99,6 +99,26 @@
             margin-top: 10px;
         }
         
+        .team-name-edit-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .team-name-edit-section input {
+            flex: 1;
+            font-weight: 600;
+        }
+        
+        .team-name-edit-section .btn {
+            white-space: nowrap;
+        }
+        
         .team-color-section .form-control {
             flex: 1;
         }
@@ -817,8 +837,14 @@
         <!-- 팀 정보 -->
         <div class="row mb-3">
             <div class="col-6">
-                <div class="team-section">
+                <div class="team-section home">
                     <div class="team-name"><%= match.home_team || 'HOME' %></div>
+                    <div class="team-name-edit-section">
+                        <input type="text" id="home-team-name" class="form-control" value="<%= match.home_team || 'HOME' %>" placeholder="홈팀명">
+                        <button class="btn btn-success btn-sm save-team-name" data-team="home">
+                            <i class="bi bi-check-lg"></i> 팀명 저장
+                        </button>
+                    </div>
                     <div class="score-section">
                         <div class="score-input-group">
                             <input type="number" id="home-score" class="score-input" value="<%= match.home_score || 0 %>" min="0">
@@ -857,8 +883,14 @@
                 </div>
             </div>
             <div class="col-6">
-                <div class="team-section">
+                <div class="team-section away">
                     <div class="team-name"><%= match.away_team || 'AWAY' %></div>
+                    <div class="team-name-edit-section">
+                        <input type="text" id="away-team-name" class="form-control" value="<%= match.away_team || 'AWAY' %>" placeholder="원정팀명">
+                        <button class="btn btn-success btn-sm save-team-name" data-team="away">
+                            <i class="bi bi-check-lg"></i> 팀명 저장
+                        </button>
+                    </div>
                     <div class="score-section">
                         <div class="score-input-group">
                             <input type="number" id="away-score" class="score-input" value="<%= match.away_score || 0 %>" min="0">
@@ -1395,6 +1427,50 @@
             }
         }
 
+        async function updateTeamName(team, newTeamName) {
+            try {
+                const response = await fetch(`/api/match/${matchId}/team-name`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        team: team,
+                        teamName: newTeamName
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('팀명 업데이트 실패');
+                }
+
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error(result.error || '팀명 업데이트 실패');
+                }
+
+                // 성공 메시지 표시
+                showToast(`${team === 'home' ? '홈팀' : '원정팀'}명이 '${newTeamName}'으로 변경되었습니다.`, 'success');
+                
+                // 팀명 표시 업데이트
+                const teamNameDisplay = document.querySelector(`.team-section.${team} .team-name`);
+                if (teamNameDisplay) {
+                    teamNameDisplay.textContent = newTeamName;
+                }
+                
+                // 소켓을 통해 오버레이에 실시간 업데이트 전송
+                socket.emit('updateTeamName', {
+                    matchId: matchId,
+                    team: team,
+                    teamName: newTeamName
+                });
+
+            } catch (error) {
+                console.error('팀명 업데이트 중 오류 발생:', error);
+                showToast('팀명 업데이트 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
         function updateScore(team, change) {
             const scoreInput = document.getElementById(`${team}-score`);
             const currentScore = parseInt(scoreInput.value) || 0;
@@ -1408,6 +1484,21 @@
         // 점수 변경 이벤트 리스너
         document.getElementById('home-score').addEventListener('change', updateMatchInfo);
         document.getElementById('away-score').addEventListener('change', updateMatchInfo);
+
+        // 팀명 수정 이벤트 리스너
+        document.querySelectorAll('.save-team-name').forEach(button => {
+            button.addEventListener('click', function() {
+                const team = this.getAttribute('data-team');
+                const teamNameInput = document.getElementById(`${team}-team-name`);
+                const newTeamName = teamNameInput.value.trim();
+                
+                if (newTeamName) {
+                    updateTeamName(team, newTeamName);
+                } else {
+                    showToast('팀명을 입력해주세요.', 'error');
+                }
+            });
+        });
 
         // 팀 헤더 변경 이벤트 리스너
         document.getElementById('home-team-header').addEventListener('change', updateMatchInfo);

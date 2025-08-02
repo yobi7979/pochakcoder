@@ -145,8 +145,57 @@
                 <div class="setting-label">
                     <i class="bi bi-file-text"></i> 로그 관리
                 </div>
-                <div class="setting-description">시스템 로그 파일을 확인하고 관리할 수 있습니다.</div>
+                <div class="setting-description">시스템 로그 파일을 확인하고 관리할 수 있습니다. 로그 삭제는 파일을 삭제하는 것이 아니라 로그 내용을 초기화합니다. 자동 백업은 1일마다 실행되며, 로그 크기가 제한을 초과하면 자동으로 백업 후 초기화됩니다.</div>
                 
+                <!-- 자동 로그 관리 상태 -->
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <div class="card border-primary">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0"><i class="bi bi-robot"></i> 자동 로그 관리 상태</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-md-2">
+                                        <div class="border-end">
+                                            <h6 class="text-primary mb-1" id="autoBackupStatus">활성화</h6>
+                                            <small class="text-muted">자동 백업</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="border-end">
+                                            <h6 class="text-info mb-1" id="backupCount">-</h6>
+                                            <small class="text-muted">백업 개수</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="border-end">
+                                            <h6 class="text-success mb-1" id="currentLogSize">-</h6>
+                                            <small class="text-muted">현재 로그 크기</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="border-end">
+                                            <h6 class="text-warning mb-1" id="totalBackupSize">-</h6>
+                                            <small class="text-muted">백업 총 크기</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="border-end">
+                                            <h6 class="text-secondary mb-1" id="maxLogSize">50MB</h6>
+                                            <small class="text-muted">최대 로그 크기</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <h6 class="text-dark mb-1" id="retentionDays">30일</h6>
+                                        <small class="text-muted">보관 기간</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 로그 상태 요약 -->
                 <div class="row mb-3">
                     <div class="col-md-12">
@@ -187,7 +236,7 @@
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h6 class="mb-0">로그 파일 목록</h6>
                                 <div>
-                                    <button class="btn btn-outline-primary btn-sm" onclick="loadLogFiles()">
+                                    <button class="btn btn-outline-primary btn-sm" onclick="refreshLogData()">
                                         <i class="bi bi-arrow-clockwise"></i> 새로고침
                                     </button>
                                     <button class="btn btn-outline-secondary btn-sm" onclick="viewLogContent()">
@@ -222,7 +271,7 @@
                                         <i class="bi bi-file-earmark-zip"></i> 모든 로그 다운로드
                                     </button>
                                     <button class="btn btn-danger btn-sm" onclick="clearAllLogs()">
-                                        <i class="bi bi-trash-fill"></i> 모든 로그 삭제
+                                        <i class="bi bi-trash-fill"></i> 모든 로그 초기화
                                     </button>
                                 </div>
                             </div>
@@ -360,6 +409,42 @@
             }, 3000);
         }
         
+        // 로그 데이터 새로고침 (로그 파일 목록 + 자동 관리 상태)
+        async function refreshLogData() {
+            await loadLogFiles();
+            await loadAutoManagementStatus();
+        }
+
+        // 자동 로그 관리 상태 로드
+        async function loadAutoManagementStatus() {
+            try {
+                const response = await fetch('/api/logs/auto-management-status');
+                if (response.ok) {
+                    const data = await response.json();
+                    const status = data.data;
+                    
+                    // 자동 백업 상태 업데이트
+                    document.getElementById('backupCount').textContent = status.current.backupCount;
+                    document.getElementById('currentLogSize').textContent = `${status.current.currentLogSizeMB} MB`;
+                    document.getElementById('totalBackupSize').textContent = `${status.current.totalBackupSizeMB} MB`;
+                    document.getElementById('maxLogSize').textContent = `${status.config.maxLogSizeMB} MB`;
+                    document.getElementById('retentionDays').textContent = `${status.config.backupRetentionDays}일`;
+                    
+                    // 자동 백업 상태 표시
+                    const autoBackupStatus = document.getElementById('autoBackupStatus');
+                    if (status.current.backupCount > 0) {
+                        autoBackupStatus.textContent = '활성화';
+                        autoBackupStatus.className = 'text-success mb-1';
+                    } else {
+                        autoBackupStatus.textContent = '대기 중';
+                        autoBackupStatus.className = 'text-warning mb-1';
+                    }
+                }
+            } catch (error) {
+                console.error('자동 로그 관리 상태 로드 실패:', error);
+            }
+        }
+
         // 로그 파일 목록 로드
         async function loadLogFiles() {
             try {
@@ -381,7 +466,7 @@
                                         <button class="btn btn-outline-primary" onclick="downloadLog('${log.name}')">
                                             <i class="bi bi-download"></i>
                                         </button>
-                                        <button class="btn btn-outline-danger" onclick="deleteLog('${log.name}')">
+                                        <button class="btn btn-outline-danger" onclick="clearLog('${log.name}')">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
@@ -453,9 +538,9 @@
             }
         }
 
-        // 로그 파일 삭제
-        async function deleteLog(filename) {
-            if (!confirm(`정말로 ${filename} 파일을 삭제하시겠습니까?`)) {
+        // 로그 파일 초기화
+        async function clearLog(filename) {
+            if (!confirm(`정말로 ${filename} 파일의 내용을 초기화하시겠습니까?`)) {
                 return;
             }
             
@@ -465,14 +550,14 @@
                 });
                 
                 if (response.ok) {
-                    showToast(`${filename} 파일이 삭제되었습니다.`, 'success');
+                    showToast(`${filename} 파일의 내용이 초기화되었습니다.`, 'success');
                     loadLogFiles(); // 목록 새로고침
                 } else {
-                    throw new Error('로그 파일 삭제 실패');
+                    throw new Error('로그 파일 초기화 실패');
                 }
             } catch (error) {
-                console.error('로그 파일 삭제 실패:', error);
-                showToast('로그 파일 삭제에 실패했습니다.', 'error');
+                console.error('로그 파일 초기화 실패:', error);
+                showToast('로그 파일 초기화에 실패했습니다.', 'error');
             }
         }
 
@@ -547,9 +632,9 @@
             }
         }
 
-        // 모든 로그 삭제
+        // 모든 로그 초기화
         async function clearAllLogs() {
-            if (!confirm('정말로 모든 로그 파일을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+            if (!confirm('정말로 모든 로그 파일의 내용을 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
                 return;
             }
             
@@ -563,11 +648,11 @@
                     showToast(result.message, 'success');
                     loadLogFiles(); // 목록 새로고침
                 } else {
-                    throw new Error('모든 로그 삭제 실패');
+                    throw new Error('모든 로그 초기화 실패');
                 }
             } catch (error) {
-                console.error('모든 로그 삭제 실패:', error);
-                showToast('모든 로그 삭제에 실패했습니다.', 'error');
+                console.error('모든 로그 초기화 실패:', error);
+                showToast('모든 로그 초기화에 실패했습니다.', 'error');
             }
         }
 
@@ -671,6 +756,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadSettings();
             loadLogFiles(); // 로그 파일 목록 로드
+            loadAutoManagementStatus(); // 자동 로그 관리 상태 로드
             
             // 컬러 변경 이벤트
             document.getElementById('default-home-color').addEventListener('change', function() {

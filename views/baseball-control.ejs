@@ -434,9 +434,29 @@
                 color: #fff;
             }
             
-            .team-name, .status-title, .player-title, .innings-title {
-                color: #f0f0f0;
-            }
+                    .team-name, .status-title, .player-title, .innings-title {
+            color: #f0f0f0;
+        }
+        
+        .team-name-edit-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .team-name-edit-section input {
+            flex: 1;
+            font-weight: 600;
+        }
+        
+        .team-name-edit-section .btn {
+            white-space: nowrap;
+        }
             
             .panel-header {
                 border-bottom-color: #333;
@@ -747,6 +767,12 @@
             <div class="col-6">
                 <div class="team-section">
                     <div class="team-name"><%= match.home_team || 'HOME' %></div>
+                    <div class="team-name-edit-section">
+                        <input type="text" id="home-team-name" class="form-control" value="<%= match.home_team || 'HOME' %>" placeholder="홈팀명">
+                        <button class="btn btn-success btn-sm save-team-name" data-team="home">
+                            <i class="bi bi-check-lg"></i> 팀명 저장
+                        </button>
+                    </div>
                     <div class="team-color-picker">
                         <label>팀 컬러:</label>
                         <input type="color" class="home-team-color" value="<%= match.home_team_color || match.match_data?.home_team_color || (typeof defaultColors !== 'undefined' ? defaultColors.home : '#1e40af') %>">
@@ -786,6 +812,12 @@
             <div class="col-6">
                 <div class="team-section">
                     <div class="team-name"><%= match.away_team || 'AWAY' %></div>
+                    <div class="team-name-edit-section">
+                        <input type="text" id="away-team-name" class="form-control" value="<%= match.away_team || 'AWAY' %>" placeholder="원정팀명">
+                        <button class="btn btn-success btn-sm save-team-name" data-team="away">
+                            <i class="bi bi-check-lg"></i> 팀명 저장
+                        </button>
+                    </div>
                     <div class="team-color-picker">
                         <label>팀 컬러:</label>
                         <input type="color" class="away-team-color" value="<%= match.away_team_color || match.match_data?.away_team_color || (typeof defaultColors !== 'undefined' ? defaultColors.away : '#1e40af') %>">
@@ -2370,6 +2402,68 @@
         // 야구 전용 팀 로고/컬러/배경색 저장 및 실시간 반영
         const baseballMatchId = '<%= match.id %>';
         const baseballSocket = io();
+
+        // 팀명 수정 이벤트 리스너
+        document.querySelectorAll('.save-team-name').forEach(button => {
+            button.addEventListener('click', function() {
+                const team = this.getAttribute('data-team');
+                const teamNameInput = document.getElementById(`${team}-team-name`);
+                const newTeamName = teamNameInput.value.trim();
+                
+                if (newTeamName) {
+                    updateTeamName(team, newTeamName);
+                } else {
+                    alert('팀명을 입력해주세요.');
+                }
+            });
+        });
+
+        // 팀명 업데이트 함수
+        async function updateTeamName(team, newTeamName) {
+            try {
+                const response = await fetch(`/api/match/${baseballMatchId}/team-name`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        team: team,
+                        teamName: newTeamName
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('팀명 업데이트 실패');
+                }
+
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error(result.error || '팀명 업데이트 실패');
+                }
+
+                // 성공 메시지 표시
+                alert(`${team === 'home' ? '홈팀' : '원정팀'}명이 '${newTeamName}'으로 변경되었습니다.`);
+                
+                // 팀명 표시 업데이트
+                const teamNameDisplays = document.querySelectorAll(`.team-name`);
+                teamNameDisplays.forEach(display => {
+                    if (display.textContent === (team === 'home' ? '<%= match.home_team %>' : '<%= match.away_team %>')) {
+                        display.textContent = newTeamName;
+                    }
+                });
+                
+                // 소켓을 통해 오버레이에 실시간 업데이트 전송
+                baseballSocket.emit('updateTeamName', {
+                    matchId: baseballMatchId,
+                    team: team,
+                    teamName: newTeamName
+                });
+
+            } catch (error) {
+                console.error('팀명 업데이트 중 오류 발생:', error);
+                alert('팀명 업데이트 중 오류가 발생했습니다.');
+            }
+        }
 
         // 저장 버튼 이벤트 (컬러/배경색)
         document.querySelectorAll('.save-team-color, .save-team-colorbg').forEach(btn => {

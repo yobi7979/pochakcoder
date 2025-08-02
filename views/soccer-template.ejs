@@ -1081,6 +1081,72 @@
             }
         });
 
+        // 팀명 업데이트 이벤트 처리
+        socket.on('teamNameUpdated', function(data) {
+            console.log('팀명 업데이트 이벤트 수신:', data);
+            
+            if (data.matchId === matchId) {
+                const team = data.team;
+                const teamName = data.teamName;
+                
+                // 팀명 요소 업데이트
+                const teamNameElements = document.querySelectorAll(`.team-section.${team} .team-name`);
+                teamNameElements.forEach(element => {
+                    element.textContent = teamName;
+                });
+                
+                // 라인업 헤더의 팀명도 업데이트
+                const lineupHeader = document.querySelector(`.lineup-header.${team} span`);
+                if (lineupHeader) {
+                    lineupHeader.textContent = `${teamName} 라인업`;
+                }
+                
+                console.log(`${team}팀명 업데이트 완료: ${teamName}`);
+            }
+        });
+
+        // 팀 위치 변경 이벤트 처리
+        socket.on('teamsSwapped', function(data) {
+            console.log('팀 위치 변경 이벤트 수신:', data);
+            
+            if (data.matchId === matchId) {
+                // 팀명 업데이트
+                const homeTeamElements = document.querySelectorAll('.team-section.home .team-name');
+                const awayTeamElements = document.querySelectorAll('.team-section.away .team-name');
+                
+                homeTeamElements.forEach(element => {
+                    element.textContent = data.home_team;
+                });
+                awayTeamElements.forEach(element => {
+                    element.textContent = data.away_team;
+                });
+                
+                // 라인업 헤더 업데이트
+                const homeLineupHeader = document.querySelector('.lineup-header.home span');
+                const awayLineupHeader = document.querySelector('.lineup-header.away span');
+                
+                if (homeLineupHeader) {
+                    homeLineupHeader.textContent = `${data.home_team} 라인업`;
+                }
+                if (awayLineupHeader) {
+                    awayLineupHeader.textContent = `${data.away_team} 라인업`;
+                }
+                
+                // 점수 업데이트
+                const homeScoreElements = document.querySelectorAll('.home-score');
+                const awayScoreElements = document.querySelectorAll('.away-score');
+                
+                homeScoreElements.forEach(element => {
+                    element.textContent = data.home_score;
+                });
+                awayScoreElements.forEach(element => {
+                    element.textContent = data.away_score;
+                });
+                
+                console.log('팀 위치 변경 완료');
+            }
+        });
+
         // 팀 로고 업데이트 이벤트 처리
         socket.on('teamLogoUpdated', function(data) {
             console.log('로고 업데이트 이벤트 수신:', data);
