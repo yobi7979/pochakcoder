@@ -445,18 +445,46 @@ async function restoreMatchTimers() {
             const currentTime = Date.now();
             const timeDiff = Math.floor((currentTime - lastUpdate) / 1000);
             
-            // 타이머 초기화
-            startMatchTimer(match.id);
-            const timer = matchTimers.get(match.id);
+            // 타이머 객체 생성 (실행하지는 않음)
+            let timer = matchTimers.get(match.id);
+            if (!timer) {
+                timer = {
+                    interval: null,
+                    currentSeconds: 0,
+                    isRunning: false
+                };
+                matchTimers.set(match.id, timer);
+            }
             
-            if (timer) {
-                // 저장된 타이머 값이 있으면 사용, 없으면 0으로 설정
-                timer.currentSeconds = matchData.timer || 0;
+            // 저장된 타이머 값이 있으면 사용, 없으면 0으로 설정
+            timer.currentSeconds = matchData.timer || 0;
+            
+            // 타이머가 실행 중이었다면 경과 시간 추가하고 실제로 시작
+            if (matchData.isRunning) {
+                timer.currentSeconds += timeDiff;
+                timer.isRunning = true;
+                matchLastUpdateTime.set(match.id, Date.now());
                 
-                // 타이머가 실행 중이었다면 경과 시간 추가
-                if (matchData.isRunning) {
-                    timer.currentSeconds += timeDiff;
-                    timer.isRunning = true;
+                // 실제 타이머 시작
+                if (!timer.interval) {
+                    timer.interval = setInterval(() => {
+                        timer.currentSeconds++;
+                        matchLastUpdateTime.set(match.id, Date.now());
+                        io.to(`match_${match.id}`).emit('timer_update', {
+                            currentSeconds: timer.currentSeconds,
+                            isRunning: true,
+                            lastUpdateTime: Date.now()
+                        });
+                    }, 1000);
+                }
+            } else {
+                // 실행 중이 아니었다면 타이머 정지 상태로 설정
+                timer.isRunning = false;
+                if (timer.interval) {
+                    clearInterval(timer.interval);
+                    timer.interval = null;
+                }
+            }
                     
                     // 타이머 자동 재시작
                     timer.interval = setInterval(() => {
@@ -1765,9 +1793,17 @@ io.on('connection', (socket) => {
     socket.on('timer_control', async (data) => {
         const { matchId, action, minutes, seconds } = data;
         const roomName = `match_${matchId}`;
-        const timer = matchTimers.get(matchId);
         
-        if (!timer) return;
+        // 타이머가 없으면 생성
+        let timer = matchTimers.get(matchId);
+        if (!timer) {
+            timer = {
+                interval: null,
+                currentSeconds: 0,
+                isRunning: false
+            };
+            matchTimers.set(matchId, timer);
+        }
         
         switch (action) {
             case 'start':
