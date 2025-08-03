@@ -266,6 +266,9 @@
             console.log('=== 소켓 연결됨 ===');
             console.log('matchId:', matchId);
             socket.emit('join', matchId);
+            
+            // 연결 시 현재 타이머 상태 요청
+            socket.emit('request_timer_state', { matchId: matchId });
         });
 
         socket.on('disconnect', () => {
@@ -274,14 +277,24 @@
 
         // 서버로부터 타이머 상태 수신
         socket.on('timer_state', (data) => {
-            currentSeconds = data.currentSeconds;
-            isRunning = data.isRunning;
-            lastServerTime = data.currentSeconds;
+            console.log('=== 타이머 상태 수신 ===');
+            console.log('수신된 데이터:', data);
+            
+            currentSeconds = data.currentSeconds || 0;
+            isRunning = data.isRunning || false;
+            lastServerTime = data.currentSeconds || 0;
             lastUpdateTime = data.lastUpdateTime || Date.now();
+            
             updateTimerDisplay();
-            if (data.isRunning) {
+            
+            // 로컬 타이머 상태 동기화
+            if (data.isRunning && !localTimer) {
                 startLocalTimer();
+            } else if (!data.isRunning && localTimer) {
+                stopLocalTimer();
             }
+            
+            console.log('타이머 상태 업데이트 완료:', { currentSeconds, isRunning });
         });
 
         socket.on('timer_update', (data) => {

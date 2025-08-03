@@ -1305,6 +1305,36 @@ io.on('connection', (socket) => {
         logger.info(`클라이언트 ${socket.id}가 방 ${roomName}에 참가함`);
     });
 
+    // 타이머 상태 요청 이벤트 처리
+    socket.on('request_timer_state', async (data) => {
+        try {
+            const { matchId } = data;
+            logger.info(`타이머 상태 요청: matchId=${matchId}`);
+            
+            // 경기 데이터에서 타이머 정보 가져오기
+            const match = await Match.findByPk(matchId);
+            if (!match) {
+                throw new Error('경기를 찾을 수 없습니다.');
+            }
+            
+            const matchData = match.match_data || {};
+            const currentSeconds = matchData.currentSeconds || matchData.timer || 0;
+            const isRunning = matchData.isRunning || false;
+            
+            // 클라이언트에게 현재 타이머 상태 전송
+            socket.emit('timer_state', {
+                matchId: matchId,
+                currentSeconds: currentSeconds,
+                isRunning: isRunning,
+                lastUpdateTime: Date.now()
+            });
+            
+            logger.info(`타이머 상태 전송 완료: matchId=${matchId}, currentSeconds=${currentSeconds}, isRunning=${isRunning}`);
+        } catch (error) {
+            logger.error('타이머 상태 요청 처리 중 오류 발생:', error);
+        }
+    });
+
     // 리스트 오버레이 join 이벤트 처리
     socket.on('join_list_overlay', (listId) => {
         const roomName = `list_overlay_${listId}`;
@@ -1371,6 +1401,9 @@ io.on('connection', (socket) => {
                     timer: minutes * 60 + seconds,
                     currentSeconds: minutes * 60 + seconds
                 };
+                
+                // 서버 측 타이머 설정
+                setMatchTimer(matchId, minutes, seconds);
             } else if (action === 'start') {
                 matchData.isRunning = true;
                 // 현재 타이머 값을 유지하면서 시작
@@ -1384,6 +1417,9 @@ io.on('connection', (socket) => {
                     minute: Math.floor(currentSeconds / 60),
                     second: currentSeconds % 60
                 };
+                
+                // 서버 측 타이머 시작
+                startMatchTimer(matchId);
             } else if (action === 'stop') {
                 matchData.isRunning = false;
                 // 클라이언트에서 전송된 현재 시간을 사용
@@ -1400,6 +1436,26 @@ io.on('connection', (socket) => {
                     minute: Math.floor(currentSeconds / 60),
                     second: currentSeconds % 60
                 };
+                
+                // 서버 측 타이머 정지
+                stopMatchTimer(matchId);
+            } else if (action === 'reset') {
+                matchData.isRunning = false;
+                matchData.currentSeconds = 0;
+                matchData.timer = 0;
+                matchData.minute = 0;
+                matchData.second = 0;
+                timerData = {
+                    matchId: matchId,
+                    isRunning: false,
+                    currentSeconds: 0,
+                    timer: 0,
+                    minute: 0,
+                    second: 0
+                };
+                
+                // 서버 측 타이머도 리셋
+                resetMatchTimer(matchId);
             }
             
             await match.update({
