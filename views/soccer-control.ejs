@@ -1243,6 +1243,9 @@
             updateTimeInfo();
             isConnected = true;
             socket.emit('join', matchId);
+            
+            // 연결 시 현재 타이머 상태 요청
+            socket.emit('request_timer_state', { matchId: matchId });
         });
 
         socket.on('disconnect', () => {
@@ -1254,6 +1257,12 @@
             if (timerState.isRunning) {
                 startLocalTimer();
             }
+        });
+
+        // 페이지 언로드 시 방에서 나가기
+        window.addEventListener('beforeunload', () => {
+            console.log('=== 페이지 언로드 - 방에서 나가기 ===');
+            socket.emit('leave_all_rooms');
         });
 
         // 통합된 타이머 이벤트 처리 (모바일 버전과 동일)
@@ -1315,6 +1324,62 @@
             }
         });
 
+        // 새로운 독립 타이머 이벤트 처리 (추가 지원)
+        socket.on('timer_started', (data) => {
+            console.log('=== 타이머 시작 이벤트 수신 ===');
+            console.log('수신된 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                timerState.startTime = data.startTime;
+                timerState.pausedTime = data.pausedTime;
+                timerState.isRunning = true;
+                startLocalTimer();
+                console.log('타이머 시작 완료:', data);
+            }
+        });
+
+        socket.on('timer_stopped', (data) => {
+            console.log('=== 타이머 정지 이벤트 수신 ===');
+            console.log('수신된 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                timerState.startTime = data.startTime;
+                timerState.pausedTime = data.pausedTime;
+                timerState.isRunning = false;
+                stopLocalTimer();
+                updateTimerDisplay();
+                console.log('타이머 정지 완료:', data);
+            }
+        });
+
+        socket.on('timer_reset', (data) => {
+            console.log('=== 타이머 리셋 이벤트 수신 ===');
+            console.log('수신된 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                timerState.startTime = data.startTime;
+                timerState.pausedTime = data.pausedTime;
+                timerState.isRunning = false;
+                stopLocalTimer();
+                updateTimerDisplay();
+                console.log('타이머 리셋 완료:', data);
+            }
+        });
+
+        socket.on('timer_set', (data) => {
+            console.log('=== 타이머 설정 이벤트 수신 ===');
+            console.log('수신된 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                timerState.startTime = data.startTime;
+                timerState.pausedTime = data.pausedTime;
+                timerState.isRunning = false;
+                stopLocalTimer();
+                updateTimerDisplay();
+                console.log('타이머 설정 완료:', data);
+            }
+        });
+
         // 로컬 타이머 (모바일 버전과 동일)
         function startLocalTimer() {
             if (timerState.localTimer) {
@@ -1352,24 +1417,31 @@
             }
         }
 
-        // 타이머 시작
+        // 타이머 컨트롤 버튼 이벤트 (모바일 버전과 동일)
         document.getElementById('start-timer').addEventListener('click', function() {
+            console.log('=== 타이머 시작 버튼 클릭 ===');
+            console.log('matchId:', matchId);
             socket.emit('timer_control', {
                 matchId: matchId,
                 action: 'start'
             });
         });
         
-        // 타이머 멈춤
         document.getElementById('stop-timer').addEventListener('click', function() {
+            console.log('=== 타이머 정지 버튼 클릭 ===');
+            console.log('matchId:', matchId, 'currentTime:', timerState.currentSeconds);
+            // 현재 로컬 타이머의 시간을 서버로 전송
+            const currentTime = timerState.currentSeconds;
             socket.emit('timer_control', {
                 matchId: matchId,
-                action: 'stop'
+                action: 'stop',
+                currentTime: currentTime
             });
         });
         
-        // 타이머 리셋
         document.getElementById('reset-timer').addEventListener('click', function() {
+            console.log('=== 타이머 리셋 버튼 클릭 ===');
+            console.log('matchId:', matchId);
             socket.emit('timer_control', {
                 matchId: matchId,
                 action: 'reset'
