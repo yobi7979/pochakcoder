@@ -1116,55 +1116,69 @@
             }
         });
 
-        // 실시간 타이머 업데이트 이벤트 처리
-        socket.on('timer_updated', (data) => {
-            console.log('=== 실시간 타이머 업데이트 수신 ===');
-            console.log('타이머 업데이트 데이터:', data);
+        // 통합된 타이머 상태 수신 처리
+        function handleTimerUpdate(data) {
+            console.log('=== 타이머 상태 수신 ===');
+            console.log('수신된 데이터:', data);
             console.log('현재 matchId:', matchId);
             console.log('수신된 matchId:', data.matchId);
-            console.log('matchId 일치 여부:', data.matchId === matchId);
             
-            // 현재 표시 중인 경기의 타이머만 업데이트
-            if (data.matchId === matchId) {
-                console.log('현재 경기의 타이머 업데이트 처리');
-                
-                // 타이머 정보 추출
-                let currentSeconds = data.currentSeconds || data.timer || 0;
-                if (data.minute !== undefined || data.second !== undefined) {
-                    currentSeconds = (data.minute || 0) * 60 + (data.second || 0);
-                }
-                const isRunning = data.isRunning || false;
-                
-                console.log('추출된 타이머 정보:', { currentSeconds, isRunning });
-                
-                // UI 업데이트
-                const timerElement = document.querySelector('.match-time');
-                if (timerElement) {
-                    const minute = Math.floor(currentSeconds / 60);
-                    const second = currentSeconds % 60;
-                    const formattedMinute = minute.toString().padStart(2, '0');
-                    const formattedSecond = second.toString().padStart(2, '0');
-                    timerElement.textContent = `${formattedMinute}:${formattedSecond}`;
-                    console.log('타이머 실시간 업데이트:', `${formattedMinute}:${formattedSecond}`);
-                    
-                    // 로컬 타이머 변수들 업데이트
-                    lastServerTime = currentSeconds;
-                    lastUpdateTime = Date.now();
-                    console.log('로컬 타이머 변수 업데이트:', { lastServerTime, lastUpdateTime });
-                    
-                    // 타이머 실행 상태에 따라 로컬 타이머 제어
-                    if (isRunning && !localTimer) {
-                        console.log('타이머 실행 중 - 로컬 타이머 시작');
-                        startLocalTimer();
-                    } else if (!isRunning && localTimer) {
-                        console.log('타이머 정지 상태 - 로컬 타이머 중지');
-                        stopLocalTimer();
-                    }
-                }
-            } else {
-                console.log('matchId가 일치하지 않아 타이머 업데이트를 건너뜀');
+            // 현재 표시 중인 경기의 타이머만 처리
+            if (data.matchId !== matchId) {
+                console.log('다른 경기의 타이머 상태이므로 무시:', data.matchId);
+                return;
             }
-        });
+            
+            console.log('현재 경기의 타이머 상태 업데이트');
+            
+            // 서버 시간을 기준으로 동기화
+            const serverTime = data.currentSeconds || data.timer || 0;
+            const serverIsRunning = data.isRunning || false;
+            const serverUpdateTime = data.lastUpdateTime || Date.now();
+            
+            // 현재 클라이언트 시간과 서버 시간의 차이 계산
+            const clientTime = Date.now();
+            const timeDiff = Math.floor((clientTime - serverUpdateTime) / 1000);
+            
+            // 서버 시간을 기준으로 현재 시간 계산 (네트워크 지연 보정)
+            const currentSeconds = serverTime + (serverIsRunning ? timeDiff : 0);
+            
+            // 로컬 타이머 변수 업데이트
+            lastServerTime = serverTime;
+            lastUpdateTime = serverUpdateTime;
+            
+            // UI 업데이트
+            const timerElement = document.querySelector('.match-time');
+            if (timerElement) {
+                const minute = Math.floor(currentSeconds / 60);
+                const second = currentSeconds % 60;
+                const formattedMinute = minute.toString().padStart(2, '0');
+                const formattedSecond = second.toString().padStart(2, '0');
+                timerElement.textContent = `${formattedMinute}:${formattedSecond}`;
+                console.log('타이머 업데이트:', `${formattedMinute}:${formattedSecond}`);
+            }
+            
+            // 타이머 실행 상태에 따라 로컬 타이머 제어
+            if (serverIsRunning && !localTimer) {
+                console.log('타이머 실행 중 - 로컬 타이머 시작');
+                startLocalTimer();
+            } else if (!serverIsRunning && localTimer) {
+                console.log('타이머 정지 상태 - 로컬 타이머 중지');
+                stopLocalTimer();
+            }
+            
+            console.log('타이머 상태 업데이트 완료:', { 
+                currentSeconds, 
+                serverIsRunning, 
+                serverTime, 
+                timeDiff 
+            });
+        }
+
+        // 모든 타이머 이벤트를 하나의 핸들러로 통합
+        socket.on('timer_state', handleTimerUpdate);
+        socket.on('timer_update', handleTimerUpdate);
+        socket.on('timer_updated', handleTimerUpdate);
 
         // 경기 상태 표시 설정 변경 이벤트 처리
         socket.on('soccer_match_state_visibility_changed', function(data) {
@@ -1367,63 +1381,7 @@
             }
         });
 
-        // 서버로부터 타이머 상태 수신
-        socket.on('timer_state', (data) => {
-            console.log('=== 서버 타이머 상태 수신 ===');
-            console.log('수신된 타이머 데이터:', data);
-            
-            if (data.error) {
-                console.error('타이머 상태 요청 오류:', data.error);
-                return;
-            }
-            
-            // 현재 표시 중인 경기의 타이머만 처리
-            if (data.matchId === matchId) {
-                console.log('현재 경기의 타이머 상태 업데이트');
-                
-                // 로컬 타이머 변수 업데이트
-                lastServerTime = data.currentSeconds || 0;
-                lastUpdateTime = data.lastUpdateTime || Date.now();
-                
-                // UI 업데이트
-                const timerElement = document.querySelector('.match-time');
-                if (timerElement) {
-                    const minute = Math.floor(lastServerTime / 60);
-                    const second = lastServerTime % 60;
-                    const formattedMinute = minute.toString().padStart(2, '0');
-                    const formattedSecond = second.toString().padStart(2, '0');
-                    timerElement.textContent = `${formattedMinute}:${formattedSecond}`;
-                    console.log('서버 타이머 상태로 UI 업데이트:', `${formattedMinute}:${formattedSecond}`);
-                }
-                
-                // 타이머 실행 상태에 따라 로컬 타이머 제어
-                if (data.isRunning) {
-                    console.log('서버 타이머가 실행 중이므로 로컬 타이머 시작');
-                    startLocalTimer();
-                } else {
-                    console.log('서버 타이머가 정지 상태이므로 로컬 타이머 중지');
-                    if (localTimer) {
-                        clearInterval(localTimer);
-                        localTimer = null;
-                    }
-                }
-            } else {
-                console.log('다른 경기의 타이머 상태이므로 무시:', data.matchId);
-            }
-        });
-
-        // 서버로부터 타이머 업데이트 수신
-        socket.on('timer_update', (data) => {
-            lastServerTime = data.currentSeconds;
-            lastUpdateTime = data.lastUpdateTime || Date.now();
-            updateTimerDisplay(data.currentSeconds);
-            
-            if (data.isRunning && !localTimer) {
-                startLocalTimer();
-            } else if (!data.isRunning && localTimer) {
-                stopLocalTimer();
-            }
-        });
+        // 기존 중복 타이머 이벤트 리스너 제거됨 (handleTimerUpdate로 통합)
 
                 // 애니메이션 이벤트 리스너 등록
         if (typeof window.registerAnimationListeners === 'function') {
@@ -1544,10 +1502,16 @@
             console.log('로컬 타이머 시작:', { lastServerTime, lastUpdateTime });
             
             localTimer = setInterval(() => {
+                // 서버 시간을 기준으로 정확한 시간 계산
                 const currentTime = Date.now();
                 const timeDiff = Math.floor((currentTime - lastUpdateTime) / 1000);
                 const newSeconds = lastServerTime + timeDiff;
                 updateTimerDisplay(newSeconds);
+                
+                // 10초마다 서버와 동기화 (드리프트 방지)
+                if (timeDiff % 10 === 0) {
+                    socket.emit('request_timer_state', { matchId: matchId });
+                }
             }, 1000);
             
             console.log('로컬 타이머 시작 완료');
