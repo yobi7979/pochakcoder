@@ -816,9 +816,13 @@
         // 전역 변수로 설정하여 animations.js에서 접근 가능하도록 함
         window.socket = socket;
         let matchId = '<%= match.id %>';
-        let lastServerTime = 0;
-        let lastUpdateTime = 0;
-        let localTimer = null;
+        
+        // 경기별 타이머 상태 관리 객체
+        const timerState = {
+            lastServerTime: 0,
+            lastUpdateTime: 0,
+            localTimer: null
+        };
         let homeTeamColor = '<%= match.home_team_color || "#00cc33" %>';
         let awayTeamColor = '<%= match.away_team_color || "#00cc33" %>';
         
@@ -1144,8 +1148,8 @@
             const currentSeconds = serverTime + (serverIsRunning ? timeDiff : 0);
             
             // 로컬 타이머 변수 업데이트
-            lastServerTime = serverTime;
-            lastUpdateTime = serverUpdateTime;
+            timerState.lastServerTime = serverTime;
+            timerState.lastUpdateTime = serverUpdateTime;
             
             // UI 업데이트
             const timerElement = document.querySelector('.match-time');
@@ -1159,10 +1163,10 @@
             }
             
             // 타이머 실행 상태에 따라 로컬 타이머 제어
-            if (serverIsRunning && !localTimer) {
+            if (serverIsRunning && !timerState.localTimer) {
                 console.log('타이머 실행 중 - 로컬 타이머 시작');
                 startLocalTimer();
-            } else if (!serverIsRunning && localTimer) {
+            } else if (!serverIsRunning && timerState.localTimer) {
                 console.log('타이머 정지 상태 - 로컬 타이머 중지');
                 stopLocalTimer();
             }
@@ -1456,9 +1460,9 @@
             console.log('동기화할 타이머 데이터:', matchData);
             
             // 1. 기존 타이머 정리
-            if (localTimer) {
-                clearInterval(localTimer);
-                localTimer = null;
+            if (timerState.localTimer) {
+                clearInterval(timerState.localTimer);
+                timerState.localTimer = null;
                 console.log('기존 로컬 타이머 정리 완료');
             }
             
@@ -1480,9 +1484,9 @@
             }
             
             // 4. 로컬 타이머 변수 동기화
-            lastServerTime = currentSeconds;
-            lastUpdateTime = Date.now();
-            console.log('로컬 타이머 변수 동기화:', { lastServerTime, lastUpdateTime });
+            timerState.lastServerTime = currentSeconds;
+            timerState.lastUpdateTime = Date.now();
+            console.log('로컬 타이머 변수 동기화:', { lastServerTime: timerState.lastServerTime, lastUpdateTime: timerState.lastUpdateTime });
             
             // 5. 타이머 상태에 따라 로컬 타이머 제어
             if (isRunning) {
@@ -1506,19 +1510,19 @@
 
         // 로컬 타이머 시작
         function startLocalTimer() {
-            if (localTimer) {
+            if (timerState.localTimer) {
                 console.log('기존 로컬 타이머 중지 후 재시작');
-                clearInterval(localTimer);
-                localTimer = null;
+                clearInterval(timerState.localTimer);
+                timerState.localTimer = null;
             }
             
-            console.log('로컬 타이머 시작:', { lastServerTime, lastUpdateTime });
+            console.log('로컬 타이머 시작:', { lastServerTime: timerState.lastServerTime, lastUpdateTime: timerState.lastUpdateTime });
             
-            localTimer = setInterval(() => {
+            timerState.localTimer = setInterval(() => {
                 // 서버 시간을 기준으로 정확한 시간 계산
                 const currentTime = Date.now();
-                const timeDiff = Math.floor((currentTime - lastUpdateTime) / 1000);
-                const newSeconds = lastServerTime + timeDiff;
+                const timeDiff = Math.floor((currentTime - timerState.lastUpdateTime) / 1000);
+                const newSeconds = timerState.lastServerTime + timeDiff;
                 updateTimerDisplay(newSeconds);
                 
                 // 10초마다 서버와 동기화 (드리프트 방지)
@@ -1532,10 +1536,10 @@
         
                 // 로컬 타이머 중지
         function stopLocalTimer() {
-            if (localTimer) {
+            if (timerState.localTimer) {
                 console.log('로컬 타이머 중지');
-                clearInterval(localTimer);
-                localTimer = null;
+                clearInterval(timerState.localTimer);
+                timerState.localTimer = null;
             }
         }
 

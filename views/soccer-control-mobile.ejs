@@ -240,17 +240,22 @@
     <script>
         const socket = io();
         const matchId = '<%= match.id %>';
-        let currentSeconds = 0;
-        let isRunning = false;
-        let lastServerTime = 0;
-        let lastUpdateTime = 0;
+        
+        // 경기별 타이머 상태 관리 객체
+        const timerState = {
+            currentSeconds: 0,
+            isRunning: false,
+            lastServerTime: 0,
+            lastUpdateTime: 0,
+            localTimer: null
+        };
+        
         let isConnected = true;
-        let localTimer = null;
 
         // 타이머 표시 업데이트
         function updateTimerDisplay() {
-            const minutes = Math.floor(currentSeconds / 60);
-            const seconds = currentSeconds % 60;
+            const minutes = Math.floor(timerState.currentSeconds / 60);
+            const seconds = timerState.currentSeconds % 60;
             document.getElementById('timer-display').textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }
 
@@ -281,6 +286,14 @@
         function handleTimerUpdate(data) {
             console.log('=== 타이머 상태 수신 ===');
             console.log('수신된 데이터:', data);
+            console.log('현재 matchId:', matchId);
+            console.log('수신된 matchId:', data.matchId);
+            
+            // 현재 경기의 타이머만 처리
+            if (data.matchId !== matchId) {
+                console.log('다른 경기의 타이머 상태이므로 무시:', data.matchId);
+                return;
+            }
             
             // 서버 시간을 기준으로 동기화
             const serverTime = data.currentSeconds || 0;
@@ -292,23 +305,23 @@
             const timeDiff = Math.floor((clientTime - serverUpdateTime) / 1000);
             
             // 서버 시간을 기준으로 현재 시간 계산 (네트워크 지연 보정)
-            currentSeconds = serverTime + (serverIsRunning ? timeDiff : 0);
-            isRunning = serverIsRunning;
-            lastServerTime = serverTime;
-            lastUpdateTime = serverUpdateTime;
+            timerState.currentSeconds = serverTime + (serverIsRunning ? timeDiff : 0);
+            timerState.isRunning = serverIsRunning;
+            timerState.lastServerTime = serverTime;
+            timerState.lastUpdateTime = serverUpdateTime;
             
             updateTimerDisplay();
             
             // 로컬 타이머 상태 동기화
-            if (serverIsRunning && !localTimer) {
+            if (serverIsRunning && !timerState.localTimer) {
                 startLocalTimer();
-            } else if (!serverIsRunning && localTimer) {
+            } else if (!serverIsRunning && timerState.localTimer) {
                 stopLocalTimer();
             }
             
             console.log('타이머 상태 업데이트 완료:', { 
-                currentSeconds, 
-                isRunning, 
+                currentSeconds: timerState.currentSeconds, 
+                isRunning: timerState.isRunning, 
                 serverTime, 
                 timeDiff 
             });
@@ -330,9 +343,9 @@
         });
         document.getElementById('stop-timer').addEventListener('click', function() {
             console.log('=== 타이머 정지 버튼 클릭 ===');
-            console.log('matchId:', matchId, 'currentTime:', currentSeconds);
+            console.log('matchId:', matchId, 'currentTime:', timerState.currentSeconds);
             // 현재 로컬 타이머의 시간을 서버로 전송
-            const currentTime = currentSeconds;
+            const currentTime = timerState.currentSeconds;
             socket.emit('timer_control', {
                 matchId: matchId,
                 action: 'stop',
@@ -422,17 +435,17 @@
 
         // 로컬 타이머
         function startLocalTimer() {
-            if (localTimer) {
-                clearInterval(localTimer);
-                localTimer = null;
+            if (timerState.localTimer) {
+                clearInterval(timerState.localTimer);
+                timerState.localTimer = null;
             }
             
-            localTimer = setInterval(() => {
-                if (isRunning) {
+            timerState.localTimer = setInterval(() => {
+                if (timerState.isRunning) {
                     // 서버 시간을 기준으로 정확한 시간 계산
                     const currentTime = Date.now();
-                    const timeDiff = Math.floor((currentTime - lastUpdateTime) / 1000);
-                    currentSeconds = lastServerTime + timeDiff;
+                    const timeDiff = Math.floor((currentTime - timerState.lastUpdateTime) / 1000);
+                    timerState.currentSeconds = timerState.lastServerTime + timeDiff;
                     updateTimerDisplay();
                     
                     // 10초마다 서버와 동기화 (드리프트 방지)
@@ -442,10 +455,11 @@
                 }
             }, 1000);
         }
+        
         function stopLocalTimer() {
-            if (localTimer) {
-                clearInterval(localTimer);
-                localTimer = null;
+            if (timerState.localTimer) {
+                clearInterval(timerState.localTimer);
+                timerState.localTimer = null;
             }
         }
 
