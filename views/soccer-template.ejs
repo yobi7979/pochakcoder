@@ -744,7 +744,7 @@
                 </div>
                 <div class="match-timer-section">
                     <div class="match-time">
-                        <%= match.match_data?.minute || 0 %>:<%= match.match_data?.second?.toString().padStart(2, '0') || '00' %>
+                        <%= (match.match_data?.minute || 0).toString().padStart(2, '0') %>:<%= (match.match_data?.second || 0).toString().padStart(2, '0') %>
                     </div>
                 </div>
             </div>
@@ -1351,6 +1351,19 @@
                         el.classList.remove('small-font');
                     }
                 });
+                
+                // 타이머 초기화
+                console.log('=== 타이머 초기화 시작 ===');
+                const matchData = {
+                    currentSeconds: <%= match.match_data?.currentSeconds || match.match_data?.timer || 0 %>,
+                    isRunning: <%= match.match_data?.isRunning || false %>
+                };
+                console.log('초기 타이머 데이터:', matchData);
+                syncTimerWithMatch(matchData);
+                
+                // 서버에 타이머 상태 요청
+                requestTimerStateFromServer(matchId);
+                
             } catch (error) {
                 console.error('초기화 중 오류 발생:', error);
                 showError('초기화 중 오류가 발생했습니다.');
