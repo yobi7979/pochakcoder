@@ -423,10 +423,14 @@ function startMatchTimer(matchId) {
             isRunning: true,
             matchId: matchId
         };
+        logger.info(`새 타이머 데이터 생성: matchId=${matchId}`);
     } else {
         // 기존 타이머 데이터 업데이트
+        const oldStartTime = timerData.startTime;
+        const oldPausedTime = timerData.pausedTime;
         timerData.startTime = Date.now() - (timerData.pausedTime * 1000);
         timerData.isRunning = true;
+        logger.info(`기존 타이머 데이터 업데이트: matchId=${matchId}, oldStartTime=${oldStartTime}, oldPausedTime=${oldPausedTime}, newStartTime=${timerData.startTime}`);
     }
     
     matchTimerData.set(matchId, timerData);
@@ -442,7 +446,7 @@ function startMatchTimer(matchId) {
     // 해당 경기 방에만 타이머 시작 이벤트 전송
     io.to(`match_${matchId}`).emit('timer_started', timerData);
     
-    logger.info(`타이머 시작: matchId=${matchId}, startTime=${timerData.startTime}, pausedTime=${timerData.pausedTime}`);
+    logger.info(`타이머 시작 완료: matchId=${matchId}, startTime=${timerData.startTime}, pausedTime=${timerData.pausedTime}, isRunning=${timerData.isRunning}`);
 }
 
 function stopMatchTimer(matchId) {
@@ -1475,14 +1479,18 @@ io.on('connection', (socket) => {
             }
             
             // 클라이언트에게 현재 타이머 상태 전송
-            socket.emit('timer_state', {
+            const responseData = {
                 matchId: matchId,
                 currentSeconds: currentSeconds,
                 isRunning: timerData.isRunning,
                 startTime: timerData.startTime,
                 pausedTime: timerData.pausedTime,
+                minute: Math.floor(currentSeconds / 60),
+                second: currentSeconds % 60,
                 lastUpdateTime: Date.now()
-            });
+            };
+            
+            socket.emit('timer_state', responseData);
             
             logger.info(`타이머 상태 전송 완료: matchId=${matchId}, currentSeconds=${currentSeconds}, isRunning=${timerData.isRunning}`);
         } catch (error) {
@@ -1894,28 +1902,57 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 타이머 제어 이벤트
+    // 타이머 제어 이벤트 처리
     socket.on('timer_control', async (data) => {
-        const { matchId, action, minutes, seconds } = data;
-        
-        logger.info(`타이머 제어: matchId=${matchId}, action=${action}, minutes=${minutes}, seconds=${seconds}`);
-        
-        switch (action) {
-            case 'start':
+        try {
+            const { matchId, action, minutes, seconds, currentTime } = data;
+            logger.info(`타이머 제어: matchId=${matchId}, action=${action}, minutes=${minutes}, seconds=${seconds}, currentTime=${currentTime}`);
+            
+            // 경기 데이터 업데이트
+            const match = await Match.findByPk(matchId);
+            if (!match) {
+                throw new Error('경기를 찾을 수 없습니다.');
+            }
+            
+            const matchData = match.match_data || {};
+            let timerData = {};
+            
+            if (action === 'set') {
+                const targetTime = (minutes * 60) + seconds;
+                const timerData = {
+                    startTime: Date.now() - (targetTime * 1000),
+                    pausedTime: targetTime,
+                    isRunning: false,
+                    matchId: matchId
+                };
+                
+                matchTimerData.set(matchId, timerData);
+                
+                // DB 업데이트 대기열에 추가
+                pendingDbUpdates.set(matchId, {
+                    timer_startTime: timerData.startTime,
+                    timer_pausedTime: timerData.pausedTime,
+                    isRunning: false,
+                    lastUpdateTime: Date.now()
+                });
+                
+                // 해당 경기 방에만 타이머 설정 이벤트 전송
+                io.to(`match_${matchId}`).emit('timer_set', timerData);
+                
+                logger.info(`타이머 설정 완료: matchId=${matchId}, minutes=${minutes}, seconds=${seconds}`);
+                
+            } else if (action === 'start') {
                 startMatchTimer(matchId);
-                break;
                 
-            case 'stop':
+            } else if (action === 'stop') {
                 stopMatchTimer(matchId);
-                break;
                 
-            case 'reset':
+            } else if (action === 'reset') {
                 resetMatchTimer(matchId);
-                break;
-                
-            case 'set':
-                setMatchTimer(matchId, minutes, seconds);
-                break;
+            }
+            
+        } catch (error) {
+            logger.error('timer_control 이벤트 처리 중 오류 발생:', error);
         }
     });
 
