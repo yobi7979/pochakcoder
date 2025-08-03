@@ -217,8 +217,15 @@
 <body>
     <div class="settings-container">
         <div class="settings-header">
-            <h1><i class="bi bi-gear-fill"></i> 시스템 설정</h1>
-            <p class="mb-0">기본 팀 컬러 및 시스템 설정을 관리합니다.</p>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1><i class="bi bi-gear-fill"></i> 시스템 설정</h1>
+                    <p class="mb-0">기본 팀 컬러 및 시스템 설정을 관리합니다.</p>
+                </div>
+                <a href="/matches" class="btn btn-outline-light">
+                    <i class="bi bi-arrow-left"></i> 경기 목록으로 돌아가기
+                </a>
+            </div>
         </div>
         
         <div class="settings-body">
@@ -471,6 +478,28 @@
                     실시간 미리보기로 변경사항을 확인할 수 있습니다.
                 </div>
                 
+                <!-- 경기 상태 표시 설정 -->
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">경기 상태 표시 설정</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="showMatchState" checked>
+                                    <label class="form-check-label" for="showMatchState">
+                                        전반, 후반, 경기종료 등 경기 상태 표시
+                                    </label>
+                                </div>
+                                <small class="text-muted">
+                                    이 설정을 변경하면 모든 축구 오버레이 페이지에 실시간으로 반영됩니다.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="row">
                     <div class="col-md-12">
                         <!-- 위치 조정 컨트롤 -->
@@ -586,12 +615,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="text-center mt-4">
-                <a href="/matches" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> 경기 목록으로 돌아가기
-                </a>
             </div>
         </div>
     </div>
@@ -1183,12 +1206,15 @@
             const preview = document.getElementById(containerId);
             preview.innerHTML = '';
             
+            // 경기 상태 표시 설정 확인
+            const showMatchState = document.getElementById('showMatchState').checked;
+            
             // 각 요소들을 미리보기에 추가
             const elements = [
                 { id: 'scoreboard', class: 'preview-scoreboard', text: '스코어보드' },
                 { id: 'homeLogo', class: 'preview-home-logo', text: '홈로고' },
                 { id: 'awayLogo', class: 'preview-away-logo', text: '어웨이로고' },
-                { id: 'matchState', class: 'preview-match-state', text: '경기상태' },
+                { id: 'matchState', class: 'preview-match-state', text: '경기상태', visible: showMatchState },
                 { id: 'homeLineup', class: 'preview-lineup', text: '홈라인업' },
                 { id: 'awayLineup', class: 'preview-lineup', text: '어웨이라인업' },
                 { id: 'overlayImage', class: 'preview-overlay-image', text: '이미지' },
@@ -1204,6 +1230,11 @@
                 div.className = `preview-element ${element.class}`;
                 div.id = `${containerId}-${element.id}`;
                 div.textContent = element.text;
+                
+                // 경기 상태 요소의 경우 표시 설정에 따라 숨김 처리
+                if (element.id === 'matchState' && element.visible === false) {
+                    div.style.display = 'none';
+                }
                 
                 const pos = currentDesign[element.id];
                 if (pos) {
@@ -1460,6 +1491,47 @@
             }
         }
 
+        // 경기 상태 표시 설정 로드
+        async function loadMatchStateSettings() {
+            try {
+                const response = await fetch('/api/soccer-match-state-visibility');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const showMatchState = document.getElementById('showMatchState');
+                    showMatchState.checked = result.showMatchState;
+                }
+            } catch (error) {
+                console.error('경기 상태 표시 설정 로드 오류:', error);
+            }
+        }
+
+        // 경기 상태 표시 설정 저장
+        async function saveMatchStateSettings() {
+            try {
+                const showMatchState = document.getElementById('showMatchState').checked;
+                
+                const response = await fetch('/api/soccer-match-state-visibility', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ showMatchState: showMatchState })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('경기 상태 표시 설정이 저장되었습니다.', 'success');
+                } else {
+                    showToast(result.message || '저장에 실패했습니다.', 'error');
+                }
+            } catch (error) {
+                console.error('경기 상태 표시 설정 저장 오류:', error);
+                showToast('저장 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
         // 이벤트 리스너
         document.addEventListener('DOMContentLoaded', function() {
             loadSettings();
@@ -1467,6 +1539,7 @@
             loadAutoManagementStatus(); // 자동 로그 관리 상태 로드
             loadOverlayImages(); // 오버레이 이미지 목록 로드
             loadSoccerOverlayDesign(); // 축구 오버레이 디자인 설정 로드
+            loadMatchStateSettings(); // 경기 상태 표시 설정 로드
             
             // 컬러 변경 이벤트
             document.getElementById('default-home-color').addEventListener('change', function() {
@@ -1475,6 +1548,13 @@
             
             document.getElementById('default-away-color').addEventListener('change', function() {
                 updateColorPreview('away', this.value);
+            });
+            
+            // 경기 상태 표시 설정 변경 이벤트
+            document.getElementById('showMatchState').addEventListener('change', function() {
+                saveMatchStateSettings();
+                // 미리보기 업데이트
+                renderSmallPreview();
             });
             
             // 저장 버튼 이벤트

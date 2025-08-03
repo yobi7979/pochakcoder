@@ -749,7 +749,7 @@
                 </div>
             </div>
         </div>
-        <div class="match-state">
+        <div class="match-state" id="matchStateContainer">
             <span class="state-text"><%= match.match_data?.state || '전반' %></span>
         </div>
         
@@ -1051,6 +1051,23 @@
             }
         }
 
+        // 경기 상태 표시 설정 로드
+        async function loadMatchStateVisibility() {
+            try {
+                const response = await fetch('/api/soccer-match-state-visibility');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const matchStateContainer = document.getElementById('matchStateContainer');
+                    if (matchStateContainer) {
+                        matchStateContainer.style.display = result.showMatchState ? 'block' : 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('경기 상태 표시 설정 로드 오류:', error);
+            }
+        }
+
         // 소켓 연결 이벤트
         socket.on('connect', () => {
             console.log('소켓 연결됨');
@@ -1060,6 +1077,9 @@
             // 리스트 오버레이 모드일 때 리스트 오버레이 방에도 참가
             socket.emit('join_list_overlay', '<%= listId %>');
             }
+            
+            // 경기 상태 표시 설정 로드
+            loadMatchStateVisibility();
         });
 
         socket.on('disconnect', () => {
@@ -1221,6 +1241,17 @@
                 }
             } else {
                 console.log('matchId가 일치하지 않아 타이머 업데이트를 건너뜀');
+            }
+        });
+
+        // 경기 상태 표시 설정 변경 이벤트 처리
+        socket.on('soccer_match_state_visibility_changed', function(data) {
+            console.log('경기 상태 표시 설정 변경 이벤트 수신:', data);
+            
+            const matchStateContainer = document.getElementById('matchStateContainer');
+            if (matchStateContainer) {
+                matchStateContainer.style.display = data.showMatchState ? 'block' : 'none';
+                console.log('경기 상태 표시 설정 실시간 업데이트:', data.showMatchState ? '표시' : '숨김');
             }
         });
 

@@ -908,6 +908,58 @@ app.post('/api/soccer-overlay-design/reset', async (req, res) => {
   }
 });
 
+// 축구 경기 상태 표시 설정 조회 API
+app.get('/api/soccer-match-state-visibility', async (req, res) => {
+  try {
+    const setting = await Settings.findOne({
+      where: { key: 'soccer_match_state_visibility' }
+    });
+    
+    const showMatchState = setting ? setting.value === 'true' : true; // 기본값은 true (표시)
+    
+    res.json({ 
+      success: true, 
+      showMatchState: showMatchState 
+    });
+  } catch (error) {
+    logger.error('축구 경기 상태 표시 설정 조회 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 축구 경기 상태 표시 설정 저장 API
+app.post('/api/soccer-match-state-visibility', async (req, res) => {
+  try {
+    const { showMatchState } = req.body;
+    
+    await Settings.upsert({
+      key: 'soccer_match_state_visibility',
+      value: showMatchState.toString()
+    });
+    
+    // 모든 축구 오버레이 페이지에 실시간으로 반영하기 위해 소켓 이벤트 발송
+    io.emit('soccer_match_state_visibility_changed', { showMatchState: showMatchState });
+    
+    res.json({ 
+      success: true, 
+      message: '경기 상태 표시 설정이 저장되었습니다.'
+    });
+    
+    logger.info(`축구 경기 상태 표시 설정 저장 완료: ${showMatchState}`);
+  } catch (error) {
+    logger.error('축구 경기 상태 표시 설정 저장 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
 // CSV 일괄 등록 API
 app.post('/api/bulk-create-matches', csvUpload.single('csvFile'), async (req, res) => {
   try {
