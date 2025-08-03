@@ -899,20 +899,27 @@
                 const response = await fetch('/api/soccer-overlay-design');
                 const result = await response.json();
                 
+                console.log('디자인 설정 로드 결과:', result);
+                
                 if (result.success) {
                     const design = result.design;
+                    console.log('적용할 디자인 설정:', design);
+                    console.log('스코어보드 설정:', design.scoreboard);
                     
                     // 각 요소에 설정 적용
                     if (design.scoreboard) {
                         const scoreboard = document.querySelector('.scoreboard');
                         if (scoreboard) {
+                            console.log('스코어보드 설정 적용:', design.scoreboard);
                             scoreboard.style.top = `${design.scoreboard.top}px`;
                             scoreboard.style.left = `${design.scoreboard.left}px`;
+                            console.log('스코어보드 스타일 적용됨:', scoreboard.style.top, scoreboard.style.left);
                         }
                     } else {
                         // 기본값 설정
                         const scoreboard = document.querySelector('.scoreboard');
                         if (scoreboard) {
+                            console.log('스코어보드 기본값 적용');
                             scoreboard.style.top = '20px';
                             scoreboard.style.left = '80px';
                         }
