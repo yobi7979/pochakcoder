@@ -1424,6 +1424,18 @@ app.post('/api/update-team-logo-map', async (req, res) => {
 io.on('connection', (socket) => {
     logger.info('클라이언트 연결됨');
 
+    // 모든 방에서 나가기
+    socket.on('leave_all_rooms', () => {
+        // 클라이언트가 참가한 모든 방에서 나가기
+        const rooms = Array.from(socket.rooms);
+        rooms.forEach(room => {
+            if (room !== socket.id) { // 기본 소켓 ID 방은 제외
+                socket.leave(room);
+                logger.info(`클라이언트 ${socket.id}가 방 ${room}에서 나감`);
+            }
+        });
+    });
+
     // join 이벤트 처리
     socket.on('join', (matchId) => {
         const roomName = `match_${matchId}`;
