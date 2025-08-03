@@ -470,7 +470,6 @@ function stopMatchTimer(matchId) {
         logger.info(`타이머 정지: matchId=${matchId}, pausedTime=${timerData.pausedTime}`);
     }
 }
-}
 
 function resetMatchTimer(matchId) {
     const timerData = {
