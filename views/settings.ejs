@@ -199,19 +199,7 @@
             height: 42px;
         }
 
-        .position-control {
-            margin-bottom: 15px;
-        }
 
-        .position-control label {
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        .position-control input {
-            font-size: 0.9rem;
-        }
     </style>
 </head>
 <body>
@@ -527,9 +515,7 @@
                                             </select>
                                         </div>
                                         
-                                        <div id="positionControls">
-                                            <!-- 선택된 요소에 따른 위치 조정 컨트롤이 여기에 표시됩니다 -->
-                                        </div>
+
                                     </div>
                                     
                                     <div class="col-md-8">
@@ -1307,131 +1293,11 @@
             if (selectedPreviewFull) {
                 selectedPreviewFull.classList.add('selected');
             }
-            
-            // 위치 조정 컨트롤 업데이트
-            updatePositionControls();
         }
 
-        // 위치 조정 컨트롤 업데이트
-        function updatePositionControls() {
-            const controls = document.getElementById('positionControls');
-            const element = currentDesign[selectedElement];
-            
-            if (!element) return;
-            
-            let controlsHTML = '';
-            
-            if (element.top !== undefined) {
-                controlsHTML += `
-                    <div class="position-control">
-                        <label>Top (Y축)</label>
-                        <input type="number" class="form-control" id="posTop" value="${element.top}" onchange="updateElementPosition('top', this.value)">
-                    </div>
-                `;
-            }
-            
-            if (element.left !== undefined) {
-                controlsHTML += `
-                    <div class="position-control">
-                        <label>Left (X축)</label>
-                        <input type="number" class="form-control" id="posLeft" value="${element.left}" onchange="updateElementPosition('left', this.value)">
-                    </div>
-                `;
-            }
-            
-            if (element.right !== undefined) {
-                controlsHTML += `
-                    <div class="position-control">
-                        <label>Right (오른쪽)</label>
-                        <input type="number" class="form-control" id="posRight" value="${element.right}" onchange="updateElementPosition('right', this.value)">
-                    </div>
-                `;
-            }
-            
-            if (element.width !== undefined) {
-                controlsHTML += `
-                    <div class="position-control">
-                        <label>Width (너비)</label>
-                        <input type="number" class="form-control" id="posWidth" value="${element.width}" onchange="updateElementPosition('width', this.value)">
-                    </div>
-                `;
-            }
-            
-            if (element.height !== undefined) {
-                controlsHTML += `
-                    <div class="position-control">
-                        <label>Height (높이)</label>
-                        <input type="number" class="form-control" id="posHeight" value="${element.height}" onchange="updateElementPosition('height', this.value)">
-                    </div>
-                `;
-            }
-            
-            if (element.marginLeft !== undefined) {
-                controlsHTML += `
-                    <div class="position-control">
-                        <label>Margin Left (왼쪽 여백)</label>
-                        <input type="number" class="form-control" id="posMarginLeft" value="${element.marginLeft}" onchange="updateElementPosition('marginLeft', this.value)">
-                    </div>
-                `;
-            }
-            
-            controls.innerHTML = controlsHTML;
-        }
 
-        // 요소 위치 업데이트
-        function updateElementPosition(property, value) {
-            if (!currentDesign[selectedElement]) {
-                currentDesign[selectedElement] = {};
-            }
-            
-            currentDesign[selectedElement][property] = parseInt(value);
-            
-            // 비율 계산
-            const scaleXSmall = 320 / 1920;
-            const scaleYSmall = 180 / 1080;
-            const scaleXFull = 640 / 1920;
-            const scaleYFull = 360 / 1080;
-            
-            // 타이머 특별 처리
-            if (selectedElement === 'timer') {
-                const pos = currentDesign.timer;
-                const marginLeft = pos.marginLeft || 8;
-                
-                // 작은 미리보기 업데이트
-                const previewElementSmall = document.getElementById(`soccerOverlayPreviewSmall-timer`);
-                if (previewElementSmall) {
-                    previewElementSmall.style.top = `${(20 + 25) * scaleYSmall}px`;
-                    previewElementSmall.style.left = `${(80 + 280 + marginLeft) * scaleXSmall}px`;
-                }
-                
-                // 큰 미리보기 업데이트
-                const previewElementFull = document.getElementById(`soccerOverlayPreviewFull-timer`);
-                if (previewElementFull) {
-                    previewElementFull.style.top = `${(20 + 25) * scaleYFull}px`;
-                    previewElementFull.style.left = `${(80 + 280 + marginLeft) * scaleXFull}px`;
-                }
-            } else {
-                // 작은 미리보기 업데이트
-                const previewElementSmall = document.getElementById(`soccerOverlayPreviewSmall-${selectedElement}`);
-                if (previewElementSmall) {
-                    if (property === 'top' || property === 'height') {
-                        previewElementSmall.style[property] = `${value * scaleYSmall}px`;
-                    } else {
-                        previewElementSmall.style[property] = `${value * scaleXSmall}px`;
-                    }
-                }
-                
-                // 큰 미리보기 업데이트
-                const previewElementFull = document.getElementById(`soccerOverlayPreviewFull-${selectedElement}`);
-                if (previewElementFull) {
-                    if (property === 'top' || property === 'height') {
-                        previewElementFull.style[property] = `${value * scaleYFull}px`;
-                    } else {
-                        previewElementFull.style[property] = `${value * scaleXFull}px`;
-                    }
-                }
-            }
-        }
+
+
 
         // 디자인 설정 저장
         async function saveDesignSettings() {
