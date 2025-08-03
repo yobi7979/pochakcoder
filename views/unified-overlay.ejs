@@ -115,6 +115,19 @@
                         console.log('오버레이 이미지 변경으로 인한 오버레이 새로고침 완료');
                     });
 
+                    // 오버레이 강제 새로고침 이벤트
+                    socket.on('overlay_force_refresh', (data) => {
+                        console.log('오버레이 강제 새로고침 이벤트 수신:', data);
+                        
+                        // iframe 강제 새로고침
+                        const iframe = document.getElementById('overlay-iframe');
+                        if (iframe) {
+                            iframe.src = iframe.src + '?refresh=' + Date.now();
+                        }
+                        
+                        console.log('오버레이 강제 새로고침 완료');
+                    });
+
                     // 팀 위치 변경 이벤트
                     socket.on('teamsSwapped', (data) => {
                         if (data.matchId === matchId) {

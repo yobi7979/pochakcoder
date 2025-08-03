@@ -973,6 +973,94 @@ app.post('/api/soccer-match-state-visibility', async (req, res) => {
   }
 });
 
+// 오버레이 URL 상태 확인 API
+app.get('/api/overlay-status/:listId', async (req, res) => {
+  try {
+    const { listId } = req.params;
+    
+    // 현재 푸시된 경기 정보 확인
+    const pushedMatch = pushedMatches.get(listId);
+    
+    if (!pushedMatch) {
+      return res.json({ 
+        success: true, 
+        isActive: false,
+        message: '푸시된 경기가 없습니다.'
+      });
+    }
+    
+    // 경기 정보 가져오기
+    const match = await Match.findByPk(pushedMatch.matchId);
+    if (!match) {
+      // 경기가 삭제된 경우 푸시 정보도 삭제
+      pushedMatches.delete(listId);
+      return res.json({ 
+        success: true, 
+        isActive: false,
+        message: '푸시된 경기가 삭제되었습니다.'
+      });
+    }
+    
+    // URL 상태 정보 반환
+    res.json({ 
+      success: true, 
+      isActive: true,
+      matchId: pushedMatch.matchId,
+      matchIndex: pushedMatch.matchIndex,
+      timestamp: pushedMatch.timestamp,
+      match: {
+        id: match.id,
+        sport_type: match.sport_type,
+        home_team: match.home_team,
+        away_team: match.away_team,
+        home_score: match.home_score,
+        away_score: match.away_score
+      },
+      overlayUrl: `/unified/${listId}/overlay`,
+      message: '오버레이 URL이 활성 상태입니다.'
+    });
+    
+  } catch (error) {
+    logger.error('오버레이 URL 상태 확인 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 오버레이 URL 강제 새로고침 API
+app.post('/api/overlay-refresh/:listId', async (req, res) => {
+  try {
+    const { listId } = req.params;
+    
+    // 기존 푸시 정보 삭제
+    pushedMatches.delete(listId);
+    
+    // 모든 리스트 오버레이 클라이언트에게 새로고침 알림
+    const roomName = `list_overlay_${listId}`;
+    io.to(roomName).emit('overlay_force_refresh', { 
+      listId: listId,
+      timestamp: Date.now()
+    });
+    
+    res.json({ 
+      success: true, 
+      message: '오버레이 URL이 강제 새로고침되었습니다.'
+    });
+    
+    logger.info(`오버레이 URL 강제 새로고침: ${listId}`);
+  } catch (error) {
+    logger.error('오버레이 URL 강제 새로고침 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
 // CSV 일괄 등록 API
 app.post('/api/bulk-create-matches', csvUpload.single('csvFile'), async (req, res) => {
   try {
@@ -1337,11 +1425,18 @@ io.on('connection', (socket) => {
     // 리스트 오버레이 경기 변경 이벤트 처리
     socket.on('push_to_list_overlay', async (data) => {
         try {
-            const { listId, matchIndex, matchId } = data;
+            const { listId, matchIndex, matchId, forceRefresh = false } = data;
             const roomName = `list_overlay_${listId}`;
             
             logger.info(`=== 푸시 요청 수신 ===`);
-            logger.info(`listId: ${listId}, matchIndex: ${matchIndex}, matchId: ${matchId}`);
+            logger.info(`listId: ${listId}, matchIndex: ${matchIndex}, matchId: ${matchId}, forceRefresh: ${forceRefresh}`);
+            
+            // 강제 새로고침 요청인 경우 캐시 무효화
+            if (forceRefresh) {
+                logger.info(`강제 새로고침 요청: ${listId}`);
+                // 기존 푸시 정보 초기화
+                pushedMatches.delete(listId);
+            }
             
             // matchId로 경기 정보를 직접 가져오기
             let actualMatch;

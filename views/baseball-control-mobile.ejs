@@ -273,9 +273,12 @@
                         다음경기 <i class="bi bi-chevron-right"></i>
                     </button>
                 </div>
-                <div class="d-flex justify-content-center">
-                    <button class="btn btn-success" onclick="pushToIntegratedOverlay()" style="width: 100%;">
+                <div class="d-flex justify-content-center gap-2">
+                    <button class="btn btn-success" onclick="pushToIntegratedOverlay()" style="flex: 1;">
                         <i class="bi bi-display"></i> 통합 URL에 푸시
+                    </button>
+                    <button class="btn btn-warning" onclick="forceRefreshOverlay()" style="flex: 1;">
+                        <i class="bi bi-arrow-clockwise"></i> 강제 새로고침
                     </button>
                 </div>
             </div>
@@ -451,18 +454,90 @@
             window.location.href = '/match-list-manager';
         }
         
-        // 통합 URL에 현재 경기 푸시
-        function pushToIntegratedOverlay() {
+        // URL 상태 확인
+        async function checkOverlayStatus() {
+            if (!listId) return;
+            
+            try {
+                const response = await fetch(`/api/overlay-status/${listId}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    if (result.isActive) {
+                        console.log('오버레이 URL 활성 상태:', result);
+                        return result;
+                    } else {
+                        console.log('오버레이 URL 비활성 상태:', result.message);
+                        return null;
+                    }
+                }
+            } catch (error) {
+                console.error('URL 상태 확인 실패:', error);
+                return null;
+            }
+        }
+
+        // 강제 새로고침
+        async function forceRefreshOverlay() {
+            if (!listId) {
+                alert('리스트 정보가 없습니다.');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/overlay-refresh/${listId}`, {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('오버레이 URL이 강제 새로고침되었습니다.');
+                    console.log('강제 새로고침 완료:', result.message);
+                } else {
+                    alert('강제 새로고침 실패: ' + result.message);
+                }
+            } catch (error) {
+                console.error('강제 새로고침 실패:', error);
+                alert('강제 새로고침 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 통합 URL에 현재 경기 푸시 (강제 새로고침 옵션 포함)
+        async function pushToIntegratedOverlay(forceRefresh = false) {
             console.log('=== 통합 URL 푸시 시작 ===');
             console.log('현재 matchId:', matchId);
             console.log('현재 listId:', listId);
             console.log('현재 matchIndex:', currentMatchIndex);
+            console.log('강제 새로고침:', forceRefresh);
+            
+            // listId가 없으면 경고
+            if (!listId) {
+                alert('리스트 정보가 없습니다. 리스트 모드에서만 사용 가능합니다.');
+                return;
+            }
+            
+            // URL 상태 확인
+            const status = await checkOverlayStatus();
+            if (status && !forceRefresh) {
+                const confirmRefresh = confirm(
+                    `현재 오버레이 URL이 활성 상태입니다.\n` +
+                    `경기: ${status.match.home_team} vs ${status.match.away_team}\n` +
+                    `강제 새로고침하시겠습니까?`
+                );
+                
+                if (!confirmRefresh) {
+                    return;
+                }
+                forceRefresh = true;
+            }
             
             // WebSocket을 통해 리스트 오버레이에 경기 변경 알림
             const pushData = {
                 listId: listId,
                 matchIndex: currentMatchIndex,
-                matchId: matchId  // 현재 선택된 경기의 ID 추가
+                matchId: matchId,  // 현재 선택된 경기의 ID 추가
+                forceRefresh: forceRefresh
             };
             
             console.log('전송할 데이터:', pushData);
