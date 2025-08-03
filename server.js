@@ -843,17 +843,17 @@ app.get('/api/soccer-overlay-design', async (req, res) => {
       settingsObj[setting.key] = setting.value;
     });
     
-    // 기본값 정의
-    const defaultDesign = {
-      scoreboard: { top: 20, left: 80 },
-      homeLogo: { top: -120, left: 80 },
-      awayLogo: { top: -120, right: 1420 },
-      matchState: { top: 65, left: 230 },
-      homeLineup: { top: 200, left: 80 },
-      awayLineup: { top: 200, right: 50 },
-      overlayImage: { top: 0, left: 0, width: 1920, height: 1080 },
-      timer: { marginLeft: 8 }
-    };
+         // 기본값 정의
+     const defaultDesign = {
+       scoreboard: { top: 140, left: 80 },
+       homeLogo: { top: -120, left: 80 },
+       awayLogo: { top: -120, right: 1420 },
+       matchState: { top: 185, left: 230 },
+       homeLineup: { top: 200, left: 80 },
+       awayLineup: { top: 200, right: 50 },
+       overlayImage: { top: 0, left: 0, width: 1920, height: 1080 },
+       timer: { marginLeft: 8 }
+     };
     
     // 저장된 설정이 있으면 사용, 없으면 기본값 사용
     const designSettings = {

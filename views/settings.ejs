@@ -1385,7 +1385,6 @@
             }
             
             currentDesign[selectedElement][property] = parseInt(value);
-            console.log(`${selectedElement}의 ${property} 값이 ${value}로 업데이트됨:`, currentDesign[selectedElement]);
             
             // 비율 계산
             const scaleXSmall = 320 / 1920;
@@ -1437,8 +1436,6 @@
         // 디자인 설정 저장
         async function saveDesignSettings() {
             try {
-                console.log('저장할 디자인 설정:', currentDesign);
-                
                 const response = await fetch('/api/soccer-overlay-design', {
                     method: 'POST',
                     headers: {
@@ -1448,7 +1445,6 @@
                 });
                 
                 const result = await response.json();
-                console.log('저장 결과:', result);
                 
                 if (result.success) {
                     showToast(result.message, 'success');

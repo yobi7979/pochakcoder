@@ -59,6 +59,8 @@
         /* 상단 스코어보드 */
         .scoreboard {
             position: absolute;
+            top: 320px;
+            left: 80px;
             transform: translateX(0%);
             width: 420px;
             height: 90px;
@@ -610,6 +612,8 @@
             display: flex;
             align-items: center;
             position: absolute;
+            top: 20px;
+            left: 80px;
             z-index: 10;
             overflow: visible;
             width: fit-content;
@@ -897,29 +901,15 @@
                 const response = await fetch('/api/soccer-overlay-design');
                 const result = await response.json();
                 
-                console.log('디자인 설정 로드 결과:', result);
-                
                 if (result.success) {
                     const design = result.design;
-                    console.log('적용할 디자인 설정:', design);
-                    console.log('스코어보드 설정:', design.scoreboard);
                     
                     // 각 요소에 설정 적용
                     if (design.scoreboard) {
                         const scoreboardRow = document.querySelector('.scoreboard-row');
                         if (scoreboardRow) {
-                            console.log('스코어보드 설정 적용:', design.scoreboard);
                             scoreboardRow.style.top = `${design.scoreboard.top}px`;
                             scoreboardRow.style.left = `${design.scoreboard.left}px`;
-                            console.log('스코어보드 스타일 적용됨:', scoreboardRow.style.top, scoreboardRow.style.left);
-                        }
-                    } else {
-                        // 기본값 설정
-                        const scoreboardRow = document.querySelector('.scoreboard-row');
-                        if (scoreboardRow) {
-                            console.log('스코어보드 기본값 적용');
-                            scoreboardRow.style.top = '20px';
-                            scoreboardRow.style.left = '80px';
                         }
                     }
                     
@@ -929,13 +919,6 @@
                             homeLogo.style.top = `${design.homeLogo.top}px`;
                             homeLogo.style.left = `${design.homeLogo.left}px`;
                         }
-                    } else {
-                        // 기본값 설정
-                        const homeLogo = document.querySelector('.team-logo-section.home-logo');
-                        if (homeLogo) {
-                            homeLogo.style.top = '-120px';
-                            homeLogo.style.left = '80px';
-                        }
                     }
                     
                     if (design.awayLogo) {
@@ -943,13 +926,6 @@
                         if (awayLogo) {
                             awayLogo.style.top = `${design.awayLogo.top}px`;
                             awayLogo.style.right = `${design.awayLogo.right}px`;
-                        }
-                    } else {
-                        // 기본값 설정
-                        const awayLogo = document.querySelector('.team-logo-section.away-logo');
-                        if (awayLogo) {
-                            awayLogo.style.top = '-120px';
-                            awayLogo.style.right = '1420px';
                         }
                     }
                     
@@ -959,13 +935,6 @@
                             matchState.style.top = `${design.matchState.top}px`;
                             matchState.style.left = `${design.matchState.left}px`;
                         }
-                    } else {
-                        // 기본값 설정
-                        const matchState = document.querySelector('.match-state');
-                        if (matchState) {
-                            matchState.style.top = '65px';
-                            matchState.style.left = '230px';
-                        }
                     }
                     
                     if (design.homeLineup) {
@@ -974,13 +943,6 @@
                             homeLineup.style.top = `${design.homeLineup.top}px`;
                             homeLineup.style.left = `${design.homeLineup.left}px`;
                         }
-                    } else {
-                        // 기본값 설정
-                        const homeLineup = document.querySelector('.lineup-container.home');
-                        if (homeLineup) {
-                            homeLineup.style.top = '200px';
-                            homeLineup.style.left = '80px';
-                        }
                     }
                     
                     if (design.awayLineup) {
@@ -988,13 +950,6 @@
                         if (awayLineup) {
                             awayLineup.style.top = `${design.awayLineup.top}px`;
                             awayLineup.style.right = `${design.awayLineup.right}px`;
-                        }
-                    } else {
-                        // 기본값 설정
-                        const awayLineup = document.querySelector('.lineup-container.away');
-                        if (awayLineup) {
-                            awayLineup.style.top = '200px';
-                            awayLineup.style.right = '50px';
                         }
                     }
                     
@@ -1006,27 +961,12 @@
                             overlayImage.style.width = `${design.overlayImage.width}px`;
                             overlayImage.style.height = `${design.overlayImage.height}px`;
                         }
-                    } else {
-                        // 기본값 설정
-                        const overlayImage = document.getElementById('overlayImage');
-                        if (overlayImage) {
-                            overlayImage.style.top = '0px';
-                            overlayImage.style.left = '0px';
-                            overlayImage.style.width = '1920px';
-                            overlayImage.style.height = '1080px';
-                        }
                     }
                     
                     if (design.timer) {
                         const matchTimerSection = document.querySelector('.match-timer-section');
                         if (matchTimerSection) {
                             matchTimerSection.style.marginLeft = `${design.timer.marginLeft}px`;
-                        }
-                    } else {
-                        // 기본값 설정
-                        const matchTimerSection = document.querySelector('.match-timer-section');
-                        if (matchTimerSection) {
-                            matchTimerSection.style.marginLeft = '8px';
                         }
                     }
                 }
@@ -1574,7 +1514,7 @@
             
             if (section === 'matchState' || section === 'all') {
                 const matchState = document.querySelector('.match-state');
-                const scoreboardRow = document.querySelector('.scoreboard-row');
+                const scoreboard = document.querySelector('.scoreboard');
                 
                 if (matchState) {
                     if (matchState.style.display === 'none') {
@@ -1586,17 +1526,13 @@
                     }
                 }
                 
-                if (scoreboardRow) {
-                    if (scoreboardRow.style.display === 'none') {
-                        scoreboardRow.style.display = 'flex';
-                        scoreboardRow.classList.add('animate-slide');
-                        // 애니메이션 종료 후 transform 초기화
-                        setTimeout(() => {
-                            scoreboardRow.style.transform = 'none';
-                        }, 500);
+                if (scoreboard) {
+                    if (scoreboard.style.display === 'none') {
+                        scoreboard.style.display = 'flex';
+                        scoreboard.classList.add('animate-slide');
                     } else {
-                        scoreboardRow.classList.remove('animate-slide');
-                        scoreboardRow.style.display = 'none';
+                        scoreboard.classList.remove('animate-slide');
+                        scoreboard.style.display = 'none';
                     }
                 }
             }           

@@ -42,28 +42,24 @@ const SoccerAnimationManager = {
         
         // 스코어보드 토글 처리
         if (section === 'scoreboard') {
-            const scoreboardRow = document.querySelector('.scoreboard-row');
-            if (!scoreboardRow) {
+            const scoreboard = document.querySelector('.scoreboard');
+            if (!scoreboard) {
                 console.error('스코어보드 요소를 찾을 수 없습니다.');
                 return false;
             }
 
             // 현재 표시 상태 확인
-            const isVisible = !scoreboardRow.classList.contains('animate-slide-up');
+            const isVisible = !scoreboard.classList.contains('animate-slide-up');
             
             if (isVisible) {
                 // 위로 사라지는 애니메이션 적용
-                scoreboardRow.classList.remove('animate-slide');
-                scoreboardRow.classList.add('animate-slide-up');
+                scoreboard.classList.remove('animate-slide');
+                scoreboard.classList.add('animate-slide-up');
                 console.log('스코어보드 숨김');
             } else {
                 // 나타나는 애니메이션 적용
-                scoreboardRow.classList.remove('animate-slide-up');
-                scoreboardRow.classList.add('animate-slide');
-                // 애니메이션 종료 후 transform 초기화
-                setTimeout(() => {
-                    scoreboardRow.style.transform = 'none';
-                }, 500);
+                scoreboard.classList.remove('animate-slide-up');
+                scoreboard.classList.add('animate-slide');
                 console.log('스코어보드 표시');
             }
             
@@ -198,7 +194,7 @@ const SoccerAnimationManager = {
         let element;
         switch (section) {
             case 'scoreboard':
-                element = document.querySelector('.scoreboard-row');
+                element = document.querySelector('.scoreboard');
                 break;
             case 'homeTeam':
                 element = document.querySelector('.home-team');
