@@ -9,88 +9,90 @@
     <style>
         body {
             background-color: #f8f9fa;
-            padding: 10px;
+            padding: 12px;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 1.2em;
         }
         .control-panel {
-            max-width: 400px;
+            max-width: 480px;
             margin: 0 auto;
             background-color: white;
-            padding: 15px;
-            border-radius: 15px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 18px;
+            border-radius: 18px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
         .score-section {
-            margin: 15px 0;
+            margin: 18px 0;
         }
         .score-input-group {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
         .score-input {
-            width: 70px;
-            height: 35px;
+            width: 84px;
+            height: 42px;
             text-align: center;
-            font-size: 20px;
+            font-size: 24px;
             font-weight: bold;
-            border-radius: 8px;
+            border-radius: 10px;
             border: 2px solid #ddd;
-            padding: 5px;
+            padding: 6px;
         }
         .score-controls {
             display: flex;
-            gap: 5px;
+            gap: 6px;
         }
         .score-btn {
-            width: 35px;
-            height: 35px;
+            width: 42px;
+            height: 42px;
             padding: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 8px;
-            font-size: 18px;
+            border-radius: 10px;
+            font-size: 22px;
         }
         .timer-section {
-            margin: 20px 0 10px 0;
+            margin: 19px 0 12px 0;
         }
         #timer-display {
-            font-size: 2rem;
+            font-size: 2.4rem;
             font-weight: bold;
             text-align: center;
-            margin: 10px 0;
+            margin: 12px 0;
             font-family: monospace;
             color: #007bff;
         }
         .timer-controls {
             display: flex;
-            gap: 10px;
-            margin-top: 10px;
+            gap: 12px;
+            margin-top: 20px;
             justify-content: center;
         }
         .timer-btn {
-            min-width: 70px;
-            border-radius: 8px;
+            min-width: 84px;
+            border-radius: 10px;
             font-weight: 500;
-            padding: 8px 12px;
+            padding: 10px 14px;
+            font-size: 1.1em;
         }
         
         .team-name-edit-section {
             display: flex;
             align-items: center;
-            gap: 5px;
-            margin-top: 5px;
+            gap: 6px;
+            margin-top: 6px;
         }
         
         .team-name-edit-section input {
             flex: 1;
-            font-size: 0.8rem;
+            font-size: 1rem;
         }
         
         .team-name-edit-section .btn {
-            padding: 4px 8px;
-            font-size: 0.8rem;
+            padding: 5px 10px;
+            font-size: 1rem;
         }
     </style>
 </head>
@@ -98,9 +100,9 @@
     <div class="control-panel">
         <!-- 리스트 정보 표시 -->
         <% if (typeof listId !== 'undefined' && listId) { %>
-        <div class="row mb-2">
-            <div id="list-info-box" class="col-12 text-center" style="background-color: #e9ecef; padding: 8px; border-radius: 8px; margin-bottom: 10px;">
-                <div style="font-weight: 600; font-size: 0.9rem; color: #495057;">
+        <div class="row mb-3">
+            <div id="list-info-box" class="col-12 text-center" style="background-color: #e9ecef; padding: 10px; border-radius: 10px; margin-bottom: 12px;">
+                <div style="font-weight: 600; font-size: 1.1rem; color: #495057;">
                     <%= listName %> (경기 <%= currentMatchIndex + 1 %> / <%= totalMatches %>)
                 </div>
             </div>
@@ -108,28 +110,28 @@
         <% } %>
         
         <!-- 팀명 표시 및 수정 -->
-        <div class="row mb-2">
+        <div class="row mb-3">
             <div class="col-6 text-center">
-                <div style="font-weight:700; font-size:1.1rem; margin-bottom: 5px;" id="home-team-display">
+                <div style="font-weight:700; font-size:1.3rem; margin-bottom: 6px;" id="home-team-display">
                     <%= match.home_team || 'HOME' %>
                 </div>
-                <button class="btn btn-sm btn-outline-primary" onclick="openTeamNameModal('home')">
+                <button class="btn btn-outline-primary" style="font-size: 1.1em; padding: 6px 12px;" onclick="openTeamNameModal('home')">
                     <i class="bi bi-pencil"></i> 수정
                 </button>
             </div>
             <div class="col-6 text-center">
-                <div style="font-weight:700; font-size:1.1rem; margin-bottom: 5px;" id="away-team-display">
+                <div style="font-weight:700; font-size:1.3rem; margin-bottom: 6px;" id="away-team-display">
                     <%= match.away_team || 'AWAY' %>
                 </div>
-                <button class="btn btn-sm btn-outline-primary" onclick="openTeamNameModal('away')">
+                <button class="btn btn-outline-primary" style="font-size: 1.1em; padding: 6px 12px;" onclick="openTeamNameModal('away')">
                     <i class="bi bi-pencil"></i> 수정
                 </button>
             </div>
         </div>
         <!-- 팀 위치 변경 버튼 -->
-        <div class="row mb-2">
+        <div class="row mb-3">
             <div class="col-12 text-center">
-                <button class="btn btn-warning btn-sm" onclick="swapTeams()">
+                <button class="btn btn-warning btn-sm" style="font-size: 0.9em; padding: 6px 12px;" onclick="swapTeams()">
                     <i class="bi bi-arrow-left-right"></i> 위치변경
                 </button>
             </div>
@@ -203,29 +205,29 @@
                 </button>
             </div>
             <!-- 시간 수정 UI -->
-            <div class="d-flex justify-content-center align-items-center gap-2 mb-2">
-                <input type="text" id="time-edit-input" class="form-control" style="width:80px; text-align:center;" placeholder="00:00" pattern="[0-9]{2}:[0-9]{2}">
-                <button id="apply-time-btn" class="btn btn-primary btn-sm">적용</button>
+            <div class="d-flex justify-content-center align-items-center gap-3 mb-4">
+                <input type="text" id="time-edit-input" class="form-control" style="width:96px; text-align:center; font-size: 1.1em;" placeholder="00:00" pattern="[0-9]{2}:[0-9]{2}">
+                <button id="apply-time-btn" class="btn btn-primary" style="font-size: 1.1em; padding: 8px 16px;">적용</button>
             </div>
         </div>
         
         <!-- 리스트 네비게이션 버튼 -->
         <% if (typeof listId !== 'undefined' && listId) { %>
-        <div class="row mt-3">
+        <div class="row mt-4">
             <div class="col-12">
-                <div class="d-flex justify-content-between gap-2 mb-2">
-                    <button class="btn btn-outline-secondary" onclick="prevMatch()" style="flex: 1;">
+                <div class="d-flex justify-content-between gap-3 mb-3">
+                    <button class="btn btn-outline-secondary" onclick="prevMatch()" style="flex: 1; font-size: 1.1em; padding: 10px 16px;">
                         <i class="bi bi-chevron-left"></i> 이전경기
                     </button>
-                    <button class="btn btn-outline-secondary" onclick="nextMatch()" style="flex: 1;">
+                    <button class="btn btn-outline-secondary" onclick="nextMatch()" style="flex: 1; font-size: 1.1em; padding: 10px 16px;">
                         다음경기 <i class="bi bi-chevron-right"></i>
                     </button>
                 </div>
-                <div class="d-flex justify-content-center gap-2">
-                    <button class="btn btn-success" onclick="pushToIntegratedOverlay()" style="flex: 1;">
+                <div class="d-flex justify-content-center gap-3">
+                    <button class="btn btn-success" onclick="pushToIntegratedOverlay()" style="flex: 1; font-size: 1.1em; padding: 10px 16px;">
                         <i class="bi bi-display"></i> 통합 URL에 푸시
                     </button>
-                    <button class="btn btn-warning" onclick="forceRefreshOverlay()" style="flex: 1;">
+                    <button class="btn btn-warning" onclick="forceRefreshOverlay()" style="flex: 1; font-size: 1.1em; padding: 10px 16px;">
                         <i class="bi bi-arrow-clockwise"></i> 강제 새로고침
                     </button>
                 </div>
@@ -559,18 +561,30 @@
                 return;
             }
             
-            // URL 상태 확인
+            // URL 상태 확인 및 통합 확인
             const status = await checkOverlayStatus();
+            
+            // 현재 경기 정보 가져오기
+            const homeTeam = document.getElementById('home-team-display').textContent.trim();
+            const awayTeam = document.getElementById('away-team-display').textContent.trim();
+            const homeScore = document.getElementById('home-score').value;
+            const awayScore = document.getElementById('away-score').value;
+            
+            let confirmMessage = `통합 URL에 현재 경기를 푸시하시겠습니까?\n\n` +
+                `경기: ${homeTeam} vs ${awayTeam}\n` +
+                `점수: ${homeScore} - ${awayScore}\n` +
+                `리스트: ${listName} (${currentMatchIndex + 1}/${totalMatches})`;
+            
             if (status && !forceRefresh) {
-                const confirmRefresh = confirm(
-                    `현재 오버레이 URL이 활성 상태입니다.\n` +
-                    `경기: ${status.match.home_team} vs ${status.match.away_team}\n` +
-                    `강제 새로고침하시겠습니까?`
-                );
-                
-                if (!confirmRefresh) {
-                    return;
-                }
+                confirmMessage += `\n\n⚠️ 현재 오버레이에 다른 경기가 표시 중입니다.\n강제 새로고침이 필요합니다.`;
+            }
+            
+            const confirmPush = confirm(confirmMessage);
+            if (!confirmPush) {
+                return;
+            }
+            
+            if (status && !forceRefresh) {
                 forceRefresh = true;
             }
             

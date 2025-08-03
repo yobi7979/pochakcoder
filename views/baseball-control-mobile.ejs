@@ -518,18 +518,30 @@
                 return;
             }
             
-            // URL 상태 확인
+            // URL 상태 확인 및 통합 확인
             const status = await checkOverlayStatus();
+            
+            // 현재 경기 정보 가져오기
+            const homeTeam = document.getElementById('home-team-display').textContent.trim();
+            const awayTeam = document.getElementById('away-team-display').textContent.trim();
+            const homeScore = document.getElementById('home-score').value;
+            const awayScore = document.getElementById('away-score').value;
+            
+            let confirmMessage = `통합 URL에 현재 경기를 푸시하시겠습니까?\n\n` +
+                `경기: ${homeTeam} vs ${awayTeam}\n` +
+                `점수: ${homeScore} - ${awayScore}\n` +
+                `리스트: ${listName} (${currentMatchIndex + 1}/${totalMatches})`;
+            
             if (status && !forceRefresh) {
-                const confirmRefresh = confirm(
-                    `현재 오버레이 URL이 활성 상태입니다.\n` +
-                    `경기: ${status.match.home_team} vs ${status.match.away_team}\n` +
-                    `강제 새로고침하시겠습니까?`
-                );
-                
-                if (!confirmRefresh) {
-                    return;
-                }
+                confirmMessage += `\n\n⚠️ 현재 오버레이에 다른 경기가 표시 중입니다.\n강제 새로고침이 필요합니다.`;
+            }
+            
+            const confirmPush = confirm(confirmMessage);
+            if (!confirmPush) {
+                return;
+            }
+            
+            if (status && !forceRefresh) {
                 forceRefresh = true;
             }
             
