@@ -243,10 +243,10 @@
         
         // 경기별 타이머 상태 관리 객체
         const timerState = {
+            startTime: Date.now(),
+            pausedTime: 0,
             currentSeconds: 0,
             isRunning: false,
-            lastServerTime: 0,
-            lastUpdateTime: 0,
             localTimer: null
         };
         
@@ -293,55 +293,81 @@
             socket.emit('leave_all_rooms');
         });
 
-        // 통합된 타이머 상태 수신 처리
-        function handleTimerUpdate(data) {
+        // 새로운 독립 타이머 이벤트 처리
+        socket.on('timer_started', (data) => {
+            console.log('=== 타이머 시작 이벤트 수신 ===');
+            console.log('수신된 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                timerState.startTime = data.startTime;
+                timerState.pausedTime = data.pausedTime;
+                timerState.isRunning = true;
+                startLocalTimer();
+                console.log('타이머 시작 완료:', data);
+            }
+        });
+
+        socket.on('timer_stopped', (data) => {
+            console.log('=== 타이머 정지 이벤트 수신 ===');
+            console.log('수신된 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                timerState.startTime = data.startTime;
+                timerState.pausedTime = data.pausedTime;
+                timerState.isRunning = false;
+                stopLocalTimer();
+                updateTimerDisplay();
+                console.log('타이머 정지 완료:', data);
+            }
+        });
+
+        socket.on('timer_reset', (data) => {
+            console.log('=== 타이머 리셋 이벤트 수신 ===');
+            console.log('수신된 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                timerState.startTime = data.startTime;
+                timerState.pausedTime = data.pausedTime;
+                timerState.isRunning = false;
+                stopLocalTimer();
+                updateTimerDisplay();
+                console.log('타이머 리셋 완료:', data);
+            }
+        });
+
+        socket.on('timer_set', (data) => {
+            console.log('=== 타이머 설정 이벤트 수신 ===');
+            console.log('수신된 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                timerState.startTime = data.startTime;
+                timerState.pausedTime = data.pausedTime;
+                timerState.isRunning = false;
+                stopLocalTimer();
+                updateTimerDisplay();
+                console.log('타이머 설정 완료:', data);
+            }
+        });
+
+        // 기존 타이머 상태 요청 (초기화용)
+        socket.on('timer_state', (data) => {
             console.log('=== 타이머 상태 수신 ===');
             console.log('수신된 데이터:', data);
-            console.log('현재 matchId:', matchId);
-            console.log('수신된 matchId:', data.matchId);
             
-            // 현재 경기의 타이머만 처리
-            if (data.matchId !== matchId) {
-                console.log('다른 경기의 타이머 상태이므로 무시:', data.matchId);
-                return;
+            if (data.matchId === matchId) {
+                timerState.startTime = data.startTime || Date.now();
+                timerState.pausedTime = data.pausedTime || 0;
+                timerState.isRunning = data.isRunning || false;
+                
+                if (timerState.isRunning) {
+                    startLocalTimer();
+                } else {
+                    updateTimerDisplay();
+                }
+                
+                console.log('타이머 상태 초기화 완료:', data);
             }
-            
-            // 서버 시간을 기준으로 동기화
-            const serverTime = data.currentSeconds || 0;
-            const serverIsRunning = data.isRunning || false;
-            const serverUpdateTime = data.lastUpdateTime || Date.now();
-            
-            // 현재 클라이언트 시간과 서버 시간의 차이 계산
-            const clientTime = Date.now();
-            const timeDiff = Math.floor((clientTime - serverUpdateTime) / 1000);
-            
-            // 서버 시간을 기준으로 현재 시간 계산 (네트워크 지연 보정)
-            timerState.currentSeconds = serverTime + (serverIsRunning ? timeDiff : 0);
-            timerState.isRunning = serverIsRunning;
-            timerState.lastServerTime = serverTime;
-            timerState.lastUpdateTime = serverUpdateTime;
-            
-            updateTimerDisplay();
-            
-            // 로컬 타이머 상태 동기화
-            if (serverIsRunning && !timerState.localTimer) {
-                startLocalTimer();
-            } else if (!serverIsRunning && timerState.localTimer) {
-                stopLocalTimer();
-            }
-            
-            console.log('타이머 상태 업데이트 완료:', { 
-                currentSeconds: timerState.currentSeconds, 
-                isRunning: timerState.isRunning, 
-                serverTime, 
-                timeDiff 
-            });
-        }
-
-        // 모든 타이머 이벤트를 하나의 핸들러로 통합
-        socket.on('timer_state', handleTimerUpdate);
-        socket.on('timer_update', handleTimerUpdate);
-        socket.on('timer_updated', handleTimerUpdate);
+        });
 
         // 타이머 컨트롤 버튼 이벤트
         document.getElementById('start-timer').addEventListener('click', function() {
@@ -453,16 +479,11 @@
             
             timerState.localTimer = setInterval(() => {
                 if (timerState.isRunning) {
-                    // 서버 시간을 기준으로 정확한 시간 계산
+                    // 시작 시간 기준으로 현재 시간 계산
                     const currentTime = Date.now();
-                    const timeDiff = Math.floor((currentTime - timerState.lastUpdateTime) / 1000);
-                    timerState.currentSeconds = timerState.lastServerTime + timeDiff;
+                    const elapsedTime = Math.floor((currentTime - timerState.startTime) / 1000);
+                    timerState.currentSeconds = timerState.pausedTime + elapsedTime;
                     updateTimerDisplay();
-                    
-                    // 10초마다 서버와 동기화 (드리프트 방지)
-                    if (timeDiff % 10 === 0) {
-                        socket.emit('request_timer_state', { matchId: matchId });
-                    }
                 }
             }, 1000);
         }
