@@ -298,27 +298,38 @@
         });
 
         socket.on('timer_update', (data) => {
-            currentSeconds = data.currentSeconds;
-            isRunning = data.isRunning;
-            lastServerTime = data.currentSeconds;
+            console.log('=== 타이머 업데이트 수신 ===');
+            console.log('수신된 데이터:', data);
+            
+            currentSeconds = data.currentSeconds || 0;
+            isRunning = data.isRunning || false;
+            lastServerTime = data.currentSeconds || 0;
             lastUpdateTime = data.lastUpdateTime || Date.now();
+            
             updateTimerDisplay();
+            
+            // 로컬 타이머 상태 동기화
             if (data.isRunning && !localTimer) {
                 startLocalTimer();
             } else if (!data.isRunning && localTimer) {
                 stopLocalTimer();
             }
+            
+            console.log('타이머 업데이트 완료:', { currentSeconds, isRunning });
         });
 
         socket.on('timer_updated', (data) => {
             console.log('=== 타이머 업데이트 이벤트 수신 ===');
             console.log('수신된 데이터:', data);
             
-            currentSeconds = data.currentSeconds;
-            isRunning = data.isRunning;
-            lastServerTime = data.currentSeconds;
+            currentSeconds = data.currentSeconds || 0;
+            isRunning = data.isRunning || false;
+            lastServerTime = data.currentSeconds || 0;
             lastUpdateTime = data.lastUpdateTime || Date.now();
+            
             updateTimerDisplay();
+            
+            // 로컬 타이머 상태 동기화
             if (data.isRunning && !localTimer) {
                 startLocalTimer();
             } else if (!data.isRunning && localTimer) {
@@ -431,9 +442,13 @@
 
         // 로컬 타이머
         function startLocalTimer() {
-            if (localTimer) return;
+            if (localTimer) {
+                clearInterval(localTimer);
+                localTimer = null;
+            }
+            
             localTimer = setInterval(() => {
-                if (!isConnected && isRunning) {
+                if (isRunning) {
                     const currentTime = Date.now();
                     const timeDiff = Math.floor((currentTime - lastUpdateTime) / 1000);
                     currentSeconds = lastServerTime + timeDiff;

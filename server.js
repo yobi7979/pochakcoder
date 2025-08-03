@@ -358,23 +358,48 @@ const matchLastUpdateTime = new Map();
 
 // 타이머 관리 함수
 function startMatchTimer(matchId) {
-    if (matchTimers.has(matchId)) return;
+    let timer = matchTimers.get(matchId);
     
-    const timer = {
-        interval: null,
-        currentSeconds: 0,
-        isRunning: false
-    };
+    if (!timer) {
+        // 타이머가 없으면 새로 생성
+        timer = {
+            interval: null,
+            currentSeconds: 0,
+            isRunning: false
+        };
+        matchTimers.set(matchId, timer);
+    }
     
-    matchTimers.set(matchId, timer);
+    // 타이머가 이미 실행 중이면 리턴
+    if (timer.isRunning && timer.interval) {
+        return;
+    }
+    
+    // 타이머 시작
+    timer.isRunning = true;
     matchLastUpdateTime.set(matchId, Date.now());
+    
+    // interval이 없으면 새로 생성
+    if (!timer.interval) {
+        timer.interval = setInterval(() => {
+            timer.currentSeconds++;
+            matchLastUpdateTime.set(matchId, Date.now());
+            io.to(`match_${matchId}`).emit('timer_update', {
+                currentSeconds: timer.currentSeconds,
+                isRunning: true,
+                lastUpdateTime: Date.now()
+            });
+        }, 1000);
+    }
 }
 
 function stopMatchTimer(matchId) {
     const timer = matchTimers.get(matchId);
-    if (timer && timer.interval) {
-        clearInterval(timer.interval);
-        timer.interval = null;
+    if (timer) {
+        if (timer.interval) {
+            clearInterval(timer.interval);
+            timer.interval = null;
+        }
         timer.isRunning = false;
         matchLastUpdateTime.set(matchId, Date.now());
     }
@@ -394,11 +419,20 @@ function resetMatchTimer(matchId) {
 }
 
 function setMatchTimer(matchId, minutes, seconds) {
-    const timer = matchTimers.get(matchId);
-    if (timer) {
-        timer.currentSeconds = minutes * 60 + seconds;
-        matchLastUpdateTime.set(matchId, Date.now());
+    let timer = matchTimers.get(matchId);
+    
+    if (!timer) {
+        // 타이머가 없으면 새로 생성
+        timer = {
+            interval: null,
+            currentSeconds: 0,
+            isRunning: false
+        };
+        matchTimers.set(matchId, timer);
     }
+    
+    timer.currentSeconds = minutes * 60 + seconds;
+    matchLastUpdateTime.set(matchId, Date.now());
 }
 
 // 서버 시작 시 저장된 타이머 상태 복원
@@ -1402,8 +1436,16 @@ io.on('connection', (socket) => {
                     currentSeconds: minutes * 60 + seconds
                 };
                 
-                // 서버 측 타이머 설정
-                setMatchTimer(matchId, minutes, seconds);
+                // 서버 측 타이머 설정 (현재 시간으로 설정)
+                let timer = matchTimers.get(matchId);
+                if (!timer) {
+                    setMatchTimer(matchId, minutes, seconds);
+                    timer = matchTimers.get(matchId);
+                }
+                if (timer) {
+                    timer.currentSeconds = minutes * 60 + seconds;
+                    matchLastUpdateTime.set(matchId, Date.now());
+                }
             } else if (action === 'start') {
                 matchData.isRunning = true;
                 // 현재 타이머 값을 유지하면서 시작
@@ -1418,8 +1460,17 @@ io.on('connection', (socket) => {
                     second: currentSeconds % 60
                 };
                 
-                // 서버 측 타이머 시작
-                startMatchTimer(matchId);
+                // 서버 측 타이머 시작 (현재 시간으로 설정)
+                let timer = matchTimers.get(matchId);
+                if (!timer) {
+                    startMatchTimer(matchId);
+                    timer = matchTimers.get(matchId);
+                }
+                if (timer) {
+                    timer.currentSeconds = currentSeconds;
+                    timer.isRunning = true;
+                    matchLastUpdateTime.set(matchId, Date.now());
+                }
             } else if (action === 'stop') {
                 matchData.isRunning = false;
                 // 클라이언트에서 전송된 현재 시간을 사용
@@ -1437,8 +1488,17 @@ io.on('connection', (socket) => {
                     second: currentSeconds % 60
                 };
                 
-                // 서버 측 타이머 정지
-                stopMatchTimer(matchId);
+                // 서버 측 타이머 정지 (현재 시간으로 설정)
+                let timer = matchTimers.get(matchId);
+                if (timer) {
+                    timer.currentSeconds = currentSeconds;
+                    timer.isRunning = false;
+                    if (timer.interval) {
+                        clearInterval(timer.interval);
+                        timer.interval = null;
+                    }
+                    matchLastUpdateTime.set(matchId, Date.now());
+                }
             } else if (action === 'reset') {
                 matchData.isRunning = false;
                 matchData.currentSeconds = 0;
