@@ -567,9 +567,14 @@
                 if (timerState.isRunning) {
                     // 새로운 독립 타이머 시스템 지원
                     if (timerState.startTime && timerState.pausedTime !== undefined) {
-                        const currentTime = Date.now();
-                        const elapsedTime = Math.floor((currentTime - timerState.startTime) / 1000);
-                        timerState.currentSeconds = Math.max(0, timerState.pausedTime + elapsedTime);
+                        // startTime이 0이면 pausedTime을 그대로 사용 (리셋된 상태)
+                        if (timerState.startTime === 0) {
+                            timerState.currentSeconds = Math.max(0, timerState.pausedTime);
+                        } else {
+                            const currentTime = Date.now();
+                            const elapsedTime = Math.floor((currentTime - timerState.startTime) / 1000);
+                            timerState.currentSeconds = Math.max(0, timerState.pausedTime + elapsedTime);
+                        }
                     } else {
                         // 기존 방식 호환성 지원
                         const currentTime = Date.now();

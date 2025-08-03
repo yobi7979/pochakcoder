@@ -497,7 +497,7 @@ function stopMatchTimer(matchId) {
 
 function resetMatchTimer(matchId) {
     const timerData = {
-        startTime: Date.now(),
+        startTime: 0, // 리셋 시에는 startTime을 0으로 설정
         pausedTime: 0,
         isRunning: false,
         matchId: matchId
@@ -523,7 +523,7 @@ function setMatchTimer(matchId, minutes, seconds) {
     const targetTime = (minutes * 60) + seconds;
     
     const timerData = {
-        startTime: Date.now() - (targetTime * 1000), // 과거 시간으로 역산
+        startTime: 0, // 설정 시에는 startTime을 0으로 설정하여 정확한 시간에서 시작
         pausedTime: targetTime,
         isRunning: false,
         matchId: matchId
