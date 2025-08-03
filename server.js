@@ -428,7 +428,7 @@ function startMatchTimer(matchId) {
         // 기존 타이머 데이터 업데이트
         const oldStartTime = timerData.startTime;
         const oldPausedTime = timerData.pausedTime;
-        timerData.startTime = Date.now() - (timerData.pausedTime * 1000);
+        timerData.startTime = Date.now();  // 현재 시간을 시작 시간으로 설정
         timerData.isRunning = true;
         logger.info(`기존 타이머 데이터 업데이트: matchId=${matchId}, oldStartTime=${oldStartTime}, oldPausedTime=${oldPausedTime}, newStartTime=${timerData.startTime}`);
     }
