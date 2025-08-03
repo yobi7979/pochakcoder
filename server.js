@@ -714,6 +714,13 @@ app.post('/api/overlay-image', overlayImageUpload.single('image'), async (req, r
       message: '오버레이 이미지가 성공적으로 업로드되었습니다.'
     });
     
+    // 모든 축구 오버레이 페이지에 실시간으로 반영하기 위해 소켓 이벤트 발송
+    io.emit('overlay_image_updated', { 
+      action: 'uploaded',
+      imagePath: imagePath,
+      filename: req.file.filename
+    });
+    
     logger.info(`오버레이 이미지 업로드 성공: ${imagePath}`);
   } catch (error) {
     logger.error('오버레이 이미지 업로드 오류:', error);
@@ -773,6 +780,12 @@ app.delete('/api/overlay-image/:filename', async (req, res) => {
     res.json({ 
       success: true, 
       message: '이미지가 성공적으로 삭제되었습니다.'
+    });
+    
+    // 모든 축구 오버레이 페이지에 실시간으로 반영하기 위해 소켓 이벤트 발송
+    io.emit('overlay_image_updated', { 
+      action: 'deleted',
+      filename: filename
     });
     
     logger.info(`오버레이 이미지 삭제 성공: ${filename}`);

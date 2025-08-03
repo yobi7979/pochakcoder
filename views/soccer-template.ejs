@@ -1255,6 +1255,39 @@
             }
         });
 
+        // 오버레이 이미지 변경 이벤트 처리
+        socket.on('overlay_image_updated', function(data) {
+            console.log('오버레이 이미지 변경 이벤트 수신:', data);
+            
+            if (data.action === 'uploaded') {
+                // 새 이미지가 업로드된 경우
+                const overlayImageContainer = document.getElementById('overlayImage');
+                if (overlayImageContainer) {
+                    const img = document.createElement('img');
+                    img.src = data.imagePath;
+                    img.alt = '오버레이 이미지';
+                    img.onload = () => {
+                        console.log('새 오버레이 이미지 로드 완료:', data.imagePath);
+                        overlayImageContainer.innerHTML = '';
+                        overlayImageContainer.appendChild(img);
+                        overlayImageContainer.classList.add('show');
+                    };
+                    img.onerror = (error) => {
+                        console.error('새 오버레이 이미지 로드 실패:', error);
+                        overlayImageContainer.classList.remove('show');
+                    };
+                }
+            } else if (data.action === 'deleted') {
+                // 이미지가 삭제된 경우
+                const overlayImageContainer = document.getElementById('overlayImage');
+                if (overlayImageContainer) {
+                    overlayImageContainer.classList.remove('show');
+                    overlayImageContainer.innerHTML = '';
+                    console.log('오버레이 이미지 삭제됨');
+                }
+            }
+        });
+
         // 팀명 업데이트 이벤트 처리
         socket.on('teamNameUpdated', function(data) {
             console.log('팀명 업데이트 이벤트 수신:', data);

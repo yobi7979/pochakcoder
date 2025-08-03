@@ -105,6 +105,16 @@
                         console.log('경기 상태 표시 설정 변경으로 인한 오버레이 새로고침 완료');
                     });
 
+                    // 오버레이 이미지 변경 이벤트
+                    socket.on('overlay_image_updated', (data) => {
+                        console.log('오버레이 이미지 변경 이벤트 수신:', data);
+                        
+                        // iframe 내부의 오버레이 이미지 업데이트를 위해 iframe 새로고침
+                        loadOriginalOverlay();
+                        
+                        console.log('오버레이 이미지 변경으로 인한 오버레이 새로고침 완료');
+                    });
+
                     // 팀 위치 변경 이벤트
                     socket.on('teamsSwapped', (data) => {
                         if (data.matchId === matchId) {
