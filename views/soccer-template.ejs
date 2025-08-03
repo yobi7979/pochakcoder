@@ -1186,7 +1186,7 @@
                 const timeDiff = Math.floor((clientTime - serverUpdateTime) / 1000);
                 
                 // 서버 시간을 기준으로 현재 시간 계산 (네트워크 지연 보정)
-                currentSeconds = serverTime + (serverIsRunning ? timeDiff : 0);
+                currentSeconds = Math.max(0, serverTime + (serverIsRunning ? timeDiff : 0));
                 
                 // 로컬 타이머 변수 업데이트
                 timerState.lastServerTime = serverTime;
@@ -1201,7 +1201,7 @@
                 });
             }
             
-            timerState.currentSeconds = currentSeconds;
+            timerState.currentSeconds = Math.max(0, currentSeconds);
             
             // UI 업데이트
             const timerElement = document.querySelector('.match-time');
@@ -1415,7 +1415,7 @@
                 // 타이머 초기화
                 console.log('=== 타이머 초기화 시작 ===');
                 const matchData = {
-                    currentSeconds: <%= match.match_data?.currentSeconds || match.match_data?.timer || 0 %>,
+                    currentSeconds: Math.max(0, <%= match.match_data?.currentSeconds || match.match_data?.timer || 0 %>),
                     isRunning: <%= match.match_data?.isRunning || false %>
                 };
                 console.log('초기 타이머 데이터:', matchData);
@@ -1523,7 +1523,7 @@
             }
             
             // 2. 새 경기의 타이머 정보 추출
-            const currentSeconds = matchData.currentSeconds || matchData.timer || 0;
+            const currentSeconds = Math.max(0, matchData.currentSeconds || matchData.timer || 0);
             const isRunning = matchData.isRunning || false;
             
             console.log('추출된 타이머 정보:', { currentSeconds, isRunning });

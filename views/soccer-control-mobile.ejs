@@ -310,9 +310,9 @@
                     timerState.isRunning = data.isRunning || false;
                 } else {
                     // 기존 방식 호환성 지원
-                    timerState.currentSeconds = data.currentSeconds || 0;
+                    timerState.currentSeconds = Math.max(0, data.currentSeconds || 0);
                     timerState.isRunning = data.isRunning || false;
-                    timerState.lastServerTime = data.currentSeconds || 0;
+                    timerState.lastServerTime = Math.max(0, data.currentSeconds || 0);
                     timerState.lastUpdateTime = data.lastUpdateTime || Date.now();
                 }
                 
@@ -338,9 +338,9 @@
                     timerState.isRunning = data.isRunning || false;
                 } else {
                     // 기존 방식 호환성 지원
-                    timerState.currentSeconds = data.currentSeconds || 0;
+                    timerState.currentSeconds = Math.max(0, data.currentSeconds || 0);
                     timerState.isRunning = data.isRunning || false;
-                    timerState.lastServerTime = data.currentSeconds || 0;
+                    timerState.lastServerTime = Math.max(0, data.currentSeconds || 0);
                     timerState.lastUpdateTime = data.lastUpdateTime || Date.now();
                 }
                 
@@ -368,9 +368,9 @@
                     timerState.isRunning = data.isRunning || false;
                 } else {
                     // 기존 방식 호환성 지원
-                    timerState.currentSeconds = data.currentSeconds || 0;
+                    timerState.currentSeconds = Math.max(0, data.currentSeconds || 0);
                     timerState.isRunning = data.isRunning || false;
-                    timerState.lastServerTime = data.currentSeconds || 0;
+                    timerState.lastServerTime = Math.max(0, data.currentSeconds || 0);
                     timerState.lastUpdateTime = data.lastUpdateTime || Date.now();
                 }
                 
