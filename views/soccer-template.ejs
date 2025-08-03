@@ -1574,7 +1574,7 @@
             
             if (section === 'matchState' || section === 'all') {
                 const matchState = document.querySelector('.match-state');
-                const scoreboard = document.querySelector('.scoreboard');
+                const scoreboardRow = document.querySelector('.scoreboard-row');
                 
                 if (matchState) {
                     if (matchState.style.display === 'none') {
@@ -1586,13 +1586,17 @@
                     }
                 }
                 
-                if (scoreboard) {
-                    if (scoreboard.style.display === 'none') {
-                        scoreboard.style.display = 'flex';
-                        scoreboard.classList.add('animate-slide');
+                if (scoreboardRow) {
+                    if (scoreboardRow.style.display === 'none') {
+                        scoreboardRow.style.display = 'flex';
+                        scoreboardRow.classList.add('animate-slide');
+                        // 애니메이션 종료 후 transform 초기화
+                        setTimeout(() => {
+                            scoreboardRow.style.transform = 'none';
+                        }, 500);
                     } else {
-                        scoreboard.classList.remove('animate-slide');
-                        scoreboard.style.display = 'none';
+                        scoreboardRow.classList.remove('animate-slide');
+                        scoreboardRow.style.display = 'none';
                     }
                 }
             }           

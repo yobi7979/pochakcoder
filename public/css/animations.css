@@ -10,7 +10,7 @@
         opacity: 0;
     }
     100% {
-        transform: translateX(-170%);
+        transform: translateX(0);
         opacity: 1;
     }
 }
@@ -18,11 +18,11 @@
 /* 스코어보드 위로 사라지는 애니메이션 */
 @keyframes slideUp {
     0% {
-        transform: translateX(-170%) translateY(0);
+        transform: translateY(0);
         opacity: 1;
     }
     100% {
-        transform: translateX(-170%) translateY(-100%);
+        transform: translateY(-100%);
         opacity: 0;
     }
 }
