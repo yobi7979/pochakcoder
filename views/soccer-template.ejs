@@ -1588,12 +1588,12 @@
                     if (timerState.startTime && timerState.pausedTime !== undefined) {
                         const currentTime = Date.now();
                         const elapsedTime = Math.floor((currentTime - timerState.startTime) / 1000);
-                        newSeconds = timerState.pausedTime + elapsedTime;
+                        newSeconds = Math.max(0, timerState.pausedTime + elapsedTime);
                     } else {
                         // 기존 방식 호환성 지원
                         const currentTime = Date.now();
                         const timeDiff = Math.floor((currentTime - timerState.lastUpdateTime) / 1000);
-                        newSeconds = timerState.lastServerTime + timeDiff;
+                        newSeconds = Math.max(0, timerState.lastServerTime + timeDiff);
                     }
                     
                     updateTimerDisplay(newSeconds);
@@ -1620,8 +1620,10 @@
 
         // 타이머 표시 업데이트
         function updateTimerDisplay(currentSeconds) {
-            const minutes = Math.floor(currentSeconds / 60);
-            const seconds = currentSeconds % 60;
+            // 음수 값 방지
+            const safeSeconds = Math.max(0, currentSeconds);
+            const minutes = Math.floor(safeSeconds / 60);
+            const seconds = safeSeconds % 60;
             const timerElement = document.querySelector('.match-time');
             if (timerElement) {
                 const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
