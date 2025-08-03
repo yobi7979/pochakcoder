@@ -1386,6 +1386,24 @@
             document.getElementById('timer-display').textContent = `${formattedMinutes}:${formattedSeconds}`;
         }
 
+        // 시간 입력 박스 클릭 시 내용 지우기
+        document.addEventListener('DOMContentLoaded', function() {
+            const minutesInput = document.getElementById('minutes');
+            const secondsInput = document.getElementById('seconds');
+            
+            if (minutesInput) {
+                minutesInput.addEventListener('click', function() {
+                    this.select(); // 모든 텍스트 선택
+                });
+            }
+            
+            if (secondsInput) {
+                secondsInput.addEventListener('click', function() {
+                    this.select(); // 모든 텍스트 선택
+                });
+            }
+        });
+
         // 경기 데이터 업데이트 (타이머 제외)
         async function updateMatchInfo() {
             const formData = {

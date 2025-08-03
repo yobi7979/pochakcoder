@@ -263,6 +263,17 @@
             document.getElementById('timer-display').textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }
 
+        // 시간 입력 박스 클릭 시 내용 지우기
+        document.addEventListener('DOMContentLoaded', function() {
+            const timeEditInput = document.getElementById('time-edit-input');
+            
+            if (timeEditInput) {
+                timeEditInput.addEventListener('click', function() {
+                    this.select(); // 모든 텍스트 선택
+                });
+            }
+        });
+
         // 점수 변경 이벤트
         function updateScore(team, change) {
             const scoreInput = document.getElementById(`${team}-score`);
