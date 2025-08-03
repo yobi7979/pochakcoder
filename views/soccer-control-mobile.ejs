@@ -277,69 +277,47 @@
             console.log('=== 소켓 연결 끊어짐 ===');
         });
 
-        // 서버로부터 타이머 상태 수신
-        socket.on('timer_state', (data) => {
+        // 통합된 타이머 상태 수신 처리
+        function handleTimerUpdate(data) {
             console.log('=== 타이머 상태 수신 ===');
             console.log('수신된 데이터:', data);
             
-            currentSeconds = data.currentSeconds || 0;
-            isRunning = data.isRunning || false;
-            lastServerTime = data.currentSeconds || 0;
-            lastUpdateTime = data.lastUpdateTime || Date.now();
+            // 서버 시간을 기준으로 동기화
+            const serverTime = data.currentSeconds || 0;
+            const serverIsRunning = data.isRunning || false;
+            const serverUpdateTime = data.lastUpdateTime || Date.now();
+            
+            // 현재 클라이언트 시간과 서버 시간의 차이 계산
+            const clientTime = Date.now();
+            const timeDiff = Math.floor((clientTime - serverUpdateTime) / 1000);
+            
+            // 서버 시간을 기준으로 현재 시간 계산 (네트워크 지연 보정)
+            currentSeconds = serverTime + (serverIsRunning ? timeDiff : 0);
+            isRunning = serverIsRunning;
+            lastServerTime = serverTime;
+            lastUpdateTime = serverUpdateTime;
             
             updateTimerDisplay();
             
             // 로컬 타이머 상태 동기화
-            if (data.isRunning && !localTimer) {
+            if (serverIsRunning && !localTimer) {
                 startLocalTimer();
-            } else if (!data.isRunning && localTimer) {
+            } else if (!serverIsRunning && localTimer) {
                 stopLocalTimer();
             }
             
-            console.log('타이머 상태 업데이트 완료:', { currentSeconds, isRunning });
-        });
+            console.log('타이머 상태 업데이트 완료:', { 
+                currentSeconds, 
+                isRunning, 
+                serverTime, 
+                timeDiff 
+            });
+        }
 
-        socket.on('timer_update', (data) => {
-            console.log('=== 타이머 업데이트 수신 ===');
-            console.log('수신된 데이터:', data);
-            
-            currentSeconds = data.currentSeconds || 0;
-            isRunning = data.isRunning || false;
-            lastServerTime = data.currentSeconds || 0;
-            lastUpdateTime = data.lastUpdateTime || Date.now();
-            
-            updateTimerDisplay();
-            
-            // 로컬 타이머 상태 동기화
-            if (data.isRunning && !localTimer) {
-                startLocalTimer();
-            } else if (!data.isRunning && localTimer) {
-                stopLocalTimer();
-            }
-            
-            console.log('타이머 업데이트 완료:', { currentSeconds, isRunning });
-        });
-
-        socket.on('timer_updated', (data) => {
-            console.log('=== 타이머 업데이트 이벤트 수신 ===');
-            console.log('수신된 데이터:', data);
-            
-            currentSeconds = data.currentSeconds || 0;
-            isRunning = data.isRunning || false;
-            lastServerTime = data.currentSeconds || 0;
-            lastUpdateTime = data.lastUpdateTime || Date.now();
-            
-            updateTimerDisplay();
-            
-            // 로컬 타이머 상태 동기화
-            if (data.isRunning && !localTimer) {
-                startLocalTimer();
-            } else if (!data.isRunning && localTimer) {
-                stopLocalTimer();
-            }
-            
-            console.log('타이머 업데이트 완료:', { currentSeconds, isRunning });
-        });
+        // 모든 타이머 이벤트를 하나의 핸들러로 통합
+        socket.on('timer_state', handleTimerUpdate);
+        socket.on('timer_update', handleTimerUpdate);
+        socket.on('timer_updated', handleTimerUpdate);
 
         // 타이머 컨트롤 버튼 이벤트
         document.getElementById('start-timer').addEventListener('click', function() {
@@ -451,10 +429,16 @@
             
             localTimer = setInterval(() => {
                 if (isRunning) {
+                    // 서버 시간을 기준으로 정확한 시간 계산
                     const currentTime = Date.now();
                     const timeDiff = Math.floor((currentTime - lastUpdateTime) / 1000);
                     currentSeconds = lastServerTime + timeDiff;
                     updateTimerDisplay();
+                    
+                    // 10초마다 서버와 동기화 (드리프트 방지)
+                    if (timeDiff % 10 === 0) {
+                        socket.emit('request_timer_state', { matchId: matchId });
+                    }
                 }
             }, 1000);
         }

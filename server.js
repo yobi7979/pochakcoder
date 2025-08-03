@@ -1794,9 +1794,9 @@ io.on('connection', (socket) => {
                 lastUpdateTime: Date.now()
             };
             
-            // 요청한 클라이언트에게 타이머 상태 전송
+            // 요청한 클라이언트에게 타이머 상태 전송 (중복 방지)
             socket.emit('timer_state', timerState);
-            logger.info(`타이머 상태 전송 완료:`, timerState);
+            logger.info(`타이머 상태 전송 완료: matchId=${matchId}, currentSeconds=${timerState.currentSeconds}, isRunning=${timerState.isRunning}`);
         } catch (error) {
             logger.error('request_timer_state 이벤트 처리 중 오류 발생:', error);
             socket.emit('timer_state', { error: error.message });
