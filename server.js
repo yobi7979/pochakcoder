@@ -485,19 +485,7 @@ async function restoreMatchTimers() {
                     timer.interval = null;
                 }
             }
-                    
-                    // 타이머 자동 재시작
-                    timer.interval = setInterval(() => {
-                        timer.currentSeconds++;
-                        matchLastUpdateTime.set(match.id, Date.now());
-                        io.to(`match_${match.id}`).emit('timer_update', {
-                            currentSeconds: timer.currentSeconds,
-                            isRunning: true,
-                            lastUpdateTime: Date.now()
-                        });
-                    }, 1000);
-                }
-            }
+        }
         }
         logger.info('타이머 상태 복원 완료');
     } catch (error) {
