@@ -1,0 +1,24 @@
+{
+  "id": "0803SC2933",
+  "sport_type": "soccer",
+  "status": "pending",
+  "home_score": 0,
+  "away_score": 0,
+  "match_data": {
+    "state": "전반",
+    "home_shots": 0,
+    "away_shots": 0,
+    "home_shots_on_target": 0,
+    "away_shots_on_target": 0,
+    "home_corners": 0,
+    "away_corners": 0,
+    "home_fouls": 0,
+    "away_fouls": 0,
+    "timer": 0,
+    "lastUpdateTime": 1754229157250,
+    "isRunning": false,
+    "lastBatchUpdate": 1754229157634
+  },
+  "created_at": "2025-08-03T10:07:52.934Z",
+  "updated_at": "2025-08-03T13:52:37.634Z"
+}

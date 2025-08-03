@@ -302,14 +302,14 @@
             </div>
         </div>
 
-        <!-- 검색 필터링 추가 -->
+        <!-- 검색 필터링 및 CSV 다운로드 추가 -->
         <div class="card mb-3">
             <div class="card-header bg-primary text-white">
-                경기 검색 필터링
+                경기 검색 필터링 및 데이터 내보내기
             </div>
             <div class="card-body">
                 <div class="row align-items-center">
-                    <div class="col-md-9">
+                    <div class="col-md-7">
                         <div class="input-group">
                             <span class="input-group-text">
                                 <i class="bi bi-search"></i>
@@ -322,6 +322,14 @@
                     </div>
                     <div class="col-md-3 text-end">
                         <span id="match-count" class="text-muted" style="font-size: 12px;">총 <span id="filtered-count">0</span>개 / <span id="total-count">0</span>개 표시</span>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <button class="btn btn-success me-2" onclick="downloadScoreCSV()">
+                            <i class="bi bi-download"></i> 전체 점수 CSV
+                        </button>
+                        <button class="btn btn-info" onclick="downloadScoreCSVByLists()">
+                            <i class="bi bi-download"></i> 구장별 점수 CSV
+                        </button>
                     </div>
                 </div>
             </div>
@@ -754,6 +762,50 @@
                 console.error('모든 경기 데이터 삭제 중 오류 발생:', error);
                 alert('모든 경기 데이터 삭제 중 오류가 발생했습니다.');
             });
+        }
+
+        // 경기 점수 CSV 다운로드 (전체)
+        function downloadScoreCSV() {
+            try {
+                console.log('전체 경기 점수 CSV 다운로드 시작');
+                
+                // CSV 다운로드 링크 생성
+                const link = document.createElement('a');
+                link.href = '/api/matches/score-csv';
+                link.download = `all_matches_score_${new Date().toISOString().split('T')[0]}.csv`;
+                
+                // 링크 클릭하여 다운로드 시작
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                console.log('전체 경기 점수 CSV 다운로드 완료');
+            } catch (error) {
+                console.error('CSV 다운로드 중 오류 발생:', error);
+                alert('CSV 다운로드 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 구장별 경기 점수 CSV 다운로드
+        function downloadScoreCSVByLists() {
+            try {
+                console.log('구장별 경기 점수 CSV 다운로드 시작');
+                
+                // CSV 다운로드 링크 생성
+                const link = document.createElement('a');
+                link.href = '/api/matches/score-csv-by-lists';
+                link.download = `matches_by_venue_${new Date().toISOString().split('T')[0]}.csv`;
+                
+                // 링크 클릭하여 다운로드 시작
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                console.log('구장별 경기 점수 CSV 다운로드 완료');
+            } catch (error) {
+                console.error('구장별 CSV 다운로드 중 오류 발생:', error);
+                alert('구장별 CSV 다운로드 중 오류가 발생했습니다.');
+            }
         }
 
         function copyToClipboard(text) {
