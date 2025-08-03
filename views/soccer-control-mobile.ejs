@@ -241,12 +241,14 @@
         const socket = io();
         const matchId = '<%= match.id %>';
         
-        // 경기별 타이머 상태 관리 객체
+        // 경기별 타이머 상태 관리 객체 (호환성 지원)
         const timerState = {
             startTime: Date.now(),
             pausedTime: 0,
             currentSeconds: 0,
             isRunning: false,
+            lastServerTime: 0,
+            lastUpdateTime: 0,
             localTimer: null
         };
         
@@ -293,7 +295,96 @@
             socket.emit('leave_all_rooms');
         });
 
-        // 새로운 독립 타이머 이벤트 처리
+        // 통합된 타이머 이벤트 처리 (백업 방식과 호환)
+        socket.on('timer_state', (data) => {
+            console.log('=== 타이머 상태 수신 ===');
+            console.log('수신된 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                // 새로운 독립 타이머 시스템 지원
+                if (data.startTime && data.pausedTime !== undefined) {
+                    timerState.startTime = data.startTime;
+                    timerState.pausedTime = data.pausedTime;
+                    timerState.isRunning = data.isRunning || false;
+                } else {
+                    // 기존 방식 호환성 지원
+                    timerState.currentSeconds = data.currentSeconds || 0;
+                    timerState.isRunning = data.isRunning || false;
+                    timerState.lastServerTime = data.currentSeconds || 0;
+                    timerState.lastUpdateTime = data.lastUpdateTime || Date.now();
+                }
+                
+                if (timerState.isRunning) {
+                    startLocalTimer();
+                } else {
+                    updateTimerDisplay();
+                }
+                
+                console.log('타이머 상태 초기화 완료:', data);
+            }
+        });
+
+        socket.on('timer_update', (data) => {
+            console.log('=== 타이머 업데이트 수신 ===');
+            console.log('수신된 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                // 새로운 독립 타이머 시스템 지원
+                if (data.startTime && data.pausedTime !== undefined) {
+                    timerState.startTime = data.startTime;
+                    timerState.pausedTime = data.pausedTime;
+                    timerState.isRunning = data.isRunning || false;
+                } else {
+                    // 기존 방식 호환성 지원
+                    timerState.currentSeconds = data.currentSeconds || 0;
+                    timerState.isRunning = data.isRunning || false;
+                    timerState.lastServerTime = data.currentSeconds || 0;
+                    timerState.lastUpdateTime = data.lastUpdateTime || Date.now();
+                }
+                
+                updateTimerDisplay();
+                
+                if (timerState.isRunning && !timerState.localTimer) {
+                    startLocalTimer();
+                } else if (!timerState.isRunning && timerState.localTimer) {
+                    stopLocalTimer();
+                }
+                
+                console.log('타이머 업데이트 완료:', data);
+            }
+        });
+
+        socket.on('timer_updated', (data) => {
+            console.log('=== 타이머 업데이트 이벤트 수신 ===');
+            console.log('수신된 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                // 새로운 독립 타이머 시스템 지원
+                if (data.startTime && data.pausedTime !== undefined) {
+                    timerState.startTime = data.startTime;
+                    timerState.pausedTime = data.pausedTime;
+                    timerState.isRunning = data.isRunning || false;
+                } else {
+                    // 기존 방식 호환성 지원
+                    timerState.currentSeconds = data.currentSeconds || 0;
+                    timerState.isRunning = data.isRunning || false;
+                    timerState.lastServerTime = data.currentSeconds || 0;
+                    timerState.lastUpdateTime = data.lastUpdateTime || Date.now();
+                }
+                
+                updateTimerDisplay();
+                
+                if (timerState.isRunning && !timerState.localTimer) {
+                    startLocalTimer();
+                } else if (!timerState.isRunning && timerState.localTimer) {
+                    stopLocalTimer();
+                }
+                
+                console.log('타이머 업데이트 완료:', data);
+            }
+        });
+
+        // 새로운 독립 타이머 이벤트 처리 (추가 지원)
         socket.on('timer_started', (data) => {
             console.log('=== 타이머 시작 이벤트 수신 ===');
             console.log('수신된 데이터:', data);
@@ -346,26 +437,6 @@
                 stopLocalTimer();
                 updateTimerDisplay();
                 console.log('타이머 설정 완료:', data);
-            }
-        });
-
-        // 기존 타이머 상태 요청 (초기화용)
-        socket.on('timer_state', (data) => {
-            console.log('=== 타이머 상태 수신 ===');
-            console.log('수신된 데이터:', data);
-            
-            if (data.matchId === matchId) {
-                timerState.startTime = data.startTime || Date.now();
-                timerState.pausedTime = data.pausedTime || 0;
-                timerState.isRunning = data.isRunning || false;
-                
-                if (timerState.isRunning) {
-                    startLocalTimer();
-                } else {
-                    updateTimerDisplay();
-                }
-                
-                console.log('타이머 상태 초기화 완료:', data);
             }
         });
 
@@ -470,7 +541,7 @@
             });
         });
 
-        // 로컬 타이머
+        // 로컬 타이머 (호환성 지원)
         function startLocalTimer() {
             if (timerState.localTimer) {
                 clearInterval(timerState.localTimer);
@@ -479,10 +550,17 @@
             
             timerState.localTimer = setInterval(() => {
                 if (timerState.isRunning) {
-                    // 시작 시간 기준으로 현재 시간 계산
-                    const currentTime = Date.now();
-                    const elapsedTime = Math.floor((currentTime - timerState.startTime) / 1000);
-                    timerState.currentSeconds = timerState.pausedTime + elapsedTime;
+                    // 새로운 독립 타이머 시스템 지원
+                    if (timerState.startTime && timerState.pausedTime !== undefined) {
+                        const currentTime = Date.now();
+                        const elapsedTime = Math.floor((currentTime - timerState.startTime) / 1000);
+                        timerState.currentSeconds = timerState.pausedTime + elapsedTime;
+                    } else {
+                        // 기존 방식 호환성 지원
+                        const currentTime = Date.now();
+                        const timeDiff = Math.floor((currentTime - timerState.lastUpdateTime) / 1000);
+                        timerState.currentSeconds = timerState.lastServerTime + timeDiff;
+                    }
                     updateTimerDisplay();
                 }
             }, 1000);

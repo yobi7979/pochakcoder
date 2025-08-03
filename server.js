@@ -443,8 +443,18 @@ function startMatchTimer(matchId) {
         lastUpdateTime: Date.now()
     });
     
-    // 해당 경기 방에만 타이머 시작 이벤트 전송
+    // 새로운 독립 타이머 이벤트 전송
     io.to(`match_${matchId}`).emit('timer_started', timerData);
+    
+    // 기존 방식 호환성을 위한 이벤트도 전송
+    io.to(`match_${matchId}`).emit('timer_updated', {
+        matchId: matchId,
+        currentSeconds: timerData.pausedTime,
+        isRunning: true,
+        minute: Math.floor(timerData.pausedTime / 60),
+        second: timerData.pausedTime % 60,
+        lastUpdateTime: Date.now()
+    });
     
     logger.info(`타이머 시작 완료: matchId=${matchId}, startTime=${timerData.startTime}, pausedTime=${timerData.pausedTime}, isRunning=${timerData.isRunning}`);
 }
@@ -468,10 +478,20 @@ function stopMatchTimer(matchId) {
             lastUpdateTime: Date.now()
         });
         
-        // 해당 경기 방에만 타이머 정지 이벤트 전송
-        io.to(`match_${matchId}`).emit('timer_stopped', timerData);
-        
-        logger.info(`타이머 정지: matchId=${matchId}, pausedTime=${timerData.pausedTime}`);
+            // 새로운 독립 타이머 이벤트 전송
+    io.to(`match_${matchId}`).emit('timer_stopped', timerData);
+    
+    // 기존 방식 호환성을 위한 이벤트도 전송
+    io.to(`match_${matchId}`).emit('timer_updated', {
+        matchId: matchId,
+        currentSeconds: timerData.pausedTime,
+        isRunning: false,
+        minute: Math.floor(timerData.pausedTime / 60),
+        second: timerData.pausedTime % 60,
+        lastUpdateTime: Date.now()
+    });
+    
+    logger.info(`타이머 정지: matchId=${matchId}, pausedTime=${timerData.pausedTime}`);
     }
 }
 
@@ -1566,15 +1586,12 @@ io.on('connection', (socket) => {
                 };
                 
                 // 서버 측 타이머 설정 (현재 시간으로 설정)
-                let timer = matchTimers.get(matchId);
+                let timer = matchTimerData.get(matchId);
                 if (!timer) {
                     setMatchTimer(matchId, minutes, seconds);
-                    timer = matchTimers.get(matchId);
+                    timer = matchTimerData.get(matchId);
                 }
-                if (timer) {
-                    timer.currentSeconds = minutes * 60 + seconds;
-                    matchLastUpdateTime.set(matchId, Date.now());
-                }
+                // 기존 방식 호환성은 새로운 타이머 데이터에서 관리됨
             } else if (action === 'start') {
                 matchData.isRunning = true;
                 // 현재 타이머 값을 유지하면서 시작
@@ -1590,16 +1607,12 @@ io.on('connection', (socket) => {
                 };
                 
                 // 서버 측 타이머 시작 (현재 시간으로 설정)
-                let timer = matchTimers.get(matchId);
+                let timer = matchTimerData.get(matchId);
                 if (!timer) {
                     startMatchTimer(matchId);
-                    timer = matchTimers.get(matchId);
+                    timer = matchTimerData.get(matchId);
                 }
-                if (timer) {
-                    timer.currentSeconds = currentSeconds;
-                    timer.isRunning = true;
-                    matchLastUpdateTime.set(matchId, Date.now());
-                }
+                // 기존 방식 호환성은 새로운 타이머 데이터에서 관리됨
             } else if (action === 'stop') {
                 matchData.isRunning = false;
                 // 클라이언트에서 전송된 현재 시간을 사용
@@ -1618,16 +1631,8 @@ io.on('connection', (socket) => {
                 };
                 
                 // 서버 측 타이머 정지 (현재 시간으로 설정)
-                let timer = matchTimers.get(matchId);
-                if (timer) {
-                    timer.currentSeconds = currentSeconds;
-                    timer.isRunning = false;
-                    if (timer.interval) {
-                        clearInterval(timer.interval);
-                        timer.interval = null;
-                    }
-                    matchLastUpdateTime.set(matchId, Date.now());
-                }
+                let timer = matchTimerData.get(matchId);
+                // 기존 방식 호환성은 새로운 타이머 데이터에서 관리됨
             } else if (action === 'reset') {
                 matchData.isRunning = false;
                 matchData.currentSeconds = 0;
@@ -1810,35 +1815,7 @@ io.on('connection', (socket) => {
 
 
 
-    // 타이머 상태 요청 이벤트 처리
-    socket.on('request_timer_state', async (data) => {
-        try {
-            const { matchId } = data;
-            logger.info(`타이머 상태 요청: matchId=${matchId}`);
-            
-            const match = await Match.findByPk(matchId);
-            if (!match) {
-                throw new Error('경기를 찾을 수 없습니다.');
-            }
-            
-            const matchData = match.match_data || {};
-            const timerState = {
-                matchId: matchId,
-                currentSeconds: matchData.currentSeconds || matchData.timer || 0,
-                minute: matchData.minute || Math.floor((matchData.currentSeconds || matchData.timer || 0) / 60),
-                second: matchData.second || ((matchData.currentSeconds || matchData.timer || 0) % 60),
-                isRunning: matchData.isRunning || false,
-                lastUpdateTime: Date.now()
-            };
-            
-            // 요청한 클라이언트에게 타이머 상태 전송 (중복 방지)
-            socket.emit('timer_state', timerState);
-            logger.info(`타이머 상태 전송 완료: matchId=${matchId}, currentSeconds=${timerState.currentSeconds}, isRunning=${timerState.isRunning}`);
-        } catch (error) {
-            logger.error('request_timer_state 이벤트 처리 중 오류 발생:', error);
-            socket.emit('timer_state', { error: error.message });
-        }
-    });
+    // 중복된 타이머 상태 요청 핸들러 제거됨 (1467라인의 새로운 독립 타이머 시스템 사용)
 
     // match_update 이벤트 처리
     socket.on('match_update', async (data) => {
@@ -1902,7 +1879,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 타이머 제어 이벤트 처리
+    // 타이머 제어 이벤트 처리 (호환성 지원)
     socket.on('timer_control', async (data) => {
         try {
             const { matchId, action, minutes, seconds, currentTime } = data;
@@ -1936,19 +1913,66 @@ io.on('connection', (socket) => {
                     lastUpdateTime: Date.now()
                 });
                 
-                // 해당 경기 방에만 타이머 설정 이벤트 전송
+                // 새로운 독립 타이머 이벤트 전송
                 io.to(`match_${matchId}`).emit('timer_set', timerData);
+                
+                // 기존 방식 호환성을 위한 이벤트도 전송
+                io.to(`match_${matchId}`).emit('timer_updated', {
+                    matchId: matchId,
+                    currentSeconds: targetTime,
+                    isRunning: false,
+                    minute: Math.floor(targetTime / 60),
+                    second: targetTime % 60,
+                    lastUpdateTime: Date.now()
+                });
                 
                 logger.info(`타이머 설정 완료: matchId=${matchId}, minutes=${minutes}, seconds=${seconds}`);
                 
             } else if (action === 'start') {
                 startMatchTimer(matchId);
                 
+                // 기존 방식 호환성을 위한 이벤트도 전송
+                const timerData = matchTimerData.get(matchId);
+                if (timerData) {
+                    io.to(`match_${matchId}`).emit('timer_updated', {
+                        matchId: matchId,
+                        currentSeconds: timerData.pausedTime,
+                        isRunning: true,
+                        minute: Math.floor(timerData.pausedTime / 60),
+                        second: timerData.pausedTime % 60,
+                        lastUpdateTime: Date.now()
+                    });
+                }
+                
             } else if (action === 'stop') {
                 stopMatchTimer(matchId);
                 
+                // 기존 방식 호환성을 위한 이벤트도 전송
+                const timerData = matchTimerData.get(matchId);
+                if (timerData) {
+                    const currentSeconds = timerData.pausedTime;
+                    io.to(`match_${matchId}`).emit('timer_updated', {
+                        matchId: matchId,
+                        currentSeconds: currentSeconds,
+                        isRunning: false,
+                        minute: Math.floor(currentSeconds / 60),
+                        second: currentSeconds % 60,
+                        lastUpdateTime: Date.now()
+                    });
+                }
+                
             } else if (action === 'reset') {
                 resetMatchTimer(matchId);
+                
+                // 기존 방식 호환성을 위한 이벤트도 전송
+                io.to(`match_${matchId}`).emit('timer_updated', {
+                    matchId: matchId,
+                    currentSeconds: 0,
+                    isRunning: false,
+                    minute: 0,
+                    second: 0,
+                    lastUpdateTime: Date.now()
+                });
             }
             
         } catch (error) {
@@ -4213,7 +4237,7 @@ const performanceMetrics = {
 // 성능 메트릭 업데이트 함수
 function updatePerformanceMetrics() {
     try {
-        performanceMetrics.activeMatches = matchTimers.size;
+        performanceMetrics.activeMatches = matchTimerData.size;
         performanceMetrics.activeConnections = io.engine.clientsCount;
         performanceMetrics.memoryUsage = process.memoryUsage();
         performanceMetrics.lastUpdate = Date.now();
