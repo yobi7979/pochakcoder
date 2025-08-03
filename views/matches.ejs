@@ -280,6 +280,30 @@
     <div class="match-list">
         <%- include('partials/header', { title: '경기 목록' }) %>
         
+        <!-- CSV 다운로드 섹션 -->
+        <div class="card mb-3">
+            <div class="card-header bg-success text-white">
+                <i class="bi bi-download"></i> 경기 데이터 내보내기
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <p class="mb-0 text-muted" style="font-size: 14px;">
+                            모든 경기의 점수 데이터를 CSV 파일로 다운로드할 수 있습니다.
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <button class="btn btn-success me-2" onclick="downloadScoreCSV()">
+                            <i class="bi bi-download"></i> 전체 점수 CSV
+                        </button>
+                        <button class="btn btn-info" onclick="downloadScoreCSVByLists()">
+                            <i class="bi bi-download"></i> 구장별 점수 CSV
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- 직접 경기 ID로 삭제하는 폼 추가 -->
         <div class="card mb-3">
             <div class="card-header bg-danger text-white">
@@ -302,14 +326,14 @@
             </div>
         </div>
 
-        <!-- 검색 필터링 및 CSV 다운로드 추가 -->
+        <!-- 검색 필터링 추가 -->
         <div class="card mb-3">
             <div class="card-header bg-primary text-white">
-                경기 검색 필터링 및 데이터 내보내기
+                경기 검색 필터링
             </div>
             <div class="card-body">
                 <div class="row align-items-center">
-                    <div class="col-md-7">
+                    <div class="col-md-9">
                         <div class="input-group">
                             <span class="input-group-text">
                                 <i class="bi bi-search"></i>
@@ -322,14 +346,6 @@
                     </div>
                     <div class="col-md-3 text-end">
                         <span id="match-count" class="text-muted" style="font-size: 12px;">총 <span id="filtered-count">0</span>개 / <span id="total-count">0</span>개 표시</span>
-                    </div>
-                    <div class="col-md-4 text-end">
-                        <button class="btn btn-success me-2" onclick="downloadScoreCSV()">
-                            <i class="bi bi-download"></i> 전체 점수 CSV
-                        </button>
-                        <button class="btn btn-info" onclick="downloadScoreCSVByLists()">
-                            <i class="bi bi-download"></i> 구장별 점수 CSV
-                        </button>
                     </div>
                 </div>
             </div>

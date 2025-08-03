@@ -147,6 +147,10 @@ const MatchList = sequelize.define('MatchList', {
     type: DataTypes.JSON,
     defaultValue: []
   },
+  custom_url: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   created_by: {
     type: DataTypes.STRING,
     allowNull: true

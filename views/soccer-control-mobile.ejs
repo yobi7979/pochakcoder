@@ -113,7 +113,7 @@
                 <div style="font-weight:700; font-size:1.1rem; margin-bottom: 5px;" id="home-team-display">
                     <%= match.home_team || 'HOME' %>
                 </div>
-                <button class="btn btn-sm btn-outline-primary" onclick="openTeamNameModal('home', '<%= match.home_team || 'HOME' %>')">
+                <button class="btn btn-sm btn-outline-primary" onclick="openTeamNameModal('home')">
                     <i class="bi bi-pencil"></i> 수정
                 </button>
             </div>
@@ -121,7 +121,7 @@
                 <div style="font-weight:700; font-size:1.1rem; margin-bottom: 5px;" id="away-team-display">
                     <%= match.away_team || 'AWAY' %>
                 </div>
-                <button class="btn btn-sm btn-outline-primary" onclick="openTeamNameModal('away', '<%= match.away_team || 'AWAY' %>')">
+                <button class="btn btn-sm btn-outline-primary" onclick="openTeamNameModal('away')">
                     <i class="bi bi-pencil"></i> 수정
                 </button>
             </div>
@@ -603,7 +603,11 @@
         });
 
         // 팀명 수정 모달 열기
-        function openTeamNameModal(team, currentName) {
+        function openTeamNameModal(team) {
+            // 현재 화면에 표시된 팀명을 가져오기
+            const teamDisplay = document.getElementById(`${team}-team-display`);
+            const currentName = teamDisplay ? teamDisplay.textContent.trim() : '';
+            
             document.getElementById('modal-team-name').value = currentName;
             document.getElementById('teamNameModal').setAttribute('data-team', team);
             new bootstrap.Modal(document.getElementById('teamNameModal')).show();
@@ -766,6 +770,7 @@
         });
         
         <% if (typeof listId !== 'undefined' && listId) { %>
+        // EJS 템플릿 변수 할당
         currentMatchIndex = <%- currentMatchIndex || 0 %>;
         totalMatches = <%- totalMatches || 0 %>;
         listId = '<%- listId %>';

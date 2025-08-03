@@ -69,6 +69,23 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- 커스텀 URL 설정 -->
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <small class="text-muted">커스텀 오버레이 URL:</small>
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control" id="customUrlInput" placeholder="예: my-stadium-1" maxlength="50">
+                                <button class="btn btn-outline-success btn-sm" onclick="setCustomUrl()">설정</button>
+                                <button class="btn btn-outline-danger btn-sm" onclick="deleteCustomUrl()">삭제</button>
+                            </div>
+                            <div class="input-group input-group-sm mt-1">
+                                <input type="text" class="form-control" id="customOverlayUrl" readonly>
+                                <button class="btn btn-outline-primary btn-sm" onclick="copyToClipboard('customOverlayUrl')">복사</button>
+                            </div>
+                            <small class="text-muted">영문, 숫자, 하이픈(-), 언더스코어(_)만 사용 가능</small>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body" id="matchListBody">
                     <div class="text-muted">리스트를 선택하면 경기가 표시됩니다.</div>
@@ -323,6 +340,16 @@ async function renderMatchList() {
         const baseUrl = window.location.origin;
         document.getElementById('overlayUrl').value = `${baseUrl}/unified/${list.id}/overlay`;
         document.getElementById('mobileControlUrl').value = `${baseUrl}/list/${list.id}/control-mobile`;
+        
+        // 커스텀 URL 정보 표시
+        if (list.custom_url) {
+            document.getElementById('customUrlInput').value = list.custom_url;
+            document.getElementById('customOverlayUrl').value = `${baseUrl}/overlay/${list.custom_url}`;
+        } else {
+            document.getElementById('customUrlInput').value = '';
+            document.getElementById('customOverlayUrl').value = '';
+        }
+        
         urlInfo.style.display = 'block';
     } else {
         urlInfo.style.display = 'none';
@@ -561,6 +588,77 @@ async function addMatchToList(matchId) {
 }
 
 
+
+// 커스텀 URL 설정
+async function setCustomUrl() {
+    const customUrl = document.getElementById('customUrlInput').value.trim();
+    
+    if (!customUrl) {
+        alert('커스텀 URL을 입력해주세요.');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/list/${selectedListId}/custom-url`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ customUrl: customUrl })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('커스텀 URL이 설정되었습니다.');
+            
+            // 현재 리스트 정보 업데이트
+            const list = allLists.find(l => l.id === selectedListId);
+            if (list) {
+                list.custom_url = customUrl;
+            }
+            
+            // URL 정보 다시 렌더링
+            await renderMatchList();
+        } else {
+            alert('커스텀 URL 설정 실패: ' + result.error);
+        }
+    } catch (error) {
+        console.error('커스텀 URL 설정 오류:', error);
+        alert('커스텀 URL 설정 중 오류가 발생했습니다.');
+    }
+}
+
+// 커스텀 URL 삭제
+async function deleteCustomUrl() {
+    if (!confirm('커스텀 URL을 삭제하시겠습니까?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/list/${selectedListId}/custom-url`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('커스텀 URL이 삭제되었습니다.');
+            
+            // 현재 리스트 정보 업데이트
+            const list = allLists.find(l => l.id === selectedListId);
+            if (list) {
+                list.custom_url = null;
+            }
+            
+            // URL 정보 다시 렌더링
+            await renderMatchList();
+        } else {
+            alert('커스텀 URL 삭제 실패: ' + result.error);
+        }
+    } catch (error) {
+        console.error('커스텀 URL 삭제 오류:', error);
+        alert('커스텀 URL 삭제 중 오류가 발생했습니다.');
+    }
+}
 
 // URL 복사 함수
 function copyToClipboard(elementId) {

@@ -3443,6 +3443,76 @@ app.get('/api/pushed-match/:listId', (req, res) => {
   }
 });
 
+// 커스텀 URL 통합 오버레이 페이지
+app.get('/overlay/:customUrl', async (req, res) => {
+  try {
+    const { customUrl } = req.params;
+    
+    console.log(`[DEBUG] 커스텀 URL 통합 오버레이 요청: customUrl=${customUrl}`);
+    
+    const list = await MatchList.findOne({ where: { custom_url: customUrl } });
+    
+    if (!list) {
+      console.log(`[DEBUG] 커스텀 URL로 리스트를 찾을 수 없음: ${customUrl}`);
+      return res.status(404).send('리스트를 찾을 수 없습니다.');
+    }
+    
+    console.log(`[DEBUG] 커스텀 URL로 리스트 찾음: ${list.name}, ID: ${list.id}`);
+    
+    // 기존 로직과 동일하게 처리
+    if (!list.matches || list.matches.length === 0) {
+      console.log(`[DEBUG] 리스트에 등록된 경기가 없음`);
+      return res.status(404).send('리스트에 등록된 경기가 없습니다.');
+    }
+    
+    // 첫 번째 경기를 기본으로 사용 (푸시 시 변경됨)
+    const currentMatch = list.matches[0];
+    console.log(`[DEBUG] 기본 경기 정보:`, currentMatch);
+    
+    // 데이터베이스에서 실제 경기 정보 가져오기
+    const actualMatch = await Match.findByPk(currentMatch.id);
+    if (!actualMatch) {
+      console.log(`[DEBUG] 데이터베이스에서 경기를 찾을 수 없음: ${currentMatch.id}`);
+      return res.status(404).send('경기를 찾을 수 없습니다.');
+    }
+    
+    // 실제 경기 데이터 사용 (최신 정보 포함)
+    const matchData = actualMatch.match_data || {};
+    const match = {
+      id: actualMatch.id,
+      sport_type: actualMatch.sport_type || 'soccer',
+      home_team: actualMatch.home_team || 'HOME',
+      away_team: actualMatch.away_team || 'AWAY',
+      home_score: actualMatch.home_score || matchData.home_score || 0,
+      away_score: actualMatch.away_score || matchData.away_score || 0,
+      home_team_color: actualMatch.home_team_color || '#1e40af',
+      away_team_color: actualMatch.away_team_color || '#1e40af',
+      match_data: {
+        state: matchData.state || '전반',
+        timer: matchData.timer || 0,
+        isRunning: matchData.isRunning || false,
+        ...matchData  // 모든 match_data 정보 포함
+      }
+    };
+    
+    console.log(`[DEBUG] 커스텀 URL 통합 오버레이 경기 데이터 생성: ${match.id}, sport_type: ${match.sport_type}`);
+    
+    res.render('unified-overlay', { 
+      matchId: match.id,
+      sport_type: match.sport_type,
+      listId: list.id,
+      listName: list.name,
+      currentMatchIndex: 0,
+      totalMatches: list.matches.length,
+      isListMode: true
+    });
+  } catch (error) {
+    console.error('[DEBUG] 커스텀 URL 통합 오버레이 로드 실패:', error);
+    logger.error('커스텀 URL 통합 오버레이 로드 실패:', error);
+    res.status(500).send('서버 오류가 발생했습니다.');
+  }
+});
+
 // 통합 오버레이 페이지 (통합 컨트롤 패널에서 푸시한 경기용)
 app.get('/unified/:listId/overlay', async (req, res) => {
   try {
@@ -3509,6 +3579,108 @@ app.get('/unified/:listId/overlay', async (req, res) => {
     console.error('[DEBUG] 통합 오버레이 로드 실패:', error);
     logger.error('통합 오버레이 로드 실패:', error);
     res.status(500).send('서버 오류가 발생했습니다.');
+  }
+});
+
+// 커스텀 URL 설정 API
+app.post('/api/list/:id/custom-url', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { customUrl } = req.body;
+    
+    if (!customUrl || customUrl.trim() === '') {
+      return res.status(400).json({ 
+        success: false, 
+        error: '커스텀 URL을 입력해주세요.' 
+      });
+    }
+    
+    // URL 형식 검증 (영문, 숫자, 하이픈, 언더스코어만 허용)
+    const urlPattern = /^[a-zA-Z0-9_-]+$/;
+    if (!urlPattern.test(customUrl)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: '커스텀 URL은 영문, 숫자, 하이픈(-), 언더스코어(_)만 사용할 수 있습니다.' 
+      });
+    }
+    
+    // 중복 URL 확인 (자기 자신 제외)
+    const existingList = await MatchList.findOne({ where: { custom_url: customUrl } });
+    if (existingList && existingList.id != id) {
+      return res.status(400).json({ 
+        success: false, 
+        error: '이미 사용 중인 커스텀 URL입니다.' 
+      });
+    }
+    
+    // 자기 자신의 기존 URL과 동일한 경우는 허용
+    if (existingList && existingList.id == id) {
+      return res.json({ 
+        success: true, 
+        message: '커스텀 URL이 이미 설정되어 있습니다.',
+        customUrl: customUrl,
+        overlayUrl: `/overlay/${customUrl}`
+      });
+    }
+    
+    const list = await MatchList.findByPk(id);
+    if (!list) {
+      return res.status(404).json({ 
+        success: false, 
+        error: '리스트를 찾을 수 없습니다.' 
+      });
+    }
+    
+    // 커스텀 URL 업데이트
+    list.custom_url = customUrl;
+    await list.save();
+    
+    logger.info(`커스텀 URL 설정 완료: listId=${id}, customUrl=${customUrl}`);
+    
+    res.json({ 
+      success: true, 
+      message: '커스텀 URL이 설정되었습니다.',
+      customUrl: customUrl,
+      overlayUrl: `/overlay/${customUrl}`
+    });
+  } catch (error) {
+    logger.error('커스텀 URL 설정 실패:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: '서버 오류가 발생했습니다.' 
+    });
+  }
+});
+
+// 커스텀 URL 삭제 API
+app.delete('/api/list/:id/custom-url', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const list = await MatchList.findByPk(id);
+    if (!list) {
+      return res.status(404).json({ 
+        success: false, 
+        error: '리스트를 찾을 수 없습니다.' 
+      });
+    }
+    
+    // 커스텀 URL 삭제
+    list.custom_url = null;
+    await list.save();
+    
+    logger.info(`커스텀 URL 삭제 완료: listId=${id}`);
+    
+    res.json({ 
+      success: true, 
+      message: '커스텀 URL이 삭제되었습니다.' 
+    });
+  } catch (error) {
+    logger.error('커스텀 URL 삭제 실패:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: '서버 오류가 발생했습니다.' 
+    });
   }
 });
 
