@@ -486,7 +486,6 @@ async function restoreMatchTimers() {
                 }
             }
         }
-        }
         logger.info('타이머 상태 복원 완료');
     } catch (error) {
         logger.error('타이머 복원 중 오류 발생:', error);
