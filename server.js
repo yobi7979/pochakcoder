@@ -529,6 +529,16 @@ function resetMatchTimer(matchId) {
 function setMatchTimer(matchId, minutes, seconds) {
     const targetTime = (minutes * 60) + seconds;
     
+    // 기존 타이머가 실행 중이었다면 정지
+    const existingTimer = matchTimerData.get(matchId);
+    if (existingTimer && existingTimer.isRunning) {
+        const currentTime = Date.now();
+        const elapsedTime = Math.floor((currentTime - existingTimer.startTime) / 1000);
+        existingTimer.pausedTime = elapsedTime;
+        existingTimer.isRunning = false;
+        matchTimerData.set(matchId, existingTimer);
+    }
+    
     const timerData = {
         startTime: 0, // 설정 시에는 startTime을 0으로 설정하여 정확한 시간에서 시작
         pausedTime: targetTime,
@@ -1593,12 +1603,7 @@ io.on('connection', (socket) => {
                 };
                 
                 // 서버 측 타이머 설정 (현재 시간으로 설정)
-                let timer = matchTimerData.get(matchId);
-                if (!timer) {
-                    setMatchTimer(matchId, minutes, seconds);
-                    timer = matchTimerData.get(matchId);
-                }
-                // 기존 방식 호환성은 새로운 타이머 데이터에서 관리됨
+                setMatchTimer(matchId, minutes, seconds);
             } else if (action === 'start') {
                 matchData.isRunning = true;
                 // 현재 타이머 값을 유지하면서 시작
