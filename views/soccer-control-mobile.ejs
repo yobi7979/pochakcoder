@@ -464,9 +464,11 @@
                 timerState.startTime = data.startTime;
                 timerState.pausedTime = data.pausedTime;
                 timerState.isRunning = false;
+                timerState.currentSeconds = 0; // 명시적으로 0으로 설정
+                timerState.lastServerTime = 0; // 서버 시간도 0으로 설정
                 stopLocalTimer();
                 updateTimerDisplay();
-                console.log('타이머 리셋 완료:', data);
+                console.log('타이머 리셋 완료 - 00:00으로 변경됨:', data);
             }
         });
 
