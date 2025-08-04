@@ -1631,8 +1631,7 @@ io.on('connection', (socket) => {
                 };
                 
                 // 서버 측 타이머 정지 (현재 시간으로 설정)
-                let timer = matchTimerData.get(matchId);
-                // 기존 방식 호환성은 새로운 타이머 데이터에서 관리됨
+                stopMatchTimer(matchId);
             } else if (action === 'reset') {
                 matchData.isRunning = false;
                 matchData.currentSeconds = 0;
