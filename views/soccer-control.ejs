@@ -1377,6 +1377,7 @@
             console.log('수신된 데이터:', data);
             
             if (data.matchId === matchId) {
+                // 리셋은 0값을 무시하지 않고 정상적으로 처리
                 timerState.startTime = data.startTime;
                 timerState.pausedTime = data.pausedTime;
                 timerState.isRunning = false;

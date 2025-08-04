@@ -1241,6 +1241,93 @@
             });
         }
 
+        // 리셋 전용 핸들러 (0값 무시하지 않음)
+        function handleTimerReset(data) {
+            console.log('=== 타이머 리셋 수신 ===');
+            console.log('수신된 데이터:', data);
+            console.log('현재 matchId:', matchId);
+            console.log('수신된 matchId:', data.matchId);
+            
+            // 현재 표시 중인 경기의 타이머만 처리
+            if (data.matchId !== matchId) {
+                console.log('다른 경기의 타이머 상태이므로 무시:', data.matchId);
+                return;
+            }
+            
+            console.log('현재 경기의 타이머 리셋');
+            
+            let currentSeconds = 0;
+            let serverIsRunning = false;
+            
+            // 새로운 독립 타이머 시스템 지원
+            if (data.startTime && data.pausedTime !== undefined) {
+                timerState.startTime = data.startTime;
+                timerState.pausedTime = data.pausedTime;
+                timerState.isRunning = data.isRunning || false;
+                serverIsRunning = timerState.isRunning;
+                
+                if (timerState.isRunning) {
+                    const clientTime = Date.now();
+                    const elapsedTime = Math.floor((clientTime - timerState.startTime) / 1000);
+                    currentSeconds = timerState.pausedTime + elapsedTime;
+                } else {
+                    currentSeconds = timerState.pausedTime;
+                }
+                
+                console.log('새로운 타이머 시스템 리셋:', {
+                    startTime: timerState.startTime,
+                    pausedTime: timerState.pausedTime,
+                    isRunning: timerState.isRunning,
+                    currentSeconds
+                });
+                
+            } else {
+                // 기존 방식 호환성 지원
+                const serverTime = data.currentSeconds || data.timer || 0;
+                serverIsRunning = data.isRunning || false;
+                const serverUpdateTime = data.lastUpdateTime || Date.now();
+                
+                // 현재 클라이언트 시간과 서버 시간의 차이 계산
+                const clientTime = Date.now();
+                const timeDiff = Math.floor((clientTime - serverUpdateTime) / 1000);
+                
+                // 서버 시간을 기준으로 현재 시간 계산 (네트워크 지연 보정)
+                currentSeconds = Math.max(0, serverTime + (serverIsRunning ? timeDiff : 0));
+                
+                // 로컬 타이머 변수 업데이트
+                timerState.lastServerTime = serverTime;
+                timerState.lastUpdateTime = serverUpdateTime;
+                timerState.isRunning = serverIsRunning;
+                
+                console.log('기존 타이머 시스템 리셋:', {
+                    serverTime,
+                    serverIsRunning,
+                    timeDiff,
+                    currentSeconds
+                });
+            }
+            
+            timerState.currentSeconds = Math.max(0, currentSeconds);
+            
+            // UI 업데이트
+            timerState.currentSeconds = currentSeconds;
+            updateTimerDisplay();
+            
+            // 타이머 실행 상태에 따라 로컬 타이머 제어
+            if (serverIsRunning && !timerState.localTimer) {
+                console.log('타이머 실행 중 - 로컬 타이머 시작');
+                startLocalTimer();
+            } else if (!serverIsRunning && timerState.localTimer) {
+                console.log('타이머 정지 상태 - 로컬 타이머 중지');
+                stopLocalTimer();
+            }
+            
+            console.log('타이머 리셋 완료:', { 
+                currentSeconds, 
+                serverIsRunning
+            });
+        }
+
         // 모든 타이머 이벤트를 하나의 핸들러로 통합 (호환성 지원)
         socket.on('timer_state', handleTimerUpdate);
         socket.on('timer_update', handleTimerUpdate);
@@ -1249,8 +1336,10 @@
         // 새로운 독립 타이머 이벤트 지원
         socket.on('timer_started', handleTimerUpdate);
         socket.on('timer_stopped', handleTimerUpdate);
-        socket.on('timer_reset', handleTimerUpdate);
         socket.on('timer_set', handleTimerUpdate);
+        
+        // 리셋 이벤트는 별도 처리 (0값 무시하지 않음)
+        socket.on('timer_reset', handleTimerReset);
 
         // 경기 상태 표시 설정 변경 이벤트 처리
         socket.on('soccer_match_state_visibility_changed', function(data) {
