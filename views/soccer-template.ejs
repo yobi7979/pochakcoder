@@ -1155,6 +1155,15 @@
             
             // 새로운 독립 타이머 시스템 지원
             if (data.startTime && data.pausedTime !== undefined) {
+                // 0값 무시 로직: 현재 타이머가 0이 아닌데 서버에서 0을 받으면 무시
+                if (timerState.currentSeconds > 0 && data.pausedTime === 0) {
+                    console.log('현재 타이머가 0이 아닌데 서버에서 0을 받음 - 무시:', {
+                        currentTimer: timerState.currentSeconds,
+                        serverPausedTime: data.pausedTime
+                    });
+                    return;
+                }
+                
                 timerState.startTime = data.startTime;
                 timerState.pausedTime = data.pausedTime;
                 timerState.isRunning = data.isRunning || false;
@@ -1178,6 +1187,16 @@
             } else {
                 // 기존 방식 호환성 지원
                 const serverTime = data.currentSeconds || data.timer || 0;
+                
+                // 0값 무시 로직: 현재 타이머가 0이 아닌데 서버에서 0을 받으면 무시
+                if (timerState.currentSeconds > 0 && serverTime === 0) {
+                    console.log('현재 타이머가 0이 아닌데 서버에서 0을 받음 - 무시:', {
+                        currentTimer: timerState.currentSeconds,
+                        serverTime: serverTime
+                    });
+                    return;
+                }
+                
                 serverIsRunning = data.isRunning || false;
                 const serverUpdateTime = data.lastUpdateTime || Date.now();
                 

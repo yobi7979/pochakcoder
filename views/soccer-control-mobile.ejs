@@ -314,6 +314,16 @@
             console.log('수신된 데이터:', data);
             
             if (data.matchId === matchId) {
+                // 0값 무시 로직: 현재 타이머가 0이 아닌데 서버에서 0을 받으면 무시
+                const serverTime = data.currentSeconds || data.timer || 0;
+                if (timerState.currentSeconds > 0 && serverTime === 0) {
+                    console.log('현재 타이머가 0이 아닌데 서버에서 0을 받음 - 무시:', {
+                        currentTimer: timerState.currentSeconds,
+                        serverTime: serverTime
+                    });
+                    return;
+                }
+                
                 // 새로운 독립 타이머 시스템 지원
                 if (data.startTime && data.pausedTime !== undefined) {
                     timerState.startTime = data.startTime;
@@ -342,6 +352,16 @@
             console.log('수신된 데이터:', data);
             
             if (data.matchId === matchId) {
+                // 0값 무시 로직: 현재 타이머가 0이 아닌데 서버에서 0을 받으면 무시
+                const serverTime = data.currentSeconds || data.timer || 0;
+                if (timerState.currentSeconds > 0 && serverTime === 0) {
+                    console.log('현재 타이머가 0이 아닌데 서버에서 0을 받음 - 무시:', {
+                        currentTimer: timerState.currentSeconds,
+                        serverTime: serverTime
+                    });
+                    return;
+                }
+                
                 // 새로운 독립 타이머 시스템 지원
                 if (data.startTime && data.pausedTime !== undefined) {
                     timerState.startTime = data.startTime;
@@ -372,6 +392,16 @@
             console.log('수신된 데이터:', data);
             
             if (data.matchId === matchId) {
+                // 0값 무시 로직: 현재 타이머가 0이 아닌데 서버에서 0을 받으면 무시
+                const serverTime = data.currentSeconds || data.timer || 0;
+                if (timerState.currentSeconds > 0 && serverTime === 0) {
+                    console.log('현재 타이머가 0이 아닌데 서버에서 0을 받음 - 무시:', {
+                        currentTimer: timerState.currentSeconds,
+                        serverTime: serverTime
+                    });
+                    return;
+                }
+                
                 // 새로운 독립 타이머 시스템 지원
                 if (data.startTime && data.pausedTime !== undefined) {
                     timerState.startTime = data.startTime;
