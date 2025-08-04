@@ -453,16 +453,6 @@ function startMatchTimer(matchId) {
     // 새로운 독립 타이머 이벤트 전송
     io.to(`match_${matchId}`).emit('timer_started', timerData);
     
-    // 기존 방식 호환성을 위한 이벤트도 전송
-    io.to(`match_${matchId}`).emit('timer_updated', {
-        matchId: matchId,
-        currentSeconds: timerData.pausedTime,
-        isRunning: true,
-        minute: Math.floor(timerData.pausedTime / 60),
-        second: timerData.pausedTime % 60,
-        lastUpdateTime: Date.now()
-    });
-    
     logger.info(`타이머 시작 완료: matchId=${matchId}, startTime=${timerData.startTime}, pausedTime=${timerData.pausedTime}, isRunning=${timerData.isRunning}`);
 }
 
@@ -487,16 +477,6 @@ function stopMatchTimer(matchId) {
         
             // 새로운 독립 타이머 이벤트 전송
     io.to(`match_${matchId}`).emit('timer_stopped', timerData);
-    
-    // 기존 방식 호환성을 위한 이벤트도 전송
-    io.to(`match_${matchId}`).emit('timer_updated', {
-        matchId: matchId,
-        currentSeconds: timerData.pausedTime,
-        isRunning: false,
-        minute: Math.floor(timerData.pausedTime / 60),
-        second: timerData.pausedTime % 60,
-        lastUpdateTime: Date.now()
-    });
     
     logger.info(`타이머 정지: matchId=${matchId}, pausedTime=${timerData.pausedTime}`);
     }
