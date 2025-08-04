@@ -456,13 +456,23 @@ function startMatchTimer(matchId) {
     logger.info(`타이머 시작 완료: matchId=${matchId}, startTime=${timerData.startTime}, pausedTime=${timerData.pausedTime}, isRunning=${timerData.isRunning}`);
 }
 
-function stopMatchTimer(matchId) {
+function stopMatchTimer(matchId, clientTime = null) {
     const timerData = matchTimerData.get(matchId);
     if (timerData && timerData.isRunning) {
-        // 현재 경과 시간 계산
-        const currentTime = Date.now();
-        const elapsedTime = Math.floor((currentTime - timerData.startTime) / 1000);
-        timerData.pausedTime = elapsedTime;
+        // 클라이언트에서 전송한 시간을 우선 사용, 없으면 서버에서 계산
+        let pausedTime;
+        if (clientTime !== null) {
+            pausedTime = clientTime;
+            logger.info(`클라이언트 시간 사용: matchId=${matchId}, clientTime=${clientTime}`);
+        } else {
+            // 현재 경과 시간 계산
+            const currentTime = Date.now();
+            const elapsedTime = Math.floor((currentTime - timerData.startTime) / 1000);
+            pausedTime = elapsedTime;
+            logger.info(`서버 시간 계산: matchId=${matchId}, elapsedTime=${elapsedTime}`);
+        }
+        
+        timerData.pausedTime = pausedTime;
         timerData.isRunning = false;
         
         matchTimerData.set(matchId, timerData);
@@ -475,10 +485,10 @@ function stopMatchTimer(matchId) {
             lastUpdateTime: Date.now()
         });
         
-            // 새로운 독립 타이머 이벤트 전송
-    io.to(`match_${matchId}`).emit('timer_stopped', timerData);
-    
-    logger.info(`타이머 정지: matchId=${matchId}, pausedTime=${timerData.pausedTime}`);
+        // 새로운 독립 타이머 이벤트 전송
+        io.to(`match_${matchId}`).emit('timer_stopped', timerData);
+        
+        logger.info(`타이머 정지: matchId=${matchId}, pausedTime=${timerData.pausedTime}`);
     }
 }
 
@@ -1622,8 +1632,8 @@ io.on('connection', (socket) => {
                     second: currentSeconds % 60
                 };
                 
-                // 서버 측 타이머 정지 (현재 시간으로 설정)
-                stopMatchTimer(matchId);
+                // 서버 측 타이머 정지 (클라이언트 시간 사용)
+                stopMatchTimer(matchId, currentSeconds);
             } else if (action === 'reset') {
                 matchData.isRunning = false;
                 matchData.currentSeconds = 0;
