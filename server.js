@@ -426,11 +426,18 @@ function startMatchTimer(matchId) {
         logger.info(`새 타이머 데이터 생성: matchId=${matchId}`);
     } else {
         // 기존 타이머 데이터 업데이트
+        if (timerData.isRunning) {
+            // 이미 실행 중이면 아무것도 하지 않음
+            logger.info(`타이머가 이미 실행 중: matchId=${matchId}`);
+            return;
+        }
+        
         const oldStartTime = timerData.startTime;
         const oldPausedTime = timerData.pausedTime;
         timerData.startTime = Date.now();  // 현재 시간을 시작 시간으로 설정
         timerData.isRunning = true;
-        logger.info(`기존 타이머 데이터 업데이트: matchId=${matchId}, oldStartTime=${oldStartTime}, oldPausedTime=${oldPausedTime}, newStartTime=${timerData.startTime}`);
+        // pausedTime은 그대로 유지 (현재 시간에서 계속 시작)
+        logger.info(`기존 타이머 데이터 업데이트: matchId=${matchId}, oldStartTime=${oldStartTime}, oldPausedTime=${oldPausedTime}, newStartTime=${timerData.startTime}, pausedTime=${timerData.pausedTime}`);
     }
     
     matchTimerData.set(matchId, timerData);
