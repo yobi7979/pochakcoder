@@ -1504,6 +1504,12 @@
             // 분과 초 추출
             const [minutes, seconds] = timeValue.split(':').map(Number);
             
+            // 0 또는 0000 입력 제한
+            if (minutes === 0 && seconds === 0) {
+                alert('0 또는 00:00은 입력할 수 없습니다. 최소 00:01 이상의 시간을 입력해주세요.');
+                return;
+            }
+            
             // 유효성 검사
             if (minutes > 90 || seconds > 59) {
                 alert('올바른 시간 범위를 입력해주세요. (분: 0-90, 초: 0-59)');
