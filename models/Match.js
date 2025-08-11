@@ -39,6 +39,7 @@ Match.init({
         }
     },
 
+
 }, {
     sequelize,
     modelName: 'Match',

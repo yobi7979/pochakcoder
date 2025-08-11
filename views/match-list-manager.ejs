@@ -426,6 +426,7 @@ async function renderMatchList() {
 
             <div class="btn-group">
             <button class="btn btn-outline-primary btn-sm" onclick="goControl('${m.sport_type}','${m.id}')">컨트롤</button>
+            <button class="btn btn-outline-info btn-sm" onclick="goIntegratedOverlay('${list.id}','${idx}')">통합URL</button>
             <button class="btn btn-outline-success btn-sm" onclick="goOverlay('${m.sport_type}','${m.id}')">오버레이</button>
             <button class="btn btn-outline-danger btn-sm" onclick="removeMatch(${idx})">삭제</button>
             <button class="btn btn-outline-secondary btn-sm" onclick="moveMatch(${idx},-1)">↑</button>
@@ -526,6 +527,12 @@ function goControl(sport, id) {
 // 오버레이 페이지로 이동
 function goOverlay(sport, id) {
     window.open(`/${sport}/${String(id).padStart(6, '0')}/overlay`, '_blank');
+}
+
+// 통합 컨트롤 페이지로 이동
+function goIntegratedOverlay(listId, matchIndex) {
+    // 통합 컨트롤 페이지의 해당 경기 페이지로 이동
+    window.open(`/list/${listId}/control-mobile?index=${matchIndex}`, '_blank');
 }
 
 // 경기 추가 모달

@@ -79,11 +79,30 @@
             });
         }
         
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             console.log('=== 통합 오버레이 페이지 로드 ===');
             console.log('matchId:', matchId);
             console.log('listId:', listId);
             console.log('isListMode:', isListMode);
+            
+            // 페이지 로드 시 마지막 푸시된 경기 정보 확인
+            if (isListMode && listId) {
+                try {
+                    const response = await fetch(`/api/pushed-match/${listId}`);
+                    const result = await response.json();
+                    
+                    if (result.success && result.data && result.data.matchId) {
+                        // 푸시된 경기가 있으면 해당 경기로 업데이트
+                        matchId = result.data.matchId;
+                        console.log('마지막 푸시된 경기로 업데이트:', matchId);
+                        
+                        // 필요한 경우 sportType도 업데이트 (서버에서 전달받은 정보 사용)
+                        // sportType은 서버에서 이미 올바르게 설정되어 있으므로 그대로 사용
+                    }
+                } catch (error) {
+                    console.error('마지막 푸시된 경기 정보 로드 실패:', error);
+                }
+            }
             
             // 소켓 연결 설정
             setupSocketConnection();

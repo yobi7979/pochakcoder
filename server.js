@@ -603,6 +603,51 @@ app.get('/matches', async (req, res) => {
   }
 });
 
+// 탭만 보는 페이지
+app.get('/match-tabs', async (req, res) => {
+  try {
+    const matches = await Match.findAll({
+      order: [['created_at', 'DESC']]
+    });
+    
+    // 모든 리스트 정보 가져오기
+    const matchLists = await MatchList.findAll();
+    
+    // 각 매치가 어떤 리스트에 속하는지 확인
+    const matchesWithListInfo = matches.map(match => {
+      const matchData = match.toJSON();
+      const listInfo = [];
+      
+      matchLists.forEach(list => {
+        if (list.matches && Array.isArray(list.matches)) {
+          const isInList = list.matches.some(listMatch => listMatch.id === match.id);
+          if (isInList) {
+            listInfo.push({
+              id: list.id,
+              name: list.name,
+              custom_url: list.custom_url
+            });
+          }
+        }
+      });
+      
+      return {
+        ...matchData,
+        listInfo: listInfo,
+        listIds: listInfo.map(list => list.id.toString()) // 문자열로 변환된 ID 배열 추가
+      };
+    });
+    
+    logger.info('탭 전용 페이지 조회:', matchesWithListInfo.length, '개 매치');
+    res.render('match-tabs-only', { matches: matchesWithListInfo });
+  } catch (error) {
+    logger.error('탭 전용 페이지 조회 실패:', error);
+    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+  }
+});
+
+
+
 // 경기 생성 페이지
 app.get('/matches/new', async (req, res) => {
   try {
@@ -2844,6 +2889,7 @@ app.get('/api/matches', async (req, res) => {
         away_score: matchData.away_score,
         status: matchData.status,
         match_data: matchData.match_data,
+
         created_at: matchData.created_at,
         updated_at: matchData.updated_at,
 
@@ -3513,9 +3559,23 @@ app.get('/overlay/:customUrl', async (req, res) => {
       return res.status(404).send('리스트에 등록된 경기가 없습니다.');
     }
     
-    // 첫 번째 경기를 기본으로 사용 (푸시 시 변경됨)
-    const currentMatch = list.matches[0];
-    console.log(`[DEBUG] 기본 경기 정보:`, currentMatch);
+    // 마지막 푸시된 경기 정보 확인 후 사용
+    let currentMatch = list.matches[0];
+    let currentMatchIndex = 0;
+    
+    // 마지막 푸시된 경기 정보 확인
+    const pushedMatch = pushedMatches.get(list.id);
+    if (pushedMatch && pushedMatch.matchId) {
+        // 푸시된 경기가 리스트에 있는지 확인
+        const pushedMatchInList = list.matches.find(match => match.id === pushedMatch.matchId);
+        if (pushedMatchInList) {
+            currentMatch = pushedMatchInList;
+            currentMatchIndex = list.matches.findIndex(match => match.id === pushedMatch.matchId);
+            console.log(`[DEBUG] 마지막 푸시된 경기 사용: ${pushedMatch.matchId}, 인덱스: ${currentMatchIndex}`);
+        }
+    }
+    
+    console.log(`[DEBUG] 선택된 경기 정보:`, currentMatch);
     
     // 데이터베이스에서 실제 경기 정보 가져오기
     const actualMatch = await Match.findByPk(currentMatch.id);
@@ -3550,7 +3610,7 @@ app.get('/overlay/:customUrl', async (req, res) => {
       sport_type: match.sport_type,
       listId: list.id,
       listName: list.name,
-      currentMatchIndex: 0,
+      currentMatchIndex: currentMatchIndex,
       totalMatches: list.matches.length,
       isListMode: true
     });
@@ -3582,9 +3642,23 @@ app.get('/unified/:listId/overlay', async (req, res) => {
       return res.status(404).send('리스트에 등록된 경기가 없습니다.');
     }
     
-    // 첫 번째 경기를 기본으로 사용 (푸시 시 변경됨)
-    const currentMatch = list.matches[0];
-    console.log(`[DEBUG] 기본 경기 정보:`, currentMatch);
+    // 마지막 푸시된 경기 정보 확인 후 사용
+    let currentMatch = list.matches[0];
+    let currentMatchIndex = 0;
+    
+    // 마지막 푸시된 경기 정보 확인
+    const pushedMatch = pushedMatches.get(listId);
+    if (pushedMatch && pushedMatch.matchId) {
+        // 푸시된 경기가 리스트에 있는지 확인
+        const pushedMatchInList = list.matches.find(match => match.id === pushedMatch.matchId);
+        if (pushedMatchInList) {
+            currentMatch = pushedMatchInList;
+            currentMatchIndex = list.matches.findIndex(match => match.id === pushedMatch.matchId);
+            console.log(`[DEBUG] 마지막 푸시된 경기 사용: ${pushedMatch.matchId}, 인덱스: ${currentMatchIndex}`);
+        }
+    }
+    
+    console.log(`[DEBUG] 선택된 경기 정보:`, currentMatch);
     
     // 데이터베이스에서 실제 경기 정보 가져오기
     const actualMatch = await Match.findByPk(currentMatch.id);
@@ -3619,7 +3693,7 @@ app.get('/unified/:listId/overlay', async (req, res) => {
       sport_type: match.sport_type,
       listId: listId,
       listName: list.name,
-      currentMatchIndex: 0,
+      currentMatchIndex: currentMatchIndex,
       totalMatches: list.matches.length,
       isListMode: true
     });
