@@ -732,8 +732,8 @@ app.post('/api/match', async (req, res) => {
       url
     });
 
-    // 타이머 초기화
-    startMatchTimer(match.id);
+    // 타이머 초기화 (자동 시작하지 않음)
+    // startMatchTimer(match.id); // 자동 타이머 시작 제거
 
     // 모든 종목에 대해 컨트롤러와 오버레이 URL 생성
     const overlay_url = `/${sport_type.toLowerCase()}/${match.id}/overlay`;
