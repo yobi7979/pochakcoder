@@ -89,6 +89,10 @@ const Template = sequelize.define('Template', {
     type: DataTypes.TEXT,
     allowNull: false
   },
+  file_name: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   is_default: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
@@ -104,6 +108,118 @@ const Template = sequelize.define('Template', {
   tableName: 'templates',
   underscored: true
 });
+
+// Sport 모델 정의
+const Sport = sequelize.define('Sport', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  code: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true
+  },
+  template: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  is_active: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  is_default: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  }
+}, {
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  tableName: 'Sports'
+});
+
+// SportOverlayImage 모델 정의
+const SportOverlayImage = sequelize.define('SportOverlayImage', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  sport_code: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  filename: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  file_path: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  is_active: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  upload_time: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
+  }
+}, {
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  tableName: 'SportOverlayImages'
+});
+
+// Sport와 SportOverlayImage 간의 관계 설정
+Sport.hasMany(SportOverlayImage, { foreignKey: 'sport_code', sourceKey: 'code' });
+SportOverlayImage.belongsTo(Sport, { foreignKey: 'sport_code', targetKey: 'code' });
+
+// SportActiveOverlayImage 모델 정의 (종목별 현재 사용 중인 이미지)
+const SportActiveOverlayImage = sequelize.define('SportActiveOverlayImage', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  sport_code: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true
+  },
+  active_image_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+  active_image_path: {
+    type: DataTypes.STRING,
+    allowNull: true
+  }
+}, {
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  tableName: 'SportActiveOverlayImages'
+});
+
+// Sport와 SportActiveOverlayImage 간의 관계 설정
+Sport.hasOne(SportActiveOverlayImage, { foreignKey: 'sport_code', sourceKey: 'code' });
+SportActiveOverlayImage.belongsTo(Sport, { foreignKey: 'sport_code', targetKey: 'code' });
+
+// SportOverlayImage와 SportActiveOverlayImage 간의 관계 설정
+SportOverlayImage.hasOne(SportActiveOverlayImage, { foreignKey: 'active_image_id', sourceKey: 'id' });
+SportActiveOverlayImage.belongsTo(SportOverlayImage, { foreignKey: 'active_image_id', targetKey: 'id' });
 
 // Settings 모델 정의
 const Settings = sequelize.define('Settings', {
@@ -246,6 +362,9 @@ module.exports = {
   sequelize,
   Match,
   Template,
+  Sport,
+  SportOverlayImage,
+  SportActiveOverlayImage,
   Settings,
   MatchList,
   Op

@@ -45,6 +45,7 @@
                                 <th>템플릿 이름</th>
                                 <th>템플릿 파일</th>
                                 <th>컨트롤 파일</th>
+                                <th>모바일 컨트롤 파일</th>
                                 <th>상태</th>
                                 <th>작업</th>
                             </tr>
@@ -71,9 +72,23 @@
                         <div class="mb-3">
                             <label for="templateName" class="form-label">템플릿 이름</label>
                             <input type="text" class="form-control" id="templateName" required
-                                   pattern="[a-zA-Z0-9-_]+"
                                    title="영문자, 숫자, 하이픈(-), 언더스코어(_)만 사용 가능합니다">
                             <div class="form-text">영문자, 숫자, 하이픈(-), 언더스코어(_)만 사용 가능합니다</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="baseTemplate" class="form-label">기본 템플릿 선택</label>
+                            <select class="form-select" id="baseTemplate" required>
+                                <option value="">기본 템플릿을 선택하세요</option>
+                            </select>
+                            <div class="form-text">새 템플릿을 만들 때 복사할 기본 템플릿을 선택하세요</div>
+                        </div>
+                        <div class="mb-3" id="templatePreview" style="display: none;">
+                            <label class="form-label">선택된 템플릿 미리보기</label>
+                            <div class="border rounded p-3 bg-light">
+                                <div id="previewContent">
+                                    <!-- 미리보기 내용이 여기에 표시됩니다 -->
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -119,6 +134,7 @@
                         <td>${template.name}</td>
                         <td>${template.templateFile}</td>
                         <td>${template.controlFile}</td>
+                        <td>${template.controlMobileFile}</td>
                         <td>
                             <span class="badge ${template.isDefault ? 'bg-primary' : 'bg-success'}">
                                 ${template.isDefault ? '기본' : '사용자 정의'}
@@ -139,12 +155,105 @@
             }
         }
 
+        // 기본 템플릿 목록 로드
+        async function loadBaseTemplates() {
+            try {
+                const response = await fetch('/api/base-templates');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const select = document.getElementById('baseTemplate');
+                    select.innerHTML = '<option value="">기본 템플릿을 선택하세요</option>';
+                    
+                    // 기본 템플릿과 등록된 템플릿을 구분하여 표시
+                    const baseTemplates = result.templates.filter(t => t.type === 'base');
+                    const registeredTemplates = result.templates.filter(t => t.type === 'registered');
+                    
+                    // 기본 템플릿 그룹
+                    if (baseTemplates.length > 0) {
+                        const baseGroup = document.createElement('optgroup');
+                        baseGroup.label = '기본 템플릿';
+                        baseTemplates.forEach(template => {
+                            const option = document.createElement('option');
+                            option.value = template.name;
+                            option.textContent = template.displayName;
+                            baseGroup.appendChild(option);
+                        });
+                        select.appendChild(baseGroup);
+                    }
+                    
+                    // 등록된 템플릿 그룹
+                    if (registeredTemplates.length > 0) {
+                        const registeredGroup = document.createElement('optgroup');
+                        registeredGroup.label = '등록된 템플릿';
+                        registeredTemplates.forEach(template => {
+                            const option = document.createElement('option');
+                            option.value = template.name;
+                            option.textContent = template.displayName;
+                            registeredGroup.appendChild(option);
+                        });
+                        select.appendChild(registeredGroup);
+                    }
+                }
+            } catch (error) {
+                console.error('기본 템플릿 목록 로드 중 오류:', error);
+            }
+        }
+
+        // 기본 템플릿 미리보기 로드
+        async function loadTemplatePreview(templateName) {
+            if (!templateName) {
+                document.getElementById('templatePreview').style.display = 'none';
+                return;
+            }
+            
+            try {
+                // 먼저 .html 확장자로 시도
+                let response = await fetch(`/api/base-template/${templateName}-template.html`);
+                let result = await response.json();
+                
+                // .html이 없으면 .ejs 확장자로 시도
+                if (!result.success) {
+                    response = await fetch(`/api/base-template/${templateName}-template.ejs`);
+                    result = await response.json();
+                }
+                
+                if (result.success) {
+                    const previewDiv = document.getElementById('previewContent');
+                    // HTML 내용을 안전하게 표시 (첫 200자만)
+                    const previewText = result.content.substring(0, 200) + (result.content.length > 200 ? '...' : '');
+                    previewDiv.innerHTML = `<pre class="mb-0"><code>${previewText}</code></pre>`;
+                    document.getElementById('templatePreview').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('템플릿 미리보기 로드 중 오류:', error);
+            }
+        }
+
+        // 기본 템플릿 선택 이벤트
+        document.getElementById('baseTemplate').addEventListener('change', function() {
+            loadTemplatePreview(this.value);
+        });
+
         // 새 템플릿 생성
         document.getElementById('createTemplateBtn').addEventListener('click', async () => {
             const name = document.getElementById('templateName').value.trim();
+            const baseTemplate = document.getElementById('baseTemplate').value;
             
             if (!name) {
                 alert('템플릿 이름을 입력해주세요.');
+                return;
+            }
+            
+            if (!baseTemplate) {
+                alert('기본 템플릿을 선택해주세요.');
+                return;
+            }
+            
+            // 템플릿 이름 유효성 검사
+            const namePattern = /^[a-zA-Z0-9_-]+$/;
+            if (!namePattern.test(name)) {
+                alert('템플릿 이름은 영문자, 숫자, 하이픈(-), 언더스코어(_)만 사용 가능합니다.');
                 return;
             }
             
@@ -154,7 +263,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ name })
+                    body: JSON.stringify({ name, baseTemplate })
                 });
                 
                 if (!response.ok) {
@@ -165,6 +274,10 @@
                 // 모달 닫기
                 const modal = bootstrap.Modal.getInstance(document.getElementById('newTemplateModal'));
                 modal.hide();
+                
+                // 폼 초기화
+                document.getElementById('newTemplateForm').reset();
+                document.getElementById('templatePreview').style.display = 'none';
                 
                 // 목록 새로고침
                 loadTemplates();
@@ -215,8 +328,11 @@
             }
         });
 
-        // 페이지 로드 시 템플릿 목록 로드
-        document.addEventListener('DOMContentLoaded', loadTemplates);
+        // 페이지 로드 시 템플릿 목록과 기본 템플릿 목록 로드
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTemplates();
+            loadBaseTemplates();
+        });
     </script>
 </body>
 </html> 

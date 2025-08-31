@@ -23,6 +23,10 @@ const Template = sequelize.define('Template', {
     type: DataTypes.TEXT,
     allowNull: false
   },
+  file_name: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   is_default: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
@@ -33,6 +37,8 @@ const Template = sequelize.define('Template', {
   }
 }, {
   timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
   tableName: 'templates'
 });
 

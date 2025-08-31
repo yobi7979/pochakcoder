@@ -33,9 +33,7 @@ const Sport = sequelize.define('Sport', {
     defaultValue: false
   }
 }, {
-  timestamps: true,
-  createdAt: 'created_at',
-  updatedAt: 'updated_at',
+  timestamps: false,
   tableName: 'Sports'
 });
 

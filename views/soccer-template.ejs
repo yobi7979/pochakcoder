@@ -908,7 +908,7 @@
         // 오버레이 이미지 로드 함수
         async function loadOverlayImage() {
             try {
-                const response = await fetch('/api/overlay-images');
+                const response = await fetch('/api/overlay-images/SOCCER');
                 const result = await response.json();
                 
                 const overlayImageContainer = document.getElementById('overlayImage');

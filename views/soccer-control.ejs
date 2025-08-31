@@ -1286,6 +1286,7 @@
                     timerState.startTime = data.startTime;
                     timerState.pausedTime = data.pausedTime;
                     timerState.isRunning = data.isRunning || false;
+                    timerState.currentSeconds = data.pausedTime; // ✅ 정지된 시간을 currentSeconds로 설정
                 } else {
                     // 기존 방식 호환성 지원
                     timerState.currentSeconds = Math.max(0, data.currentSeconds || 0);
@@ -1324,6 +1325,7 @@
                     timerState.startTime = data.startTime;
                     timerState.pausedTime = data.pausedTime;
                     timerState.isRunning = data.isRunning || false;
+                    timerState.currentSeconds = data.pausedTime; // ✅ 정지된 시간을 currentSeconds로 설정
                 } else {
                     // 기존 방식 호환성 지원
                     timerState.currentSeconds = Math.max(0, data.currentSeconds || 0);
@@ -1366,6 +1368,7 @@
                 timerState.startTime = data.startTime;
                 timerState.pausedTime = data.pausedTime;
                 timerState.isRunning = false;
+                timerState.currentSeconds = data.pausedTime; // ✅ 정지된 시간을 currentSeconds로 설정
                 stopLocalTimer();
                 updateTimerDisplay();
                 console.log('타이머 정지 완료:', data);

@@ -91,11 +91,20 @@
                                     <td><%= sport.description || '' %></td>
                                     <td><%= sport.is_active ? '활성' : '비활성' %></td>
                                     <td>
-                                        <% if (!sport.is_default) { %>
-                                            <button class="btn btn-sm btn-danger" onclick="deleteSport('<%= sport.code %>')">
-                                                <i class="bi bi-trash"></i>
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="editSport('<%= sport.code %>', '<%= sport.name %>', '<%= sport.code %>', '<%= sport.template %>', '<%= sport.description || '' %>')" title="수정">
+                                                <i class="bi bi-pencil"></i>
                                             </button>
-                                        <% } %>
+                                            <% if (!sport.is_default) { %>
+                                                <button class="btn btn-sm btn-outline-danger" onclick="deleteSport('<%= sport.code %>')" title="삭제">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            <% } else { %>
+                                                <button class="btn btn-sm btn-outline-secondary" disabled title="기본 종목은 삭제할 수 없습니다">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            <% } %>
+                                        </div>
                                     </td>
                                 </tr>
                             <% }); %>
@@ -146,6 +155,47 @@
         </div>
     </div>
 
+    <!-- 종목 수정 모달 -->
+    <div class="modal fade" id="editSportModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">종목 수정</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editSportForm">
+                        <input type="hidden" id="editSportId">
+                        <div class="mb-3">
+                            <label for="editSportName" class="form-label">종목명</label>
+                            <input type="text" class="form-control" id="editSportName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editSportCode" class="form-label">코드</label>
+                            <input type="text" class="form-control" id="editSportCode" required
+                                   pattern="[A-Z]+" title="대문자 영문자만 사용 가능합니다">
+                            <div class="form-text">대문자 영문자만 사용 가능합니다</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editSportTemplate" class="form-label">템플릿</label>
+                            <select class="form-select" id="editSportTemplate" required>
+                                <option value="">템플릿 선택</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editSportDescription" class="form-label">설명</label>
+                            <textarea class="form-control" id="editSportDescription" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" id="updateSportBtn">수정</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // 템플릿 목록 로드
@@ -161,20 +211,28 @@
                         <option value="${template.name}">${template.name}</option>
                     `).join('');
                 
-                // 각 종목의 템플릿 선택 옵션 업데이트 (기본 종목 제외)
-                document.querySelectorAll('.template-select').forEach(select => {
-                    const currentTemplate = select.dataset.currentTemplate;
-                    select.innerHTML = '<option value="">템플릿 선택</option>' +
-                        templates.map(template => `
-                            <option value="${template.name}" ${template.name === currentTemplate ? 'selected' : ''}>
-                                ${template.name}
-                            </option>
-                        `).join('');
-                });
+                // 수정 모달의 템플릿 선택 옵션 업데이트
+                const editTemplateSelect = document.getElementById('editSportTemplate');
+                editTemplateSelect.innerHTML = '<option value="">템플릿 선택</option>' +
+                    templates.map(template => `
+                        <option value="${template.name}">${template.name}</option>
+                    `).join('');
             } catch (error) {
                 console.error('템플릿 목록 로드 중 오류:', error);
                 alert('템플릿 목록을 불러오는데 실패했습니다.');
             }
+        }
+
+        // 종목 수정 모달 열기
+        function editSport(code, name, codeValue, template, description) {
+            document.getElementById('editSportId').value = code; // 코드를 ID로 사용
+            document.getElementById('editSportName').value = name;
+            document.getElementById('editSportCode').value = codeValue;
+            document.getElementById('editSportTemplate').value = template;
+            document.getElementById('editSportDescription').value = description;
+            
+            const modal = new bootstrap.Modal(document.getElementById('editSportModal'));
+            modal.show();
         }
 
         // 템플릿 변경 이벤트 처리
@@ -207,6 +265,50 @@
                     alert('템플릿 변경에 실패했습니다: ' + error.message);
                 }
             });
+        });
+
+        // 종목 수정
+        document.getElementById('updateSportBtn').addEventListener('click', async () => {
+            const id = document.getElementById('editSportId').value;
+            const name = document.getElementById('editSportName').value.trim();
+            const code = document.getElementById('editSportCode').value.trim().toUpperCase();
+            const template = document.getElementById('editSportTemplate').value;
+            const description = document.getElementById('editSportDescription').value.trim();
+            
+            if (!name || !code || !template) {
+                alert('필수 항목을 모두 입력해주세요.');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/sport/${code}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name,
+                        code,
+                        template,
+                        description
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error);
+                }
+                
+                // 모달 닫기
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editSportModal'));
+                modal.hide();
+                
+                alert('종목이 성공적으로 수정되었습니다.');
+                location.reload();
+            } catch (error) {
+                console.error('종목 수정 중 오류:', error);
+                alert(error.message || '종목 수정에 실패했습니다.');
+            }
         });
 
         // 새 종목 생성

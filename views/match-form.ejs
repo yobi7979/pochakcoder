@@ -47,7 +47,7 @@
                         <select class="form-select" id="sport_type" name="sport_type" required>
                             <% if (sports && sports.length > 0) { %>
                                 <% sports.forEach(function(sport) { %>
-                                    <option value="<%= sport.code.toLowerCase() %>" <%= sport.code.toLowerCase() === 'soccer' ? 'selected' : '' %>><%= sport.name %></option>
+                                    <option value="<%= sport.template %>" <%= sport.template === 'soccer' ? 'selected' : '' %>><%= sport.name %></option>
                                 <% }); %>
                             <% } else { %>
                                 <option value="soccer" selected>축구</option>

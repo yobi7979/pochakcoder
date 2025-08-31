@@ -6,7 +6,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const morgan = require('morgan');
 const winston = require('winston');
-const { sequelize, Match, Settings, MatchList } = require('./models');
+const { sequelize, Match, Settings, MatchList, SportOverlayImage, SportActiveOverlayImage } = require('./models');
 const multer = require('multer');
 const fs = require('fs').promises;
 const fsSync = require('fs');
@@ -312,6 +312,39 @@ const overlayImageUpload = multer({
     }
 });
 
+// 종목별 오버레이 이미지 업로드를 위한 multer 설정
+const sportOverlayImageUpload = multer({
+    storage: multer.diskStorage({
+        destination: function (req, file, cb) {
+            const sportCode = req.body.sportCode || 'default';
+            const dir = path.join(__dirname, 'public', 'overlay-images', sportCode);
+            if (!fsSync.existsSync(dir)) {
+                fsSync.mkdirSync(dir, { recursive: true });
+            }
+            cb(null, dir);
+        },
+        filename: function (req, file, cb) {
+            // 원본 파일명을 안전하게 처리하고 타임스탬프 추가
+            const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+            const ext = path.extname(originalName);
+            const nameWithoutExt = path.basename(originalName, ext);
+            const timestamp = Date.now();
+            cb(null, `${nameWithoutExt}_${timestamp}${ext}`);
+        }
+    }),
+    limits: {
+        fileSize: 10 * 1024 * 1024 // 10MB
+    },
+    fileFilter: function (req, file, cb) {
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (allowedTypes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('지원하지 않는 파일 형식입니다. JPEG, PNG, GIF, WEBP 파일만 업로드 가능합니다.'));
+        }
+    }
+});
+
 // HEX 색상을 RGB로 변환하는 함수
 function hexToRgb(hex) {
     // # 제거
@@ -360,8 +393,28 @@ app.use(cors());
 app.use(bodyParser.json({ limit: '5mb' }));
 app.use(bodyParser.urlencoded({ limit: '5mb', extended: true }));
 app.use(morgan('dev'));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, path) => {
+    // 한글 파일명을 위한 인코딩 설정
+    if (path.includes('overlay-images')) {
+      res.set('Content-Type', 'image/*');
+    }
+  }
+}));
 app.use('/views', express.static('views'));
+
+// 한글 파일명을 가진 오버레이 이미지 처리
+app.get('/overlay-images/:sportCode/:filename(*)', (req, res) => {
+  const { sportCode, filename } = req.params;
+  const filePath = path.join(__dirname, 'public', 'overlay-images', sportCode, filename);
+  
+  // 파일 존재 여부 확인
+  if (fsSync.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.status(404).send('File not found');
+  }
+});
 
 // 세션 설정
 app.use(session({
@@ -883,33 +936,149 @@ app.post('/api/team-logo', upload.single('logo'), async (req, res) => {
   }
 });
 
-// 오버레이 이미지 업로드 API
-app.post('/api/overlay-image', overlayImageUpload.single('image'), async (req, res) => {
+// 기존 공통 오버레이 이미지 API들은 제거됨 (종목별 이미지로 대체)
+
+// 기본 템플릿 목록 조회 API
+app.get('/api/base-templates', async (req, res) => {
+  try {
+    const templateDir = path.join(__dirname, 'template');
+    const viewsDir = path.join(__dirname, 'views');
+    
+    const templates = [];
+    
+    // 1. template 폴더의 기본 템플릿들
+    if (fsSync.existsSync(templateDir)) {
+      const templateFiles = fsSync.readdirSync(templateDir);
+      const baseTemplates = templateFiles
+        .filter(file => file.endsWith('-template.html'))
+        .map(file => {
+          const name = file.replace('-template.html', '');
+          const displayName = name.charAt(0).toUpperCase() + name.slice(1);
+          return {
+            filename: file,
+            name: name,
+            displayName: displayName,
+            path: `/template/${file}`,
+            type: 'base'
+          };
+        });
+      templates.push(...baseTemplates);
+    }
+    
+    // 2. views 폴더의 기존 등록된 템플릿들 (soccer, baseball만 기본 템플릿으로 인식)
+    if (fsSync.existsSync(viewsDir)) {
+      const viewFiles = fsSync.readdirSync(viewsDir);
+      const registeredTemplates = viewFiles
+        .filter(file => {
+          const name = file.replace('-template.ejs', '');
+          // soccer와 baseball만 기본 템플릿으로 인식
+          return file.endsWith('-template.ejs') && (name === 'soccer' || name === 'baseball');
+        })
+        .map(file => {
+          const name = file.replace('-template.ejs', '');
+          const displayName = name.charAt(0).toUpperCase() + name.slice(1);
+          return {
+            filename: file,
+            name: name,
+            displayName: displayName,
+            path: `/views/${file}`,
+            type: 'registered'
+          };
+        });
+      templates.push(...registeredTemplates);
+    }
+    
+    // 이름순으로 정렬
+    templates.sort((a, b) => a.displayName.localeCompare(b.displayName));
+    
+    res.json({ success: true, templates: templates });
+  } catch (error) {
+    logger.error('기본 템플릿 목록 조회 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 기본 템플릿 내용 조회 API
+app.get('/api/base-template/:filename', async (req, res) => {
+  try {
+    const { filename } = req.params;
+    
+    // template 폴더에서 먼저 찾기
+    let templatePath = path.join(__dirname, 'template', filename);
+    
+    // template 폴더에 없으면 views 폴더에서 찾기
+    if (!fsSync.existsSync(templatePath)) {
+      templatePath = path.join(__dirname, 'views', filename);
+    }
+    
+    if (!fsSync.existsSync(templatePath)) {
+      return res.status(404).json({ success: false, message: '템플릿 파일을 찾을 수 없습니다.' });
+    }
+    
+    const content = fsSync.readFileSync(templatePath, 'utf8');
+    res.json({ success: true, content: content });
+  } catch (error) {
+    logger.error('기본 템플릿 내용 조회 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 종목별 오버레이 이미지 업로드 API
+app.post('/api/sport-overlay-image', sportOverlayImageUpload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: '파일이 없습니다.' });
     }
 
+    const { sportCode } = req.body;
+    if (!sportCode) {
+      return res.status(400).json({ success: false, message: '종목 코드가 필요합니다.' });
+    }
+
+    // 종목이 존재하는지 확인
+    const sport = await Sport.findOne({ where: { code: sportCode } });
+    if (!sport) {
+      return res.status(404).json({ success: false, message: '존재하지 않는 종목입니다.' });
+    }
+
     // 이미지 파일 경로 생성 (public 폴더 기준 상대 경로)
-    const imagePath = `/overlay-images/${req.file.filename}`;
+    const imagePath = `/overlay-images/${sportCode}/${req.file.filename}`;
+    
+    // 데이터베이스에 저장
+    await SportOverlayImage.create({
+      sport_code: sportCode,
+      filename: req.file.filename,
+      file_path: imagePath,
+      is_active: true
+    });
     
     res.json({ 
       success: true, 
       imagePath: imagePath,
       filename: req.file.filename,
-      message: '오버레이 이미지가 성공적으로 업로드되었습니다.'
+      sportCode: sportCode,
+      message: '종목별 오버레이 이미지가 성공적으로 업로드되었습니다.'
     });
     
-    // 모든 축구 오버레이 페이지에 실시간으로 반영하기 위해 소켓 이벤트 발송
-    io.emit('overlay_image_updated', { 
+    // 해당 종목의 오버레이 페이지에 실시간으로 반영하기 위해 소켓 이벤트 발송
+    io.emit('sport_overlay_image_updated', { 
       action: 'uploaded',
+      sportCode: sportCode,
       imagePath: imagePath,
       filename: req.file.filename
     });
     
-    logger.info(`오버레이 이미지 업로드 성공: ${imagePath}`);
+    logger.info(`종목별 오버레이 이미지 업로드 성공: ${sportCode} - ${imagePath}`);
   } catch (error) {
-    logger.error('오버레이 이미지 업로드 오류:', error);
+    logger.error('종목별 오버레이 이미지 업로드 오류:', error);
     res.status(500).json({ 
       success: false, 
       message: '서버 오류가 발생했습니다.',
@@ -918,31 +1087,26 @@ app.post('/api/overlay-image', overlayImageUpload.single('image'), async (req, r
   }
 });
 
-// 오버레이 이미지 목록 조회 API
-app.get('/api/overlay-images', async (req, res) => {
+// 종목별 오버레이 이미지 목록 조회 API
+app.get('/api/sport-overlay-images/:sportCode', async (req, res) => {
   try {
-    const overlayImagesDir = path.join(__dirname, 'public', 'overlay-images');
+    const { sportCode } = req.params;
     
-    if (!fsSync.existsSync(overlayImagesDir)) {
-      return res.json({ success: true, images: [] });
+    // 종목이 존재하는지 확인
+    const sport = await Sport.findOne({ where: { code: sportCode } });
+    if (!sport) {
+      return res.status(404).json({ success: false, message: '존재하지 않는 종목입니다.' });
     }
     
-    const files = fsSync.readdirSync(overlayImagesDir);
-    const images = files
-      .filter(file => {
-        const ext = path.extname(file).toLowerCase();
-        return ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext);
-      })
-      .map(file => ({
-        filename: file,
-        path: `/overlay-images/${file}`,
-        uploadTime: fsSync.statSync(path.join(overlayImagesDir, file)).mtime
-      }))
-      .sort((a, b) => b.uploadTime - a.uploadTime); // 최신순 정렬
+    // 데이터베이스에서 해당 종목의 이미지 목록 조회
+    const images = await SportOverlayImage.findAll({
+      where: { sport_code: sportCode },
+      order: [['upload_time', 'DESC']]
+    });
     
-    res.json({ success: true, images });
+    res.json({ success: true, images, sportName: sport.name });
   } catch (error) {
-    logger.error('오버레이 이미지 목록 조회 오류:', error);
+    logger.error('종목별 오버레이 이미지 목록 조회 오류:', error);
     res.status(500).json({ 
       success: false, 
       message: '서버 오류가 발생했습니다.',
@@ -951,32 +1115,50 @@ app.get('/api/overlay-images', async (req, res) => {
   }
 });
 
-// 오버레이 이미지 삭제 API
-app.delete('/api/overlay-image/:filename', async (req, res) => {
+// 종목별 오버레이 이미지 삭제 API
+app.delete('/api/sport-overlay-image/:sportCode/:filename', async (req, res) => {
   try {
-    const { filename } = req.params;
-    const filePath = path.join(__dirname, 'public', 'overlay-images', filename);
+    const { sportCode, filename } = req.params;
     
-    if (!fsSync.existsSync(filePath)) {
-      return res.status(404).json({ success: false, message: '파일을 찾을 수 없습니다.' });
+    // 종목이 존재하는지 확인
+    const sport = await Sport.findOne({ where: { code: sportCode } });
+    if (!sport) {
+      return res.status(404).json({ success: false, message: '존재하지 않는 종목입니다.' });
     }
     
-    fsSync.unlinkSync(filePath);
+    // 데이터베이스에서 이미지 정보 조회
+    const imageRecord = await SportOverlayImage.findOne({
+      where: { sport_code: sportCode, filename: filename }
+    });
+    
+    if (!imageRecord) {
+      return res.status(404).json({ success: false, message: '이미지를 찾을 수 없습니다.' });
+    }
+    
+    // 파일 삭제
+    const filePath = path.join(__dirname, 'public', 'overlay-images', sportCode, filename);
+    if (fsSync.existsSync(filePath)) {
+      fsSync.unlinkSync(filePath);
+    }
+    
+    // 데이터베이스에서 삭제
+    await imageRecord.destroy();
     
     res.json({ 
       success: true, 
-      message: '이미지가 성공적으로 삭제되었습니다.'
+      message: '종목별 오버레이 이미지가 성공적으로 삭제되었습니다.'
     });
     
-    // 모든 축구 오버레이 페이지에 실시간으로 반영하기 위해 소켓 이벤트 발송
-    io.emit('overlay_image_updated', { 
+    // 해당 종목의 오버레이 페이지에 실시간으로 반영하기 위해 소켓 이벤트 발송
+    io.emit('sport_overlay_image_updated', { 
       action: 'deleted',
+      sportCode: sportCode,
       filename: filename
     });
     
-    logger.info(`오버레이 이미지 삭제 성공: ${filename}`);
+    logger.info(`종목별 오버레이 이미지 삭제 성공: ${sportCode} - ${filename}`);
   } catch (error) {
-    logger.error('오버레이 이미지 삭제 오류:', error);
+    logger.error('종목별 오버레이 이미지 삭제 오류:', error);
     res.status(500).json({ 
       success: false, 
       message: '서버 오류가 발생했습니다.',
@@ -985,7 +1167,326 @@ app.delete('/api/overlay-image/:filename', async (req, res) => {
   }
 });
 
-// 축구 오버레이 디자인 설정 조회 API
+// 종목별 오버레이 이미지 활성화/비활성화 API
+app.put('/api/sport-overlay-image/:sportCode/:filename/status', async (req, res) => {
+  try {
+    const { sportCode, filename } = req.params;
+    const { isActive } = req.body;
+    
+    // 종목이 존재하는지 확인
+    const sport = await Sport.findOne({ where: { code: sportCode } });
+    if (!sport) {
+      return res.status(404).json({ success: false, message: '존재하지 않는 종목입니다.' });
+    }
+    
+    // 데이터베이스에서 이미지 정보 조회 및 업데이트
+    const imageRecord = await SportOverlayImage.findOne({
+      where: { sport_code: sportCode, filename: filename }
+    });
+    
+    if (!imageRecord) {
+      return res.status(404).json({ success: false, message: '이미지를 찾을 수 없습니다.' });
+    }
+    
+    await imageRecord.update({ is_active: isActive });
+    
+    res.json({ 
+      success: true, 
+      message: `이미지가 ${isActive ? '활성화' : '비활성화'}되었습니다.`
+    });
+    
+    logger.info(`종목별 오버레이 이미지 상태 변경: ${sportCode} - ${filename} - ${isActive}`);
+  } catch (error) {
+    logger.error('종목별 오버레이 이미지 상태 변경 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 종목 목록 조회 API
+app.get('/api/sport', async (req, res) => {
+  try {
+    const sports = await Sport.findAll({
+      where: { is_active: true },
+      order: [['id', 'ASC']]
+    });
+    
+    res.json(sports);
+  } catch (error) {
+    logger.error('종목 목록 조회 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 종목별 현재 사용 중인 이미지 조회 API
+app.get('/api/sport-active-overlay-image/:sportCode', async (req, res) => {
+  try {
+    const { sportCode } = req.params;
+    
+    // 종목이 존재하는지 확인
+    const sport = await Sport.findOne({ where: { code: sportCode } });
+    if (!sport) {
+      return res.status(404).json({ success: false, message: '존재하지 않는 종목입니다.' });
+    }
+    
+    // 현재 사용 중인 이미지 정보 조회
+    const activeImage = await SportActiveOverlayImage.findOne({
+      where: { sport_code: sportCode },
+      include: [{
+        model: SportOverlayImage,
+        as: 'SportOverlayImage'
+      }]
+    });
+    
+    res.json({ 
+      success: true, 
+      activeImage: activeImage ? {
+        id: activeImage.active_image_id,
+        path: activeImage.active_image_path,
+        filename: activeImage.SportOverlayImage ? activeImage.SportOverlayImage.filename : null
+      } : null,
+      sportName: sport.name
+    });
+  } catch (error) {
+    logger.error('종목별 현재 사용 중인 이미지 조회 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 종목별 현재 사용 중인 이미지 설정 API
+app.post('/api/sport-active-overlay-image/:sportCode', async (req, res) => {
+  try {
+    const { sportCode } = req.params;
+    const { imageId } = req.body;
+    
+    // 종목이 존재하는지 확인
+    const sport = await Sport.findOne({ where: { code: sportCode } });
+    if (!sport) {
+      return res.status(404).json({ success: false, message: '존재하지 않는 종목입니다.' });
+    }
+    
+    // 이미지가 존재하는지 확인
+    if (imageId) {
+      const image = await SportOverlayImage.findOne({
+        where: { id: imageId, sport_code: sportCode }
+      });
+      if (!image) {
+        return res.status(404).json({ success: false, message: '존재하지 않는 이미지입니다.' });
+      }
+    }
+    
+    // 이미지 정보 가져오기
+    let image = null;
+    if (imageId) {
+      image = await SportOverlayImage.findOne({
+        where: { id: imageId, sport_code: sportCode }
+      });
+      if (!image) {
+        return res.status(404).json({ success: false, message: '존재하지 않는 이미지입니다.' });
+      }
+    }
+    
+    // 현재 사용 중인 이미지 정보 업데이트 또는 생성
+    const [activeImage, created] = await SportActiveOverlayImage.findOrCreate({
+      where: { sport_code: sportCode },
+      defaults: {
+        sport_code: sportCode,
+        active_image_id: imageId,
+        active_image_path: image ? image.file_path : null
+      }
+    });
+    
+    if (!created) {
+      await activeImage.update({
+        active_image_id: imageId,
+        active_image_path: image ? image.file_path : null
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: '현재 사용 중인 이미지가 설정되었습니다.'
+    });
+    
+    // 해당 종목의 오버레이 페이지에 실시간으로 반영하기 위해 소켓 이벤트 발송
+    io.emit('sport_active_overlay_image_updated', { 
+      sportCode: sportCode,
+      imageId: imageId
+    });
+    
+    logger.info(`종목별 현재 사용 중인 이미지 설정: ${sportCode} - ${imageId}`);
+  } catch (error) {
+    logger.error('종목별 현재 사용 중인 이미지 설정 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 종목별 이미지 목록과 현재 사용 중인 이미지 함께 조회 API
+app.get('/api/sport-overlay-images-with-active/:sportCode', async (req, res) => {
+  try {
+    const { sportCode } = req.params;
+    
+    // 종목이 존재하는지 확인
+    const sport = await Sport.findOne({ where: { code: sportCode } });
+    if (!sport) {
+      return res.status(404).json({ success: false, message: '존재하지 않는 종목입니다.' });
+    }
+    
+    // 해당 종목의 모든 이미지 목록 조회
+    const images = await SportOverlayImage.findAll({
+      where: { sport_code: sportCode },
+      order: [['upload_time', 'DESC']]
+    });
+    
+    // 현재 사용 중인 이미지 정보 조회
+    const activeImage = await SportActiveOverlayImage.findOne({
+      where: { sport_code: sportCode }
+    });
+    
+    res.json({ 
+      success: true, 
+      images, 
+      activeImageId: activeImage ? activeImage.active_image_id : null,
+      sportName: sport.name 
+    });
+  } catch (error) {
+    logger.error('종목별 이미지 목록과 현재 사용 중인 이미지 조회 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 오버레이 페이지용 종목별 현재 사용 중인 이미지 조회 API
+app.get('/api/overlay-images/:sportCode', async (req, res) => {
+  try {
+    const { sportCode } = req.params;
+    
+    // 종목이 존재하는지 확인
+    const sport = await Sport.findOne({ where: { code: sportCode } });
+    if (!sport) {
+      return res.status(404).json({ success: false, message: '존재하지 않는 종목입니다.' });
+    }
+    
+    // 현재 사용 중인 이미지 정보 조회
+    const activeImage = await SportActiveOverlayImage.findOne({
+      where: { sport_code: sportCode },
+      include: [{
+        model: SportOverlayImage,
+        as: 'SportOverlayImage'
+      }]
+    });
+    
+    if (activeImage && activeImage.SportOverlayImage) {
+      res.json({ 
+        success: true, 
+        images: [{
+          filename: activeImage.SportOverlayImage.filename,
+          path: activeImage.SportOverlayImage.file_path,
+          uploadTime: activeImage.SportOverlayImage.upload_time
+        }]
+      });
+    } else {
+      // 종목별 이미지가 없으면 기존 공통 이미지 반환
+      const overlayImagesDir = path.join(__dirname, 'public', 'overlay-images');
+      
+      if (!fsSync.existsSync(overlayImagesDir)) {
+        return res.json({ success: true, images: [] });
+      }
+      
+      const files = fsSync.readdirSync(overlayImagesDir);
+      const images = files
+        .filter(file => {
+          const ext = path.extname(file).toLowerCase();
+          return ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext);
+        })
+        .map(file => ({
+          filename: file,
+          path: `/overlay-images/${file}`,
+          uploadTime: fsSync.statSync(path.join(overlayImagesDir, file)).mtime
+        }))
+        .sort((a, b) => b.uploadTime - a.uploadTime); // 최신순 정렬
+      
+      res.json({ success: true, images });
+    }
+  } catch (error) {
+    logger.error('오버레이 페이지용 종목별 이미지 조회 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 종목별 오버레이 디자인 설정 조회 API
+app.get('/api/sport-overlay-design/:sportCode', async (req, res) => {
+  try {
+    const { sportCode } = req.params;
+    
+    const settings = await Settings.findAll();
+    const settingsObj = {};
+    
+    settings.forEach(setting => {
+      settingsObj[setting.key] = setting.value;
+    });
+    
+    // 기본값 정의
+    const defaultDesign = {
+      scoreboard: { top: 140, left: 80 },
+      homeLogo: { top: -120, left: 80 },
+      awayLogo: { top: -120, right: 1420 },
+      matchState: { top: 185, left: 230 },
+      homeLineup: { top: 200, left: 80 },
+      awayLineup: { top: 200, right: 50 },
+      overlayImage: { top: 0, left: 0, width: 1920, height: 1080 },
+      timer: { marginLeft: 8 }
+    };
+    
+    // 종목별 설정 키 생성
+    const sportCodeLower = sportCode.toLowerCase();
+    
+    // 저장된 설정이 있으면 사용, 없으면 기본값 사용
+    const designSettings = {
+      scoreboard: settingsObj[`${sportCodeLower}_scoreboard_position`] ? JSON.parse(settingsObj[`${sportCodeLower}_scoreboard_position`]) : defaultDesign.scoreboard,
+      homeLogo: settingsObj[`${sportCodeLower}_home_logo_position`] ? JSON.parse(settingsObj[`${sportCodeLower}_home_logo_position`]) : defaultDesign.homeLogo,
+      awayLogo: settingsObj[`${sportCodeLower}_away_logo_position`] ? JSON.parse(settingsObj[`${sportCodeLower}_away_logo_position`]) : defaultDesign.awayLogo,
+      matchState: settingsObj[`${sportCodeLower}_match_state_position`] ? JSON.parse(settingsObj[`${sportCodeLower}_match_state_position`]) : defaultDesign.matchState,
+      homeLineup: settingsObj[`${sportCodeLower}_home_lineup_position`] ? JSON.parse(settingsObj[`${sportCodeLower}_home_lineup_position`]) : defaultDesign.homeLineup,
+      awayLineup: settingsObj[`${sportCodeLower}_away_lineup_position`] ? JSON.parse(settingsObj[`${sportCodeLower}_away_lineup_position`]) : defaultDesign.awayLineup,
+      overlayImage: settingsObj[`${sportCodeLower}_overlay_image_position`] ? JSON.parse(settingsObj[`${sportCodeLower}_overlay_image_position`]) : defaultDesign.overlayImage,
+      timer: settingsObj[`${sportCodeLower}_timer_position`] ? JSON.parse(settingsObj[`${sportCodeLower}_timer_position`]) : defaultDesign.timer
+    };
+    
+    res.json({ success: true, design: designSettings, default: defaultDesign });
+  } catch (error) {
+    logger.error(`${sportCode} 오버레이 디자인 설정 조회 오류:`, error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 축구 오버레이 디자인 설정 조회 API (기존 호환성 유지)
 app.get('/api/soccer-overlay-design', async (req, res) => {
   try {
     const settings = await Settings.findAll();
@@ -1030,7 +1531,50 @@ app.get('/api/soccer-overlay-design', async (req, res) => {
   }
 });
 
-// 축구 오버레이 디자인 설정 저장 API
+// 종목별 오버레이 디자인 설정 저장 API
+app.post('/api/sport-overlay-design/:sportCode', async (req, res) => {
+  try {
+    const { sportCode } = req.params;
+    const { design } = req.body;
+    
+    const sportCodeLower = sportCode.toLowerCase();
+    
+    // 각 요소별로 설정 저장
+    const settingsToSave = [
+      { key: `${sportCodeLower}_scoreboard_position`, value: JSON.stringify(design.scoreboard) },
+      { key: `${sportCodeLower}_home_logo_position`, value: JSON.stringify(design.homeLogo) },
+      { key: `${sportCodeLower}_away_logo_position`, value: JSON.stringify(design.awayLogo) },
+      { key: `${sportCodeLower}_match_state_position`, value: JSON.stringify(design.matchState) },
+      { key: `${sportCodeLower}_home_lineup_position`, value: JSON.stringify(design.homeLineup) },
+      { key: `${sportCodeLower}_away_lineup_position`, value: JSON.stringify(design.awayLineup) },
+      { key: `${sportCodeLower}_overlay_image_position`, value: JSON.stringify(design.overlayImage) },
+      { key: `${sportCodeLower}_timer_position`, value: JSON.stringify(design.timer) }
+    ];
+    
+    for (const setting of settingsToSave) {
+      await Settings.upsert({
+        key: setting.key,
+        value: setting.value
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: `${sportCode} 오버레이 디자인 설정이 저장되었습니다.`
+    });
+    
+    logger.info(`${sportCode} 오버레이 디자인 설정 저장 완료`);
+  } catch (error) {
+    logger.error(`${sportCode} 오버레이 디자인 설정 저장 오류:`, error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 축구 오버레이 디자인 설정 저장 API (기존 호환성 유지)
 app.post('/api/soccer-overlay-design', async (req, res) => {
   try {
     const { design } = req.body;
@@ -2619,7 +3163,8 @@ server.listen(PORT, '0.0.0.0', async () => {
   await initializeDefaultSettings();
   
   await restoreMatchTimers();
-  await sequelize.sync({ alter: true });
+  // 데이터베이스 동기화는 이미 수동으로 완료되었으므로 건너뜀
+  // await sequelize.sync({ alter: true });
   
   // 자동 로그 관리 스케줄러 시작
   startLogManagementScheduler();
@@ -2773,6 +3318,168 @@ app.delete('/api/test-template', (req, res) => {
   }
 });
 
+// 템플릿 관리 페이지 렌더링
+app.get('/templates', (req, res) => {
+  res.render('templates');
+});
+
+// 종목 관리 페이지 렌더링
+app.get('/sports', async (req, res) => {
+  try {
+    const sports = await Sport.findAll({
+      order: [['id', 'ASC']]
+    });
+    res.render('sports', { sports, title: '종목 관리' });
+  } catch (error) {
+    logger.error('종목 목록 조회 중 오류:', error);
+    res.status(500).send('종목 목록을 불러오는데 실패했습니다.');
+  }
+});
+
+// 템플릿 생성 API
+app.post('/api/templates', async (req, res) => {
+  try {
+    const { name, baseTemplate } = req.body;
+    
+    if (!name) {
+      return res.status(400).json({ error: '템플릿 이름은 필수입니다.' });
+    }
+
+    // 이름 중복 확인
+    const existingTemplate = await Template.findOne({ where: { name } });
+    if (existingTemplate) {
+      return res.status(400).json({ error: '이미 존재하는 템플릿 이름입니다.' });
+    }
+
+    // 기본 템플릿 파일들을 복사하여 새 템플릿 생성
+    const viewsDir = path.join(__dirname, 'views');
+    const templateDir = path.join(__dirname, 'template');
+    
+    // 기본 템플릿이 지정된 경우 해당 템플릿 사용, 아니면 soccer 기본값 사용
+    const baseTemplateName = baseTemplate || 'soccer';
+    
+    // 기본 템플릿 파일 경로 확인 (template 폴더 또는 views 폴더)
+    let baseTemplateFile = path.join(templateDir, `${baseTemplateName}-template.html`);
+    let baseControlFile = path.join(viewsDir, `${baseTemplateName}-control.ejs`);
+    let baseControlMobileFile = path.join(viewsDir, `${baseTemplateName}-control-mobile.ejs`);
+    
+    // template 폴더에 없으면 views 폴더에서 찾기
+    if (!fsSync.existsSync(baseTemplateFile)) {
+      baseTemplateFile = path.join(viewsDir, `${baseTemplateName}-template.ejs`);
+    }
+    
+    // 등록된 템플릿인 경우 (soccer, baseball 등) views 폴더에서 직접 찾기
+    if (baseTemplateName === 'soccer' || baseTemplateName === 'baseball') {
+      baseTemplateFile = path.join(viewsDir, `${baseTemplateName}-template.ejs`);
+      baseControlFile = path.join(viewsDir, `${baseTemplateName}-control.ejs`);
+      baseControlMobileFile = path.join(viewsDir, `${baseTemplateName}-control-mobile.ejs`);
+    }
+    
+    const newTemplateFile = path.join(viewsDir, `${name}-template.ejs`);
+    const newControlFile = path.join(viewsDir, `${name}-control.ejs`);
+    const newControlMobileFile = path.join(viewsDir, `${name}-control-mobile.ejs`);
+
+    // 기본 파일들이 존재하는지 확인
+    if (!fsSync.existsSync(baseTemplateFile)) {
+      return res.status(500).json({ error: `기본 템플릿 파일을 찾을 수 없습니다: ${baseTemplateName}` });
+    }
+    
+    if (!fsSync.existsSync(baseControlFile)) {
+      return res.status(500).json({ error: `기본 컨트롤 파일을 찾을 수 없습니다: ${baseTemplateName}-control.ejs` });
+    }
+    
+    if (!fsSync.existsSync(baseControlMobileFile)) {
+      return res.status(500).json({ error: `기본 모바일 컨트롤 파일을 찾을 수 없습니다: ${baseTemplateName}-control-mobile.ejs` });
+    }
+
+    // 기본 템플릿 내용을 읽어서 복사
+    let baseTemplateContent = fsSync.readFileSync(baseTemplateFile, 'utf8');
+    let baseControlContent = fsSync.readFileSync(baseControlFile, 'utf8');
+    let baseControlMobileContent = fsSync.readFileSync(baseControlMobileFile, 'utf8');
+    
+    // 종목명 치환 (기본 템플릿의 종목명을 새로운 종목명으로 변경)
+    const baseTemplateNameLower = baseTemplateName.toLowerCase();
+    const baseTemplateNameUpper = baseTemplateName.toUpperCase();
+    const newTemplateNameLower = name.toLowerCase();
+    const newTemplateNameUpper = name.toUpperCase();
+    
+    // 종목 코드 생성 (템플릿 이름을 기반으로 고유한 코드 생성)
+    const sportCode = name.toUpperCase();
+    
+    // 치환할 패턴들 정의 (단어 경계를 사용하여 정확한 매칭)
+    const replacementPatterns = [
+      // overlay-images API 경로
+      {
+        pattern: new RegExp(`/api/overlay-images/${baseTemplateNameLower}\\b`, 'g'),
+        replacement: `/api/overlay-images/${sportCode}`
+      },
+      {
+        pattern: new RegExp(`/api/overlay-images/${baseTemplateNameUpper}\\b`, 'g'),
+        replacement: `/api/overlay-images/${sportCode}`
+      },
+      // team-logo-map API 경로
+      {
+        pattern: new RegExp(`/api/team-logo-map/${baseTemplateNameLower}\\b`, 'g'),
+        replacement: `/api/team-logo-map/${sportCode}`
+      },
+      {
+        pattern: new RegExp(`/api/team-logo-map/${baseTemplateNameUpper}\\b`, 'g'),
+        replacement: `/api/team-logo-map/${sportCode}`
+      },
+      // sport-overlay-images API 경로
+      {
+        pattern: new RegExp(`/api/sport-overlay-images-with-active/${baseTemplateNameUpper}\\b`, 'g'),
+        replacement: `/api/sport-overlay-images-with-active/${sportCode}`
+      },
+      {
+        pattern: new RegExp(`/api/sport-active-overlay-image/${baseTemplateNameUpper}\\b`, 'g'),
+        replacement: `/api/sport-active-overlay-image/${sportCode}`
+      },
+      // overlay-images 폴더 경로
+      {
+        pattern: new RegExp(`/overlay-images/${baseTemplateNameUpper}\\b`, 'g'),
+        replacement: `/overlay-images/${sportCode}`
+      }
+    ];
+    
+    // 템플릿 파일에서 모든 패턴 치환
+    replacementPatterns.forEach(({ pattern, replacement }) => {
+      baseTemplateContent = baseTemplateContent.replace(pattern, replacement);
+    });
+    
+    // 컨트롤 파일에서도 모든 패턴 치환
+    replacementPatterns.forEach(({ pattern, replacement }) => {
+      baseControlContent = baseControlContent.replace(pattern, replacement);
+    });
+    
+    // 모바일 컨트롤 파일에서도 모든 패턴 치환
+    replacementPatterns.forEach(({ pattern, replacement }) => {
+      baseControlMobileContent = baseControlMobileContent.replace(pattern, replacement);
+    });
+    
+    // 파일 복사 (템플릿과 컨트롤 파일 모두 복사)
+    fsSync.writeFileSync(newTemplateFile, baseTemplateContent);
+    fsSync.writeFileSync(newControlFile, baseControlContent);
+    fsSync.writeFileSync(newControlMobileFile, baseControlMobileContent);
+
+    // 데이터베이스에 템플릿 정보 저장
+    const template = await Template.create({
+      name,
+      file_name: `${name}-template.ejs`,
+      sport_type: name,
+      template_type: 'overlay',
+      content: '',
+      is_default: false
+    });
+
+    logger.info(`새 템플릿 생성: ${name} (기본 템플릿: ${baseTemplateName}) - 템플릿, 컨트롤, 모바일 컨트롤 파일 모두 생성됨`);
+    res.json(template);
+  } catch (error) {
+    logger.error('템플릿 생성 중 오류:', error);
+    res.status(500).json({ error: '템플릿 생성에 실패했습니다.' });
+  }
+});
+
 // 템플릿 목록 조회 API
 app.get('/api/templates', async (req, res) => {
   try {
@@ -2782,6 +3489,7 @@ app.get('/api/templates', async (req, res) => {
       name: template.name,
       templateFile: template.file_name || `${template.name}-template.ejs`,
       controlFile: template.file_name ? template.file_name.replace('-template.ejs', '-control.ejs') : `${template.name}-control.ejs`,
+      controlMobileFile: template.file_name ? template.file_name.replace('-template.ejs', '-control-mobile.ejs') : `${template.name}-control-mobile.ejs`,
       isDefault: template.is_default || false
     })));
   } catch (error) {
@@ -2791,12 +3499,12 @@ app.get('/api/templates', async (req, res) => {
 });
 
 // 템플릿 삭제 API
-app.delete('/api/templates/:name', async (req, res) => {
+app.delete('/api/templates/:id', async (req, res) => {
   try {
-    const { name } = req.params;
+    const { id } = req.params;
     
     // 데이터베이스에서 템플릿 찾기
-    const template = await Template.findOne({ where: { name } });
+    const template = await Template.findByPk(id);
     if (!template) {
       return res.status(404).json({ error: '템플릿을 찾을 수 없습니다.' });
     }
@@ -2807,21 +3515,24 @@ app.delete('/api/templates/:name', async (req, res) => {
     }
     
     const viewsDir = path.join(__dirname, 'views');
-    const templateFile = path.join(viewsDir, `${name}-template.ejs`);
-    const controlFile = path.join(viewsDir, `${name}-control.ejs`);
+    const templateFile = path.join(viewsDir, `${template.name}-template.ejs`);
+    const controlFile = path.join(viewsDir, `${template.name}-control.ejs`);
+    const controlMobileFile = path.join(viewsDir, `${template.name}-control-mobile.ejs`);
     
     // 파일이 존재하는지 확인
-    if (!fsSync.existsSync(templateFile) || !fsSync.existsSync(controlFile)) {
+    if (!fsSync.existsSync(templateFile) || !fsSync.existsSync(controlFile) || !fsSync.existsSync(controlMobileFile)) {
       return res.status(404).json({ error: '템플릿 파일을 찾을 수 없습니다.' });
     }
     
     // 파일 삭제
     fsSync.unlinkSync(templateFile);
     fsSync.unlinkSync(controlFile);
+    fsSync.unlinkSync(controlMobileFile);
     
     // 데이터베이스에서 템플릿 삭제
     await template.destroy();
     
+    logger.info(`템플릿 삭제: ${template.name} - 템플릿, 컨트롤, 모바일 컨트롤 파일 모두 삭제됨`);
     res.json({ success: true });
   } catch (error) {
     logger.error('템플릿 삭제 중 오류:', error);
@@ -2829,22 +3540,104 @@ app.delete('/api/templates/:name', async (req, res) => {
   }
 });
 
-// 종목 템플릿 업데이트 API
-app.put('/api/sport/:id', async (req, res) => {
+// 종목 생성 API
+app.post('/api/sport', async (req, res) => {
   try {
-    const sport = await Sport.findByPk(req.params.id);
+    const { name, code, template, description } = req.body;
+    
+    if (!name || !template) {
+      return res.status(400).json({ error: '종목명과 템플릿은 필수입니다.' });
+    }
+
+    // 템플릿 존재 확인
+    const existingTemplate = await Template.findOne({ where: { name: template } });
+    if (!existingTemplate) {
+      return res.status(400).json({ error: '존재하지 않는 템플릿입니다.' });
+    }
+
+    // 종목 코드 자동 생성 (템플릿 이름과 일치)
+    const sportCode = template.toUpperCase();
+    
+    // 코드 중복 확인
+    const existingSport = await Sport.findOne({ where: { code: sportCode } });
+    if (existingSport) {
+      return res.status(400).json({ error: '이미 존재하는 종목 코드입니다.' });
+    }
+
+    const sport = await Sport.create({
+      name,
+      code: sportCode,
+      template,
+      description,
+      is_active: true,
+      is_default: false
+    });
+
+    logger.info(`새 종목 생성: ${name} (${sportCode})`);
+    res.json(sport);
+  } catch (error) {
+    logger.error('종목 생성 실패:', error);
+    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+  }
+});
+
+// 종목 삭제 API
+app.delete('/api/sport/:code', async (req, res) => {
+  try {
+    const { code } = req.params;
+    
+    const sport = await Sport.findOne({ where: { code } });
     if (!sport) {
       return res.status(404).json({ error: '종목을 찾을 수 없습니다.' });
     }
 
-    // 기본 종목은 템플릿 변경 불가
+    // 기본 종목은 삭제 불가
     if (sport.is_default) {
-      return res.status(400).json({ error: '기본 종목의 템플릿은 변경할 수 없습니다.' });
+      return res.status(400).json({ error: '기본 종목은 삭제할 수 없습니다.' });
     }
 
-    const { template } = req.body;
-    if (!template) {
-      return res.status(400).json({ error: '템플릿은 필수입니다.' });
+    // 해당 종목의 경기가 있는지 확인
+    const matchCount = await Match.count({ where: { sport_type: sport.template } });
+    if (matchCount > 0) {
+      return res.status(400).json({ 
+        error: `이 종목으로 생성된 경기가 ${matchCount}개 있어 삭제할 수 없습니다. 먼저 관련 경기를 삭제해주세요.` 
+      });
+    }
+
+    await sport.destroy();
+    logger.info(`종목 삭제: ${sport.name} (${code})`);
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('종목 삭제 실패:', error);
+    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+  }
+});
+
+// 종목 수정 API
+app.put('/api/sport/:code', async (req, res) => {
+  try {
+    const sport = await Sport.findOne({ where: { code: req.params.code } });
+    if (!sport) {
+      return res.status(404).json({ error: '종목을 찾을 수 없습니다.' });
+    }
+
+    const { name, code, template, description } = req.body;
+    
+    if (!name || !code || !template) {
+      return res.status(400).json({ error: '종목명, 코드, 템플릿은 필수입니다.' });
+    }
+
+    // 기본 종목은 수정 제한
+    if (sport.is_default) {
+      return res.status(400).json({ error: '기본 종목은 수정할 수 없습니다.' });
+    }
+
+    // 코드 중복 확인 (자신 제외)
+    if (code !== sport.code) {
+      const existingSport = await Sport.findOne({ where: { code } });
+      if (existingSport) {
+        return res.status(400).json({ error: '이미 존재하는 종목 코드입니다.' });
+      }
     }
 
     // 템플릿이 존재하는지 확인
@@ -2853,11 +3646,11 @@ app.put('/api/sport/:id', async (req, res) => {
       return res.status(400).json({ error: '존재하지 않는 템플릿입니다.' });
     }
 
-    await sport.update({ template });
-    logger.info(`종목 템플릿 업데이트: ${sport.id} -> ${template}`);
+    await sport.update({ name, code, template, description });
+    logger.info(`종목 수정: ${sport.id} - ${name} (${code})`);
     res.json(sport);
   } catch (error) {
-    logger.error('종목 템플릿 업데이트 실패:', error);
+    logger.error('종목 수정 실패:', error);
     res.status(500).json({ error: '서버 오류가 발생했습니다.' });
   }
 });
@@ -3348,7 +4141,9 @@ app.post('/api/match/:id/swap-teams', async (req, res) => {
       home_score: match.home_score,
       away_score: match.away_score,
       home_team_color: match.home_team_color,
-      away_team_color: match.away_team_color
+      away_team_color: match.away_team_color,
+      home_team_logo: match.home_team_logo,
+      away_team_logo: match.away_team_logo
     });
     
     logger.info(`팀 위치 변경: ${id} 경기`);
