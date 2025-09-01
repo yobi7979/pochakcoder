@@ -52,6 +52,7 @@
                             <% } else { %>
                                 <option value="soccer" selected>축구</option>
                                 <option value="baseball">야구</option>
+                                <option value="volleyball">배구</option>
                             <% } %>
                         </select>
                     </div>
@@ -119,6 +120,9 @@
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="baseball-tab" data-bs-toggle="tab" data-bs-target="#baseball" type="button" role="tab">야구</button>
                         </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="volleyball-tab" data-bs-toggle="tab" data-bs-target="#volleyball" type="button" role="tab">배구</button>
+                        </li>
                     </ul>
                     <div class="tab-content" id="matchTabContent">
                         <div class="tab-pane fade show active" id="all" role="tabpanel">
@@ -129,6 +133,9 @@
                         </div>
                         <div class="tab-pane fade" id="baseball" role="tabpanel">
                             <div id="baseballMatches" style="max-height: 300px; overflow-y: auto;"></div>
+                        </div>
+                        <div class="tab-pane fade" id="volleyball" role="tabpanel">
+                            <div id="volleyballMatches" style="max-height: 300px; overflow-y: auto;"></div>
                         </div>
                     </div>
                 </div>

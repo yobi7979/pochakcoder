@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Volleyball Overlay</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Noto Sans KR', Arial, sans-serif;
+        }
+        body {
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+            background-color: transparent;
+            position: relative;
+        }
+        .overlay-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        /* 상단 스코어보드 */
+        .scoreboard {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 580px;
+            height: 140px;
+            background-color: rgba(0, 0, 0, 0.8);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            color: white;
+            overflow: hidden;
+        }
+        
+        /* 대회명 */
+        .tournament-name {
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        /* 점수 레이아웃 */
+        .score-layout {
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+        .team {
+            display: flex;
+            width: 200px;
+            height: 100%;
+        }
+        .team-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+        }
+        .team-logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: white;
+            margin-right: 10px;
+            overflow: hidden;
+        }
+        .team-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .team-info {
+            flex: 1;
+        }
+        .team-name {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .team-timeout {
+            font-size: 12px;
+            margin-top: 3px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .team-a {
+            background-color: rgba(67, 56, 202, 0.2);
+        }
+        .team-a .team-header {
+            background-color: rgba(67, 56, 202, 0.6);
+        }
+        .team-b {
+            background-color: rgba(55, 48, 163, 0.2);
+        }
+        .team-b .team-header {
+            background-color: rgba(55, 48, 163, 0.6);
+            border-radius: 0 8px 0 0;
+        }
+        .score-container {
+            width: 180px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0 10px;
+        }
+        .main-score {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+        .score {
+            font-size: 42px;
+            font-weight: bold;
+            width: 60px;
+            text-align: center;
+        }
+        .score-divider {
+            font-size: 24px;
+            margin: 0 5px;
+            color: #fcd34d;
+            font-weight: bold;
+        }
+        .sets-container {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            gap: 15px;
+        }
+        .set-score {
+            font-size: 16px;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+        .current-set {
+            position: absolute;
+            top: 150px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 40px;
+            background-color: rgba(0, 0, 0, 0.8);
+            border-radius: 6px;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        /* 하단 경기 정보 */
+        .match-info {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 700px;
+            height: 70px;
+            background-color: rgba(0, 0, 0, 0.8);
+            border-radius: 8px;
+            color: white;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 20px;
+        }
+        .info-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        .info-title {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 5px;
+        }
+        .info-value {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .timer {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        /* 세트 점수 */
+        .set-history {
+            position: absolute;
+            top: 200px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 500px;
+            background-color: rgba(0, 0, 0, 0.8);
+            border-radius: 8px;
+            color: white;
+            padding: 12px;
+        }
+        .set-history-title {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .set-history-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .set-history-table th, .set-history-table td {
+            padding: 6px 10px;
+            text-align: center;
+        }
+        .set-history-table th {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .set-history-table td {
+            font-size: 16px;
+        }
+        .set-history-table td.set-winner {
+            font-weight: bold;
+            color: #fcd34d;
+        }
+        
+        /* 서브권 표시 */
+        .serving-indicator {
+            position: absolute;
+            top: 300px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            border-radius: 8px;
+            color: white;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .serving-team {
+            color: #fcd34d;
+        }
+        
+        /* 타임아웃 표시 */
+        .timeout-indicator {
+            position: absolute;
+            top: 350px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(220, 53, 69, 0.9);
+            border-radius: 8px;
+            color: white;
+            padding: 10px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            display: none;
+        }
+        
+        /* 애니메이션 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse {
+            animation: pulse 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay-container">
+        <!-- 스코어보드 -->
+        <div class="scoreboard">
+            <!-- 대회명 -->
+            <div class="tournament-name" id="tournamentName">
+                <%= match.round || '배구 대회' %>
+            </div>
+            
+            <!-- 팀명-점수-서브권-점수-팀명 레이아웃 -->
+            <div class="score-layout">
+                <div class="team team-a">
+                    <div class="team-content">
+                        <div class="team-logo">
+                            <img src="<%= match.home_team_logo || '/TEAMLOGO/VOLLEYBALL/default.png' %>" alt="Home Team">
+                        </div>
+                        <div class="team-info">
+                            <div class="team-name"><%= match.home_team %></div>
+                            <div class="team-timeout">타임아웃: <span id="homeTimeouts"><%= match.match_data.home_timeouts || 0 %></span>/2</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="score-container">
+                    <div class="main-score">
+                        <div class="score score-a" id="homeScore"><%= match.match_data.home_score || 0 %></div>
+                                                 <div class="score-divider" id="servingIndicator"><%= (match.match_data.serving_team === 'home' || !match.match_data.serving_team) ? '▶' : '◀' %></div>
+                        <div class="score score-b" id="awayScore"><%= match.match_data.away_score || 0 %></div>
+                    </div>
+                </div>
+                <div class="team team-b">
+                    <div class="team-content">
+                        <div class="team-logo">
+                            <img src="<%= match.away_team_logo || '/TEAMLOGO/VOLLEYBALL/default.png' %>" alt="Away Team">
+                        </div>
+                        <div class="team-info">
+                            <div class="team-name"><%= match.away_team %></div>
+                            <div class="team-timeout">타임아웃: <span id="awayTimeouts"><%= match.match_data.away_timeouts || 0 %></span>/2</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 현재 세트 -->
+        <div class="current-set" id="currentSet"><%= match.match_data.current_set || 1 %> 세트</div>
+        
+        <!-- 서브권 표시 -->
+        <div class="serving-indicator" id="servingIndicator">
+            서브권: <span class="serving-team" id="servingTeam"><%= match.match_data.serving_team === 'home' ? match.home_team : match.away_team %></span>
+        </div>
+        
+        <!-- 타임아웃 표시 -->
+        <div class="timeout-indicator" id="timeoutIndicator">
+            타임아웃
+        </div>
+        
+        <!-- 세트 점수 -->
+        <div class="set-history">
+            <div class="set-history-title">세트 스코어</div>
+            <table class="set-history-table">
+                <thead>
+                    <tr>
+                        <th>팀</th>
+                        <th>1세트</th>
+                        <th>2세트</th>
+                        <th>3세트</th>
+                        <th>4세트</th>
+                        <th>5세트</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><%= match.home_team %></td>
+                        <td id="homeSet1" class="<%= match.match_data.set_scores && match.match_data.set_scores[1] && match.match_data.set_scores[1].winner === 'home' ? 'set-winner' : '' %>">
+                            <%= match.match_data.set_scores && match.match_data.set_scores[1] ? match.match_data.set_scores[1].home : '-' %>
+                        </td>
+                        <td id="homeSet2" class="<%= match.match_data.set_scores && match.match_data.set_scores[2] && match.match_data.set_scores[2].winner === 'home' ? 'set-winner' : '' %>">
+                            <%= match.match_data.set_scores && match.match_data.set_scores[2] ? match.match_data.set_scores[2].home : '-' %>
+                        </td>
+                        <td id="homeSet3" class="<%= match.match_data.set_scores && match.match_data.set_scores[3] && match.match_data.set_scores[3].winner === 'home' ? 'set-winner' : '' %>">
+                            <%= match.match_data.set_scores && match.match_data.set_scores[3] ? match.match_data.set_scores[3].home : '-' %>
+                        </td>
+                        <td id="homeSet4" class="<%= match.match_data.set_scores && match.match_data.set_scores[4] && match.match_data.set_scores[4].winner === 'home' ? 'set-winner' : '' %>">
+                            <%= match.match_data.set_scores && match.match_data.set_scores[4] ? match.match_data.set_scores[4].home : '-' %>
+                        </td>
+                        <td id="homeSet5" class="<%= match.match_data.set_scores && match.match_data.set_scores[5] && match.match_data.set_scores[5].winner === 'home' ? 'set-winner' : '' %>">
+                            <%= match.match_data.set_scores && match.match_data.set_scores[5] ? match.match_data.set_scores[5].home : '-' %>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><%= match.away_team %></td>
+                        <td id="awaySet1" class="<%= match.match_data.set_scores && match.match_data.set_scores[1] && match.match_data.set_scores[1].winner === 'away' ? 'set-winner' : '' %>">
+                            <%= match.match_data.set_scores && match.match_data.set_scores[1] ? match.match_data.set_scores[1].away : '-' %>
+                        </td>
+                        <td id="awaySet2" class="<%= match.match_data.set_scores && match.match_data.set_scores[2] && match.match_data.set_scores[2].winner === 'away' ? 'set-winner' : '' %>">
+                            <%= match.match_data.set_scores && match.match_data.set_scores[2] ? match.match_data.set_scores[2].away : '-' %>
+                        </td>
+                        <td id="awaySet3" class="<%= match.match_data.set_scores && match.match_data.set_scores[3] && match.match_data.set_scores[3].winner === 'away' ? 'set-winner' : '' %>">
+                            <%= match.match_data.set_scores && match.match_data.set_scores[3] ? match.match_data.set_scores[3].away : '-' %>
+                        </td>
+                        <td id="awaySet4" class="<%= match.match_data.set_scores && match.match_data.set_scores[4] && match.match_data.set_scores[4].winner === 'away' ? 'set-winner' : '' %>">
+                            <%= match.match_data.set_scores && match.match_data.set_scores[4] ? match.match_data.set_scores[4].away : '-' %>
+                        </td>
+                        <td id="awaySet5" class="<%= match.match_data.set_scores && match.match_data.set_scores[5] && match.match_data.set_scores[5].winner === 'away' ? 'set-winner' : '' %>">
+                            <%= match.match_data.set_scores && match.match_data.set_scores[5] ? match.match_data.set_scores[5].away : '-' %>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 경기 정보 -->
+        <div class="match-info">
+            <div class="info-group">
+                <div class="info-title">경기명</div>
+                <div class="info-value"><%= match.round || '배구 경기' %></div>
+            </div>
+            <div class="info-group">
+                <div class="info-title">경기장</div>
+                <div class="info-value"><%= match.venue || '배구장' %></div>
+            </div>
+            <div class="info-group">
+                <div class="info-title">경기 시간</div>
+                <div class="info-value timer" id="timer"><%= formatTime(match.match_data.timer || 0) %></div>
+            </div>
+            <div class="info-group">
+                <div class="info-title">경기 상태</div>
+                <div class="info-value" id="matchStatus"><%= getMatchStatusText(match.match_data.match_status) %></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        const matchId = '<%= match.id %>';
+
+        // Socket.IO 방 참가
+        socket.emit('joinMatch', { matchId: matchId });
+
+        // 시간 포맷팅 함수
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
+
+        // 경기 상태 텍스트 변환
+        function getMatchStatusText(status) {
+            const statusMap = {
+                'pending': '경기 전',
+                'playing': '경기 중',
+                'timeout': '타임아웃',
+                'finished': '경기 종료'
+            };
+            return statusMap[status] || '경기 전';
+        }
+
+        // 점수 업데이트
+        socket.on('volleyballScoreUpdated', function(data) {
+            if (data.matchId === matchId) {
+                const scoreElement = document.getElementById(data.team === 'home' ? 'homeScore' : 'awayScore');
+                scoreElement.textContent = data.score;
+            }
+        });
+
+        // 세트 점수 업데이트
+        socket.on('volleyballSetScoreUpdated', function(data) {
+            if (data.matchId === matchId) {
+                // 세트 점수 업데이트
+                const setElement = document.getElementById(`set${data.setNumber}`);
+                if (setElement) {
+                    setElement.textContent = `${data.homeScore}-${data.awayScore}`;
+                }
+
+                // 세트 히스토리 테이블 업데이트
+                const homeSetElement = document.getElementById(`homeSet${data.setNumber}`);
+                const awaySetElement = document.getElementById(`awaySet${data.setNumber}`);
+                
+                if (homeSetElement && awaySetElement) {
+                    homeSetElement.textContent = data.homeScore;
+                    awaySetElement.textContent = data.awayScore;
+                    
+                    // 승리 표시 업데이트
+                    homeSetElement.classList.toggle('set-winner', data.winner === 'home');
+                    awaySetElement.classList.toggle('set-winner', data.winner === 'away');
+                }
+            }
+        });
+
+        // 타임아웃 업데이트
+        socket.on('volleyballTimeoutsUpdated', function(data) {
+            if (data.matchId === matchId) {
+                const timeoutElement = document.getElementById(data.team === 'home' ? 'homeTimeouts' : 'awayTimeouts');
+                timeoutElement.textContent = data.timeouts;
+                
+                // 타임아웃 표시 애니메이션
+                const timeoutIndicator = document.getElementById('timeoutIndicator');
+                timeoutIndicator.style.display = 'block';
+                timeoutIndicator.classList.add('fade-in');
+                setTimeout(() => {
+                    timeoutIndicator.style.display = 'none';
+                    timeoutIndicator.classList.remove('fade-in');
+                }, 3000);
+            }
+        });
+
+        // 서브권 업데이트
+        socket.on('volleyballServingUpdated', function(data) {
+            if (data.matchId === matchId) {
+                const servingIndicator = document.getElementById('servingIndicator');
+                if (data.servingTeam === 'home') {
+                    servingIndicator.textContent = '▶'; // 왼쪽 팀(홈팀) 서브
+                } else {
+                    servingIndicator.textContent = '◀'; // 오른쪽 팀(원정팀) 서브
+                }
+            }
+        });
+
+        // 현재 세트 업데이트
+        socket.on('volleyballCurrentSetUpdated', function(data) {
+            if (data.matchId === matchId) {
+                const currentSetElement = document.getElementById('currentSet');
+                currentSetElement.textContent = `${data.currentSet} 세트`;
+            }
+        });
+
+        // 타이머 업데이트
+        socket.on('volleyballTimerUpdated', function(data) {
+            if (data.matchId === matchId) {
+                const timerElement = document.getElementById('timer');
+                timerElement.textContent = formatTime(data.timer);
+            }
+        });
+
+        // 경기 상태 업데이트
+        socket.on('volleyballStatusUpdated', function(data) {
+            if (data.matchId === matchId) {
+                const statusElement = document.getElementById('matchStatus');
+                statusElement.textContent = getMatchStatusText(data.status);
+            }
+        });
+
+        // 대회명 업데이트
+        socket.on('tournamentNameUpdated', function(data) {
+            if (data.matchId === matchId) {
+                const tournamentName = document.getElementById('tournamentName');
+                if (tournamentName) {
+                    tournamentName.textContent = data.tournamentName;
+                }
+            }
+        });
+
+        // 팀 색상 업데이트
+        socket.on('teamColorUpdated', function(data) {
+            if (data.matchId === matchId) {
+                const teamElement = document.querySelector(data.team === 'home' ? '.team-a' : '.team-b');
+                if (teamElement) {
+                    teamElement.style.backgroundColor = `${data.color}20`;
+                    const headerElement = teamElement.querySelector('.team-header');
+                    if (headerElement) {
+                        headerElement.style.backgroundColor = `${data.color}60`;
+                    }
+                }
+            }
+        });
+
+        // 팀 위치 변경 이벤트
+        socket.on('teamsSwapped', function(data) {
+            if (data.matchId === matchId) {
+                // 팀명 업데이트
+                const homeTeamName = document.querySelector('.team-a .team-name');
+                const awayTeamName = document.querySelector('.team-b .team-name');
+                if (homeTeamName && awayTeamName) {
+                    homeTeamName.textContent = data.homeTeam;
+                    awayTeamName.textContent = data.awayTeam;
+                }
+                
+                // 팀 로고 업데이트
+                const homeTeamLogo = document.querySelector('.team-a .team-logo img');
+                const awayTeamLogo = document.querySelector('.team-b .team-logo img');
+                if (homeTeamLogo && awayTeamLogo) {
+                    homeTeamLogo.src = data.homeTeamLogo || '/TEAMLOGO/VOLLEYBALL/default.png';
+                    awayTeamLogo.src = data.awayTeamLogo || '/TEAMLOGO/VOLLEYBALL/default.png';
+                }
+                
+                // 점수 업데이트
+                if (data.matchData) {
+                    const homeScore = document.getElementById('homeScore');
+                    const awayScore = document.getElementById('awayScore');
+                    if (homeScore && awayScore) {
+                        homeScore.textContent = data.matchData.home_score || 0;
+                        awayScore.textContent = data.matchData.away_score || 0;
+                    }
+                    
+                    // 타임아웃 업데이트
+                    const homeTimeouts = document.getElementById('homeTimeouts');
+                    const awayTimeouts = document.getElementById('awayTimeouts');
+                    if (homeTimeouts && awayTimeouts) {
+                        homeTimeouts.textContent = data.matchData.home_timeouts || 0;
+                        awayTimeouts.textContent = data.matchData.away_timeouts || 0;
+                    }
+                }
+                
+
+            }
+        });
+
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            // 초기 애니메이션
+            document.querySelector('.scoreboard').classList.add('fade-in');
+        });
+    </script>
+</body>
+</html>
