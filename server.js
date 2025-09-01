@@ -258,7 +258,7 @@ function generateOverlayTemplate(sportCode, templateName) {
         function formatTime(seconds) {
             const minutes = Math.floor(seconds / 60);
             const remainingSeconds = seconds % 60;
-            return \`\${minutes.toString().padStart(2, '0')}:\${remainingSeconds.toString().padStart(2, '0')}\`;
+            return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
         }
         
         function getMatchStatusText(status) {
@@ -494,7 +494,7 @@ function generateMobileControlTemplate(sportCode, templateName) {
         }
     </script>
 </body>
-</html>\`;
+</html>`;
 }
 
 // 로그 디렉토리 생성
