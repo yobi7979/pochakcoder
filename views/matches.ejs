@@ -368,11 +368,6 @@
                     <i class="bi bi-circle sport-icon"></i>야구
                 </button>
             </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="volleyball-tab" data-bs-toggle="tab" data-bs-target="#volleyball" type="button" role="tab" aria-controls="volleyball" aria-selected="false">
-                    <i class="bi bi-volleyball sport-icon"></i>배구
-                </button>
-            </li>
         </ul>
         
         <div class="tab-content" id="matchTabsContent">
@@ -541,63 +536,6 @@
                     <% } %>
                 </div>
             </div>
-            
-            <!-- 배구 경기 탭 -->
-            <div class="tab-pane fade" id="volleyball" role="tabpanel" aria-labelledby="volleyball-tab">
-                <div class="match-grid">
-                    <% 
-                    const volleyballMatches = matches.filter(match => match.sport_type === 'volleyball');
-                    if (volleyballMatches.length > 0) {
-                        // 헤더 행 추가
-                    %>
-                        <div class="match-cell" style="background-color: #f8f9fa; font-weight: bold;">
-                            <div class="match-cell-header">팀 정보</div>
-                            <div class="match-cell-info">경기 상태</div>
-                            <div class="match-cell-actions">링크</div>
-                            <div class="delete-container">삭제</div>
-                        </div>
-                    <%
-                        volleyballMatches.forEach(function(match) { 
-                    %>
-                        <div class="match-cell" id="match-cell-<%= match.id %>">
-                            <div class="match-cell-header">
-                                <div class="match-cell-teams">
-                                    <%= match.home_team %> vs <%= match.away_team %>
-                                </div>
-                                <div class="match-cell-score">
-                                    <%= match.home_score || 0 %> - <%= match.away_score || 0 %>
-                                </div>
-                            </div>
-                            <div class="match-cell-info">
-                                <div>상태: <%= match.status %></div>
-                                <div>생성일: <%= new Date(match.created_at).toLocaleString() %></div>
-                            </div>
-                            <div class="match-cell-actions">
-                                <div class="control-url">
-                                    <a href="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" class="btn btn-primary"><%= match.sport_type %> 컨트롤</a>
-                                    <input type="text" class="form-control" value="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" readonly>
-                                </div>
-                                <div class="overlay-url">
-                                    <a href="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" class="btn btn-success"><%= match.sport_type %> 오버레이</a>
-                                    <input type="text" class="form-control" value="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" readonly>
-                                </div>
-                            </div>
-                            <div class="delete-container">
-                                <button class="btn delete-btn" onclick="confirmDelete('<%= match.id %>', '<%= match.home_team %> vs <%= match.away_team %>')">삭제</button>
-                            </div>
-                        </div>
-                    <% 
-                        });
-                    } else {
-                    %>
-                        <div class="empty-message">
-                            <i class="bi bi-volleyball" style="font-size: 3rem;"></i>
-                            <h3>배구 경기가 없습니다</h3>
-                            <p>새 경기를 생성해보세요!</p>
-                        </div>
-                    <% } %>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -647,7 +585,6 @@
             const allTabHeader = document.querySelector('#all .match-cell[style*="font-weight: bold"]');
             const soccerTabHeader = document.querySelector('#soccer .match-cell[style*="font-weight: bold"]');
             const baseballTabHeader = document.querySelector('#baseball .match-cell[style*="font-weight: bold"]');
-            const volleyballTabHeader = document.querySelector('#volleyball .match-cell[style*="font-weight: bold"]');
             
             // 모든 경기 검색
             allMatches.forEach(match => {
@@ -676,12 +613,6 @@
             const visibleBaseballMatches = document.querySelectorAll('#baseball .match-cell:not([style*="font-weight: bold"]):not([style*="display: none"])');
             if (baseballTabHeader) {
                 baseballTabHeader.style.display = visibleBaseballMatches.length > 0 ? 'flex' : 'none';
-            }
-            
-            // 배구 탭 검사
-            const visibleVolleyballMatches = document.querySelectorAll('#volleyball .match-cell:not([style*="font-weight: bold"]):not([style*="display: none"])');
-            if (volleyballTabHeader) {
-                volleyballTabHeader.style.display = visibleVolleyballMatches.length > 0 ? 'flex' : 'none';
             }
             
             // 빈 결과 메시지 표시 관리
