@@ -42,271 +42,271 @@ async function createSportTemplates(sportCode, templateName) {
     const publicDir = path.join(__dirname, 'public');
     
     // 기본 오버레이 템플릿 생성
-    const overlayTemplate = `<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${templateName} 오버레이</title>
-    <link href="/css/style.css" rel="stylesheet">
-    <style>
-        .overlay-container {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-            color: white;
-        }
-        .scoreboard {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 20px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .team {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .team-logo {
-            width: 80px;
-            height: 80px;
-            margin-right: 20px;
-        }
-        .team-logo img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 50%;
-        }
-        .team-info {
-            flex: 1;
-        }
-        .team-name {
-            font-size: 2rem;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .score {
-            font-size: 3rem;
-            font-weight: bold;
-            text-align: center;
-            margin: 20px 0;
-        }
-    </style>
-</head>
-<body>
-    <div class="overlay-container">
-        <div class="scoreboard">
-            <div class="team">
-                <div class="team-logo">
-                    <img src="<%= match.home_team_logo || '/TEAMLOGO/${sportCode}/default.png' %>" alt="Home Team">
-                </div>
-                <div class="team-info">
-                    <div class="team-name"><%= match.home_team %></div>
-                </div>
-            </div>
-            
-            <div class="score">
-                <span id="homeScore"><%= match.match_data?.home_score || 0 %></span>
-                <span style="margin: 0 20px;">-</span>
-                <span id="awayScore"><%= match.match_data?.away_score || 0 %></span>
-            </div>
-            
-            <div class="team">
-                <div class="team-logo">
-                    <img src="<%= match.away_team_logo || '/TEAMLOGO/${sportCode}/default.png' %>" alt="Away Team">
-                </div>
-                <div class="team-info">
-                    <div class="team-name"><%= match.away_team %></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
-        const matchId = '<%= match.id %>';
-        
-        socket.emit('joinMatch', { matchId: matchId });
-        
-        socket.on('${sportCode.toLowerCase()}ScoreUpdated', function(data) {
-            if (data.matchId === matchId) {
-                const scoreElement = document.getElementById(data.team === 'home' ? 'homeScore' : 'awayScore');
-                scoreElement.textContent = data.score;
-            }
-        });
-    </script>
-</body>
-</html>`;
+    const overlayTemplate = '<!DOCTYPE html>\n' +
+      '<html lang="ko">\n' +
+      '<head>\n' +
+      '    <meta charset="UTF-8">\n' +
+      '    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+      '    <title>' + templateName + ' 오버레이</title>\n' +
+      '    <link href="/css/style.css" rel="stylesheet">\n' +
+      '    <style>\n' +
+      '        .overlay-container {\n' +
+      '            font-family: Arial, sans-serif;\n' +
+      '            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n' +
+      '            min-height: 100vh;\n' +
+      '            padding: 20px;\n' +
+      '            color: white;\n' +
+      '        }\n' +
+      '        .scoreboard {\n' +
+      '            background: rgba(255, 255, 255, 0.1);\n' +
+      '            border-radius: 15px;\n' +
+      '            padding: 30px;\n' +
+      '            margin-bottom: 20px;\n' +
+      '            backdrop-filter: blur(10px);\n' +
+      '            border: 1px solid rgba(255, 255, 255, 0.2);\n' +
+      '        }\n' +
+      '        .team {\n' +
+      '            display: flex;\n' +
+      '            align-items: center;\n' +
+      '            margin-bottom: 20px;\n' +
+      '        }\n' +
+      '        .team-logo {\n' +
+      '            width: 80px;\n' +
+      '            height: 80px;\n' +
+      '            margin-right: 20px;\n' +
+      '        }\n' +
+      '        .team-logo img {\n' +
+      '            width: 100%;\n' +
+      '            height: 100%;\n' +
+      '            object-fit: cover;\n' +
+      '            border-radius: 50%;\n' +
+      '        }\n' +
+      '        .team-info {\n' +
+      '            flex: 1;\n' +
+      '        }\n' +
+      '        .team-name {\n' +
+      '            font-size: 2rem;\n' +
+      '            font-weight: bold;\n' +
+      '            margin-bottom: 10px;\n' +
+      '        }\n' +
+      '        .score {\n' +
+      '            font-size: 3rem;\n' +
+      '            font-weight: bold;\n' +
+      '            text-align: center;\n' +
+      '            margin: 20px 0;\n' +
+      '        }\n' +
+      '    </style>\n' +
+      '</head>\n' +
+      '<body>\n' +
+      '    <div class="overlay-container">\n' +
+      '        <div class="scoreboard">\n' +
+      '            <div class="team">\n' +
+      '                <div class="team-logo">\n' +
+      '                    <img src="<%= match.home_team_logo || \'/TEAMLOGO/' + sportCode + '/default.png\' %>" alt="Home Team">\n' +
+      '                </div>\n' +
+      '                <div class="team-info">\n' +
+      '                    <div class="team-name"><%= match.home_team %></div>\n' +
+      '                </div>\n' +
+      '            </div>\n' +
+      '            \n' +
+      '            <div class="score">\n' +
+      '                <span id="homeScore"><%= match.match_data?.home_score || 0 %></span>\n' +
+      '                <span style="margin: 0 20px;">-</span>\n' +
+      '                <span id="awayScore"><%= match.match_data?.away_score || 0 %></span>\n' +
+      '            </div>\n' +
+      '            \n' +
+      '            <div class="team">\n' +
+      '                <div class="team-logo">\n' +
+      '                    <img src="<%= match.away_team_logo || \'/TEAMLOGO/' + sportCode + '/default.png\' %>" alt="Away Team">\n' +
+      '                </div>\n' +
+      '                <div class="team-info">\n' +
+      '                    <div class="team-name"><%= match.away_team %></div>\n' +
+      '                </div>\n' +
+      '            </div>\n' +
+      '        </div>\n' +
+      '    </div>\n' +
+      '\n' +
+      '    <script src="/socket.io/socket.io.js"></script>\n' +
+      '    <script>\n' +
+      '        const socket = io();\n' +
+      '        const matchId = \'<%= match.id %>\';\n' +
+      '        \n' +
+      '        socket.emit(\'joinMatch\', { matchId: matchId });\n' +
+      '        \n' +
+      '        socket.on(\'' + sportCode.toLowerCase() + 'ScoreUpdated\', function(data) {\n' +
+      '            if (data.matchId === matchId) {\n' +
+      '                const scoreElement = document.getElementById(data.team === \'home\' ? \'homeScore\' : \'awayScore\');\n' +
+      '                scoreElement.textContent = data.score;\n' +
+      '            }\n' +
+      '        });\n' +
+      '    </script>\n' +
+      '</body>\n' +
+      '</html>';
 
     // 기본 컨트롤 패널 템플릿 생성
-    const controlTemplate = `<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${templateName} 컨트롤 패널</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        .control-panel {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-            color: white;
-        }
-        .control-card {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            backdrop-filter: blur(10px);
-        }
-        .score-display {
-            font-size: 3rem;
-            font-weight: bold;
-            text-align: center;
-            margin: 20px 0;
-        }
-    </style>
-</head>
-<body>
-    <div class="control-panel">
-        <div class="container">
-            <h1 class="text-center mb-4">${templateName} 컨트롤 패널</h1>
-            
-            <div class="control-card">
-                <h3>점수 관리</h3>
-                <div class="row">
-                    <div class="col-md-6">
-                        <h4>홈팀: <%= match.home_team %></h4>
-                        <div class="score-display" id="homeScore"><%= match.home_score || 0 %></div>
-                        <div class="text-center">
-                            <button class="btn btn-success btn-lg" onclick="adjustScore('home', 1)">+1</button>
-                            <button class="btn btn-danger btn-lg" onclick="adjustScore('home', -1)">-1</button>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <h4>원정팀: <%= match.away_team %></h4>
-                        <div class="score-display" id="awayScore"><%= match.away_score || 0 %></div>
-                        <div class="text-center">
-                            <button class="btn btn-success btn-lg" onclick="adjustScore('away', 1)">+1</button>
-                            <button class="btn btn-danger btn-lg" onclick="adjustScore('away', -1)">-1</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
-        const matchId = '<%= match.id %>';
-        
-        socket.emit('joinMatch', { matchId: matchId });
-        
-        function adjustScore(team, amount) {
-            const scoreElement = document.getElementById(team === 'home' ? 'homeScore' : 'awayScore');
-            const currentScore = parseInt(scoreElement.textContent) || 0;
-            const newScore = Math.max(0, currentScore + amount);
-            scoreElement.textContent = newScore;
-            
-            socket.emit('update${sportCode}Score', {
-                matchId: matchId,
-                team: team,
-                score: newScore
-            });
-        }
-    </script>
-</body>
-</html>`;
+    const controlTemplate = '<!DOCTYPE html>\n' +
+      '<html lang="ko">\n' +
+      '<head>\n' +
+      '    <meta charset="UTF-8">\n' +
+      '    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+      '    <title>' + templateName + ' 컨트롤 패널</title>\n' +
+      '    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">\n' +
+      '    <style>\n' +
+      '        .control-panel {\n' +
+      '            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n' +
+      '            min-height: 100vh;\n' +
+      '            padding: 20px;\n' +
+      '            color: white;\n' +
+      '        }\n' +
+      '        .control-card {\n' +
+      '            background: rgba(255, 255, 255, 0.1);\n' +
+      '            border-radius: 15px;\n' +
+      '            padding: 20px;\n' +
+      '            margin-bottom: 20px;\n' +
+      '            backdrop-filter: blur(10px);\n' +
+      '        }\n' +
+      '        .score-display {\n' +
+      '            font-size: 3rem;\n' +
+      '            font-weight: bold;\n' +
+      '            text-align: center;\n' +
+      '            margin: 20px 0;\n' +
+      '        }\n' +
+      '    </style>\n' +
+      '</head>\n' +
+      '<body>\n' +
+      '    <div class="control-panel">\n' +
+      '        <div class="container">\n' +
+      '            <h1 class="text-center mb-4">' + templateName + ' 컨트롤 패널</h1>\n' +
+      '            \n' +
+      '            <div class="control-card">\n' +
+      '                <h3>점수 관리</h3>\n' +
+      '                <div class="row">\n' +
+      '                    <div class="col-md-6">\n' +
+      '                        <h4>홈팀: <%= match.home_team %></h4>\n' +
+      '                        <div class="score-display" id="homeScore"><%= match.home_score || 0 %></div>\n' +
+      '                        <div class="text-center">\n' +
+      '                            <button class="btn btn-success btn-lg" onclick="adjustScore(\'home\', 1)">+1</button>\n' +
+      '                            <button class="btn btn-danger btn-lg" onclick="adjustScore(\'home\', -1)">-1</button>\n' +
+      '                        </div>\n' +
+      '                    </div>\n' +
+      '                    <div class="col-md-6">\n' +
+      '                        <h4>원정팀: <%= match.away_team %></h4>\n' +
+      '                        <div class="score-display" id="awayScore"><%= match.away_score || 0 %></div>\n' +
+      '                        <div class="text-center">\n' +
+      '                            <button class="btn btn-success btn-lg" onclick="adjustScore(\'away\', 1)">+1</button>\n' +
+      '                            <button class="btn btn-danger btn-lg" onclick="adjustScore(\'away\', -1)">-1</button>\n' +
+      '                        </div>\n' +
+      '                    </div>\n' +
+      '                </div>\n' +
+      '            </div>\n' +
+      '        </div>\n' +
+      '    </div>\n' +
+      '\n' +
+      '    <script src="/socket.io/socket.io.js"></script>\n' +
+      '    <script>\n' +
+      '        const socket = io();\n' +
+      '        const matchId = \'<%= match.id %>\';\n' +
+      '        \n' +
+      '        socket.emit(\'joinMatch\', { matchId: matchId });\n' +
+      '        \n' +
+      '        function adjustScore(team, amount) {\n' +
+      '            const scoreElement = document.getElementById(team === \'home\' ? \'homeScore\' : \'awayScore\');\n' +
+      '            const currentScore = parseInt(scoreElement.textContent) || 0;\n' +
+      '            const newScore = Math.max(0, currentScore + amount);\n' +
+      '            scoreElement.textContent = newScore;\n' +
+      '            \n' +
+      '            socket.emit(\'update' + sportCode + 'Score\', {\n' +
+      '                matchId: matchId,\n' +
+      '                team: team,\n' +
+      '                score: newScore\n' +
+      '            });\n' +
+      '        }\n' +
+      '    </script>\n' +
+      '</body>\n' +
+      '</html>';
 
     // 기본 모바일 컨트롤 템플릿 생성
-    const mobileControlTemplate = `<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${templateName} 모바일 컨트롤</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        .mobile-control {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 15px;
-            color: white;
-        }
-        .control-section {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-            backdrop-filter: blur(10px);
-        }
-        .score-btn {
-            font-size: 2rem;
-            padding: 20px;
-            margin: 5px;
-            width: 80px;
-            height: 80px;
-        }
-    </style>
-</head>
-<body>
-    <div class="mobile-control">
-        <h2 class="text-center mb-3">${templateName}</h2>
-        
-        <div class="control-section">
-            <h4>홈팀: <%= match.home_team %></h4>
-            <div class="text-center">
-                <button class="btn btn-success score-btn" onclick="adjustScore('home', 1)">+1</button>
-                <button class="btn btn-danger score-btn" onclick="adjustScore('home', -1)">-1</button>
-            </div>
-        </div>
-        
-        <div class="control-section">
-            <h4>원정팀: <%= match.away_team %></h4>
-            <div class="text-center">
-                <button class="btn btn-success score-btn" onclick="adjustScore('away', 1)">+1</button>
-                <button class="btn btn-danger score-btn" onclick="adjustScore('away', -1)">-1</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
-        const matchId = '<%= match.id %>';
-        
-        socket.emit('joinMatch', { matchId: matchId });
-        
-        function adjustScore(team, amount) {
-            socket.emit('update${sportCode}Score', {
-                matchId: matchId,
-                team: team,
-                amount: amount
-            });
-        }
-    </script>
-</body>
-</html>`;
+    const mobileControlTemplate = '<!DOCTYPE html>\n' +
+      '<html lang="ko">\n' +
+      '<head>\n' +
+      '    <meta charset="UTF-8">\n' +
+      '    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+      '    <title>' + templateName + ' 모바일 컨트롤</title>\n' +
+      '    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">\n' +
+      '    <style>\n' +
+      '        .mobile-control {\n' +
+      '            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n' +
+      '            min-height: 100vh;\n' +
+      '            padding: 15px;\n' +
+      '            color: white;\n' +
+      '        }\n' +
+      '        .control-section {\n' +
+      '            background: rgba(255, 255, 255, 0.1);\n' +
+      '            border-radius: 10px;\n' +
+      '            padding: 15px;\n' +
+      '            margin-bottom: 15px;\n' +
+      '            backdrop-filter: blur(10px);\n' +
+      '        }\n' +
+      '        .score-btn {\n' +
+      '            font-size: 2rem;\n' +
+      '            padding: 20px;\n' +
+      '            margin: 5px;\n' +
+      '            width: 80px;\n' +
+      '            height: 80px;\n' +
+      '        }\n' +
+      '    </style>\n' +
+      '</head>\n' +
+      '<body>\n' +
+      '    <div class="mobile-control">\n' +
+      '        <h2 class="text-center mb-3">' + templateName + '</h2>\n' +
+      '        \n' +
+      '        <div class="control-section">\n' +
+      '            <h4>홈팀: <%= match.home_team %></h4>\n' +
+      '            <div class="text-center">\n' +
+      '                <button class="btn btn-success score-btn" onclick="adjustScore(\'home\', 1)">+1</button>\n' +
+      '                <button class="btn btn-danger score-btn" onclick="adjustScore(\'home\', -1)">-1</button>\n' +
+      '            </div>\n' +
+      '        </div>\n' +
+      '        \n' +
+      '        <div class="control-section">\n' +
+      '            <div class="text-center">\n' +
+      '                <h4>원정팀: <%= match.away_team %></h4>\n' +
+      '                <button class="btn btn-success score-btn" onclick="adjustScore(\'away\', 1)">+1</button>\n' +
+      '                <button class="btn btn-danger score-btn" onclick="adjustScore(\'away\', -1)">-1</button>\n' +
+      '            </div>\n' +
+      '        </div>\n' +
+      '    </div>\n' +
+      '\n' +
+      '    <script src="/socket.io/socket.io.js"></script>\n' +
+      '    <script>\n' +
+      '        const socket = io();\n' +
+      '        const matchId = \'<%= match.id %>\';\n' +
+      '        \n' +
+      '        socket.emit(\'joinMatch\', { matchId: matchId });\n' +
+      '        \n' +
+      '        function adjustScore(team, amount) {\n' +
+      '            socket.emit(\'update' + sportCode + 'Score\', {\n' +
+      '                matchId: matchId,\n' +
+      '                team: team,\n' +
+      '                amount: amount\n' +
+      '            });\n' +
+      '        }\n' +
+      '    </script>\n' +
+      '</body>\n' +
+      '</html>';
 
     // 템플릿 파일들 생성
     const templateFiles = [
-      { name: `${sportCode}-template.ejs`, content: overlayTemplate },
-      { name: `${sportCode}-control.ejs`, content: controlTemplate },
-      { name: `${sportCode}-control-mobile.ejs`, content: mobileControlTemplate }
+      { name: sportCode + '-template.ejs', content: overlayTemplate },
+      { name: sportCode + '-control.ejs', content: controlTemplate },
+      { name: sportCode + '-control-mobile.ejs', content: mobileControlTemplate }
     ];
     
     // views 폴더에 템플릿 파일들 생성
     for (const file of templateFiles) {
       const filePath = path.join(viewsDir, file.name);
       await fs.writeFile(filePath, file.content, 'utf8');
-      logger.info(`템플릿 파일 생성: ${file.name}`);
+      logger.info('템플릿 파일 생성: ' + file.name);
     }
     
     // public 폴더에 필요한 디렉토리들 생성
@@ -318,7 +318,7 @@ async function createSportTemplates(sportCode, templateName) {
     for (const dir of directories) {
       if (!fsSync.existsSync(dir)) {
         await fs.mkdir(dir, { recursive: true });
-        logger.info(`디렉토리 생성: ${dir}`);
+        logger.info('디렉토리 생성: ' + dir);
       }
     }
     
@@ -329,10 +329,10 @@ async function createSportTemplates(sportCode, templateName) {
     };
     await fs.writeFile(teamLogoMapPath, JSON.stringify(initialLogoMap, null, 2), 'utf8');
     
-    logger.info(`${sportCode} 종목 템플릿 생성 완료`);
+    logger.info(sportCode + ' 종목 템플릿 생성 완료');
     return true;
   } catch (error) {
-    logger.error(`템플릿 생성 실패: ${error.message}`);
+    logger.error('템플릿 생성 실패: ' + error.message);
     return false;
   }
 }
