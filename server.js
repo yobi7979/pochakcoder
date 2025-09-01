@@ -496,7 +496,7 @@ function generateOverlayTemplate(sportCode, templateName) {
     '        function formatTime(seconds) {\n' +
     '            const minutes = Math.floor(seconds / 60);\n' +
     '            const remainingSeconds = seconds % 60;\n' +
-    '            return minutes.toString().padStart(2, '0') + ':' + remainingSeconds.toString().padStart(2, '0');\n' +
+    '            return minutes.toString().padStart(2, \'0\') + \':\' + remainingSeconds.toString().padStart(2, \'0\');\n' +
     '        }\n' +
     '        \n' +
     '        function getMatchStatusText(status) {\n' +
