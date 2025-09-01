@@ -16,9 +16,7 @@ const Template = require('./models/Template');
 const { Op } = require('sequelize');
 const session = require('express-session');
 const ejs = require('ejs');
-const { exec } = require('child_process');
-const util = require('util');
-const execAsync = util.promisify(exec);
+
 
 // 유틸리티 함수들
 function formatTime(seconds) {
@@ -86,9 +84,6 @@ async function createSportTemplates(sportCode, templateName) {
     };
     await fs.writeFile(teamLogoMapPath, JSON.stringify(initialLogoMap, null, 2), 'utf8');
     
-    // Git에 자동 커밋
-    await autoCommitTemplates(sportCode);
-    
     logger.info(`${sportCode} 종목 템플릿 생성 완료`);
     return true;
   } catch (error) {
@@ -97,23 +92,7 @@ async function createSportTemplates(sportCode, templateName) {
   }
 }
 
-// Git 자동 커밋 함수
-async function autoCommitTemplates(sportCode) {
-  try {
-    // Git 상태 확인
-    const { stdout: status } = await execAsync('git status --porcelain');
-    
-    if (status.trim()) {
-      // 변경사항이 있으면 자동 커밋
-      await execAsync('git add .');
-      await execAsync(`git commit -m "Auto-generate templates for ${sportCode} sport"`);
-      await execAsync('git push origin master');
-      logger.info(`${sportCode} 종목 템플릿 자동 커밋 완료`);
-    }
-  } catch (error) {
-    logger.error(`Git 자동 커밋 실패: ${error.message}`);
-  }
-}
+
 
 // 템플릿 내용 생성 함수
 function generateTemplateContent(sportCode, templateName, type) {
