@@ -494,7 +494,7 @@ function generateOverlayTemplate(sportCode, templateName) {
         function formatTime(seconds) {
             const minutes = Math.floor(seconds / 60);
             const remainingSeconds = seconds % 60;
-            return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+            return minutes.toString().padStart(2, '0') + ':' + remainingSeconds.toString().padStart(2, '0');
         }
         
         function getMatchStatusText(status) {
@@ -508,7 +508,7 @@ function generateOverlayTemplate(sportCode, templateName) {
         }
     </script>
 </body>
-</html>`;
+</html>';
 }
 
 // 컨트롤 패널 템플릿 생성
