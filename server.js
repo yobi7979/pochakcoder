@@ -22,7 +22,7 @@ const ejs = require('ejs');
 function formatTime(seconds) {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
-  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  return minutes.toString().padStart(2, '0') + ':' + remainingSeconds.toString().padStart(2, '0');
 }
 
 function getMatchStatusText(status) {
@@ -343,172 +343,174 @@ async function createSportTemplates(sportCode, templateName) {
 
 // 오버레이 템플릿 생성
 function generateOverlayTemplate(sportCode, templateName) {
-  return `<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${templateName} 오버레이</title>
-    <link href="/css/style.css" rel="stylesheet">
-    <style>
-        .overlay-container {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-            color: white;
-        }
-        
-        .scoreboard {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 20px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .team {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .team-logo {
-            width: 80px;
-            height: 80px;
-            margin-right: 20px;
-        }
-        
-        .team-logo img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 50%;
-        }
-        
-        .team-info {
-            flex: 1;
-        }
-        
-        .team-name {
-            font-size: 2rem;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        
-        .score {
-            font-size: 3rem;
-            font-weight: bold;
-            text-align: center;
-            margin: 20px 0;
-        }
-        
-        .match-info {
-            text-align: center;
-            margin-top: 20px;
-        }
-        
-        .match-status {
-            font-size: 1.5rem;
-            margin-bottom: 10px;
-        }
-        
-        .timer {
-            font-size: 2rem;
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
-    <div class="overlay-container">
-        <div class="scoreboard">
-            <div class="team">
-                <div class="team-logo">
-                    <img src="<%= match.home_team_logo || '/TEAMLOGO/${sportCode}/default.png' %>" alt="Home Team">
-                </div>
-                <div class="team-info">
-                    <div class="team-name"><%= match.home_team %></div>
-                </div>
-            </div>
-            
-            <div class="score">
-                <span id="homeScore"><%= match.match_data?.home_score || 0 %></span>
-                <span style="margin: 0 20px;">-</span>
-                <span id="awayScore"><%= match.match_data?.away_score || 0 %></span>
-            </div>
-            
-            <div class="team">
-                <div class="team-logo">
-                    <img src="<%= match.away_team_logo || '/TEAMLOGO/${sportCode}/default.png' %>" alt="Away Team">
-                </div>
-                <div class="team-info">
-                    <div class="team-name"><%= match.away_team %></div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="match-info">
-            <div class="match-status" id="matchStatus">
-                <%= getMatchStatusText(match.match_data?.match_status || 'pending') %>
-            </div>
-            <div class="timer" id="timer">
-                <%= formatTime(match.match_data?.timer || 0) %>
-            </div>
-        </div>
-    </div>
-
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
-        const matchId = '<%= match.id %>';
-        
-        // 경기 방 참가
-        socket.emit('joinMatch', { matchId: matchId });
-        
-        // 점수 업데이트
-        socket.on('${sportCode.toLowerCase()}ScoreUpdated', function(data) {
-            if (data.matchId === matchId) {
-                const scoreElement = document.getElementById(data.team === 'home' ? 'homeScore' : 'awayScore');
-                scoreElement.textContent = data.score;
-            }
-        });
-        
-        // 타이머 업데이트
-        socket.on('${sportCode.toLowerCase()}TimerUpdated', function(data) {
-            if (data.matchId === matchId) {
-                const timerElement = document.getElementById('timer');
-                timerElement.textContent = formatTime(data.timer);
-            }
-        });
-        
-        // 경기 상태 업데이트
-        socket.on('${sportCode.toLowerCase()}StatusUpdated', function(data) {
-            if (data.matchId === matchId) {
-                const statusElement = document.getElementById('matchStatus');
-                statusElement.textContent = getMatchStatusText(data.status);
-            }
-        });
-        
-        // 유틸리티 함수
-        function formatTime(seconds) {
-            const minutes = Math.floor(seconds / 60);
-            const remainingSeconds = seconds % 60;
-            return minutes.toString().padStart(2, '0') + ':' + remainingSeconds.toString().padStart(2, '0');
-        }
-        
-        function getMatchStatusText(status) {
-            const statusMap = {
-                'pending': '경기 전',
-                'playing': '경기 중',
-                'timeout': '타임아웃',
-                'finished': '경기 종료'
-            };
-            return statusMap[status] || '경기 전';
-        }
-    </script>
-</body>
-</html>';
+  return '<!DOCTYPE html>\n' +
+    '<html lang="ko">\n' +
+    '<head>\n' +
+    '    <meta charset="UTF-8">\n' +
+    '    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+    '    <title>' + templateName + ' 오버레이</title>\n' +
+    '    <link href="/css/style.css" rel="stylesheet">\n' +
+    '    <style>\n' +
+    '        .overlay-container {\n' +
+    '            font-family: Arial, sans-serif;\n' +
+    '            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n' +
+    '            min-height: 100vh;\n' +
+    '            padding: 20px;\n' +
+    '            color: white;\n' +
+    '        }\n' +
+    '        \n' +
+    '        .scoreboard {\n' +
+    '            background: rgba(255, 255, 255, 0.1);\n' +
+    '            border-radius: 15px;\n' +
+    '            padding: 30px;\n' +
+    '            margin-bottom: 20px;\n' +
+    '            backdrop-filter: blur(10px);\n' +
+    '            border: 1px solid rgba(255, 255, 255, 0.2);\n' +
+    '        }\n' +
+    '        \n' +
+    '        .team {\n' +
+    '            display: flex;\n' +
+    '            align-items: center;\n' +
+    '            margin-bottom: 20px;\n' +
+    '        }\n' +
+    '        \n' +
+    '        .team-logo {\n' +
+    '            width: 80px;\n' +
+    '            height: 80px;\n' +
+    '            margin-right: 20px;\n' +
+    '        }\n' +
+    '        \n' +
+    '        .team-logo img {\n' +
+    '            width: 100%;\n' +
+    '            height: 100%;\n' +
+    '            object-fit: cover;\n' +
+    '            border-radius: 50%;\n' +
+    '        }\n' +
+    '        \n' +
+    '        .team-info {\n' +
+    '            flex: 1;\n' +
+    '        }\n' +
+    '        \n' +
+    '        .team-name {\n' +
+    '            font-size: 2rem;\n' +
+    '            font-weight: bold;\n' +
+    '            margin-bottom: 10px;\n' +
+    '        }\n' +
+    '        \n' +
+    '        .score {\n' +
+    '            font-size: 3rem;\n' +
+    '            font-weight: bold;\n' +
+    '            text-align: center;\n' +
+    '            margin: 20px 0;\n' +
+    '        }\n' +
+    '        \n' +
+    '        .match-info {\n' +
+    '            text-align: center;\n' +
+    '            margin-top: 20px;\n' +
+    '        }\n' +
+    '        \n' +
+    '        .match-status {\n' +
+    '            font-size: 1.5rem;\n' +
+    '            margin-bottom: 10px;\n' +
+    '        }\n' +
+    '        \n' +
+    '        .timer {\n' +
+    '            font-size: 2rem;\n' +
+    '            font-weight: bold;\n' +
+    '        }\n' +
+    '    </style>\n' +
+    '</head>\n' +
+    '<body>\n' +
+    '    <div class="overlay-container">\n' +
+    '        <div class="scoreboard">\n' +
+    '            <div class="team">\n' +
+    '                <div class="team-logo">\n' +
+    '                    <img src="<%= match.home_team_logo || \'/TEAMLOGO/' + sportCode + '/default.png\' %>" alt="Home Team">\n' +
+    '                </div>\n' +
+    '                <div class="team-info">\n' +
+    '                    <div class="team-name"><%= match.home_team %></div>\n' +
+    '                </div>\n' +
+    '            </div>\n' +
+    '            \n' +
+    '            <div class="score">\n' +
+    '                <span id="homeScore"><%= match.match_data?.home_score || 0 %></span>\n' +
+    '                <span style="margin: 0 20px;">-</span>\n' +
+    '                <span id="awayScore"><%= match.match_data?.away_score || 0 %></span>\n' +
+    '            </div>\n' +
+    '            \n' +
+    '            <div class="team">\n' +
+    '                <div class="team-logo">\n' +
+    '                    <img src="<%= match.away_team_logo || \'/TEAMLOGO/' + sportCode + '/default.png\' %>" alt="Away Team">\n' +
+    '                </div>\n' +
+    '                <div class="team-info">\n' +
+    '                    <div class="team-name"><%= match.away_team %></div>\n' +
+    '                </div>\n' +
+    '            </div>\n' +
+    '        </div>\n' +
+    '        \n' +
+    '        <div class="match-info">\n' +
+    '            <div class="match-status" id="matchStatus">\n' +
+    '                <%= getMatchStatusText(match.match_data?.match_status || \'pending\') %>\n' +
+    '            </div>\n' +
+    '            <div class="timer" id="timer">\n' +
+    '                <%= formatTime(match.match_data?.timer || 0) %>\n' +
+    '            </div>\n' +
+    '        </div>\n' +
+    '    </div>\n' +
+    '\n' +
+    '    <script src="/socket.io/socket.io.js"></script>\n' +
+    '    <script>\n' +
+    '        const socket = io();\n' +
+    '        const matchId = \'<%= match.id %>\';\n' +
+    '        \n' +
+    '        // 경기 방 참가\n' +
+    '        socket.emit(\'joinMatch\', { matchId: matchId });\n' +
+    '        \n' +
+    '        // 점수 업데이트\n' +
+    '        socket.on(\'' + sportCode.toLowerCase() + 'ScoreUpdated\', function(data) {\n' +
+    '            if (data.matchId === matchId) {\n' +
+    '                const scoreElement = document.getElementById(data.team === \'home\' ? \'homeScore\' : \'awayScore\');\n' +
+    '                scoreElement.textContent = data.score;\n' +
+    '            }\n' +
+    '        });\n' +
+    '        \n' +
+    '        // 타이머 업데이트\n' +
+    '        socket.on(\'' + sportCode.toLowerCase() + 'TimerUpdated\', function(data) {\n' +
+    '            if (data.matchId === matchId) {\n' +
+    '                if (data.matchId === matchId) {\n' +
+    '                    const timerElement = document.getElementById(\'timer\');\n' +
+    '                    timerElement.textContent = formatTime(data.timer);\n' +
+    '                }\n' +
+    '            }\n' +
+    '        });\n' +
+    '        \n' +
+    '        // 경기 상태 업데이트\n' +
+    '        socket.on(\'' + sportCode.toLowerCase() + 'StatusUpdated\', function(data) {\n' +
+    '            if (data.matchId === matchId) {\n' +
+    '                const statusElement = document.getElementById(\'matchStatus\');\n' +
+    '                statusElement.textContent = getMatchStatusText(data.status);\n' +
+    '            }\n' +
+    '        });\n' +
+    '        \n' +
+    '        // 유틸리티 함수\n' +
+    '        function formatTime(seconds) {\n' +
+    '            const minutes = Math.floor(seconds / 60);\n' +
+    '            const remainingSeconds = seconds % 60;\n' +
+    '            return minutes.toString().padStart(2, '0') + ':' + remainingSeconds.toString().padStart(2, '0');\n' +
+    '        }\n' +
+    '        \n' +
+    '        function getMatchStatusText(status) {\n' +
+    '            const statusMap = {\n' +
+    '                \'pending\': \'경기 전\',\n' +
+    '                \'playing\': \'경기 중\',\n' +
+    '                \'timeout\': \'타임아웃\',\n' +
+    '                \'finished\': \'경기 종료\'\n' +
+    '            };\n' +
+    '            return statusMap[status] || \'경기 전\';\n' +
+    '        }\n' +
+    '    </script>\n' +
+    '</body>\n' +
+    '</html>';
 }
 
 // 컨트롤 패널 템플릿 생성
@@ -1071,7 +1073,7 @@ function hexToRgb(hex) {
     const g = parseInt(hex.substring(2, 4), 16);
     const b = parseInt(hex.substring(4, 6), 16);
     
-    return `${r}, ${g}, ${b}`;
+    return r + ', ' + g + ', ' + b;
 }
 
 // 기본 팀 컬러 가져오기 함수
