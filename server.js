@@ -17,23 +17,6 @@ const { Op } = require('sequelize');
 const session = require('express-session');
 const ejs = require('ejs');
 
-// 유틸리티 함수들
-function formatTime(seconds) {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-}
-
-function getMatchStatusText(status) {
-  const statusMap = {
-    'pending': '경기 전',
-    'playing': '경기 중',
-    'timeout': '타임아웃',
-    'finished': '경기 종료'
-  };
-  return statusMap[status] || '경기 전';
-}
-
 // 로그 디렉토리 생성
 const logDir = path.join(__dirname, 'logs');
 if (!fsSync.existsSync(logDir)) {
@@ -735,7 +718,7 @@ app.get('/matches/new', async (req, res) => {
 // 경기 생성 API
 app.post('/api/match', async (req, res) => {
   try {
-    const { sport_type, home_team, away_team, match_data } = req.body;
+    const { sport_type, home_team, away_team, match_data, use_team_logos } = req.body;
     
     if (!sport_type || !home_team || !away_team) {
       return res.status(400).json({ error: '필수 필드가 누락되었습니다.' });
@@ -811,6 +794,20 @@ app.post('/api/match', async (req, res) => {
 
     const matchData = match.toJSON();
 
+    // 모든 종목에 대해 팀로고 사용 유무 설정 저장
+    if (use_team_logos !== undefined) {
+      try {
+        // 모든 종목을 동일하게 처리 (종목별로 독립적인 설정)
+        await Settings.upsert({
+          key: `${sport_type.toLowerCase()}_team_logo_visibility_${match.id}`,
+          value: use_team_logos.toString()
+        });
+        logger.info(`${sport_type} 경기 팀로고 사용 유무 설정 저장: ${match.id}, use_team_logos: ${use_team_logos}`);
+      } catch (error) {
+        logger.error('팀로고 사용 유무 설정 저장 오류:', error);
+        // 설정 저장 실패해도 경기 생성은 계속 진행
+      }
+    }
     
     res.status(201).json({
       id: matchData.id,
@@ -854,7 +851,7 @@ app.get('/api/match/:id', async (req, res) => {
 // 경기 수정 API
 app.put('/api/match/:id', async (req, res) => {
   try {
-    const { sport_type, home_team, away_team } = req.body;
+    const { sport_type, home_team, away_team, use_team_logos } = req.body;
     
     if (!sport_type || !home_team || !away_team) {
       return res.status(400).json({ error: '필수 필드가 누락되었습니다.' });
@@ -871,6 +868,21 @@ app.put('/api/match/:id', async (req, res) => {
       home_team,
       away_team
     });
+
+    // 모든 종목에 대해 팀로고 사용 유무 설정 업데이트
+    if (use_team_logos !== undefined) {
+      try {
+        // 모든 종목을 동일하게 처리 (종목별로 독립적인 설정)
+        await Settings.upsert({
+          key: `${sport_type.toLowerCase()}_team_logo_visibility_${req.params.id}`,
+          value: use_team_logos.toString()
+        });
+        logger.info(`${sport_type} 경기 팀로고 사용 유무 설정 업데이트: ${req.params.id}, use_team_logos: ${use_team_logos}`);
+      } catch (error) {
+        logger.error('팀로고 사용 유무 설정 업데이트 오류:', error);
+        // 설정 업데이트 실패해도 경기 수정은 계속 진행
+      }
+    }
 
     // 리스트에 등록된 경기 정보도 함께 업데이트
     const matchLists = await MatchList.findAll();
@@ -1720,6 +1732,202 @@ app.post('/api/soccer-match-state-visibility', async (req, res) => {
   }
 });
 
+// 팀로고 사용 상태 저장 API (모든 종목 지원)
+app.post('/api/team-logo-visibility', async (req, res) => {
+  try {
+    const { matchId, sportType, useLogos } = req.body;
+    
+    if (!matchId || !sportType) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'matchId와 sportType이 필요합니다.' 
+      });
+    }
+    
+    // 모든 종목을 동일하게 처리 (종목별로 독립적인 설정)
+    await Settings.upsert({
+      key: `${sportType.toLowerCase()}_team_logo_visibility_${matchId}`,
+      value: useLogos.toString()
+    });
+    
+    // 해당 매치룸의 모든 클라이언트에게 실시간으로 반영
+    io.to(`match_${matchId}`).emit('teamLogoVisibilityChanged', {
+      matchId: matchId,
+      useLogos: useLogos
+    });
+    
+    res.json({ 
+      success: true, 
+      message: '팀로고 사용 상태가 저장되었습니다.'
+    });
+    
+    logger.info(`${sportType} 팀로고 사용 상태 저장 완료: ${matchId}, useLogos: ${useLogos}`);
+  } catch (error) {
+    logger.error('팀로고 사용 상태 저장 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 팀로고 사용 상태 불러오기 API (모든 종목 지원)
+app.get('/api/team-logo-visibility/:sportType/:matchId', async (req, res) => {
+  try {
+    const { sportType, matchId } = req.params;
+    
+    // 모든 종목을 동일하게 처리 (종목별로 독립적인 설정)
+    const setting = await Settings.findOne({
+      where: { key: `${sportType.toLowerCase()}_team_logo_visibility_${matchId}` }
+    });
+    
+    const useLogos = setting ? setting.value === 'true' : true; // 기본값은 true
+    
+    res.json({ 
+      success: true, 
+      useLogos: useLogos
+    });
+    
+    logger.info(`${sportType} 팀로고 사용 상태 불러오기: ${matchId}, useLogos: ${useLogos}`);
+  } catch (error) {
+    logger.error('팀로고 사용 상태 불러오기 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 기존 축구 전용 API (호환성 유지)
+app.post('/api/soccer-team-logo-visibility', async (req, res) => {
+  try {
+    const { matchId, useLogos } = req.body;
+    
+    if (!matchId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'matchId가 필요합니다.' 
+      });
+    }
+    
+    await Settings.upsert({
+      key: `soccer_team_logo_visibility_${matchId}`,
+      value: useLogos.toString()
+    });
+    
+    // 해당 매치룸의 모든 클라이언트에게 실시간으로 반영
+    io.to(`match_${matchId}`).emit('teamLogoVisibilityChanged', {
+      matchId: matchId,
+      useLogos: useLogos
+    });
+    
+    res.json({ 
+      success: true, 
+      message: '팀로고 사용 상태가 저장되었습니다.'
+    });
+    
+    logger.info(`팀로고 사용 상태 저장 완료: ${matchId}, useLogos: ${useLogos}`);
+  } catch (error) {
+    logger.error('팀로고 사용 상태 저장 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 기존 축구 전용 API (호환성 유지)
+app.get('/api/soccer-team-logo-visibility/:matchId', async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    
+    const setting = await Settings.findOne({
+      where: { key: `soccer_team_logo_visibility_${matchId}` }
+    });
+    
+    const useLogos = setting ? setting.value === 'true' : true; // 기본값은 true
+    
+    res.json({ 
+      success: true, 
+      useLogos: useLogos
+    });
+    
+    logger.info(`팀로고 사용 상태 불러오기: ${matchId}, useLogos: ${useLogos}`);
+  } catch (error) {
+    logger.error('팀로고 사용 상태 불러오기 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 추가 박스 텍스트 저장 API
+app.post('/api/extra-box-text', async (req, res) => {
+  try {
+    const { matchId, sportType, text } = req.body;
+    
+    if (!matchId || !sportType) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'matchId와 sportType이 필요합니다.' 
+      });
+    }
+    
+    await Settings.upsert({
+      key: `${sportType.toLowerCase()}_extra_box_text_${matchId}`,
+      value: text || '0 (승부차기) 0'
+    });
+    
+    res.json({ 
+      success: true, 
+      message: '추가 박스 텍스트가 저장되었습니다.'
+    });
+    
+    logger.info(`추가 박스 텍스트 저장 완료: ${matchId}, text: ${text}`);
+  } catch (error) {
+    logger.error('추가 박스 텍스트 저장 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 추가 박스 텍스트 조회 API
+app.get('/api/extra-box-text/:sportType/:matchId', async (req, res) => {
+  try {
+    const { sportType, matchId } = req.params;
+    
+    const setting = await Settings.findOne({
+      where: {
+        key: `${sportType.toLowerCase()}_extra_box_text_${matchId}`
+      }
+    });
+    
+    const text = setting ? setting.value : '0 (승부차기) 0';
+    
+    res.json({ 
+      success: true, 
+      text: text
+    });
+    
+    logger.info(`추가 박스 텍스트 조회: ${matchId}, text: ${text}`);
+  } catch (error) {
+    logger.error('추가 박스 텍스트 조회 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
 // 오버레이 URL 상태 확인 API
 app.get('/api/overlay-status/:listId', async (req, res) => {
   try {
@@ -2075,14 +2283,6 @@ io.on('connection', (socket) => {
         const roomName = `match_${matchId}`;
         socket.join(roomName);
         logger.info(`클라이언트 ${socket.id}가 방 ${roomName}에 참가함`);
-    });
-
-    // joinMatch 이벤트 처리 (배구 전용)
-    socket.on('joinMatch', (data) => {
-        const { matchId } = data;
-        const roomName = `match_${matchId}`;
-        socket.join(roomName);
-        logger.info(`클라이언트 ${socket.id}가 배구 경기 방 ${roomName}에 참가함`);
     });
 
     // 타이머 상태 요청 이벤트 처리
@@ -2859,445 +3059,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 배구 경기 데이터 업데이트 이벤트 처리
-    socket.on('updateVolleyballScore', async (data) => {
-        const { matchId, team, score } = data;
-        const roomName = `match_${matchId}`;
-        
-        try {
-            const match = await Match.findByPk(matchId);
-            if (!match) {
-                socket.emit('volleyballScoreUpdated', { success: false, error: '경기를 찾을 수 없습니다.' });
-                return;
-            }
-            
-            // 점수 업데이트
-            const updateData = {
-                match_data: {
-                    ...match.match_data,
-                    [`${team}_score`]: score
-                }
-            };
-            
-            if (team === 'home') {
-                updateData.home_score = score;
-            } else {
-                updateData.away_score = score;
-            }
-
-            await match.update(updateData);
-            
-            // 모든 클라이언트에게 업데이트 전송
-            io.to(roomName).emit('volleyballScoreUpdated', {
-                matchId: matchId,
-                team: team,
-                score: score
-            });
-            
-            logger.info(`배구 점수 업데이트 성공: ${matchId} ${team} ${score}`);
-        } catch (error) {
-            logger.error('배구 점수 업데이트 중 오류 발생:', error);
-            socket.emit('volleyballScoreUpdated', { success: false, error: error.message });
-        }
-    });
-
-    // 배구 세트 점수 설정 이벤트
-    socket.on('setVolleyballSetScore', async (data) => {
-        const { matchId, setNumber, homeScore, awayScore, winner } = data;
-        const roomName = `match_${matchId}`;
-        
-        try {
-            const match = await Match.findByPk(matchId);
-            if (!match) {
-                socket.emit('volleyballSetScoreUpdated', { success: false, error: '경기를 찾을 수 없습니다.' });
-                return;
-            }
-            
-            // 세트 점수 업데이트
-            const matchData = { ...match.match_data };
-            if (!matchData.set_scores) {
-                matchData.set_scores = {};
-            }
-            
-            matchData.set_scores[setNumber] = {
-                home: homeScore,
-                away: awayScore,
-                winner: winner
-            };
-            
-            // 승리 세트 수 업데이트
-            if (winner === 'home') {
-                matchData.home_sets = (matchData.home_sets || 0) + 1;
-            } else if (winner === 'away') {
-                matchData.away_sets = (matchData.away_sets || 0) + 1;
-            }
-
-            await match.update({ match_data: matchData });
-            
-            // 모든 클라이언트에게 업데이트 전송
-            io.to(roomName).emit('volleyballSetScoreUpdated', {
-                matchId: matchId,
-                setNumber: setNumber,
-                homeScore: homeScore,
-                awayScore: awayScore,
-                winner: winner
-            });
-            
-            logger.info(`배구 세트 점수 설정 성공: ${matchId} 세트${setNumber} ${homeScore}-${awayScore} ${winner}승`);
-        } catch (error) {
-            logger.error('배구 세트 점수 설정 중 오류 발생:', error);
-            socket.emit('volleyballSetScoreUpdated', { success: false, error: error.message });
-        }
-    });
-
-    // 배구 세트 점수 직접 업데이트 이벤트
-    socket.on('updateVolleyballSetScore', async (data) => {
-        const { matchId, setNumber, homeScore, awayScore } = data;
-        const roomName = `match_${matchId}`;
-        
-        try {
-            const match = await Match.findByPk(matchId);
-            if (!match) {
-                socket.emit('volleyballSetScoreUpdated', { success: false, error: '경기를 찾을 수 없습니다.' });
-                return;
-            }
-            
-            // 세트 점수 업데이트
-            const matchData = { ...match.match_data };
-            if (!matchData.set_scores) {
-                matchData.set_scores = {};
-            }
-            
-            // 승자 결정
-            let winner = null;
-            if (homeScore > awayScore) {
-                winner = 'home';
-            } else if (awayScore > homeScore) {
-                winner = 'away';
-            }
-            
-            matchData.set_scores[setNumber] = {
-                home: homeScore,
-                away: awayScore,
-                winner: winner
-            };
-
-            await match.update({ match_data: matchData });
-            
-            // 모든 클라이언트에게 업데이트 전송
-            io.to(roomName).emit('volleyballSetScoreUpdated', {
-                matchId: matchId,
-                setNumber: setNumber,
-                homeScore: homeScore,
-                awayScore: awayScore,
-                winner: winner
-            });
-            
-            logger.info(`배구 세트 점수 업데이트 성공: ${matchId} 세트${setNumber} ${homeScore}-${awayScore}`);
-        } catch (error) {
-            logger.error(`배구 세트 점수 업데이트 실패: ${error.message}`);
-            socket.emit('volleyballSetScoreUpdated', { success: false, error: error.message });
-        }
-    });
-
-    // 배구 타임아웃 업데이트 이벤트
-    socket.on('updateVolleyballTimeouts', async (data) => {
-        const { matchId, team, timeouts } = data;
-        const roomName = `match_${matchId}`;
-        
-        try {
-            const match = await Match.findByPk(matchId);
-            if (!match) {
-                socket.emit('volleyballTimeoutsUpdated', { success: false, error: '경기를 찾을 수 없습니다.' });
-                return;
-            }
-            
-            // 타임아웃 업데이트
-            const matchData = { ...match.match_data };
-            matchData[`${team}_timeouts`] = timeouts;
-
-            await match.update({ match_data: matchData });
-            
-            // 모든 클라이언트에게 업데이트 전송
-            io.to(roomName).emit('volleyballTimeoutsUpdated', {
-                matchId: matchId,
-                team: team,
-                timeouts: timeouts
-            });
-            
-            logger.info(`배구 타임아웃 업데이트 성공: ${matchId} ${team} ${timeouts}/2`);
-        } catch (error) {
-            logger.error('배구 타임아웃 업데이트 중 오류 발생:', error);
-            socket.emit('volleyballTimeoutsUpdated', { success: false, error: error.message });
-        }
-    });
-
-    // 배구 서브권 업데이트 이벤트
-    socket.on('updateVolleyballServing', async (data) => {
-        const { matchId, servingTeam } = data;
-        const roomName = `match_${matchId}`;
-        
-        try {
-            const match = await Match.findByPk(matchId);
-            if (!match) {
-                socket.emit('volleyballServingUpdated', { success: false, error: '경기를 찾을 수 없습니다.' });
-                return;
-            }
-            
-            // 서브권 업데이트 (left/right를 home/away로 변환)
-            const matchData = { ...match.match_data };
-            let servingTeamForDB;
-            if (servingTeam === 'left') {
-                servingTeamForDB = 'home';
-            } else if (servingTeam === 'right') {
-                servingTeamForDB = 'away';
-            } else {
-                servingTeamForDB = servingTeam; // 기존 home/away 값 유지
-            }
-            matchData.serving_team = servingTeamForDB;
-
-            await match.update({ match_data: matchData });
-            
-            // 모든 클라이언트에게 업데이트 전송
-            io.to(roomName).emit('volleyballServingUpdated', {
-                matchId: matchId,
-                servingTeam: servingTeamForDB
-            });
-            
-            logger.info(`배구 서브권 업데이트 성공: ${matchId} ${servingTeamForDB}`);
-        } catch (error) {
-            logger.error('배구 서브권 업데이트 중 오류 발생:', error);
-            socket.emit('volleyballServingUpdated', { success: false, error: error.message });
-        }
-    });
-
-    // 배구 현재 세트 업데이트 이벤트
-    socket.on('updateVolleyballCurrentSet', async (data) => {
-        const { matchId, currentSet } = data;
-        const roomName = `match_${matchId}`;
-        
-        try {
-            const match = await Match.findByPk(matchId);
-            if (!match) {
-                socket.emit('volleyballCurrentSetUpdated', { success: false, error: '경기를 찾을 수 없습니다.' });
-                return;
-            }
-            
-            // 현재 세트 업데이트
-            const matchData = { ...match.match_data };
-            matchData.current_set = currentSet;
-
-            await match.update({ match_data: matchData });
-            
-            // 모든 클라이언트에게 업데이트 전송
-            io.to(roomName).emit('volleyballCurrentSetUpdated', {
-                matchId: matchId,
-                currentSet: currentSet
-            });
-            
-            logger.info(`배구 현재 세트 업데이트 성공: ${matchId} ${currentSet}세트`);
-        } catch (error) {
-            logger.error('배구 현재 세트 업데이트 중 오류 발생:', error);
-            socket.emit('volleyballCurrentSetUpdated', { success: false, error: error.message });
-        }
-    });
-
-    // 배구 타이머 업데이트 이벤트
-    socket.on('updateVolleyballTimer', async (data) => {
-        const { matchId, timer } = data;
-        const roomName = `match_${matchId}`;
-        
-        try {
-            const match = await Match.findByPk(matchId);
-            if (!match) {
-                socket.emit('volleyballTimerUpdated', { success: false, error: '경기를 찾을 수 없습니다.' });
-                return;
-            }
-            
-            // 타이머 업데이트
-            const matchData = { ...match.match_data };
-            matchData.timer = timer;
-            matchData.lastUpdateTime = Date.now();
-
-            await match.update({ match_data: matchData });
-            
-            // 모든 클라이언트에게 업데이트 전송
-            io.to(roomName).emit('volleyballTimerUpdated', {
-                matchId: matchId,
-                timer: timer
-            });
-            
-            logger.info(`배구 타이머 업데이트 성공: ${matchId} ${timer}초`);
-        } catch (error) {
-            logger.error('배구 타이머 업데이트 중 오류 발생:', error);
-            socket.emit('volleyballTimerUpdated', { success: false, error: error.message });
-        }
-    });
-
-    // 배구 총 세트 수 업데이트 이벤트
-    socket.on('updateVolleyballTotalSets', async (data) => {
-        const { matchId, totalSets } = data;
-        const roomName = `match_${matchId}`;
-        
-        try {
-            const match = await Match.findByPk(matchId);
-            if (!match) {
-                socket.emit('volleyballTotalSetsUpdated', { success: false, error: '경기를 찾을 수 없습니다.' });
-                return;
-            }
-            
-            // 총 세트 수 업데이트
-            const matchData = { ...match.match_data };
-            matchData.total_sets = totalSets;
-
-            await match.update({ match_data: matchData });
-            
-            // 모든 클라이언트에게 업데이트 전송
-            io.to(roomName).emit('volleyballTotalSetsUpdated', {
-                matchId: matchId,
-                totalSets: totalSets
-            });
-            
-            logger.info(`배구 총 세트 수 업데이트 성공: ${matchId} ${totalSets}세트`);
-        } catch (error) {
-            logger.error('배구 총 세트 수 업데이트 중 오류 발생:', error);
-            socket.emit('volleyballTotalSetsUpdated', { success: false, error: error.message });
-        }
-    });
-
-    // 대회명 업데이트 이벤트
-    socket.on('updateTournamentName', async (data) => {
-        const { matchId, tournamentName } = data;
-        const roomName = `match_${matchId}`;
-        
-        try {
-            const match = await Match.findByPk(matchId);
-            if (!match) {
-                socket.emit('tournamentNameUpdated', { success: false, error: '경기를 찾을 수 없습니다.' });
-                return;
-            }
-            
-            // 대회명 업데이트
-            await match.update({ round: tournamentName });
-            
-            // 모든 클라이언트에게 업데이트 전송
-            io.to(roomName).emit('tournamentNameUpdated', {
-                matchId: matchId,
-                tournamentName: tournamentName
-            });
-            
-            logger.info(`대회명 업데이트 성공: ${matchId} ${tournamentName}`);
-        } catch (error) {
-            logger.error('대회명 업데이트 중 오류 발생:', error);
-            socket.emit('tournamentNameUpdated', { success: false, error: error.message });
-        }
-    });
-
-    // 배구 경기 상태 업데이트 이벤트
-    socket.on('updateVolleyballStatus', async (data) => {
-        const { matchId, status } = data;
-        const roomName = `match_${matchId}`;
-        
-        try {
-            const match = await Match.findByPk(matchId);
-            if (!match) {
-                socket.emit('volleyballStatusUpdated', { success: false, error: '경기를 찾을 수 없습니다.' });
-                return;
-            }
-            
-            // 경기 상태 업데이트
-            const matchData = { ...match.match_data };
-            matchData.match_status = status;
-
-            await match.update({ match_data: matchData });
-            
-            // 모든 클라이언트에게 업데이트 전송
-            io.to(roomName).emit('volleyballStatusUpdated', {
-                matchId: matchId,
-                status: status
-            });
-            
-            logger.info(`배구 경기 상태 업데이트 성공: ${matchId} ${status}`);
-        } catch (error) {
-            logger.error('배구 경기 상태 업데이트 중 오류 발생:', error);
-            socket.emit('volleyballStatusUpdated', { success: false, error: error.message });
-        }
-    });
-
-    // 팀 위치 변경
-    socket.on('swapTeams', async (data) => {
-        const { matchId } = data;
-        const roomName = `match_${matchId}`;
-        try {
-            const match = await Match.findByPk(matchId);
-            if (!match) {
-                logger.error(`경기를 찾을 수 없음: ${matchId}`);
-                return;
-            }
-            
-            // 홈팀과 원정팀 교체
-            const homeTeam = match.home_team;
-            const awayTeam = match.away_team;
-            const homeTeamLogo = match.home_team_logo;
-            const awayTeamLogo = match.away_team_logo;
-            
-            // 세트 점수도 함께 교체
-            const matchData = { ...match.match_data };
-            if (matchData.set_scores) {
-                for (let i = 1; i <= 5; i++) {
-                    if (matchData.set_scores[i]) {
-                        const tempHome = matchData.set_scores[i].home;
-                        const tempAway = matchData.set_scores[i].away;
-                        matchData.set_scores[i].home = tempAway;
-                        matchData.set_scores[i].away = tempHome;
-                        
-                        // 승자도 교체
-                        if (matchData.set_scores[i].winner === 'home') {
-                            matchData.set_scores[i].winner = 'away';
-                        } else if (matchData.set_scores[i].winner === 'away') {
-                            matchData.set_scores[i].winner = 'home';
-                        }
-                    }
-                }
-            }
-            
-            // 현재 점수도 교체
-            const tempHomeScore = matchData.home_score;
-            const tempAwayScore = matchData.away_score;
-            matchData.home_score = tempAwayScore;
-            matchData.away_score = tempHomeScore;
-            
-            // 타임아웃도 교체
-            const tempHomeTimeouts = matchData.home_timeouts;
-            const tempAwayTimeouts = matchData.away_timeouts;
-            matchData.home_timeouts = tempAwayTimeouts;
-            matchData.away_timeouts = tempHomeTimeouts;
-            
-            // 팀 정보와 match_data 교체
-            await match.update({
-                home_team: awayTeam,
-                away_team: homeTeam,
-                home_team_logo: awayTeamLogo,
-                away_team_logo: homeTeamLogo,
-                match_data: matchData
-            });
-            
-            // 클라이언트들에게 브로드캐스트
-            io.to(roomName).emit('teamsSwapped', {
-                matchId: matchId,
-                homeTeam: awayTeam,
-                awayTeam: homeTeam,
-                homeTeamLogo: awayTeamLogo,
-                awayTeamLogo: homeTeamLogo,
-                matchData: matchData
-            });
-            
-            logger.info(`팀 위치 변경 성공: ${matchId} ${homeTeam} ↔ ${awayTeam}`);
-        } catch (error) {
-            logger.error(`팀 위치 변경 실패: ${matchId}`, error);
-        }
-    });
-
     // 팀 로고 업데이트 소켓 이벤트
     socket.on('teamLogoUpdated', async (data) => {
         try {
@@ -3355,6 +3116,108 @@ io.on('connection', (socket) => {
         } catch (error) {
             logger.error('팀 로고 업데이트 오류:', error);
             socket.emit('error', { message: '서버 오류가 발생했습니다.' });
+        }
+    });
+
+    // 테스트 이벤트 처리
+    socket.on('test_event', (data) => {
+        try {
+            const { matchId, message, timestamp } = data;
+            const roomName = `match_${matchId}`;
+            
+            console.log('=== 서버: 테스트 이벤트 수신 ===');
+            console.log('matchId:', matchId);
+            console.log('message:', message);
+            console.log('timestamp:', timestamp);
+            console.log('roomName:', roomName);
+            console.log('socket.id:', socket.id);
+            
+            // 해당 매치룸의 모든 클라이언트에게 전달
+            io.to(roomName).emit('test_event', {
+                matchId: matchId,
+                message: message,
+                timestamp: timestamp
+            });
+            
+            console.log('=== 서버: 테스트 이벤트 전달 완료 ===');
+        } catch (error) {
+            console.error('테스트 이벤트 처리 오류:', error);
+        }
+    });
+
+    // 팀로고 가시성 변경 이벤트 처리
+    socket.on('teamLogoVisibilityChanged', (data) => {
+        try {
+            const { matchId, useLogos } = data;
+            const roomName = `match_${matchId}`;
+            
+            console.log('=== 서버: 팀로고 가시성 변경 이벤트 수신 ===');
+            console.log('matchId:', matchId);
+            console.log('useLogos:', useLogos);
+            console.log('roomName:', roomName);
+            console.log('socket.id:', socket.id);
+            
+            // 해당 매치룸의 모든 클라이언트에게 전달
+            io.to(roomName).emit('teamLogoVisibilityChanged', {
+                matchId: matchId,
+                useLogos: useLogos
+            });
+            
+            console.log('=== 서버: 팀로고 가시성 변경 이벤트 전달 완료 ===');
+            logger.info(`팀로고 가시성 변경 이벤트 전달: ${matchId}, useLogos: ${useLogos}`);
+        } catch (error) {
+            console.error('팀로고 가시성 변경 이벤트 처리 오류:', error);
+            logger.error('팀로고 가시성 변경 이벤트 처리 오류:', error);
+        }
+    });
+
+    // 스코어 보드 추가 박스 토글 이벤트 처리
+    socket.on('toggleExtraBox', (data) => {
+        try {
+            const { matchId } = data;
+            const roomName = `match_${matchId}`;
+            
+            console.log('=== 서버: 추가 박스 토글 이벤트 수신 ===');
+            console.log('matchId:', matchId);
+            console.log('roomName:', roomName);
+            console.log('socket.id:', socket.id);
+            
+            // 해당 매치룸의 모든 클라이언트에게 전달
+            io.to(roomName).emit('toggleExtraBox', {
+                matchId: matchId
+            });
+            
+            console.log('=== 서버: 추가 박스 토글 이벤트 전달 완료 ===');
+            logger.info(`추가 박스 토글 이벤트 전달: ${matchId}`);
+        } catch (error) {
+            console.error('추가 박스 토글 이벤트 처리 오류:', error);
+            logger.error('추가 박스 토글 이벤트 처리 오류:', error);
+        }
+    });
+
+    // 스코어 보드 추가 박스 텍스트 업데이트 이벤트 처리
+    socket.on('updateExtraBoxText', (data) => {
+        try {
+            const { matchId, text } = data;
+            const roomName = `match_${matchId}`;
+            
+            console.log('=== 서버: 추가 박스 텍스트 업데이트 이벤트 수신 ===');
+            console.log('matchId:', matchId);
+            console.log('text:', text);
+            console.log('roomName:', roomName);
+            console.log('socket.id:', socket.id);
+            
+            // 해당 매치룸의 모든 클라이언트에게 전달
+            io.to(roomName).emit('updateExtraBoxText', {
+                matchId: matchId,
+                text: text
+            });
+            
+            console.log('=== 서버: 추가 박스 텍스트 업데이트 이벤트 전달 완료 ===');
+            logger.info(`추가 박스 텍스트 업데이트 이벤트 전달: ${matchId}, text: ${text}`);
+        } catch (error) {
+            console.error('추가 박스 텍스트 업데이트 이벤트 처리 오류:', error);
+            logger.error('추가 박스 텍스트 업데이트 이벤트 처리 오류:', error);
         }
     });
 
@@ -3551,8 +3414,7 @@ app.post('/api/remove-logo', async (req, res) => {
 // 서버 시작 시 기본 종목 추가
 const defaultSports = [
   { name: '축구', code: 'SOCCER', template: 'soccer', is_default: true },
-  { name: '야구', code: 'BASEBALL', template: 'baseball', is_default: true },
-  { name: '배구', code: 'VOLLEYBALL', template: 'volleyball', is_default: true }
+  { name: '야구', code: 'BASEBALL', template: 'baseball', is_default: true }
 ];
 
 // 기본 종목 초기화 함수
@@ -3904,6 +3766,11 @@ app.post('/api/templates', async (req, res) => {
       {
         pattern: new RegExp(`/overlay-images/${baseTemplateNameUpper}\\b`, 'g'),
         replacement: `/overlay-images/${sportCode}`
+      },
+      // 팀로고 사용 유무 API 경로 (축구 템플릿 기반인 경우)
+      {
+        pattern: new RegExp(`/api/soccer-team-logo-visibility/`, 'g'),
+        replacement: `/api/team-logo-visibility/${newTemplateNameLower}/`
       }
     ];
     
@@ -3917,10 +3784,22 @@ app.post('/api/templates', async (req, res) => {
       baseControlContent = baseControlContent.replace(pattern, replacement);
     });
     
+    // 컨트롤 파일에서 팀로고 사용 유무 API 경로 추가 치환
+    baseControlContent = baseControlContent.replace(
+      /\/api\/soccer-team-logo-visibility/g,
+      `/api/team-logo-visibility/${newTemplateNameLower}`
+    );
+    
     // 모바일 컨트롤 파일에서도 모든 패턴 치환
     replacementPatterns.forEach(({ pattern, replacement }) => {
       baseControlMobileContent = baseControlMobileContent.replace(pattern, replacement);
     });
+    
+    // 모바일 컨트롤 파일에서 팀로고 사용 유무 API 경로 추가 치환
+    baseControlMobileContent = baseControlMobileContent.replace(
+      /\/api\/soccer-team-logo-visibility/g,
+      `/api/team-logo-visibility/${newTemplateNameLower}`
+    );
     
     // 파일 복사 (템플릿과 컨트롤 파일 모두 복사)
     fsSync.writeFileSync(newTemplateFile, baseTemplateContent);
@@ -4210,65 +4089,10 @@ app.get('/:sport/:id/control', async (req, res) => {
         home_score: homeScore,
         away_score: awayScore
       },
-      defaultColors,
-      formatTime,
-      getMatchStatusText
+      defaultColors
     });
   } catch (error) {
     logger.error('컨트롤 패널 로드 실패:', error);
-    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
-  }
-});
-
-// 동적 모바일 컨트롤 패널 라우트
-app.get('/:sport/:id/control-mobile', async (req, res) => {
-  try {
-    const match = await Match.findByPk(req.params.id);
-    if (!match) {
-      return res.status(404).json({ error: '경기를 찾을 수 없습니다.' });
-    }
-    
-    // 스포츠 타입이 일치하는지 확인
-    if (match.sport_type.toLowerCase() !== req.params.sport.toLowerCase()) {
-      return res.status(400).json({ error: '잘못된 스포츠 타입입니다.' });
-    }
-
-    // 경기 데이터가 없는 경우에만 초기화
-    if (!match.match_data) {
-      match.match_data = {
-        state: '경기 전',
-        home_shots: 0,
-        away_shots: 0,
-        home_shots_on_target: 0,
-        away_shots_on_target: 0,
-        home_corners: 0,
-        away_corners: 0,
-        home_fouls: 0,
-        away_fouls: 0
-      };
-      await match.save();
-    }
-
-    // 기존 점수 유지
-    const homeScore = match.home_score || 0;
-    const awayScore = match.away_score || 0;
-    
-    // 기본 팀 컬러 가져오기
-    const defaultColors = await getDefaultTeamColors();
-    
-    // 해당 스포츠의 모바일 컨트롤 템플릿 렌더링
-    res.render(`${req.params.sport}-control-mobile`, { 
-      match: {
-        ...match.toJSON(),
-        home_score: homeScore,
-        away_score: awayScore
-      },
-      defaultColors,
-      formatTime,
-      getMatchStatusText
-    });
-  } catch (error) {
-    logger.error('모바일 컨트롤 패널 로드 실패:', error);
     res.status(500).json({ error: '서버 오류가 발생했습니다.' });
   }
 });
@@ -5220,9 +5044,7 @@ app.get('/:sport/:id/overlay', async (req, res) => {
       listId: null,
       listName: null,
       currentMatchIndex: 0,
-      totalMatches: 0,
-      formatTime,
-      getMatchStatusText
+      totalMatches: 0
     });
   } catch (error) {
     logger.error('오버레이 로드 실패:', error);

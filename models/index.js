@@ -292,8 +292,6 @@ Match.beforeCreate((match) => {
     sportCode = 'SC';
   } else if (match.sport_type === 'baseball') {
     sportCode = 'BB';
-  } else if (match.sport_type === 'volleyball') {
-    sportCode = 'VB';
   }
   
   // 현재 시간을 밀리초로 가져와서 순번으로 사용
@@ -344,30 +342,6 @@ Match.beforeCreate((match) => {
       home_errors: 0,
       away_errors: 0,
       innings: {},
-      timer: 0,
-      lastUpdateTime: Date.now(),
-      isRunning: false
-    };
-  } else if (match.sport_type === 'volleyball') {
-    match.match_data = {
-      ...match.match_data,
-      total_sets: 5, // 기본값: 5세트 3선승제
-      current_set: 1,
-      home_score: 0,
-      away_score: 0,
-      home_sets: 0,
-      away_sets: 0,
-      set_scores: {
-        1: { home: 0, away: 0, winner: null },
-        2: { home: 0, away: 0, winner: null },
-        3: { home: 0, away: 0, winner: null },
-        4: { home: 0, away: 0, winner: null },
-        5: { home: 0, away: 0, winner: null }
-      },
-      home_timeouts: 0,
-      away_timeouts: 0,
-      serving_team: 'home',
-      match_status: 'pending',
       timer: 0,
       lastUpdateTime: Date.now(),
       isRunning: false

@@ -9,7 +9,7 @@
     <style>
         body {
             background-color: #f8f9fa;
-            padding: 12px;
+            padding: 6px;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             font-size: 1.2em;
         }
@@ -17,12 +17,12 @@
             max-width: 480px;
             margin: 0 auto;
             background-color: white;
-            padding: 18px;
-            border-radius: 18px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
         }
         .score-section {
-            margin: 18px 0;
+            margin: 4px 0;
         }
         .score-input-group {
             display: flex;
@@ -54,13 +54,13 @@
             font-size: 22px;
         }
         .timer-section {
-            margin: 19px 0 12px 0;
+            margin: 6px 0;
         }
         #timer-display {
             font-size: 2.4rem;
             font-weight: bold;
             text-align: center;
-            margin: 12px 0;
+            margin: 6px 0;
             font-family: monospace;
             color: #007bff;
         }
@@ -94,14 +94,50 @@
             padding: 5px 10px;
             font-size: 1rem;
         }
+        
+        /* 모바일 추가 박스 스타일 */
+        .extra-box-mobile-section {
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            padding: 6px;
+            margin: 3px 0;
+            border: 1px solid #e9ecef;
+        }
+        
+        .extra-box-mobile-header {
+            text-align: center;
+            margin-bottom: 2px;
+        }
+        
+        .extra-box-mobile-controls {
+            text-align: center;
+        }
+        
+        .extra-box-team {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .extra-box-team small {
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .extra-box-team .btn-group-sm .btn {
+            padding: 8px 12px;
+            font-size: 1rem;
+            min-width: 40px;
+        }
     </style>
 </head>
 <body>
     <div class="control-panel">
         <!-- 리스트 정보 표시 -->
         <% if (typeof listId !== 'undefined' && listId) { %>
-        <div class="row mb-3">
-            <div id="list-info-box" class="col-12 text-center" style="background-color: #e9ecef; padding: 10px; border-radius: 10px; margin-bottom: 12px;">
+        <div class="row mb-1">
+            <div id="list-info-box" class="col-12 text-center" style="background-color: #e9ecef; padding: 8px; border-radius: 8px; margin-bottom: 6px;">
                 <div style="font-weight: 600; font-size: 1.1rem; color: #495057;">
                     <%= listName %> (경기 <%= currentMatchIndex + 1 %> / <%= totalMatches %>)
                 </div>
@@ -110,7 +146,7 @@
         <% } %>
         
         <!-- 팀명 표시 및 수정 -->
-        <div class="row mb-3">
+        <div class="row mb-1">
             <div class="col-6 text-center">
                 <div style="font-weight:700; font-size:1.3rem; margin-bottom: 6px;" id="home-team-display">
                     <%= match.home_team || 'HOME' %>
@@ -128,8 +164,19 @@
                 </button>
             </div>
         </div>
+        <!-- 팀로고 사용 유무 설정 -->
+        <div class="row mb-2">
+            <div class="col-12 text-center">
+                <div class="form-check form-check-inline">
+                    <input type="checkbox" class="form-check-input" id="use-team-logos" checked style="transform: scale(0.8);">
+                    <label class="form-check-label" for="use-team-logos" style="font-size: 0.85em;">
+                        팀로고 사용
+                    </label>
+                </div>
+            </div>
+        </div>
         <!-- 팀 위치 변경 버튼 -->
-        <div class="row mb-3">
+        <div class="row mb-1">
             <div class="col-12 text-center">
                 <button class="btn btn-warning btn-sm" style="font-size: 0.9em; padding: 6px 12px;" onclick="swapTeams()">
                     <i class="bi bi-arrow-left-right"></i> 위치변경
@@ -137,7 +184,7 @@
             </div>
         </div>
         <!-- 스코어 영역 -->
-        <div class="row mb-3">
+        <div class="row mb-1">
             <div class="col-6">
                 <div class="score-section">
                     <div class="score-input-group">
@@ -205,29 +252,73 @@
                 </button>
             </div>
             <!-- 시간 수정 UI -->
-            <div class="d-flex justify-content-center align-items-center gap-3 mb-4">
+            <div class="d-flex justify-content-center align-items-center gap-3 mb-2">
                 <input type="text" id="time-edit-input" class="form-control" style="width:96px; text-align:center; font-size: 1.1em;" placeholder="00:00" pattern="[0-9]{2}:[0-9]{2}">
                 <button id="apply-time-btn" class="btn btn-primary" style="font-size: 1.1em; padding: 8px 16px;">적용</button>
             </div>
         </div>
         
+        <!-- 스코어 보드 추가 박스 (모바일) -->
+        <div class="extra-box-mobile-section">
+            <div class="extra-box-mobile-header">
+                <small class="text-muted" id="mobilePenaltyText">0 (승부차기) 0</small>
+            </div>
+            <div class="extra-box-mobile-controls">
+                <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
+                    <div class="extra-box-team">
+                        <small>홈</small>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button class="btn btn-outline-danger btn-sm" id="mobileHomeScoreMinus">
+                                <i class="fas fa-minus"></i> -
+                            </button>
+                            <button class="btn btn-outline-success btn-sm" id="mobileHomeScorePlus">
+                                <i class="fas fa-plus"></i> +
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mx-2">
+                        <small class="text-muted">VS</small>
+                    </div>
+                    <div class="extra-box-team">
+                        <small>어웨이</small>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button class="btn btn-outline-danger btn-sm" id="mobileAwayScoreMinus">
+                                <i class="fas fa-minus"></i> -
+                            </button>
+                            <button class="btn btn-outline-success btn-sm" id="mobileAwayScorePlus">
+                                <i class="fas fa-plus"></i> +
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-center gap-2">
+                    <button class="btn btn-primary btn-sm" id="mobileToggleExtraBox">
+                        <i class="fas fa-eye"></i> 표시
+                    </button>
+                    <button class="btn btn-success btn-sm" id="mobileUpdateExtraBoxText">
+                        <i class="fas fa-save"></i> 저장
+                    </button>
+                </div>
+            </div>
+        </div>
+        
         <!-- 리스트 네비게이션 버튼 -->
         <% if (typeof listId !== 'undefined' && listId) { %>
-        <div class="row mt-4">
+        <div class="row mt-2">
             <div class="col-12">
-                <div class="d-flex justify-content-between gap-3 mb-3">
-                    <button class="btn btn-outline-secondary" onclick="prevMatch()" style="flex: 1; font-size: 1.1em; padding: 10px 16px;">
+                <div class="d-flex justify-content-between gap-2 mb-2">
+                    <button class="btn btn-outline-secondary" onclick="prevMatch()" style="flex: 1; font-size: 0.8em; padding: 5px 8px;">
                         <i class="bi bi-chevron-left"></i> 이전경기
                     </button>
-                    <button class="btn btn-outline-secondary" onclick="nextMatch()" style="flex: 1; font-size: 1.1em; padding: 10px 16px;">
+                    <button class="btn btn-outline-secondary" onclick="nextMatch()" style="flex: 1; font-size: 0.8em; padding: 5px 8px;">
                         다음경기 <i class="bi bi-chevron-right"></i>
                     </button>
                 </div>
-                <div class="d-flex justify-content-center gap-3">
-                    <button class="btn btn-success" onclick="pushToIntegratedOverlay()" style="flex: 1; font-size: 1.1em; padding: 10px 16px;">
+                <div class="d-flex justify-content-center gap-2">
+                    <button class="btn btn-success" onclick="pushToIntegratedOverlay()" style="flex: 1; font-size: 0.8em; padding: 5px 8px;">
                         <i class="bi bi-display"></i> 통합 URL에 푸시
                     </button>
-                    <button class="btn btn-warning" onclick="forceRefreshOverlay()" style="flex: 1; font-size: 1.1em; padding: 10px 16px;">
+                    <button class="btn btn-warning" onclick="forceRefreshOverlay()" style="flex: 1; font-size: 0.8em; padding: 5px 8px;">
                         <i class="bi bi-arrow-clockwise"></i> 강제 새로고침
                     </button>
                 </div>
@@ -272,6 +363,42 @@
                     this.select(); // 모든 텍스트 선택
                 });
             }
+
+            // 팀로고 사용 유무 상태 불러오기
+            loadTeamLogoVisibility();
+
+            // 팀로고 사용 유무 체크박스 이벤트 리스너
+            const useTeamLogosCheckbox = document.getElementById('use-team-logos');
+            if (useTeamLogosCheckbox) {
+                useTeamLogosCheckbox.addEventListener('change', function() {
+                    const useLogos = this.checked;
+                    console.log('=== 모바일 컨트롤 패널: 팀로고 사용 상태 변경 ===');
+                    console.log('useLogos:', useLogos);
+                    console.log('matchId:', '<%= match.id %>');
+                    console.log('socket.connected:', socket.connected);
+                    
+                    // 서버에 상태 저장
+                    saveTeamLogoVisibility(useLogos);
+                    
+                    // 소켓으로 오버레이에 전송
+                    if (socket.connected) {
+                        socket.emit('teamLogoVisibilityChanged', {
+                            matchId: '<%= match.id %>',
+                            useLogos: useLogos
+                        });
+                        console.log('소켓 이벤트 전송됨: teamLogoVisibilityChanged');
+                    } else {
+                        console.log('소켓 연결되지 않음, 이벤트 전송 실패');
+                    }
+                });
+            }
+            
+            // 모바일 추가 박스 기능 초기화
+            initializeMobileExtraBoxControls();
+            loadMobileExtraBoxText();
+            
+            // Socket.IO 이벤트 리스너 추가
+            setupMobileSocketListeners();
         });
 
         // 점수 변경 이벤트
@@ -989,6 +1116,46 @@
         function goToList() {
             window.location.href = '/match-list-manager';
         }
+
+        // 팀로고 사용 유무 상태 저장
+        async function saveTeamLogoVisibility(useLogos) {
+            try {
+                const response = await fetch('/api/team-logo-visibility', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        matchId: '<%= match.id %>',
+                        sportType: '<%= match.sport_type %>',
+                        useLogos: useLogos
+                    })
+                });
+                if (!response.ok) throw new Error('팀로고 사용 상태 저장 실패');
+                console.log('팀로고 사용 상태 저장 완료:', useLogos);
+            } catch (error) {
+                console.error('팀로고 사용 상태 저장 오류:', error);
+            }
+        }
+
+        // 팀로고 사용 유무 상태 불러오기
+        async function loadTeamLogoVisibility() {
+            try {
+                const response = await fetch('/api/team-logo-visibility/<%= match.sport_type %>/<%= match.id %>');
+                if (response.ok) {
+                    const data = await response.json();
+                    const useLogos = data.useLogos;
+                    console.log('팀로고 사용 상태 불러오기:', useLogos);
+                    const checkbox = document.getElementById('use-team-logos');
+                    if (checkbox) {
+                        checkbox.checked = useLogos;
+                        console.log('체크박스 상태 설정:', useLogos);
+                    }
+                } else {
+                    console.log('팀로고 사용 상태 불러오기 실패, 기본값 사용');
+                }
+            } catch (error) {
+                console.error('팀로고 사용 상태 불러오기 오류:', error);
+            }
+        }
         <% } %>
     </script>
     
@@ -1013,5 +1180,209 @@
             </div>
         </div>
     </div>
+    
+    <script>
+        // 모바일 추가 박스 컨트롤 초기화
+        function initializeMobileExtraBoxControls() {
+            console.log('=== 모바일 추가 박스 컨트롤 초기화 ===');
+            
+            const mobileHomeScorePlus = document.getElementById('mobileHomeScorePlus');
+            const mobileHomeScoreMinus = document.getElementById('mobileHomeScoreMinus');
+            const mobileAwayScorePlus = document.getElementById('mobileAwayScorePlus');
+            const mobileAwayScoreMinus = document.getElementById('mobileAwayScoreMinus');
+            const mobileToggleButton = document.getElementById('mobileToggleExtraBox');
+            const mobileUpdateButton = document.getElementById('mobileUpdateExtraBoxText');
+            
+            console.log('모바일 버튼 요소들:', {
+                mobileHomeScorePlus,
+                mobileHomeScoreMinus,
+                mobileAwayScorePlus,
+                mobileAwayScoreMinus,
+                mobileToggleButton,
+                mobileUpdateButton
+            });
+            
+            // 홈팀 점수 증가 버튼
+            if (mobileHomeScorePlus) {
+                mobileHomeScorePlus.addEventListener('click', function() {
+                    updateMobilePenaltyScore('home', 1);
+                });
+            }
+            
+            // 홈팀 점수 감소 버튼
+            if (mobileHomeScoreMinus) {
+                mobileHomeScoreMinus.addEventListener('click', function() {
+                    updateMobilePenaltyScore('home', -1);
+                });
+            }
+            
+            // 어웨이팀 점수 증가 버튼
+            if (mobileAwayScorePlus) {
+                mobileAwayScorePlus.addEventListener('click', function() {
+                    updateMobilePenaltyScore('away', 1);
+                });
+            }
+            
+            // 어웨이팀 점수 감소 버튼
+            if (mobileAwayScoreMinus) {
+                mobileAwayScoreMinus.addEventListener('click', function() {
+                    updateMobilePenaltyScore('away', -1);
+                });
+            }
+            
+            // 토글 버튼
+            if (mobileToggleButton) {
+                mobileToggleButton.addEventListener('click', function() {
+                    console.log('=== 모바일: 추가 박스 토글 버튼 클릭 ===');
+                    socket.emit('toggleExtraBox', {
+                        matchId: '<%= match.id %>'
+                    });
+                });
+            }
+            
+            // 저장 버튼
+            if (mobileUpdateButton) {
+                mobileUpdateButton.addEventListener('click', function() {
+                    console.log('=== 모바일: 추가 박스 저장 버튼 클릭 ===');
+                    // 현재 승부차기 점수를 가져와서 저장
+                    const currentText = getCurrentPenaltyText();
+                    saveMobileExtraBoxText(currentText);
+                    socket.emit('updateExtraBoxText', {
+                        matchId: '<%= match.id %>',
+                        text: currentText
+                    });
+                });
+            }
+        }
+        
+        // 모바일 승부차기 점수 업데이트 함수
+        function updateMobilePenaltyScore(team, change) {
+            console.log('=== 모바일 승부차기 점수 업데이트 ===');
+            console.log('team:', team, 'change:', change);
+            
+            const currentText = getCurrentPenaltyText();
+            console.log('현재 텍스트:', currentText);
+            
+            // 정규식으로 홈팀과 어웨이팀 점수 추출
+            const match = currentText.match(/(\d+)\s*\(승부차기\)\s*(\d+)/);
+            if (!match) {
+                console.log('승부차기 형식을 찾을 수 없습니다');
+                return;
+            }
+            
+            let homeScore = parseInt(match[1]);
+            let awayScore = parseInt(match[2]);
+            
+            console.log('현재 점수 - 홈:', homeScore, '어웨이:', awayScore);
+            
+            // 점수 업데이트
+            if (team === 'home') {
+                homeScore = Math.max(0, homeScore + change);
+            } else if (team === 'away') {
+                awayScore = Math.max(0, awayScore + change);
+            }
+            
+            console.log('업데이트된 점수 - 홈:', homeScore, '어웨이:', awayScore);
+            
+            // 새로운 텍스트 생성
+            const newText = `${homeScore} (승부차기) ${awayScore}`;
+            console.log('새로운 텍스트:', newText);
+            
+            // 현재 텍스트 업데이트
+            setCurrentPenaltyText(newText);
+            
+            // 서버에 저장
+            saveMobileExtraBoxText(newText);
+            
+            // 실시간 동기화
+            socket.emit('updateExtraBoxText', {
+                matchId: '<%= match.id %>',
+                text: newText
+            });
+            
+            console.log('모바일 승부차기 점수 업데이트 및 저장 완료');
+        }
+        
+        // 현재 승부차기 텍스트 가져오기 (실제 저장된 값 사용)
+        let currentPenaltyText = '0 (승부차기) 0';
+        
+        function getCurrentPenaltyText() {
+            return currentPenaltyText;
+        }
+        
+        function setCurrentPenaltyText(text) {
+            currentPenaltyText = text;
+            // 모바일 UI에 텍스트 업데이트
+            const mobilePenaltyTextElement = document.getElementById('mobilePenaltyText');
+            if (mobilePenaltyTextElement) {
+                mobilePenaltyTextElement.textContent = text;
+            }
+        }
+        
+        // 모바일 추가 박스 텍스트 저장
+        async function saveMobileExtraBoxText(text) {
+            try {
+                const response = await fetch('/api/extra-box-text', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        matchId: '<%= match.id %>',
+                        sportType: 'soccer',
+                        text: text
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    console.log('모바일 추가 박스 텍스트 저장 완료:', text);
+                }
+            } catch (error) {
+                console.error('모바일 추가 박스 텍스트 저장 오류:', error);
+            }
+        }
+        
+        // 모바일 추가 박스 텍스트 불러오기
+        async function loadMobileExtraBoxText() {
+            try {
+                const response = await fetch(`/api/extra-box-text/soccer/<%= match.id %>`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    setCurrentPenaltyText(data.text);
+                    console.log('모바일: 저장된 추가 박스 텍스트 불러오기 완료:', data.text);
+                }
+            } catch (error) {
+                console.error('모바일: 추가 박스 텍스트 불러오기 오류:', error);
+            }
+        }
+        
+        // 모바일 Socket.IO 이벤트 리스너 설정
+        function setupMobileSocketListeners() {
+            console.log('=== 모바일 Socket.IO 이벤트 리스너 설정 ===');
+            
+            // 추가 박스 텍스트 업데이트 이벤트 처리 (메인 컨트롤에서 온 변경사항)
+            socket.on('updateExtraBoxText', function(data) {
+                console.log('=== 모바일: 추가 박스 텍스트 업데이트 이벤트 수신 ===');
+                console.log('수신된 데이터:', data);
+                
+                if (data.matchId === '<%= match.id %>') {
+                    setCurrentPenaltyText(data.text);
+                    console.log('모바일: 메인 컨트롤에서 온 텍스트 업데이트 완료:', data.text);
+                }
+            });
+            
+            // 추가 박스 토글 이벤트 처리 (메인 컨트롤에서 온 변경사항)
+            socket.on('toggleExtraBox', function(data) {
+                console.log('=== 모바일: 추가 박스 토글 이벤트 수신 ===');
+                console.log('수신된 데이터:', data);
+                
+                if (data.matchId === '<%= match.id %>') {
+                    console.log('모바일: 메인 컨트롤에서 온 토글 이벤트 수신 완료');
+                }
+            });
+        }
+    </script>
 </body>
 </html> 

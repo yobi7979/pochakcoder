@@ -52,7 +52,6 @@
                             <% } else { %>
                                 <option value="soccer" selected>축구</option>
                                 <option value="baseball">야구</option>
-                                <option value="volleyball">배구</option>
                             <% } %>
                         </select>
                     </div>
@@ -63,6 +62,17 @@
                     <div class="mb-3">
                         <label for="away_team" class="form-label">원정팀</label>
                         <input type="text" class="form-control" id="away_team" name="away_team" required>
+                    </div>
+
+                    <!-- 팀로고 사용 유무 설정 (모든 종목에서 사용 가능) -->
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="use_team_logos" name="use_team_logos" checked>
+                            <label class="form-check-label" for="use_team_logos">
+                                팀로고 사용
+                            </label>
+                            <small class="form-text text-muted d-block">체크 해제 시 팀로고가 표시되지 않고 팀명만 표시됩니다.</small>
+                        </div>
                     </div>
 
                     <div class="mb-3">
@@ -120,9 +130,6 @@
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="baseball-tab" data-bs-toggle="tab" data-bs-target="#baseball" type="button" role="tab">야구</button>
                         </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="volleyball-tab" data-bs-toggle="tab" data-bs-target="#volleyball" type="button" role="tab">배구</button>
-                        </li>
                     </ul>
                     <div class="tab-content" id="matchTabContent">
                         <div class="tab-pane fade show active" id="all" role="tabpanel">
@@ -133,9 +140,6 @@
                         </div>
                         <div class="tab-pane fade" id="baseball" role="tabpanel">
                             <div id="baseballMatches" style="max-height: 300px; overflow-y: auto;"></div>
-                        </div>
-                        <div class="tab-pane fade" id="volleyball" role="tabpanel">
-                            <div id="volleyballMatches" style="max-height: 300px; overflow-y: auto;"></div>
                         </div>
                     </div>
                 </div>
@@ -447,6 +451,7 @@ async function addMatchToList() {
     const sport_type = document.getElementById('sport_type').value;
     const home_team = document.getElementById('home_team').value;
     const away_team = document.getElementById('away_team').value;
+    const use_team_logos = document.getElementById('use_team_logos').checked;
 
     if (!home_team || !away_team) {
         alert('홈팀과 원정팀을 입력하세요.');
@@ -454,17 +459,20 @@ async function addMatchToList() {
     }
 
     try {
-        console.log('경기 생성 요청:', { sport_type, home_team, away_team });
+        const requestData = {
+            sport_type,
+            home_team,
+            away_team,
+            use_team_logos
+        };
+        
+        console.log('경기 생성 요청:', requestData);
         
         // 서버에 경기 생성 요청
         const response = await fetch('/api/match', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                sport_type,
-                home_team,
-                away_team
-            })
+            body: JSON.stringify(requestData)
         });
 
         console.log('서버 응답 상태:', response.status);
@@ -588,6 +596,7 @@ async function saveMatch() {
     const sport_type = document.getElementById('sport_type').value;
     const home_team = document.getElementById('home_team').value;
     const away_team = document.getElementById('away_team').value;
+    const use_team_logos = document.getElementById('use_team_logos').checked;
     
     if (!home_team || !away_team) {
         alert('홈팀과 원정팀을 입력하세요.');
@@ -595,14 +604,17 @@ async function saveMatch() {
     }
 
     try {
+        const requestData = {
+            sport_type,
+            home_team,
+            away_team,
+            use_team_logos
+        };
+        
         const response = await fetch(`/api/match/${editingMatchId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                sport_type,
-                home_team,
-                away_team
-            })
+            body: JSON.stringify(requestData)
         });
 
         if (!response.ok) {
@@ -822,6 +834,12 @@ async function uploadCsvMatches() {
         uploadBtn.disabled = false;
     }
 }
+
+// 페이지 로드 시 초기화
+document.addEventListener('DOMContentLoaded', function() {
+    // 팀로고 사용 유무 체크박스는 항상 표시됨
+    console.log('경기 생성 페이지 로드 완료');
+});
 </script>
 </body>
 </html> 
