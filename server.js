@@ -6,7 +6,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const morgan = require('morgan');
 const winston = require('winston');
-const { sequelize, Match, Settings, MatchList, SportOverlayImage, SportActiveOverlayImage } = require('./models');
+const { sequelize, Match, Settings, MatchList, SportOverlayImage, SportActiveOverlayImage, User } = require('./models');
 const multer = require('multer');
 const fs = require('fs').promises;
 const fsSync = require('fs');
@@ -424,6 +424,237 @@ app.use(session({
   cookie: { secure: false } // 개발 환경에서는 false로 설정
 }));
 
+// 사용자 정보를 템플릿에 전달하는 미들웨어 (모든 라우트에 적용)
+app.use(addUserToTemplate);
+
+// 인증 관련 설정
+const AUTH_CONFIG = {
+  username: 'admin',
+  password: 'sports2024'
+};
+
+// 인증 미들웨어
+function requireAuth(req, res, next) {
+  if (req.session && req.session.authenticated) {
+    return next();
+  } else {
+    return res.redirect('/login');
+  }
+}
+
+// 관리자 권한 미들웨어
+function requireAdmin(req, res, next) {
+  if (req.session && req.session.authenticated && req.session.userRole === 'admin') {
+    return next();
+  } else {
+    return res.status(403).json({ error: '관리자 권한이 필요합니다.' });
+  }
+}
+
+// 사용자 정보를 템플릿에 전달하는 미들웨어
+function addUserToTemplate(req, res, next) {
+  if (req.session && req.session.authenticated) {
+    res.locals.userRole = req.session.userRole;
+    res.locals.username = req.session.username;
+    res.locals.userId = req.session.userId;
+  }
+  next();
+}
+
+// 로그인 페이지는 인증 없이 접근 가능
+app.get('/login', (req, res) => {
+  if (req.session && req.session.authenticated) {
+    return res.redirect('/matches');
+  }
+  res.render('login', { error: null });
+});
+
+// 로그인 처리
+app.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+  
+  try {
+    // 데이터베이스에서 사용자 찾기
+    const user = await User.findOne({ 
+      where: { 
+        username: username,
+        is_active: true 
+      } 
+    });
+    
+    if (user && user.password === password) {
+      // 로그인 성공
+      req.session.authenticated = true;
+      req.session.username = username;
+      req.session.userId = user.id;
+      req.session.userRole = user.role;
+      
+      // 마지막 로그인 시간 업데이트
+      await user.update({ last_login: new Date() });
+      
+      logger.info(`사용자 로그인 성공: ${username} (${user.role})`);
+      res.redirect('/matches');
+    } else {
+      // 로그인 실패
+      logger.warn(`로그인 실패 시도: ${username}`);
+      res.render('login', { 
+        error: '사용자명 또는 비밀번호가 올바르지 않습니다.',
+        username: username 
+      });
+    }
+  } catch (error) {
+    logger.error('로그인 처리 중 오류:', error);
+    res.render('login', { 
+      error: '로그인 처리 중 오류가 발생했습니다.',
+      username: username 
+    });
+  }
+});
+
+// 로그아웃 처리
+app.get('/logout', (req, res) => {
+  const username = req.session.username;
+  req.session.destroy((err) => {
+    if (err) {
+      logger.error('세션 삭제 오류:', err);
+    } else {
+      logger.info(`사용자 로그아웃: ${username}`);
+    }
+    res.redirect('/login');
+  });
+});
+
+// 사용자 관리 페이지
+app.get('/users', requireAdmin, async (req, res) => {
+  try {
+    const users = await User.findAll({
+      order: [['created_at', 'DESC']]
+    });
+    res.render('user-management', { users });
+  } catch (error) {
+    logger.error('사용자 목록 조회 실패:', error);
+    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+  }
+});
+
+// 사용자 추가 API
+app.post('/api/users', requireAdmin, async (req, res) => {
+  try {
+    const { username, password, full_name, email, role } = req.body;
+    
+    // 중복 사용자명 확인
+    const existingUser = await User.findOne({ where: { username } });
+    if (existingUser) {
+      return res.status(400).json({ error: '이미 존재하는 사용자명입니다.' });
+    }
+    
+    // 새 사용자 생성
+    const newUser = await User.create({
+      username,
+      password, // 실제 운영에서는 해싱 필요
+      full_name,
+      email,
+      role: role || 'user'
+    });
+    
+    logger.info(`새 사용자 생성: ${username}`);
+    res.json({ success: true, user: newUser });
+  } catch (error) {
+    logger.error('사용자 생성 실패:', error);
+    res.status(500).json({ error: '사용자 생성에 실패했습니다.' });
+  }
+});
+
+// 사용자 조회 API
+app.get('/api/users/:id', requireAdmin, async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) {
+      return res.status(404).json({ error: '사용자를 찾을 수 없습니다.' });
+    }
+    res.json(user);
+  } catch (error) {
+    logger.error('사용자 조회 실패:', error);
+    res.status(500).json({ error: '사용자 조회에 실패했습니다.' });
+  }
+});
+
+// 사용자 수정 API
+app.put('/api/users/:id', requireAdmin, async (req, res) => {
+  try {
+    const { username, password, full_name, email, role, is_active } = req.body;
+    const userId = req.params.id;
+    
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ error: '사용자를 찾을 수 없습니다.' });
+    }
+    
+    // 사용자명 중복 확인 (자기 자신 제외)
+    if (username !== user.username) {
+      const existingUser = await User.findOne({ 
+        where: { 
+          username,
+          id: { [Op.ne]: userId }
+        } 
+      });
+      if (existingUser) {
+        return res.status(400).json({ error: '이미 존재하는 사용자명입니다.' });
+      }
+    }
+    
+    // 업데이트할 데이터 준비
+    const updateData = {
+      username,
+      full_name,
+      email,
+      role,
+      is_active
+    };
+    
+    // 비밀번호가 제공된 경우에만 업데이트
+    if (password && password.trim() !== '') {
+      updateData.password = password; // 실제 운영에서는 해싱 필요
+    }
+    
+    await user.update(updateData);
+    
+    logger.info(`사용자 정보 수정: ${username}`);
+    res.json({ success: true, user });
+  } catch (error) {
+    logger.error('사용자 수정 실패:', error);
+    res.status(500).json({ error: '사용자 수정에 실패했습니다.' });
+  }
+});
+
+// 사용자 삭제 API
+app.delete('/api/users/:id', requireAdmin, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ error: '사용자를 찾을 수 없습니다.' });
+    }
+    
+    // 관리자 권한 확인 (마지막 관리자는 삭제 불가)
+    if (user.role === 'admin') {
+      const adminCount = await User.count({ where: { role: 'admin' } });
+      if (adminCount <= 1) {
+        return res.status(400).json({ error: '마지막 관리자는 삭제할 수 없습니다.' });
+      }
+    }
+    
+    await user.destroy();
+    
+    logger.info(`사용자 삭제: ${user.username}`);
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('사용자 삭제 실패:', error);
+    res.status(500).json({ error: '사용자 삭제에 실패했습니다.' });
+  }
+});
+
 // 독립 타이머 상태 저장 (경기별)
 const matchTimerData = new Map();
 const pendingDbUpdates = new Map(); // DB 업데이트 대기열
@@ -638,17 +869,26 @@ async function restoreMatchTimers() {
 }
 
 // 라우트 설정
-app.get('/', (req, res) => {
+app.get('/', requireAuth, (req, res) => {
   res.redirect('/matches');
 });
 
 // 경기 목록 페이지
-app.get('/matches', async (req, res) => {
+app.get('/matches', requireAuth, async (req, res) => {
   try {
+    let whereCondition = {};
+    
+    // 일반 사용자는 자신이 만든 경기만 볼 수 있음
+    if (req.session.userRole !== 'admin') {
+      whereCondition.created_by = req.session.userId;
+    }
+    
     const matches = await Match.findAll({
+      where: whereCondition,
       order: [['created_at', 'DESC']]
     });
-    logger.info('경기 목록 조회:', matches);
+    
+    logger.info(`경기 목록 조회 (사용자: ${req.session.username}, 권한: ${req.session.userRole}):`, matches.length + '개');
     res.render('matches', { matches });
   } catch (error) {
     logger.error('경기 목록 조회 실패:', error);
@@ -657,7 +897,7 @@ app.get('/matches', async (req, res) => {
 });
 
 // 탭만 보는 페이지
-app.get('/match-tabs', async (req, res) => {
+app.get('/match-tabs', requireAuth, async (req, res) => {
   try {
     const matches = await Match.findAll({
       order: [['created_at', 'DESC']]
@@ -702,7 +942,7 @@ app.get('/match-tabs', async (req, res) => {
 
 
 // 경기 생성 페이지
-app.get('/matches/new', async (req, res) => {
+app.get('/matches/new', requireAuth, async (req, res) => {
   try {
     const sports = await Sport.findAll({
       where: { is_active: true },
@@ -716,7 +956,7 @@ app.get('/matches/new', async (req, res) => {
 });
 
 // 경기 생성 API
-app.post('/api/match', async (req, res) => {
+app.post('/api/match', requireAuth, async (req, res) => {
   try {
     const { sport_type, home_team, away_team, match_data, use_team_logos } = req.body;
     
@@ -780,9 +1020,9 @@ app.post('/api/match', async (req, res) => {
       sport_type,
       home_team,
       away_team,
-
       match_data: matchDataObj,
-      url
+      url,
+      created_by: req.session.userId
     });
 
     // 타이머 초기화 (자동 시작하지 않음)
@@ -937,7 +1177,7 @@ app.put('/api/match/:id', async (req, res) => {
 });
 
 // 팀 로고 업로드 API
-app.post('/api/team-logo', upload.single('logo'), async (req, res) => {
+app.post('/api/team-logo', requireAuth, upload.single('logo'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: '파일이 없습니다.' });
@@ -3646,12 +3886,12 @@ app.delete('/api/test-template', (req, res) => {
 });
 
 // 템플릿 관리 페이지 렌더링
-app.get('/templates', (req, res) => {
+app.get('/templates', requireAdmin, (req, res) => {
   res.render('templates');
 });
 
 // 종목 관리 페이지 렌더링
-app.get('/sports', async (req, res) => {
+app.get('/sports', requireAdmin, async (req, res) => {
   try {
     const sports = await Sport.findAll({
       order: [['id', 'ASC']]
@@ -4000,15 +4240,23 @@ app.put('/api/sport/:code', async (req, res) => {
 });
 
 // 경기 목록 조회 API
-app.get('/api/matches', async (req, res) => {
+app.get('/api/matches', requireAuth, async (req, res) => {
   try {
     console.log('경기 목록 조회 요청 받음');
     
+    let whereCondition = {};
+    
+    // 일반 사용자는 자신이 만든 경기만 볼 수 있음
+    if (req.session.userRole !== 'admin') {
+      whereCondition.created_by = req.session.userId;
+    }
+    
     const matches = await Match.findAll({
+      where: whereCondition,
       order: [['created_at', 'DESC']]
     });
     
-    console.log(`조회된 경기 수: ${matches.length}`);
+    console.log(`조회된 경기 수: ${matches.length} (사용자: ${req.session.username})`);
 
     const matchesWithUrls = matches.map(match => {
       const matchData = match.toJSON();
@@ -5053,7 +5301,7 @@ app.get('/:sport/:id/overlay', async (req, res) => {
 });
 
 // 경기 리스트 관리 페이지
-app.get('/match-list-manager', (req, res) => {
+app.get('/match-list-manager', requireAuth, (req, res) => {
   res.render('match-list-manager');
 });
 
@@ -5091,48 +5339,72 @@ app.get('/api/team-logo-map/:sportType', async (req, res) => {
 });
 
 // 모든 경기 데이터 삭제 API
-app.delete('/api/matches/all', async (req, res) => {
+app.delete('/api/matches/all', requireAuth, async (req, res) => {
   try {
-    logger.info('=== 모든 경기 데이터 삭제 시작 ===');
+    logger.info(`=== 경기 데이터 삭제 시작 (사용자: ${req.session.username}, 권한: ${req.session.userRole}) ===`);
     
-    // 모든 경기 삭제
-    const deletedMatches = await Match.destroy({
-      where: {},
+    let whereCondition = {};
+    let deletedMatches = 0;
+    let deletedLists = 0;
+    
+    // 일반 사용자는 자신이 만든 경기와 리스트만 삭제 가능
+    if (req.session.userRole !== 'admin') {
+      whereCondition.created_by = req.session.userId;
+      logger.info(`일반 사용자 삭제: 사용자 ID ${req.session.userId}의 데이터만 삭제`);
+    } else {
+      logger.info('관리자 삭제: 모든 데이터 삭제');
+    }
+    
+    // 경기 삭제
+    deletedMatches = await Match.destroy({
+      where: whereCondition,
       truncate: false
     });
     
-    // 모든 리스트 삭제
-    const deletedLists = await MatchList.destroy({
-      where: {},
+    // 리스트 삭제
+    deletedLists = await MatchList.destroy({
+      where: whereCondition,
       truncate: false
     });
     
-    // 푸시된 경기 정보 초기화
-    pushedMatches.clear();
+    // 푸시된 경기 정보 초기화 (관리자만)
+    if (req.session.userRole === 'admin') {
+      pushedMatches.clear();
+    }
     
-    logger.info(`모든 경기 데이터 삭제 완료: 경기 ${deletedMatches}개, 리스트 ${deletedLists}개 삭제됨`);
+    const message = req.session.userRole === 'admin' 
+      ? `모든 경기 데이터가 삭제되었습니다. (경기 ${deletedMatches}개, 리스트 ${deletedLists}개)`
+      : `본인이 만든 경기 데이터가 삭제되었습니다. (경기 ${deletedMatches}개, 리스트 ${deletedLists}개)`;
+    
+    logger.info(`경기 데이터 삭제 완료: 경기 ${deletedMatches}개, 리스트 ${deletedLists}개 삭제됨 (사용자: ${req.session.username})`);
     
     res.json({
       success: true,
-      message: `모든 경기 데이터가 삭제되었습니다. (경기 ${deletedMatches}개, 리스트 ${deletedLists}개)`,
+      message: message,
       deletedMatches,
       deletedLists
     });
   } catch (error) {
-    logger.error('모든 경기 데이터 삭제 실패:', error);
+    logger.error('경기 데이터 삭제 실패:', error);
     res.status(500).json({ error: '서버 오류가 발생했습니다.' });
   }
 });
 
 // 경기 삭제 API
-app.delete('/api/match/:id', async (req, res) => {
+app.delete('/api/match/:id', requireAuth, async (req, res) => {
     try {
         const match = await Match.findByPk(req.params.id);
         if (!match) {
             return res.status(404).json({ error: '경기를 찾을 수 없습니다.' });
         }
 
+        // 일반 사용자는 자신이 만든 경기만 삭제 가능
+        if (req.session.userRole !== 'admin' && match.created_by !== req.session.userId) {
+            return res.status(403).json({ error: '이 경기를 삭제할 권한이 없습니다.' });
+        }
+
         await match.destroy();
+        logger.info(`경기 삭제 완료: ${match.id} (사용자: ${req.session.username})`);
         res.json({ success: true, message: '경기가 성공적으로 삭제되었습니다.' });
     } catch (error) {
         logger.error('경기 삭제 실패:', error);
@@ -5232,11 +5504,21 @@ app.get('/settings', (req, res) => {
 });
 
 // 경기 리스트 API - 리스트 조회
-app.get('/api/match-lists', async (req, res) => {
+app.get('/api/match-lists', requireAuth, async (req, res) => {
   try {
+    let whereCondition = {};
+    
+    // 일반 사용자는 자신이 만든 리스트만 볼 수 있음
+    if (req.session.userRole !== 'admin') {
+      whereCondition.created_by = req.session.userId;
+    }
+    
     const lists = await MatchList.findAll({
+      where: whereCondition,
       order: [['created_at', 'DESC']]
     });
+    
+    logger.info(`리스트 조회 (사용자: ${req.session.username}, 권한: ${req.session.userRole}):`, lists.length + '개');
     res.json(lists);
   } catch (error) {
     logger.error('리스트 조회 실패:', error);
@@ -5245,19 +5527,46 @@ app.get('/api/match-lists', async (req, res) => {
 });
 
 // 경기 리스트 API - 리스트 생성
-app.post('/api/match-lists', async (req, res) => {
+app.post('/api/match-lists', requireAuth, async (req, res) => {
   try {
     const { name } = req.body;
     if (!name || !name.trim()) {
       return res.status(400).json({ error: '리스트 이름이 필요합니다.' });
     }
     
-    const list = await MatchList.create({
-      name: name.trim(),
-      matches: [],
-      created_by: req.ip || 'unknown'
+    const trimmedName = name.trim();
+    
+    // 동일한 이름의 리스트가 있는지 확인
+    const existingList = await MatchList.findOne({ 
+      where: { name: trimmedName } 
     });
     
+    if (existingList) {
+      // 리스트를 만든 사용자 정보 조회
+      const creator = await User.findByPk(existingList.created_by);
+      const creatorName = creator ? creator.username : '알 수 없음';
+      
+      // 리스트에 포함된 경기 수 계산
+      const matchCount = existingList.matches ? existingList.matches.length : 0;
+      
+      return res.status(400).json({ 
+        error: `'${trimmedName}' 이름이 이미 사용 중입니다.`,
+        details: {
+          creator: creatorName,
+          matchCount: matchCount,
+          listId: existingList.id,
+          message: `사용자 '${creatorName}'이(가) 만든 리스트에서 사용 중입니다. (경기 ${matchCount}개 포함)`
+        }
+      });
+    }
+    
+    const list = await MatchList.create({
+      name: trimmedName,
+      matches: [],
+      created_by: req.session.userId
+    });
+    
+    logger.info(`새 리스트 생성: ${trimmedName} (사용자: ${req.session.username})`);
     res.json(list);
   } catch (error) {
     logger.error('리스트 생성 실패:', error);
@@ -5266,7 +5575,7 @@ app.post('/api/match-lists', async (req, res) => {
 });
 
 // 경기 리스트 API - 리스트 수정
-app.put('/api/match-lists/:id', async (req, res) => {
+app.put('/api/match-lists/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, matches } = req.body;
@@ -5276,14 +5585,52 @@ app.put('/api/match-lists/:id', async (req, res) => {
       return res.status(404).json({ error: '리스트를 찾을 수 없습니다.' });
     }
     
+    // 일반 사용자는 자신이 만든 리스트만 수정 가능
+    if (req.session.userRole !== 'admin' && parseInt(list.created_by) !== parseInt(req.session.userId)) {
+      logger.warn(`리스트 수정 권한 거부: 리스트 ID ${id}, 리스트 생성자 ${list.created_by}, 요청자 ${req.session.userId} (${req.session.username})`);
+      return res.status(403).json({ error: '이 리스트를 수정할 권한이 없습니다.' });
+    }
+    
     if (name !== undefined) {
-      list.name = name.trim();
+      const trimmedName = name.trim();
+      
+      // 이름이 변경되는 경우 중복 검사
+      if (trimmedName !== list.name) {
+        const existingList = await MatchList.findOne({ 
+          where: { 
+            name: trimmedName,
+            id: { [Op.ne]: id } // 자기 자신 제외
+          } 
+        });
+        
+        if (existingList) {
+          // 리스트를 만든 사용자 정보 조회
+          const creator = await User.findByPk(existingList.created_by);
+          const creatorName = creator ? creator.username : '알 수 없음';
+          
+          // 리스트에 포함된 경기 수 계산
+          const matchCount = existingList.matches ? existingList.matches.length : 0;
+          
+          return res.status(400).json({ 
+            error: `'${trimmedName}' 이름이 이미 사용 중입니다.`,
+            details: {
+              creator: creatorName,
+              matchCount: matchCount,
+              listId: existingList.id,
+              message: `사용자 '${creatorName}'이(가) 만든 리스트에서 사용 중입니다. (경기 ${matchCount}개 포함)`
+            }
+          });
+        }
+      }
+      
+      list.name = trimmedName;
     }
     if (matches !== undefined) {
       list.matches = matches;
     }
     
     await list.save();
+    logger.info(`리스트 수정: ${list.name} (사용자: ${req.session.username})`);
     res.json(list);
   } catch (error) {
     logger.error('리스트 수정 실패:', error);
@@ -5292,7 +5639,7 @@ app.put('/api/match-lists/:id', async (req, res) => {
 });
 
 // 경기 리스트 API - 리스트 삭제
-app.delete('/api/match-lists/:id', async (req, res) => {
+app.delete('/api/match-lists/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -5301,7 +5648,14 @@ app.delete('/api/match-lists/:id', async (req, res) => {
       return res.status(404).json({ error: '리스트를 찾을 수 없습니다.' });
     }
     
+    // 일반 사용자는 자신이 만든 리스트만 삭제 가능
+    if (req.session.userRole !== 'admin' && parseInt(list.created_by) !== parseInt(req.session.userId)) {
+      logger.warn(`리스트 삭제 권한 거부: 리스트 ID ${id}, 리스트 생성자 ${list.created_by}, 요청자 ${req.session.userId} (${req.session.username})`);
+      return res.status(403).json({ error: '이 리스트를 삭제할 권한이 없습니다.' });
+    }
+    
     await list.destroy();
+    logger.info(`리스트 삭제: ${list.name} (사용자: ${req.session.username})`);
     res.json({ success: true });
   } catch (error) {
     logger.error('리스트 삭제 실패:', error);

@@ -58,6 +58,14 @@ const Match = sequelize.define('Match', {
   match_data: {
     type: DataTypes.JSON,
     defaultValue: {}
+  },
+  created_by: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
   }
 }, {
   timestamps: true,
@@ -98,8 +106,12 @@ const Template = sequelize.define('Template', {
     defaultValue: false
   },
   created_by: {
-    type: DataTypes.STRING,
-    allowNull: true
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
   }
 }, {
   timestamps: true,
@@ -248,6 +260,74 @@ const Settings = sequelize.define('Settings', {
   tableName: 'Settings'
 });
 
+// User 모델 정의
+const User = sequelize.define('User', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  username: {
+    type: DataTypes.STRING(50),
+    allowNull: false,
+    unique: true,
+    validate: {
+      len: [2, 50],
+      notEmpty: true
+    }
+  },
+  password: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+    validate: {
+      len: [6, 255],
+      notEmpty: true
+    }
+  },
+  email: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+    validate: {
+      isEmail: true
+    }
+  },
+  full_name: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
+  role: {
+    type: DataTypes.ENUM('admin', 'user'),
+    defaultValue: 'user',
+    allowNull: false
+  },
+  is_active: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+    allowNull: false
+  },
+  last_login: {
+    type: DataTypes.DATE,
+    allowNull: true
+  }
+}, {
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  tableName: 'users',
+  indexes: [
+    {
+      unique: true,
+      fields: ['username']
+    },
+    {
+      fields: ['email']
+    },
+    {
+      fields: ['is_active']
+    }
+  ]
+});
+
 // MatchList 모델 정의
 const MatchList = sequelize.define('MatchList', {
   id: {
@@ -268,8 +348,12 @@ const MatchList = sequelize.define('MatchList', {
     allowNull: true
   },
   created_by: {
-    type: DataTypes.STRING,
-    allowNull: true
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
   }
 }, {
   timestamps: true,
@@ -367,5 +451,6 @@ module.exports = {
   SportActiveOverlayImage,
   Settings,
   MatchList,
+  User,
   Op
 }; 

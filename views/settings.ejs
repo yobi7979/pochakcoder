@@ -237,7 +237,8 @@
         
         <div class="settings-body">
             <div class="row">
-                <!-- 왼쪽 컬럼: 기본 설정 및 로그 관리 -->
+                <!-- 왼쪽 컬럼: 기본 설정 및 로그 관리 (관리자만) -->
+                <% if (typeof userRole !== 'undefined' && userRole === 'admin') { %>
                 <div class="col-md-6">
                     <div class="settings-column settings-column-left">
                         <div class="setting-item">
@@ -414,6 +415,7 @@
                     </div>
                     </div>
                 </div>
+                <% } %>
             </div>
         </div>
 
@@ -524,7 +526,8 @@
 
                 </div>
 
-                <!-- 종목별 오버레이 디자인 설정 섹션 -->
+                <!-- 종목별 오버레이 디자인 설정 섹션 (관리자만) -->
+                <% if (typeof userRole !== 'undefined' && userRole === 'admin') { %>
                 <div class="setting-item">
                     <div class="setting-label">
                         <i class="bi bi-layout-text-window"></i> <span id="overlayDesignTitle">축구 오버레이 디자인 설정</span>
@@ -610,6 +613,7 @@
                 </div>
             </div>
         </div>
+                <% } %>
     </div>
 
     <!-- 축구 오버레이 미리보기 모달 -->
@@ -1383,7 +1387,18 @@
                 const sportSelect = document.getElementById('sportSelect');
                 sportSelect.innerHTML = '<option value="">종목을 선택하세요</option>';
                 
+                // 기본 종목 코드 (일반 사용자는 선택할 수 없음)
+                const defaultSports = ['SOCCER', 'VOLLEYBALL', 'BASEBALL'];
+                
+                // 사용자 권한 확인 (서버에서 렌더링된 값 사용)
+                const isAdmin = <% if (typeof userRole !== 'undefined' && userRole === 'admin') { %>true<% } else { %>false<% } %>;
+                
                 sports.forEach(sport => {
+                    // 관리자가 아니고 기본 종목인 경우 제외
+                    if (!isAdmin && defaultSports.includes(sport.code)) {
+                        return;
+                    }
+                    
                     const option = document.createElement('option');
                     option.value = sport.code;
                     option.textContent = sport.name;

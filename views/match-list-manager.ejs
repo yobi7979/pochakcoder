@@ -286,7 +286,16 @@ async function createList() {
             body: JSON.stringify({ name })
         });
         
-        if (!response.ok) throw new Error('리스트 생성 실패');
+        if (!response.ok) {
+            const errorData = await response.json();
+            if (errorData.details) {
+                // 상세한 중복 정보 표시
+                alert(`${errorData.error}\n\n${errorData.details.message}`);
+            } else {
+                throw new Error(errorData.error || '리스트 생성 실패');
+            }
+            return;
+        }
         
         const newList = await response.json();
         allLists.unshift(newList);
@@ -296,7 +305,7 @@ async function createList() {
         await renderMatchList();
     } catch (error) {
         console.error('리스트 생성 오류:', error);
-        alert('리스트 생성에 실패했습니다.');
+        alert('리스트 생성에 실패했습니다: ' + error.message);
     }
 }
 
@@ -315,7 +324,16 @@ async function renameList() {
             body: JSON.stringify({ name: newName.trim() })
         });
         
-        if (!response.ok) throw new Error('리스트 수정 실패');
+        if (!response.ok) {
+            const errorData = await response.json();
+            if (errorData.details) {
+                // 상세한 중복 정보 표시
+                alert(`${errorData.error}\n\n${errorData.details.message}`);
+            } else {
+                throw new Error(errorData.error || '리스트 수정 실패');
+            }
+            return;
+        }
         
         const updatedList = await response.json();
         const index = allLists.findIndex(l => l.id === selectedListId);
@@ -324,7 +342,7 @@ async function renameList() {
         await renderMatchList();
     } catch (error) {
         console.error('리스트 수정 오류:', error);
-        alert('리스트 수정에 실패했습니다.');
+        alert('리스트 수정에 실패했습니다: ' + error.message);
     }
 }
 
