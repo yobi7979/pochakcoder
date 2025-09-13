@@ -1,12 +1,15 @@
 const { Sequelize, DataTypes, Op } = require('sequelize');
 const path = require('path');
+const getDatabaseConfig = require('../database-config');
 
 // Sequelize 인스턴스 생성
-const sequelize = new Sequelize({
-  dialect: 'sqlite',
-  storage: path.join(__dirname, '../sports.db'),
-  logging: false,
-  benchmark: false
+const config = getDatabaseConfig();
+const sequelize = new Sequelize(config.url || {
+  dialect: config.dialect,
+  storage: config.storage,
+  logging: config.logging,
+  benchmark: false,
+  ...config.dialectOptions
 });
 
 // Match 모델 정의
@@ -152,6 +155,14 @@ const Sport = sequelize.define('Sport', {
   is_default: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
+  },
+  created_by: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
   }
 }, {
   timestamps: true,
@@ -432,6 +443,26 @@ Match.beforeCreate((match) => {
     };
   }
 });
+
+// Sport와 User 간의 관계 설정
+Sport.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
+User.hasMany(Sport, { foreignKey: 'created_by' });
+
+// Sport와 Template 간의 관계 설정
+Sport.belongsTo(Template, { foreignKey: 'template', targetKey: 'name', as: 'templateInfo' });
+Template.hasMany(Sport, { foreignKey: 'template', sourceKey: 'name' });
+
+// Match와 User 간의 관계 설정
+Match.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
+User.hasMany(Match, { foreignKey: 'created_by' });
+
+// Template와 User 간의 관계 설정
+Template.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
+User.hasMany(Template, { foreignKey: 'created_by' });
+
+// MatchList와 User 간의 관계 설정
+MatchList.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
+User.hasMany(MatchList, { foreignKey: 'created_by' });
 
 // 데이터베이스 연결 및 테이블 생성
 sequelize.sync()

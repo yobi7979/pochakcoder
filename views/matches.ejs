@@ -351,7 +351,7 @@
             </div>
         </div>
 
-        <!-- 종목별 탭 추가 -->
+        <!-- 종목별 및 사용자별 탭 추가 -->
         <ul class="nav nav-tabs" id="matchTabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab" aria-controls="all" aria-selected="true">
@@ -368,6 +368,14 @@
                     <i class="bi bi-circle sport-icon"></i>야구
                 </button>
             </li>
+            <!-- 사용자별 탭 동적 생성 -->
+            <% users.forEach(function(user) { %>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="user-<%= user.id %>-tab" data-bs-toggle="tab" data-bs-target="#user-<%= user.id %>" type="button" role="tab" aria-controls="user-<%= user.id %>" aria-selected="false">
+                    <i class="bi bi-person sport-icon"></i><%= user.full_name || user.username %>
+                </button>
+            </li>
+            <% }); %>
         </ul>
         
         <div class="tab-content" id="matchTabsContent">
@@ -397,6 +405,11 @@
                                 <div>종목: <%= match.sport_type %></div>
                                 <div>상태: <%= match.status %></div>
                                 <div>생성일: <%= new Date(match.created_at).toLocaleString() %></div>
+                                <% if (match.creator) { %>
+                                    <div>생성자: <%= match.creator.full_name || match.creator.username %> (ID: <%= match.creator.id %>)</div>
+                                <% } else { %>
+                                    <div>생성자: <span class="text-muted">시스템</span></div>
+                                <% } %>
                             </div>
                             <div class="match-cell-actions">
                                 <div class="control-url">
@@ -536,6 +549,68 @@
                     <% } %>
                 </div>
             </div>
+            
+            <!-- 사용자별 탭 컨텐츠 -->
+            <% users.forEach(function(user) { %>
+            <div class="tab-pane fade" id="user-<%= user.id %>" role="tabpanel" aria-labelledby="user-<%= user.id %>-tab">
+                <div class="match-grid">
+                    <% 
+                    const userMatches = matches.filter(match => match.created_by === user.id);
+                    if (userMatches.length > 0) {
+                    %>
+                        <!-- 헤더 행 추가 -->
+                        <div class="match-cell" style="background-color: #f8f9fa; font-weight: bold;">
+                            <div class="match-cell-header">팀 정보</div>
+                            <div class="match-cell-info">경기 상태</div>
+                            <div class="match-cell-actions">링크</div>
+                            <div class="delete-container">삭제</div>
+                        </div>
+                        
+                        <% userMatches.forEach(function(match) { %>
+                        <div class="match-cell" id="match-cell-<%= match.id %>">
+                            <div class="match-cell-header">
+                                <div class="match-cell-teams">
+                                    <%= match.home_team %> vs <%= match.away_team %>
+                                </div>
+                                <div class="match-cell-score">
+                                    <%= match.home_score || 0 %> - <%= match.away_score || 0 %>
+                                </div>
+                            </div>
+                            <div class="match-cell-info">
+                                <div>종목: <%= match.sport_type %></div>
+                                <div>상태: <%= match.status %></div>
+                                <div>생성일: <%= new Date(match.created_at).toLocaleString() %></div>
+                                <% if (match.creator) { %>
+                                    <div>생성자: <%= match.creator.full_name || match.creator.username %> (ID: <%= match.creator.id %>)</div>
+                                <% } else { %>
+                                    <div>생성자: <span class="text-muted">시스템</span></div>
+                                <% } %>
+                            </div>
+                            <div class="match-cell-actions">
+                                <div class="control-url">
+                                    <a href="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" class="btn btn-primary"><%= match.sport_type %> 컨트롤</a>
+                                    <input type="text" class="form-control" value="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" readonly>
+                                </div>
+                                <div class="overlay-url">
+                                    <a href="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" class="btn btn-success"><%= match.sport_type %> 오버레이</a>
+                                    <input type="text" class="form-control" value="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" readonly>
+                                </div>
+                            </div>
+                            <div class="delete-container">
+                                <button class="btn delete-btn" onclick="confirmDelete('<%= match.id %>', '<%= match.home_team %> vs <%= match.away_team %>')">삭제</button>
+                            </div>
+                        </div>
+                        <% }); %>
+                    <% } else { %>
+                        <div class="empty-message">
+                            <i class="bi bi-person" style="font-size: 3rem;"></i>
+                            <h3><%= user.full_name || user.username %>의 경기가 없습니다</h3>
+                            <p>새 경기를 생성해보세요!</p>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+            <% }); %>
         </div>
     </div>
 

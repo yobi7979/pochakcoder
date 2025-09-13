@@ -77,6 +77,7 @@
                                 <th>코드</th>
                                 <th>템플릿</th>
                                 <th>설명</th>
+                                <th>생성자</th>
                                 <th>상태</th>
                                 <th>관리</th>
                             </tr>
@@ -89,6 +90,13 @@
                                     <td><%= sport.code %></td>
                                     <td><%= sport.template %></td>
                                     <td><%= sport.description || '' %></td>
+                                    <td>
+                                        <% if (sport.creator) { %>
+                                            <%= sport.creator.full_name || sport.creator.username %> (ID: <%= sport.creator.id %>)
+                                        <% } else { %>
+                                            <span class="text-muted">시스템</span>
+                                        <% } %>
+                                    </td>
                                     <td><%= sport.is_active ? '활성' : '비활성' %></td>
                                     <td>
                                         <div class="btn-group" role="group">

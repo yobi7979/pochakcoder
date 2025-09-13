@@ -885,11 +885,33 @@ app.get('/matches', requireAuth, async (req, res) => {
     
     const matches = await Match.findAll({
       where: whereCondition,
+      include: [{
+        model: User,
+        as: 'creator',
+        attributes: ['id', 'username', 'full_name'],
+        required: false
+      }],
       order: [['created_at', 'DESC']]
     });
     
+    // 사용자 목록 가져오기 (admin인 경우만)
+    let users = [];
+    if (req.session.userRole === 'admin') {
+      users = await User.findAll({
+        attributes: ['id', 'username', 'full_name'],
+        where: { is_active: true }
+      });
+    } else {
+      // 일반 사용자는 본인만
+      users = [{
+        id: req.session.userId,
+        username: req.session.username,
+        full_name: req.session.fullName || req.session.username
+      }];
+    }
+    
     logger.info(`경기 목록 조회 (사용자: ${req.session.username}, 권한: ${req.session.userRole}):`, matches.length + '개');
-    res.render('matches', { matches });
+    res.render('matches', { matches, users, userRole: req.session.userRole });
   } catch (error) {
     logger.error('경기 목록 조회 실패:', error);
     res.status(500).json({ error: '서버 오류가 발생했습니다.' });
@@ -1480,6 +1502,12 @@ app.get('/api/sport', async (req, res) => {
   try {
     const sports = await Sport.findAll({
       where: { is_active: true },
+      include: [{
+        model: User,
+        as: 'creator',
+        attributes: ['id', 'username', 'full_name'],
+        required: false
+      }],
       order: [['id', 'ASC']]
     });
     
@@ -3894,6 +3922,12 @@ app.get('/templates', requireAdmin, (req, res) => {
 app.get('/sports', requireAdmin, async (req, res) => {
   try {
     const sports = await Sport.findAll({
+      include: [{
+        model: User,
+        as: 'creator',
+        attributes: ['id', 'username', 'full_name'],
+        required: false
+      }],
       order: [['id', 'ASC']]
     });
     res.render('sports', { sports, title: '종목 관리' });
@@ -4125,7 +4159,7 @@ app.delete('/api/templates/:id', async (req, res) => {
 });
 
 // 종목 생성 API
-app.post('/api/sport', async (req, res) => {
+app.post('/api/sport', requireAuth, async (req, res) => {
   try {
     const { name, code, template, description } = req.body;
     
@@ -4154,10 +4188,11 @@ app.post('/api/sport', async (req, res) => {
       template,
       description,
       is_active: true,
-      is_default: false
+      is_default: false,
+      created_by: req.user.id
     });
 
-    logger.info(`새 종목 생성: ${name} (${sportCode})`);
+    logger.info(`새 종목 생성: ${name} (${sportCode}) by user ${req.user.username}`);
     res.json(sport);
   } catch (error) {
     logger.error('종목 생성 실패:', error);
@@ -4253,17 +4288,46 @@ app.get('/api/matches', requireAuth, async (req, res) => {
     
     const matches = await Match.findAll({
       where: whereCondition,
+      include: [{
+        model: User,
+        as: 'creator',
+        attributes: ['id', 'username', 'full_name'],
+        required: false
+      }],
       order: [['created_at', 'DESC']]
     });
     
     console.log(`조회된 경기 수: ${matches.length} (사용자: ${req.session.username})`);
 
+    // 템플릿 기반 분류를 위해 Sport 정보도 가져오기
+    const sports = await Sport.findAll({
+      include: [{
+        model: Template,
+        as: 'templateInfo',
+        attributes: ['sport_type'],
+        required: false
+      }]
+    });
+
+    // Sport 코드를 키로 하는 맵 생성
+    const sportTemplateMap = {};
+    sports.forEach(sport => {
+      sportTemplateMap[sport.code] = sport.templateInfo ? sport.templateInfo.sport_type : sport.template;
+    });
+
     const matchesWithUrls = matches.map(match => {
       const matchData = match.toJSON();
+      
+      // 템플릿 기반 sport_type 결정
+      let templateBasedSportType = matchData.sport_type;
+      if (sportTemplateMap[matchData.sport_type]) {
+        templateBasedSportType = sportTemplateMap[matchData.sport_type];
+      }
 
       return {
         id: matchData.id,
         sport_type: matchData.sport_type,
+        template_based_sport_type: templateBasedSportType,
         home_team: matchData.home_team,
         away_team: matchData.away_team,
         home_team_color: matchData.home_team_color,
@@ -4274,6 +4338,8 @@ app.get('/api/matches', requireAuth, async (req, res) => {
         away_score: matchData.away_score,
         status: matchData.status,
         match_data: matchData.match_data,
+        created_by: matchData.created_by,
+        creator: matchData.creator,
 
         created_at: matchData.created_at,
         updated_at: matchData.updated_at,
