@@ -74,7 +74,7 @@ const Match = sequelize.define('Match', {
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
-  tableName: 'Matches'
+  tableName: 'matches'
 });
 
 // Template 모델 정의
@@ -168,7 +168,7 @@ const Sport = sequelize.define('Sport', {
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
-  tableName: 'Sports'
+  tableName: 'sports'
 });
 
 // SportOverlayImage 모델 정의
