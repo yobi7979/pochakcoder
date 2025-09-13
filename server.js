@@ -3758,8 +3758,14 @@ server.listen(PORT, '0.0.0.0', async () => {
   await initializeDefaultSettings();
   
   await restoreMatchTimers();
-  // 데이터베이스 동기화는 이미 수동으로 완료되었으므로 건너뜀
-  // await sequelize.sync({ alter: true });
+  
+  // Railway PostgreSQL에서 테이블 자동 생성
+  try {
+    await sequelize.sync({ alter: true });
+    logger.info('데이터베이스 동기화 완료');
+  } catch (error) {
+    logger.error('데이터베이스 동기화 실패:', error);
+  }
   
   // 자동 로그 관리 스케줄러 시작
   startLogManagementScheduler();
