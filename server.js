@@ -2212,6 +2212,72 @@ app.get('/api/soccer-team-logo-visibility/:matchId', async (req, res) => {
   }
 });
 
+// KT Soccer 팀로고 사용 상태 저장 API
+app.post('/api/kt_soccer-team-logo-visibility', async (req, res) => {
+  try {
+    const { matchId, useLogos } = req.body;
+    
+    if (!matchId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'matchId가 필요합니다.' 
+      });
+    }
+    
+    await Settings.upsert({
+      key: `kt_soccer_team_logo_visibility_${matchId}`,
+      value: useLogos.toString()
+    });
+    
+    // 해당 매치룸의 모든 클라이언트에게 실시간으로 반영
+    io.to(`match_${matchId}`).emit('teamLogoVisibilityChanged', {
+      matchId: matchId,
+      useLogos: useLogos
+    });
+    
+    res.json({ 
+      success: true, 
+      message: '팀로고 사용 상태가 저장되었습니다.'
+    });
+    
+    logger.info(`KT Soccer 팀로고 사용 상태 저장 완료: ${matchId}, useLogos: ${useLogos}`);
+  } catch (error) {
+    logger.error('KT Soccer 팀로고 사용 상태 저장 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// KT Soccer 팀로고 사용 상태 조회 API
+app.get('/api/kt_soccer-team-logo-visibility/:matchId', async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    
+    const setting = await Settings.findOne({
+      where: { key: `kt_soccer_team_logo_visibility_${matchId}` }
+    });
+    
+    const useLogos = setting ? setting.value === 'true' : true; // 기본값은 true
+    
+    res.json({ 
+      success: true, 
+      useLogos: useLogos
+    });
+    
+    logger.info(`KT Soccer 팀로고 사용 상태 불러오기: ${matchId}, useLogos: ${useLogos}`);
+  } catch (error) {
+    logger.error('KT Soccer 팀로고 사용 상태 불러오기 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
 // 추가 박스 텍스트 저장 API
 app.post('/api/extra-box-text', async (req, res) => {
   try {
@@ -5924,6 +5990,52 @@ app.get('/api/team-logo-map/:sportType', async (req, res) => {
         logger.error('팀 로고 매핑 정보 조회 중 오류 발생:', error);
         res.status(500).json({
             error: '팀 로고 매핑 정보 조회 중 오류가 발생했습니다.',
+            details: error.message
+        });
+    }
+});
+
+// 팀 로고 목록 조회 API
+app.get('/api/team-logos/:sportType', async (req, res) => {
+    try {
+        const sportType = req.params.sportType.toUpperCase();
+        const logoDir = path.join(__dirname, 'public/TEAMLOGO', sportType);
+        
+        // 디렉토리가 없으면 빈 배열 반환
+        if (!fsSync.existsSync(logoDir)) {
+            return res.json({ logos: [] });
+        }
+
+        // 디렉토리 내의 모든 파일 읽기
+        const files = fsSync.readdirSync(logoDir);
+        const logoFiles = files.filter(file => {
+            const ext = path.extname(file).toLowerCase();
+            return ['.png', '.jpg', '.jpeg', '.gif', '.webp'].includes(ext);
+        });
+
+        // 로고 정보 배열 생성
+        const logos = logoFiles.map(file => {
+            const filePath = path.join(logoDir, file);
+            const stats = fsSync.statSync(filePath);
+            const fileName = path.parse(file).name; // 확장자 제거한 파일명
+            
+            return {
+                fileName: file,
+                displayName: fileName,
+                path: `/TEAMLOGO/${sportType}/${file}`,
+                size: stats.size,
+                modified: stats.mtime
+            };
+        });
+
+        // 파일명으로 정렬
+        logos.sort((a, b) => a.displayName.localeCompare(b.displayName));
+
+        res.json({ logos });
+    } catch (error) {
+        logger.error('팀 로고 목록 조회 중 오류 발생:', error);
+        res.status(500).json({
+            error: '팀 로고 목록 조회 중 오류가 발생했습니다.',
             details: error.message
         });
     }

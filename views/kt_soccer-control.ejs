@@ -1792,7 +1792,7 @@
         // 팀로고 사용 상태 저장 함수
         async function saveTeamLogoVisibility(useLogos) {
             try {
-                const response = await fetch('/api/soccer-team-logo-visibility', {
+                const response = await fetch('/api/team-logo-visibility/kt_soccer', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1816,7 +1816,7 @@
         // 팀로고 사용 상태 불러오기 함수
         async function loadTeamLogoVisibility() {
             try {
-                const response = await fetch('/api/soccer-team-logo-visibility/<%= match.id %>');
+                const response = await fetch('/api/team-logo-visibility/kt_soccer/<%= match.id %>');
                 
                 if (response.ok) {
                     const data = await response.json();
@@ -2541,7 +2541,7 @@
             const color = document.getElementById('home-logo-bg-color').value;
             try {
                 // 1. 기존 JSON 파일 읽기
-                const logoMapResponse = await fetch('/api/team-logo-map/SOCCER');
+                const logoMapResponse = await fetch('/api/team-logo-map/KT_SOCCER');
                 let teamLogoMap = {};
                 
                 if (logoMapResponse.ok) {
@@ -2630,7 +2630,7 @@
             const color = document.getElementById('away-logo-bg-color').value;
             try {
                 // 1. 기존 JSON 파일 읽기
-                const logoMapResponse = await fetch('/api/team-logo-map/SOCCER');
+                const logoMapResponse = await fetch('/api/team-logo-map/KT_SOCCER');
                 let teamLogoMap = {};
                 
                 if (logoMapResponse.ok) {
@@ -3345,7 +3345,7 @@
             
             // 팀 로고 정보 가져오기
             try {
-                const response = await fetch('/api/team-logo-map/SOCCER');
+                const response = await fetch('/api/team-logo-map/KT_SOCCER');
                 const teamLogoMap = await response.json();
                 console.log('팀 로고맵 로드:', teamLogoMap);
                 
@@ -3431,7 +3431,7 @@
         // 팀 로고 정보 로드
         async function loadTeamLogos() {
             try {
-                const response = await fetch('/api/team-logo-map/SOCCER');
+                const response = await fetch('/api/team-logo-map/KT_SOCCER');
                 const data = await response.json();
                 
                 if (data && data.teamLogoMap) {
@@ -3641,7 +3641,7 @@
 
             try {
                 // 1. 기존 JSON 파일 읽기
-                const logoMapResponse = await fetch('/api/team-logo-map/SOCCER');
+                const logoMapResponse = await fetch('/api/team-logo-map/KT_SOCCER');
                 let teamLogoMap = {};
                 
                 if (logoMapResponse.ok) {
@@ -3713,7 +3713,7 @@
                 console.log('matchId:', matchId);
                 
                 // 1. 팀 로고 맵에서 로고 경로만 제거 (배경색은 유지)
-                const logoMapResponse = await fetch('/api/team-logo-map/SOCCER');
+                const logoMapResponse = await fetch('/api/team-logo-map/KT_SOCCER');
                 let teamLogoMap = {};
                 
                 if (logoMapResponse.ok) {
@@ -3839,7 +3839,7 @@
         async function initialize() {
             try {
                 // 팀 로고 매핑 정보 확인
-                const response = await fetch('/api/team-logo-map/SOCCER');
+                const response = await fetch('/api/team-logo-map/KT_SOCCER');
                 if (!response.ok) {
                     throw new Error(`팀 로고 맵 로드 실패: ${response.status}`);
                 }
@@ -4338,7 +4338,7 @@
                 const matchId = '<%= match.id %>';
                 
                 // 현재 팀 로고 매핑 정보 가져오기
-                const logoMapResponse = await fetch('/api/team-logo-map/SOCCER');
+                const logoMapResponse = await fetch('/api/team-logo-map/KT_SOCCER');
                 let teamLogoMap = {};
                 if (logoMapResponse.ok) {
                     const data = await logoMapResponse.json();
