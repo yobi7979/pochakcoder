@@ -526,6 +526,124 @@
 
                 </div>
 
+                        <!-- 백업/복원 관리 섹션 (관리자만) -->
+                        <% if (typeof userRole !== 'undefined' && userRole === 'admin') { %>
+                        <div class="setting-item">
+                            <div class="setting-label">
+                                <i class="bi bi-database-gear"></i> 백업/복원 관리
+                            </div>
+                            <div class="setting-description">
+                                전체 시스템 데이터를 백업하고 복원할 수 있습니다. 
+                                백업에는 사용자 생성 템플릿, 경기 정보, 종목별 이미지, 팀 로고 등이 포함됩니다. 
+                                기본 템플릿과 기본 종목은 백업에서 제외되며 복원 시에도 유지됩니다.
+                            </div>
+
+                            <!-- 백업 생성 -->
+                            <div class="row mb-3">
+                                <div class="col-md-12">
+                                    <div class="card border-success">
+                                        <div class="card-header bg-success text-white">
+                                            <h6 class="mb-0"><i class="bi bi-download"></i> 백업 생성</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="mb-3">현재 시스템의 모든 데이터를 백업 파일로 생성합니다.</p>
+                                            
+                                            <!-- 백업 파일 이름 입력 -->
+                                            <div class="mb-3">
+                                                <label for="backup-name-input" class="form-label">백업 파일 이름:</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text" id="backup-name-prefix">sportscoder-backup-</span>
+                                                    <input type="text" id="backup-name-input" class="form-control" 
+                                                           placeholder="백업이름" maxlength="50" 
+                                                           aria-describedby="backup-name-prefix backup-name-help">
+                                                </div>
+                                                <div id="backup-name-help" class="form-text">
+                                                    날짜와 시간이 자동으로 앞에 추가됩니다. (예: sportscoder-backup-2025-09-16T00-19-41-241Z-백업이름.zip)
+                                                </div>
+                                            </div>
+                                            
+                                            <button id="create-backup-btn" class="btn btn-success">
+                                                <i class="bi bi-download"></i> 백업 생성
+                                            </button>
+                                            <div id="backup-progress" class="mt-3" style="display: none;">
+                                                <div class="progress">
+                                                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                                         role="progressbar" style="width: 0%"></div>
+                                                </div>
+                                                <small class="text-muted">백업 생성 중...</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 백업 목록 -->
+                            <div class="row mb-3">
+                                <div class="col-md-12">
+                                    <div class="card border-info">
+                                        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0"><i class="bi bi-list-ul"></i> 백업 목록</h6>
+                                            <button id="refresh-backup-list" class="btn btn-outline-light btn-sm">
+                                                <i class="bi bi-arrow-clockwise"></i> 새로고침
+                                            </button>
+                                        </div>
+                                        <div class="card-body">
+                                            <div id="backup-list-container">
+                                                <div class="text-center text-muted">
+                                                    <i class="bi bi-hourglass-split"></i> 백업 목록을 불러오는 중...
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 복원 -->
+                            <div class="row mb-3">
+                                <div class="col-md-12">
+                                    <div class="card border-warning">
+                                        <div class="card-header bg-warning text-dark">
+                                            <h6 class="mb-0"><i class="bi bi-upload"></i> 백업 복원</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="alert alert-warning">
+                                                <i class="bi bi-exclamation-triangle"></i>
+                                                <strong>주의:</strong> 백업 복원 시 현재의 모든 사용자 데이터가 삭제되고 백업된 데이터로 교체됩니다. 
+                                                기본 템플릿과 기본 종목은 유지됩니다.
+                                            </div>
+                                            
+                                            <!-- 파일 업로드 방식 -->
+                                            <div class="mb-3">
+                                                <label for="backup-file-input" class="form-label">백업 파일 업로드:</label>
+                                                <input type="file" id="backup-file-input" class="form-control" accept=".zip" />
+                                                <div class="form-text">백업 파일(.zip)을 선택하세요</div>
+                                            </div>
+                                            
+                                            <!-- 또는 서버 백업 선택 방식 -->
+                                            <div class="mb-3">
+                                                <label for="restore-backup-select" class="form-label">또는 서버의 백업 선택:</label>
+                                                <select id="restore-backup-select" class="form-select">
+                                                    <option value="">백업을 선택하세요</option>
+                                                </select>
+                                            </div>
+                                            
+                                            <button id="restore-backup-btn" class="btn btn-warning" disabled>
+                                                <i class="bi bi-upload"></i> 백업 복원
+                                            </button>
+                                            <div id="restore-progress" class="mt-3" style="display: none;">
+                                                <div class="progress">
+                                                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" 
+                                                         role="progressbar" style="width: 0%"></div>
+                                                </div>
+                                                <small class="text-muted">백업 복원 중...</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <% } %>
+
                 <!-- 종목별 오버레이 디자인 설정 섹션 (관리자만) -->
                 <% if (typeof userRole !== 'undefined' && userRole === 'admin') { %>
                 <div class="setting-item">
@@ -694,10 +812,17 @@
                     const homeColor = settings.default_home_color || '#1e40af';
                     const awayColor = settings.default_away_color || '#1e40af';
                     
-                    document.getElementById('default-home-color').value = homeColor;
-                    document.getElementById('default-away-color').value = awayColor;
+                    const homeColorInput = document.getElementById('default-home-color');
+                    const awayColorInput = document.getElementById('default-away-color');
+                    
+                    if (homeColorInput) {
+                        homeColorInput.value = homeColor;
                     updateColorPreview('home', homeColor);
+                    }
+                    if (awayColorInput) {
+                        awayColorInput.value = awayColor;
                     updateColorPreview('away', awayColor);
+                    }
                 }
             } catch (error) {
                 console.error('설정 로드 실패:', error);
@@ -818,6 +943,11 @@
                 if (response.ok) {
                     const data = await response.json();
                     const logFilesList = document.getElementById('logFilesList');
+                    
+                    // 관리자만 로그 파일 목록 표시
+                    if (!isAdmin || !logFilesList) {
+                        return;
+                    }
                     
                     if (data.logs && data.logs.length > 0) {
                         let html = '<div class="list-group">';
@@ -1170,10 +1300,13 @@
         // 축구 오버레이 미리보기 렌더링 (공통 함수)
         function renderSoccerOverlayPreview(containerId) {
             const preview = document.getElementById(containerId);
+            if (!preview) return;
+            
             preview.innerHTML = '';
             
             // 경기 상태 표시 설정 확인
-            const showMatchState = document.getElementById('showMatchState').checked;
+            const showMatchStateElement = document.getElementById('showMatchState');
+            const showMatchState = showMatchStateElement ? showMatchStateElement.checked : false;
             
             // 각 요소들을 미리보기에 추가
             const elements = [
@@ -1230,8 +1363,11 @@
                 if (containerId === 'soccerOverlayPreviewSmall') {
                     div.onclick = (e) => {
                         e.stopPropagation();
-                        document.getElementById('elementSelect').value = element.id;
-                        selectElement();
+                        const elementSelect = document.getElementById('elementSelect');
+                        if (elementSelect) {
+                            elementSelect.value = element.id;
+                            selectElement();
+                        }
                     };
                 }
                 
@@ -1251,7 +1387,11 @@
 
         // 요소 선택
         function selectElement() {
-            selectedElement = document.getElementById('elementSelect').value;
+            const elementSelect = document.getElementById('elementSelect');
+            if (!elementSelect) {
+                return; // 관리자가 아닌 경우 요소가 없으므로 함수 종료
+            }
+            selectedElement = elementSelect.value;
             
             // 모든 요소의 선택 상태 제거
             document.querySelectorAll('.preview-element').forEach(el => {
@@ -1345,7 +1485,9 @@
                 
                 if (result.success) {
                     const showMatchState = document.getElementById('showMatchState');
+                    if (showMatchState) {
                     showMatchState.checked = result.showMatchState;
+                    }
                 }
             } catch (error) {
                 console.error('경기 상태 표시 설정 로드 오류:', error);
@@ -1390,8 +1532,7 @@
                 // 기본 종목 코드 (일반 사용자는 선택할 수 없음)
                 const defaultSports = ['SOCCER', 'VOLLEYBALL', 'BASEBALL'];
                 
-                // 사용자 권한 확인 (서버에서 렌더링된 값 사용)
-                const isAdmin = <% if (typeof userRole !== 'undefined' && userRole === 'admin') { %>true<% } else { %>false<% } %>;
+                // 사용자 권한 확인 (전역 변수 사용)
                 
                 sports.forEach(sport => {
                     // 관리자가 아니고 기본 종목인 경우 제외
@@ -1692,6 +1833,9 @@
             }
         }
 
+        // 전역 변수 정의
+        const isAdmin = <% if (typeof userRole !== 'undefined' && userRole === 'admin') { %>true<% } else { %>false<% } %>;
+
         // 이벤트 리스너
         document.addEventListener('DOMContentLoaded', function() {
             loadSettings();
@@ -1701,25 +1845,352 @@
             loadMatchStateSettings(); // 경기 상태 표시 설정 로드
             loadSports(); // 종목 목록 로드
             
+            // 관리자만 백업 목록 로드
+            if (isAdmin) {
+                loadBackupList(); // 백업 목록 로드
+            }
+            
             // 컬러 변경 이벤트
-            document.getElementById('default-home-color').addEventListener('change', function() {
+            const homeColorInput = document.getElementById('default-home-color');
+            if (homeColorInput) {
+                homeColorInput.addEventListener('change', function() {
                 updateColorPreview('home', this.value);
             });
+            }
             
-            document.getElementById('default-away-color').addEventListener('change', function() {
+            const awayColorInput = document.getElementById('default-away-color');
+            if (awayColorInput) {
+                awayColorInput.addEventListener('change', function() {
                 updateColorPreview('away', this.value);
             });
+            }
             
             // 경기 상태 표시 설정 변경 이벤트
-            document.getElementById('showMatchState').addEventListener('change', function() {
+            const showMatchStateInput = document.getElementById('showMatchState');
+            if (showMatchStateInput) {
+                showMatchStateInput.addEventListener('change', function() {
                 saveMatchStateSettings();
                 // 미리보기 업데이트
                 renderSmallPreview();
             });
+            }
             
             // 저장 버튼 이벤트
-            document.getElementById('save-settings').addEventListener('click', saveSettings);
+            const saveSettingsBtn = document.getElementById('save-settings');
+            if (saveSettingsBtn) {
+                saveSettingsBtn.addEventListener('click', saveSettings);
+            }
+
+            // 백업/복원 관련 이벤트 리스너 (관리자만)
+            if (isAdmin) {
+                const createBackupBtn = document.getElementById('create-backup-btn');
+                if (createBackupBtn) {
+                    createBackupBtn.addEventListener('click', createBackup);
+                }
+                
+                const refreshBackupListBtn = document.getElementById('refresh-backup-list');
+                if (refreshBackupListBtn) {
+                    refreshBackupListBtn.addEventListener('click', loadBackupList);
+                }
+                
+                // 파일 업로드 이벤트
+                const backupFileInput = document.getElementById('backup-file-input');
+                if (backupFileInput) {
+                    backupFileInput.addEventListener('change', function() {
+                        updateRestoreButtonState();
+                    });
+                }
+                
+                // 서버 백업 선택 이벤트
+                const restoreBackupSelect = document.getElementById('restore-backup-select');
+                if (restoreBackupSelect) {
+                    restoreBackupSelect.addEventListener('change', function() {
+                        updateRestoreButtonState();
+                    });
+                }
+                
+                const restoreBackupBtn = document.getElementById('restore-backup-btn');
+                if (restoreBackupBtn) {
+                    restoreBackupBtn.addEventListener('click', restoreBackup);
+                }
+            }
         });
+
+        // 복원 버튼 상태 업데이트
+        function updateRestoreButtonState() {
+            const fileInput = document.getElementById('backup-file-input');
+            const serverSelect = document.getElementById('restore-backup-select');
+            const restoreBtn = document.getElementById('restore-backup-btn');
+            
+            if (!fileInput || !serverSelect || !restoreBtn) return;
+            
+            const hasFile = fileInput.files.length > 0;
+            const hasServerBackup = serverSelect.value !== '';
+            
+            // 파일과 서버 백업을 동시에 선택한 경우 비활성화
+            if (hasFile && hasServerBackup) {
+                restoreBtn.disabled = true;
+                restoreBtn.title = '파일 업로드와 서버 백업 중 하나만 선택해주세요';
+            } else if (hasFile || hasServerBackup) {
+                restoreBtn.disabled = false;
+                restoreBtn.title = '';
+            } else {
+                restoreBtn.disabled = true;
+                restoreBtn.title = '백업 파일을 업로드하거나 서버의 백업을 선택해주세요';
+            }
+        }
+
+        // 백업 생성
+        async function createBackup() {
+            const btn = document.getElementById('create-backup-btn');
+            const progress = document.getElementById('backup-progress');
+            const progressBar = progress.querySelector('.progress-bar');
+            const progressText = progress.querySelector('small');
+            const backupNameInput = document.getElementById('backup-name-input');
+            
+            try {
+                // 백업 이름 가져오기
+                const backupName = backupNameInput.value.trim();
+                
+                // UI 상태 변경
+                btn.disabled = true;
+                btn.innerHTML = '<i class="bi bi-hourglass-split"></i> 백업 생성 중...';
+                progress.style.display = 'block';
+                progressBar.style.width = '0%';
+                progressText.textContent = '백업 생성 중...';
+                
+                // 진행률 애니메이션 시작
+                let progressValue = 0;
+                const progressInterval = setInterval(() => {
+                    progressValue += Math.random() * 15;
+                    if (progressValue > 90) progressValue = 90;
+                    progressBar.style.width = progressValue + '%';
+                }, 200);
+                
+                const response = await fetch('/api/backup/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: backupName || undefined // 빈 문자열이면 undefined로 전송
+                    })
+                });
+                
+                // 진행률 완료
+                clearInterval(progressInterval);
+                progressBar.style.width = '100%';
+                progressText.textContent = '백업 생성 완료!';
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast(`백업이 성공적으로 생성되었습니다. (${formatFileSize(result.size)})`, 'success');
+                    loadBackupList(); // 백업 목록 새로고침
+                    backupNameInput.value = ''; // 입력 필드 초기화
+                } else {
+                    showToast(result.error || '백업 생성에 실패했습니다.', 'error');
+                }
+            } catch (error) {
+                console.error('백업 생성 오류:', error);
+                showToast('백업 생성 중 오류가 발생했습니다.', 'error');
+            } finally {
+                // UI 상태 복원
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-download"></i> 백업 생성';
+                setTimeout(() => {
+                    progress.style.display = 'none';
+                }, 1000);
+            }
+        }
+
+        // 백업 목록 로드
+        async function loadBackupList() {
+            const container = document.getElementById('backup-list-container');
+            const select = document.getElementById('restore-backup-select');
+            
+            try {
+                container.innerHTML = '<div class="text-center text-muted"><i class="bi bi-hourglass-split"></i> 백업 목록을 불러오는 중...</div>';
+                
+                const response = await fetch('/api/backup/list');
+                const backupList = await response.json();
+                
+                if (backupList.length === 0) {
+                    container.innerHTML = '<div class="text-center text-muted"><i class="bi bi-inbox"></i> 생성된 백업이 없습니다.</div>';
+                    select.innerHTML = '<option value="">백업을 선택하세요</option>';
+                    return;
+                }
+                
+                // 백업 목록 표시
+                let html = '<div class="table-responsive"><table class="table table-sm">';
+                html += '<thead><tr><th>파일명</th><th>크기</th><th>생성일</th><th>작업</th></tr></thead><tbody>';
+                
+                // 복원 선택 옵션 초기화
+                select.innerHTML = '<option value="">백업을 선택하세요</option>';
+                
+                backupList.forEach(backup => {
+                    const fileName = backup.fileName;
+                    const size = formatFileSize(backup.size);
+                    const created = new Date(backup.created).toLocaleString('ko-KR');
+                    
+                    html += `<tr>
+                        <td><code>${fileName}</code></td>
+                        <td>${size}</td>
+                        <td>${created}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="/api/backup/download/${fileName}" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-download"></i> 다운로드
+                                </a>
+                                <button class="btn btn-outline-danger btn-sm" onclick="deleteBackup('${fileName}')">
+                                    <i class="bi bi-trash"></i> 삭제
+                                </button>
+                            </div>
+                        </td>
+                    </tr>`;
+                    
+                    // 복원 선택 옵션 추가
+                    select.innerHTML += `<option value="${fileName}">${fileName} (${size})</option>`;
+                });
+                
+                html += '</tbody></table></div>';
+                container.innerHTML = html;
+                
+            } catch (error) {
+                console.error('백업 목록 로드 오류:', error);
+                container.innerHTML = '<div class="text-center text-danger"><i class="bi bi-exclamation-triangle"></i> 백업 목록을 불러오는데 실패했습니다.</div>';
+            }
+        }
+
+        // 백업 삭제
+        async function deleteBackup(fileName) {
+            if (!confirm(`백업 파일 "${fileName}"을(를) 삭제하시겠습니까?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/backup/${fileName}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('백업 파일이 삭제되었습니다.', 'success');
+                    loadBackupList(); // 목록 새로고침
+                } else {
+                    showToast(result.error || '백업 파일 삭제에 실패했습니다.', 'error');
+                }
+            } catch (error) {
+                console.error('백업 삭제 오류:', error);
+                showToast('백업 파일 삭제 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // 백업 복원
+        async function restoreBackup() {
+            const fileInput = document.getElementById('backup-file-input');
+            const serverSelect = document.getElementById('restore-backup-select');
+            const selectedFile = fileInput.files[0];
+            const selectedServerBackup = serverSelect.value;
+            
+            // 파일 업로드 또는 서버 백업 선택 확인
+            if (!selectedFile && !selectedServerBackup) {
+                showToast('백업 파일을 업로드하거나 서버의 백업을 선택해주세요.', 'warning');
+                return;
+            }
+            
+            // 파일과 서버 백업을 동시에 선택한 경우
+            if (selectedFile && selectedServerBackup) {
+                showToast('파일 업로드와 서버 백업 중 하나만 선택해주세요.', 'warning');
+                return;
+            }
+            
+            const backupName = selectedFile ? selectedFile.name : selectedServerBackup;
+            
+            if (!confirm(`백업 "${backupName}"을(를) 복원하시겠습니까?\n\n주의: 현재의 모든 사용자 데이터가 삭제되고 백업된 데이터로 교체됩니다.`)) {
+                return;
+            }
+            
+            const btn = document.getElementById('restore-backup-btn');
+            const progress = document.getElementById('restore-progress');
+            const progressBar = progress.querySelector('.progress-bar');
+            const progressText = progress.querySelector('small');
+            
+            try {
+                // UI 상태 변경
+                btn.disabled = true;
+                btn.innerHTML = '<i class="bi bi-hourglass-split"></i> 복원 중...';
+                progress.style.display = 'block';
+                progressBar.style.width = '0%';
+                progressText.textContent = '백업 복원 중...';
+                
+                // 진행률 애니메이션 시작
+                let progressValue = 0;
+                const progressInterval = setInterval(() => {
+                    progressValue += Math.random() * 10;
+                    if (progressValue > 85) progressValue = 85;
+                    progressBar.style.width = progressValue + '%';
+                }, 300);
+                
+                let response;
+                
+                if (selectedFile) {
+                    // 파일 업로드 방식
+                    const formData = new FormData();
+                    formData.append('backupFile', selectedFile);
+                    
+                    response = await fetch('/api/backup/restore', {
+                        method: 'POST',
+                        body: formData
+                    });
+                } else {
+                    // 서버 백업 선택 방식 (기존 방식)
+                    response = await fetch('/api/backup/restore', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ fileName: selectedServerBackup })
+                    });
+                }
+                
+                // 진행률 완료
+                clearInterval(progressInterval);
+                progressBar.style.width = '100%';
+                progressText.textContent = '백업 복원 완료!';
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('백업 복원이 완료되었습니다. 페이지를 새로고침합니다.', 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    showToast(result.error || '백업 복원에 실패했습니다.', 'error');
+                }
+            } catch (error) {
+                console.error('백업 복원 오류:', error);
+                showToast('백업 복원 중 오류가 발생했습니다.', 'error');
+            } finally {
+                // UI 상태 복원
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-upload"></i> 백업 복원';
+                setTimeout(() => {
+                    progress.style.display = 'none';
+                }, 1000);
+            }
+        }
+
+        // 파일 크기 포맷팅
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
     </script>
 </body>
 </html> 

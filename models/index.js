@@ -1,15 +1,12 @@
 const { Sequelize, DataTypes, Op } = require('sequelize');
 const path = require('path');
-const getDatabaseConfig = require('../database-config');
 
 // Sequelize 인스턴스 생성
-const config = getDatabaseConfig();
-const sequelize = new Sequelize(config.url || {
-  dialect: config.dialect,
-  storage: config.storage,
-  logging: config.logging,
-  benchmark: false,
-  ...config.dialectOptions
+const sequelize = new Sequelize({
+  dialect: 'sqlite',
+  storage: path.join(__dirname, '../sports.db'),
+  logging: false,
+  benchmark: false
 });
 
 // Match 모델 정의
@@ -449,8 +446,18 @@ Sport.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
 User.hasMany(Sport, { foreignKey: 'created_by' });
 
 // Sport와 Template 간의 관계 설정
-Sport.belongsTo(Template, { foreignKey: 'template', targetKey: 'name', as: 'templateInfo' });
-Template.hasMany(Sport, { foreignKey: 'template', sourceKey: 'name' });
+Sport.belongsTo(Template, { 
+  foreignKey: 'template', 
+  targetKey: 'name', 
+  as: 'templateInfo',
+  constraints: false
+});
+Template.hasMany(Sport, { 
+  foreignKey: 'template', 
+  sourceKey: 'name',
+  as: 'sports',
+  constraints: false
+});
 
 // Match와 User 간의 관계 설정
 Match.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });

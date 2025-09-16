@@ -1,0 +1,718 @@
+{
+  "templates": [
+    {
+      "id": 3,
+      "name": "ktscorea",
+      "sport_type": "ktscorea",
+      "template_type": "overlay",
+      "content": "",
+      "file_name": "ktscorea-template.ejs",
+      "is_default": false,
+      "created_by": null,
+      "created_at": "2025-09-15T23:51:25.121Z",
+      "updated_at": "2025-09-15T23:51:25.121Z"
+    },
+    {
+      "id": 4,
+      "name": "ktscorea2",
+      "sport_type": "ktscorea2",
+      "template_type": "overlay",
+      "content": "",
+      "file_name": "ktscorea2-template.ejs",
+      "is_default": false,
+      "created_by": null,
+      "created_at": "2025-09-15T23:52:54.635Z",
+      "updated_at": "2025-09-15T23:52:54.635Z"
+    }
+  ],
+  "sports": [
+    {
+      "id": 28,
+      "name": "KT축구",
+      "code": "KTSCOREA",
+      "template": "ktscorea",
+      "description": "",
+      "is_active": true,
+      "is_default": false,
+      "created_by": null,
+      "created_at": null,
+      "updated_at": null
+    },
+    {
+      "id": 29,
+      "name": "KT축구2",
+      "code": "KTSCOREA2",
+      "template": "ktscorea2",
+      "description": "",
+      "is_active": true,
+      "is_default": false,
+      "created_by": null,
+      "created_at": null,
+      "updated_at": null
+    }
+  ],
+  "matches": [
+    {
+      "id": "09162886",
+      "sport_type": "ktscorea",
+      "home_team": "KT1111",
+      "away_team": "K1212121212",
+      "home_team_color": "#1e40af",
+      "away_team_color": "#1e40af",
+      "home_team_header": "HOME",
+      "away_team_header": "AWAY",
+      "home_score": 0,
+      "away_score": 0,
+      "status": "pending",
+      "match_data": {
+        "home_team_color": "#1e40af",
+        "away_team_color": "#1e40af",
+        "timer": 0,
+        "lastUpdateTime": 1757980492969,
+        "isRunning": true,
+        "timer_startTime": 1757980492969,
+        "timer_pausedTime": 0,
+        "lastBatchUpdate": 1757980497909
+      },
+      "created_by": 1,
+      "created_at": "2025-09-15T23:53:32.885Z",
+      "updated_at": "2025-09-15T23:54:57.909Z"
+    },
+    {
+      "id": "09167767",
+      "sport_type": "ktscorea2",
+      "home_team": "EQWEQE",
+      "away_team": "QWEQWE",
+      "home_team_color": "#1e40af",
+      "away_team_color": "#1e40af",
+      "home_team_header": "HOME",
+      "away_team_header": "AWAY",
+      "home_score": 0,
+      "away_score": 0,
+      "status": "pending",
+      "match_data": {
+        "home_team_color": "#1e40af",
+        "away_team_color": "#1e40af",
+        "timer": 0,
+        "lastUpdateTime": 1757980540270,
+        "isRunning": true,
+        "timer_startTime": 1757980540270,
+        "timer_pausedTime": 0,
+        "lastBatchUpdate": 1757980542975
+      },
+      "created_by": 1,
+      "created_at": "2025-09-15T23:53:37.767Z",
+      "updated_at": "2025-09-15T23:55:42.975Z"
+    },
+    {
+      "id": "09161811",
+      "sport_type": "ktscorea2",
+      "home_team": "ASDASDASF22",
+      "away_team": "ASDZCASD222",
+      "home_team_color": "#1e40af",
+      "away_team_color": "#1e40af",
+      "home_team_header": "HOME",
+      "away_team_header": "AWAY",
+      "home_score": 0,
+      "away_score": 0,
+      "status": "pending",
+      "match_data": {
+        "home_team_color": "#1e40af",
+        "away_team_color": "#1e40af",
+        "timer": 0,
+        "lastUpdateTime": 1757980421811,
+        "isRunning": false
+      },
+      "created_by": 1,
+      "created_at": "2025-09-15T23:53:41.811Z",
+      "updated_at": "2025-09-15T23:53:41.811Z"
+    },
+    {
+      "id": "09169479",
+      "sport_type": "ktscorea",
+      "home_team": "ASDZXCZXAS11",
+      "away_team": "DASDZFDASD11",
+      "home_team_color": "#1e40af",
+      "away_team_color": "#1e40af",
+      "home_team_header": "HOME",
+      "away_team_header": "AWAY",
+      "home_score": 0,
+      "away_score": 0,
+      "status": "pending",
+      "match_data": {
+        "home_team_color": "#1e40af",
+        "away_team_color": "#1e40af",
+        "timer": 0,
+        "lastUpdateTime": 1757980429479,
+        "isRunning": false
+      },
+      "created_by": 1,
+      "created_at": "2025-09-15T23:53:49.479Z",
+      "updated_at": "2025-09-15T23:53:49.479Z"
+    },
+    {
+      "id": "09164393",
+      "sport_type": "ktscorea",
+      "home_team": "asdasd",
+      "away_team": "asdasfasda",
+      "home_team_color": "#1e40af",
+      "away_team_color": "#1e40af",
+      "home_team_header": "HOME",
+      "away_team_header": "AWAY",
+      "home_score": 0,
+      "away_score": 0,
+      "status": "pending",
+      "match_data": {
+        "home_team_color": "#1e40af",
+        "away_team_color": "#1e40af",
+        "timer": 0,
+        "lastUpdateTime": 1757980714662,
+        "isRunning": true,
+        "timer_startTime": 1757980714662,
+        "timer_pausedTime": 0,
+        "lastBatchUpdate": 1757980718254
+      },
+      "created_by": 2,
+      "created_at": "2025-09-15T23:57:54.392Z",
+      "updated_at": "2025-09-15T23:58:38.254Z"
+    }
+  ],
+  "matchLists": [
+    {
+      "id": 1,
+      "name": "KT1",
+      "matches": [
+        {
+          "id": "09162886",
+          "sport_type": "ktscorea",
+          "home_team": "KT1111",
+          "away_team": "K1212121212"
+        },
+        {
+          "id": "09169479",
+          "sport_type": "ktscorea",
+          "home_team": "ASDZXCZXAS11",
+          "away_team": "DASDZFDASD11"
+        }
+      ],
+      "custom_url": null,
+      "created_by": "1",
+      "created_at": "2025-09-15T23:53:15.377Z",
+      "updated_at": "2025-09-15T23:53:49.495Z"
+    },
+    {
+      "id": 2,
+      "name": "KT2",
+      "matches": [
+        {
+          "id": "09167767",
+          "sport_type": "ktscorea2",
+          "home_team": "EQWEQE",
+          "away_team": "QWEQWE"
+        },
+        {
+          "id": "09161811",
+          "sport_type": "ktscorea2",
+          "home_team": "ASDASDASF22",
+          "away_team": "ASDZCASD222"
+        }
+      ],
+      "custom_url": null,
+      "created_by": "1",
+      "created_at": "2025-09-15T23:53:17.605Z",
+      "updated_at": "2025-09-15T23:53:41.827Z"
+    },
+    {
+      "id": 3,
+      "name": "adsasd",
+      "matches": [
+        {
+          "id": "09164393",
+          "sport_type": "ktscorea",
+          "home_team": "asdasd",
+          "away_team": "asdasfasda"
+        }
+      ],
+      "custom_url": null,
+      "created_by": "2",
+      "created_at": "2025-09-15T23:56:16.529Z",
+      "updated_at": "2025-09-15T23:57:54.409Z"
+    }
+  ],
+  "sportOverlayImages": [
+    {
+      "id": 19,
+      "sport_code": "SOCCER",
+      "filename": "백그라운드_화랑대기_수정_상_1756538735944.png",
+      "file_path": "/overlay-images/SOCCER/백그라운드_화랑대기_수정_상_1756538735944.png",
+      "is_active": true,
+      "upload_time": "2025-08-30T07:25:35.945Z",
+      "created_at": "2025-08-30T07:25:35.945Z",
+      "updated_at": "2025-08-30T07:25:35.945Z"
+    },
+    {
+      "id": 26,
+      "sport_code": "KTSCOREA",
+      "filename": "충청북도생활체육_bg_1757549983499_1757980457368.png",
+      "file_path": "/overlay-images/KTSCOREA/충청북도생활체육_bg_1757549983499_1757980457368.png",
+      "is_active": true,
+      "upload_time": "2025-09-15T23:54:17.370Z",
+      "created_at": "2025-09-15T23:54:17.370Z",
+      "updated_at": "2025-09-15T23:54:17.370Z"
+    },
+    {
+      "id": 27,
+      "sport_code": "KTSCOREA2",
+      "filename": "한국기자BG_1757980466297.png",
+      "file_path": "/overlay-images/KTSCOREA2/한국기자BG_1757980466297.png",
+      "is_active": true,
+      "upload_time": "2025-09-15T23:54:26.298Z",
+      "created_at": "2025-09-15T23:54:26.298Z",
+      "updated_at": "2025-09-15T23:54:26.298Z"
+    }
+  ],
+  "sportActiveOverlayImages": [
+    {
+      "id": 6,
+      "sport_code": "SOCCER",
+      "active_image_id": null,
+      "active_image_path": null,
+      "created_at": "2025-08-30T07:06:09.259Z",
+      "updated_at": "2025-09-11T08:37:45.713Z"
+    },
+    {
+      "id": 14,
+      "sport_code": "KTSCOREA",
+      "active_image_id": 26,
+      "active_image_path": "/overlay-images/KTSCOREA/충청북도생활체육_bg_1757549983499_1757980457368.png",
+      "created_at": "2025-09-15T23:54:19.166Z",
+      "updated_at": "2025-09-15T23:54:19.166Z"
+    },
+    {
+      "id": 15,
+      "sport_code": "KTSCOREA2",
+      "active_image_id": 27,
+      "active_image_path": "/overlay-images/KTSCOREA2/한국기자BG_1757980466297.png",
+      "created_at": "2025-09-15T23:54:27.614Z",
+      "updated_at": "2025-09-15T23:54:27.614Z"
+    }
+  ],
+  "settings": [
+    {
+      "id": 1,
+      "key": "default_home_color",
+      "value": "#1e40af",
+      "description": "홈팀 기본 컬러",
+      "created_at": "2025-07-28T23:54:07.757Z",
+      "updated_at": "2025-07-30T01:33:30.871Z"
+    },
+    {
+      "id": 2,
+      "key": "default_away_color",
+      "value": "#1e40af",
+      "description": "원정팀 기본 컬러",
+      "created_at": "2025-07-28T23:54:07.766Z",
+      "updated_at": "2025-07-30T01:33:30.877Z"
+    },
+    {
+      "id": 11,
+      "key": "soccer_match_state_visibility",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-08-03T07:18:21.661Z",
+      "updated_at": "2025-08-03T07:18:21.661Z"
+    },
+    {
+      "id": 12,
+      "key": "soccer_team_logo_visibility_0901SC1062",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-10T01:27:07.724Z",
+      "updated_at": "2025-09-10T01:40:25.165Z"
+    },
+    {
+      "id": 13,
+      "key": "soccer_team_logo_visibility_0902SC9919",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-10T01:36:15.194Z",
+      "updated_at": "2025-09-10T01:39:39.565Z"
+    },
+    {
+      "id": 14,
+      "key": "soccdr_team_logo_visibility_09105706",
+      "value": "true",
+      "description": null,
+      "created_at": "2025-09-10T01:49:05.717Z",
+      "updated_at": "2025-09-10T01:49:05.717Z"
+    },
+    {
+      "id": 15,
+      "key": "soccdr_team_logo_visibility_09103724",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-10T01:49:13.730Z",
+      "updated_at": "2025-09-10T01:49:13.730Z"
+    },
+    {
+      "id": 16,
+      "key": "soccer4_team_logo_visibility_09106617",
+      "value": "true",
+      "description": null,
+      "created_at": "2025-09-10T01:50:46.622Z",
+      "updated_at": "2025-09-10T01:50:46.622Z"
+    },
+    {
+      "id": 17,
+      "key": "soccer4_team_logo_visibility_09103366",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-10T01:50:53.371Z",
+      "updated_at": "2025-09-10T01:50:53.371Z"
+    },
+    {
+      "id": 18,
+      "key": "soccer_team_logo_visibility_0910SC0145",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-10T01:52:00.151Z",
+      "updated_at": "2025-09-10T01:52:00.151Z"
+    },
+    {
+      "id": 19,
+      "key": "soccer_team_logo_visibility_09106862",
+      "value": "true",
+      "description": null,
+      "created_at": "2025-09-10T02:00:06.870Z",
+      "updated_at": "2025-09-10T02:00:06.870Z"
+    },
+    {
+      "id": 20,
+      "key": "soccer_team_logo_visibility_09102363",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-10T02:00:12.369Z",
+      "updated_at": "2025-09-10T02:00:18.494Z"
+    },
+    {
+      "id": 21,
+      "key": "soccer_team_logo_visibility_09107924",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-10T02:00:37.929Z",
+      "updated_at": "2025-09-10T02:00:37.929Z"
+    },
+    {
+      "id": 22,
+      "key": "soccer_team_logo_visibility_09103285",
+      "value": "true",
+      "description": null,
+      "created_at": "2025-09-10T02:00:43.290Z",
+      "updated_at": "2025-09-10T02:00:43.290Z"
+    },
+    {
+      "id": 23,
+      "key": "newsoccer_team_logo_visibility_09102426",
+      "value": "true",
+      "description": null,
+      "created_at": "2025-09-10T02:01:42.432Z",
+      "updated_at": "2025-09-10T02:01:42.432Z"
+    },
+    {
+      "id": 24,
+      "key": "newsoccer_team_logo_visibility_09109378",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-10T02:01:49.383Z",
+      "updated_at": "2025-09-10T02:01:49.383Z"
+    },
+    {
+      "id": 25,
+      "key": "soccer_team_logo_visibility_0910SC7961",
+      "value": "true",
+      "description": null,
+      "created_at": "2025-09-10T02:07:27.967Z",
+      "updated_at": "2025-09-10T02:07:27.967Z"
+    },
+    {
+      "id": 26,
+      "key": "soccer_team_logo_visibility_0910SC6925",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-10T02:07:36.931Z",
+      "updated_at": "2025-09-10T02:07:36.931Z"
+    },
+    {
+      "id": 27,
+      "key": "soccer44_team_logo_visibility_09107450",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-10T02:07:47.455Z",
+      "updated_at": "2025-09-10T02:07:47.455Z"
+    },
+    {
+      "id": 28,
+      "key": "soccer44_team_logo_visibility_09105129",
+      "value": "true",
+      "description": null,
+      "created_at": "2025-09-10T02:07:55.134Z",
+      "updated_at": "2025-09-10T02:07:55.134Z"
+    },
+    {
+      "id": 29,
+      "key": "soccer_team_logo_visibility_09107450",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-10T02:08:46.731Z",
+      "updated_at": "2025-09-10T02:09:19.904Z"
+    },
+    {
+      "id": 30,
+      "key": "soccer44_team_logo_visibility_09104061",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-10T02:10:14.066Z",
+      "updated_at": "2025-09-10T02:10:14.066Z"
+    },
+    {
+      "id": 31,
+      "key": "soccer44_team_logo_visibility_09104042",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-10T02:18:14.048Z",
+      "updated_at": "2025-09-10T02:18:14.048Z"
+    },
+    {
+      "id": 32,
+      "key": "soccer_team_logo_visibility_09104042",
+      "value": "true",
+      "description": null,
+      "created_at": "2025-09-10T02:18:38.019Z",
+      "updated_at": "2025-09-10T02:19:23.524Z"
+    },
+    {
+      "id": 33,
+      "key": "soccer44_team_logo_visibility_09105181",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-10T02:19:45.186Z",
+      "updated_at": "2025-09-10T02:19:45.186Z"
+    },
+    {
+      "id": 34,
+      "key": "soccer3333_team_logo_visibility_09103253",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-10T02:24:23.259Z",
+      "updated_at": "2025-09-10T02:24:23.259Z"
+    },
+    {
+      "id": 35,
+      "key": "soccer_team_logo_visibility_0910SC1984",
+      "value": "true",
+      "description": null,
+      "created_at": "2025-09-10T02:24:31.989Z",
+      "updated_at": "2025-09-10T02:24:31.989Z"
+    },
+    {
+      "id": 36,
+      "key": "soccer3333_team_logo_visibility_09109013",
+      "value": "true",
+      "description": null,
+      "created_at": "2025-09-10T02:24:39.018Z",
+      "updated_at": "2025-09-10T02:24:39.018Z"
+    },
+    {
+      "id": 37,
+      "key": "soccer34_team_logo_visibility_09107477",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-10T03:21:27.482Z",
+      "updated_at": "2025-09-10T03:26:05.273Z"
+    },
+    {
+      "id": 38,
+      "key": "soccer_team_logo_visibility_0910SC6428",
+      "value": "true",
+      "description": null,
+      "created_at": "2025-09-10T03:21:36.434Z",
+      "updated_at": "2025-09-10T03:24:45.481Z"
+    },
+    {
+      "id": 39,
+      "key": "soccer_team_logo_visibility_0910SC0327",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-10T03:21:40.333Z",
+      "updated_at": "2025-09-10T03:22:06.129Z"
+    },
+    {
+      "id": 40,
+      "key": "soccer34_team_logo_visibility_09105115",
+      "value": "true",
+      "description": null,
+      "created_at": "2025-09-10T03:21:45.126Z",
+      "updated_at": "2025-09-10T03:21:45.126Z"
+    },
+    {
+      "id": 41,
+      "key": "soccer34_team_logo_visibility_09105958",
+      "value": "true",
+      "description": null,
+      "created_at": "2025-09-10T03:22:25.963Z",
+      "updated_at": "2025-09-10T03:22:25.963Z"
+    },
+    {
+      "id": 42,
+      "key": "soccer34_team_logo_visibility_09105661",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-10T03:22:35.666Z",
+      "updated_at": "2025-09-10T03:23:13.150Z"
+    },
+    {
+      "id": 43,
+      "key": "soccer_team_logo_visibility_0910SC6629",
+      "value": "true",
+      "description": null,
+      "created_at": "2025-09-10T07:08:06.637Z",
+      "updated_at": "2025-09-10T08:16:02.034Z"
+    },
+    {
+      "id": 44,
+      "key": "soccer_extra_box_text_0910SC6629",
+      "value": "8 (승부차기) 2",
+      "description": null,
+      "created_at": "2025-09-10T07:30:45.367Z",
+      "updated_at": "2025-09-10T08:15:25.827Z"
+    },
+    {
+      "id": 45,
+      "key": "soccer_team_logo_visibility_0911SC8974",
+      "value": "true",
+      "description": null,
+      "created_at": "2025-09-11T08:03:58.980Z",
+      "updated_at": "2025-09-11T08:03:58.980Z"
+    },
+    {
+      "id": 46,
+      "key": "soccer_team_logo_visibility_0911SC6288",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-11T08:05:06.293Z",
+      "updated_at": "2025-09-11T08:05:22.033Z"
+    },
+    {
+      "id": 47,
+      "key": "ktsoccer_team_logo_visibility_09115672",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-11T08:28:15.678Z",
+      "updated_at": "2025-09-11T08:35:29.613Z"
+    },
+    {
+      "id": 48,
+      "key": "soccer_team_logo_visibility_0911SC2429",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-11T08:36:12.435Z",
+      "updated_at": "2025-09-11T08:36:12.435Z"
+    },
+    {
+      "id": 49,
+      "key": "ktsoccer_team_logo_visibility_09116050",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-11T08:36:46.056Z",
+      "updated_at": "2025-09-11T08:36:46.056Z"
+    },
+    {
+      "id": 50,
+      "key": "soccer_extra_box_text_09116050",
+      "value": "6 (승부차기) 10",
+      "description": null,
+      "created_at": "2025-09-11T08:36:57.527Z",
+      "updated_at": "2025-09-11T08:37:00.331Z"
+    },
+    {
+      "id": 51,
+      "key": "ktsoccer_team_logo_visibility_09139760",
+      "value": "true",
+      "description": null,
+      "created_at": "2025-09-13T07:45:09.766Z",
+      "updated_at": "2025-09-13T07:45:09.766Z"
+    },
+    {
+      "id": 52,
+      "key": "ktsoccer_team_logo_visibility_09135240",
+      "value": "true",
+      "description": null,
+      "created_at": "2025-09-13T07:47:45.246Z",
+      "updated_at": "2025-09-13T07:47:45.246Z"
+    },
+    {
+      "id": 53,
+      "key": "ktsoccer_team_logo_visibility_09137208",
+      "value": "true",
+      "description": null,
+      "created_at": "2025-09-13T07:50:57.214Z",
+      "updated_at": "2025-09-13T07:50:57.214Z"
+    },
+    {
+      "id": 54,
+      "key": "ktsoccer_team_logo_visibility_09136857",
+      "value": "true",
+      "description": null,
+      "created_at": "2025-09-13T07:51:16.863Z",
+      "updated_at": "2025-09-13T07:51:16.863Z"
+    },
+    {
+      "id": 55,
+      "key": "ktscorea_team_logo_visibility_09162886",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-15T23:53:32.891Z",
+      "updated_at": "2025-09-15T23:55:22.690Z"
+    },
+    {
+      "id": 56,
+      "key": "ktscorea2_team_logo_visibility_09167767",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-15T23:53:37.773Z",
+      "updated_at": "2025-09-15T23:53:37.773Z"
+    },
+    {
+      "id": 57,
+      "key": "ktscorea2_team_logo_visibility_09161811",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-15T23:53:41.817Z",
+      "updated_at": "2025-09-15T23:53:41.817Z"
+    },
+    {
+      "id": 58,
+      "key": "ktscorea_team_logo_visibility_09169479",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-15T23:53:49.484Z",
+      "updated_at": "2025-09-15T23:53:49.484Z"
+    },
+    {
+      "id": 59,
+      "key": "soccer_extra_box_text_09162886",
+      "value": "0 (승부차기) 0",
+      "description": null,
+      "created_at": "2025-09-15T23:55:05.463Z",
+      "updated_at": "2025-09-15T23:55:12.565Z"
+    },
+    {
+      "id": 60,
+      "key": "ktscorea_team_logo_visibility_09164393",
+      "value": "false",
+      "description": null,
+      "created_at": "2025-09-15T23:57:54.398Z",
+      "updated_at": "2025-09-15T23:58:27.018Z"
+    }
+  ]
+}

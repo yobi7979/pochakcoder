@@ -47,6 +47,7 @@
                                 <th>컨트롤 파일</th>
                                 <th>모바일 컨트롤 파일</th>
                                 <th>상태</th>
+                                <th>파일 관리</th>
                                 <th>작업</th>
                             </tr>
                         </thead>
@@ -122,6 +123,56 @@
         </div>
     </div>
 
+    <!-- 파일 관리 모달 -->
+    <div class="modal fade" id="fileManagementModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">템플릿 파일 관리</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="fileManagementContent">
+                        <!-- 파일 관리 내용이 여기에 동적으로 추가됩니다 -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 파일 업로드 모달 -->
+    <div class="modal fade" id="fileUploadModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">파일 업로드</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="fileUploadForm" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="fileInput" class="form-label">EJS 파일 선택</label>
+                            <input type="file" class="form-control" id="fileInput" accept=".ejs" required>
+                            <div class="form-text">EJS 파일만 업로드 가능합니다. (최대 5MB)</div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="alert alert-info">
+                                <strong>주의:</strong> 기존 파일이 있다면 덮어쓰기됩니다.
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" id="uploadFileBtn">업로드</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // 템플릿 목록 로드
@@ -141,6 +192,11 @@
                             <span class="badge ${template.isDefault ? 'bg-primary' : 'bg-success'}">
                                 ${template.isDefault ? '기본' : '사용자 정의'}
                             </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-info" onclick="openFileManagement(${template.id}, '${template.name}')" title="파일 관리">
+                                <i class="bi bi-folder"></i>
+                            </button>
                         </td>
                         <td>
                             ${!template.isDefault ? `
@@ -309,9 +365,18 @@
                     method: 'DELETE'
                 });
                 
+                const result = await response.json();
+                
                 if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error);
+                    // 참조 관계가 있는 경우 상세한 경고 메시지 표시
+                    if (result.referencedSports && result.referencedSports.length > 0) {
+                        const sportList = result.referencedSports.map(sport => `• ${sport.name} (${sport.code})`).join('\n');
+                        const message = `${result.error}\n\n${result.details}\n\n참조하는 종목 목록:\n${sportList}\n\n이 종목들의 템플릿을 먼저 변경한 후 템플릿을 삭제해주세요.`;
+                        alert(message);
+                    } else {
+                        throw new Error(result.error);
+                    }
+                    return;
                 }
                 
                 // 모달 닫기
@@ -329,6 +394,181 @@
                 templateToDelete = null;
             }
         });
+
+        // 파일 관리 관련 변수
+        let currentTemplateId = null;
+        let currentTemplateName = null;
+        let currentFileType = null;
+
+        // 파일 관리 모달 열기
+        async function openFileManagement(templateId, templateName) {
+            currentTemplateId = templateId;
+            currentTemplateName = templateName;
+            
+            try {
+                const response = await fetch(`/api/templates/${templateId}/files`);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error);
+                }
+                
+                const content = document.getElementById('fileManagementContent');
+                const isDefaultTemplate = data.template.is_default;
+                
+                content.innerHTML = `
+                    <h6>템플릿: ${templateName} ${isDefaultTemplate ? '<span class="badge bg-primary">기본 템플릿</span>' : ''}</h6>
+                    ${isDefaultTemplate ? '<div class="alert alert-info"><i class="bi bi-info-circle"></i> 기본 템플릿의 파일은 삭제할 수 없습니다.</div>' : ''}
+                    <div class="row">
+                        ${data.files.map(file => `
+                            <div class="col-md-4 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">${file.displayName}</h6>
+                                        <p class="card-text">
+                                            <small class="text-muted">파일명: ${file.fileName}</small><br>
+                                            <small class="text-muted">크기: ${formatFileSize(file.size)}</small><br>
+                                            <span class="badge ${file.exists ? 'bg-success' : 'bg-danger'}">
+                                                ${file.exists ? '존재' : '없음'}
+                                            </span>
+                                        </p>
+                                        <div class="btn-group" role="group">
+                                            ${file.exists ? `
+                                                <button class="btn btn-sm btn-outline-primary" onclick="downloadFile('${file.name}')" title="다운로드">
+                                                    <i class="bi bi-download"></i>
+                                                </button>
+                                                ${!isDefaultTemplate ? `
+                                                    <button class="btn btn-sm btn-outline-warning" onclick="uploadFile('${file.name}')" title="업로드">
+                                                        <i class="bi bi-upload"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteFile('${file.name}')" title="삭제">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                ` : `
+                                                    <button class="btn btn-sm btn-outline-secondary" disabled title="기본 템플릿은 수정할 수 없습니다">
+                                                        <i class="bi bi-lock"></i>
+                                                    </button>
+                                                `}
+                                            ` : `
+                                                ${!isDefaultTemplate ? `
+                                                    <button class="btn btn-sm btn-outline-success" onclick="uploadFile('${file.name}')" title="업로드">
+                                                        <i class="bi bi-upload"></i> 업로드
+                                                    </button>
+                                                ` : `
+                                                    <button class="btn btn-sm btn-outline-secondary" disabled title="기본 템플릿은 수정할 수 없습니다">
+                                                        <i class="bi bi-lock"></i> 수정 불가
+                                                    </button>
+                                                `}
+                                            `}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                
+                const modal = new bootstrap.Modal(document.getElementById('fileManagementModal'));
+                modal.show();
+            } catch (error) {
+                console.error('파일 정보 로드 중 오류:', error);
+                alert('파일 정보를 불러오는데 실패했습니다.');
+            }
+        }
+
+        // 파일 다운로드
+        function downloadFile(fileType) {
+            const url = `/api/templates/${currentTemplateId}/files/${fileType}/download`;
+            window.open(url, '_blank');
+        }
+
+        // 파일 업로드 모달 열기
+        function uploadFile(fileType) {
+            currentFileType = fileType;
+            document.getElementById('fileInput').value = '';
+            const modal = new bootstrap.Modal(document.getElementById('fileUploadModal'));
+            modal.show();
+        }
+
+        // 파일 업로드 실행
+        document.getElementById('uploadFileBtn').addEventListener('click', async () => {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('파일을 선택해주세요.');
+                return;
+            }
+            
+            if (!file.name.endsWith('.ejs')) {
+                alert('EJS 파일만 업로드 가능합니다.');
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const response = await fetch(`/api/templates/${currentTemplateId}/files/${currentFileType}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error);
+                }
+                
+                // 모달 닫기
+                const modal = bootstrap.Modal.getInstance(document.getElementById('fileUploadModal'));
+                modal.hide();
+                
+                // 파일 관리 모달 새로고침
+                await openFileManagement(currentTemplateId, currentTemplateName);
+                
+                alert('파일이 성공적으로 업로드되었습니다.');
+            } catch (error) {
+                console.error('파일 업로드 중 오류:', error);
+                alert(error.message || '파일 업로드에 실패했습니다.');
+            }
+        });
+
+        // 파일 삭제
+        async function deleteFile(fileType) {
+            if (!confirm('정말로 이 파일을 삭제하시겠습니까?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/templates/${currentTemplateId}/files/${fileType}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error);
+                }
+                
+                // 파일 관리 모달 새로고침
+                await openFileManagement(currentTemplateId, currentTemplateName);
+                
+                alert('파일이 성공적으로 삭제되었습니다.');
+            } catch (error) {
+                console.error('파일 삭제 중 오류:', error);
+                alert(error.message || '파일 삭제에 실패했습니다.');
+            }
+        }
+
+        // 파일 크기 포맷팅
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
 
         // 페이지 로드 시 템플릿 목록과 기본 템플릿 목록 로드
         document.addEventListener('DOMContentLoaded', () => {

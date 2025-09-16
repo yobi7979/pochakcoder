@@ -351,32 +351,55 @@
             </div>
         </div>
 
-        <!-- 종목별 및 사용자별 탭 추가 -->
-        <ul class="nav nav-tabs" id="matchTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab" aria-controls="all" aria-selected="true">
-                    <i class="bi bi-grid-3x3-gap sport-icon"></i>전체
+        <!-- 종목별 탭 추가 -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <ul class="nav nav-tabs" id="matchTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab" aria-controls="all" aria-selected="true">
+                        <i class="bi bi-grid-3x3-gap sport-icon"></i>전체
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="soccer-tab" data-bs-toggle="tab" data-bs-target="#soccer" type="button" role="tab" aria-controls="soccer" aria-selected="false">
+                        <i class="bi bi-emoji-dizzy sport-icon"></i>축구
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="baseball-tab" data-bs-toggle="tab" data-bs-target="#baseball" type="button" role="tab" aria-controls="baseball" aria-selected="false">
+                        <i class="bi bi-circle sport-icon"></i>야구
+                    </button>
+                </li>
+                <% if (typeof userRole !== 'undefined' && userRole === 'admin' && users) { %>
+                    <% users.forEach(user => { %>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="user-<%= user.id %>-tab" data-bs-toggle="tab" data-bs-target="#user-<%= user.id %>" type="button" role="tab" aria-controls="user-<%= user.id %>" aria-selected="false">
+                                <i class="bi bi-person sport-icon"></i><%= user.full_name || user.username %>
+                            </button>
+                        </li>
+                    <% }); %>
+                <% } %>
+            </ul>
+            
+            <!-- 탭별 일괄 삭제 버튼들 -->
+            <div class="tab-bulk-delete-buttons">
+                <button class="btn btn-outline-danger btn-sm" id="delete-all-btn" onclick="confirmBulkDelete('all', '전체')" style="display: none;">
+                    <i class="bi bi-trash"></i> 전체 삭제
                 </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="soccer-tab" data-bs-toggle="tab" data-bs-target="#soccer" type="button" role="tab" aria-controls="soccer" aria-selected="false">
-                    <i class="bi bi-emoji-dizzy sport-icon"></i>축구
+                <button class="btn btn-outline-danger btn-sm" id="delete-soccer-btn" onclick="confirmBulkDelete('soccer', '축구')" style="display: none;">
+                    <i class="bi bi-trash"></i> 축구 삭제
                 </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="baseball-tab" data-bs-toggle="tab" data-bs-target="#baseball" type="button" role="tab" aria-controls="baseball" aria-selected="false">
-                    <i class="bi bi-circle sport-icon"></i>야구
+                <button class="btn btn-outline-danger btn-sm" id="delete-baseball-btn" onclick="confirmBulkDelete('baseball', '야구')" style="display: none;">
+                    <i class="bi bi-trash"></i> 야구 삭제
                 </button>
-            </li>
-            <!-- 사용자별 탭 동적 생성 -->
-            <% users.forEach(function(user) { %>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="user-<%= user.id %>-tab" data-bs-toggle="tab" data-bs-target="#user-<%= user.id %>" type="button" role="tab" aria-controls="user-<%= user.id %>" aria-selected="false">
-                    <i class="bi bi-person sport-icon"></i><%= user.full_name || user.username %>
-                </button>
-            </li>
-            <% }); %>
-        </ul>
+                <% if (typeof userRole !== 'undefined' && userRole === 'admin' && users) { %>
+                    <% users.forEach(user => { %>
+                        <button class="btn btn-outline-danger btn-sm" id="delete-user-<%= user.id %>-btn" onclick="confirmBulkDelete('user-<%= user.id %>', '<%= user.full_name || user.username %>')" style="display: none;">
+                            <i class="bi bi-trash"></i> <%= user.full_name || user.username %> 삭제
+                        </button>
+                    <% }); %>
+                <% } %>
+            </div>
+        </div>
         
         <div class="tab-content" id="matchTabsContent">
             <!-- 전체 경기 탭 -->
@@ -440,7 +463,11 @@
             <div class="tab-pane fade" id="soccer" role="tabpanel" aria-labelledby="soccer-tab">
                 <div class="match-grid">
                     <% 
-                    const soccerMatches = matches.filter(match => match.sport_type === 'soccer');
+                    const soccerMatches = matches.filter(match => {
+                        // 템플릿 기반 분류 사용
+                        const templateBasedType = sportTemplateMap && sportTemplateMap[match.sport_type] ? sportTemplateMap[match.sport_type] : match.sport_type;
+                        return templateBasedType === 'soccer';
+                    });
                     if (soccerMatches.length > 0) {
                         // 헤더 행 추가
                     %>
@@ -453,120 +480,6 @@
                     <%
                         soccerMatches.forEach(function(match) { 
                     %>
-                        <div class="match-cell" id="match-cell-<%= match.id %>">
-                            <div class="match-cell-header">
-                                <div class="match-cell-teams">
-                                    <%= match.home_team %> vs <%= match.away_team %>
-                                </div>
-                                <div class="match-cell-score">
-                                    <%= match.home_score || 0 %> - <%= match.away_score || 0 %>
-                                </div>
-                            </div>
-                            <div class="match-cell-info">
-                                <div>상태: <%= match.status %></div>
-                                <div>생성일: <%= new Date(match.created_at).toLocaleString() %></div>
-                            </div>
-                            <div class="match-cell-actions">
-                                <div class="control-url">
-                                    <a href="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" class="btn btn-primary"><%= match.sport_type %> 컨트롤</a>
-                                    <input type="text" class="form-control" value="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" readonly>
-                                </div>
-                                <div class="overlay-url">
-                                    <a href="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" class="btn btn-success"><%= match.sport_type %> 오버레이</a>
-                                    <input type="text" class="form-control" value="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" readonly>
-                                </div>
-                            </div>
-                            <div class="delete-container">
-                                <button class="btn delete-btn" onclick="confirmDelete('<%= match.id %>', '<%= match.home_team %> vs <%= match.away_team %>')">삭제</button>
-                            </div>
-                        </div>
-                    <% 
-                        });
-                    } else {
-                    %>
-                        <div class="empty-message">
-                            <i class="bi bi-emoji-dizzy" style="font-size: 3rem;"></i>
-                            <h3>축구 경기가 없습니다</h3>
-                            <p>새 경기를 생성해보세요!</p>
-                        </div>
-                    <% } %>
-                </div>
-            </div>
-            
-            <!-- 야구 경기 탭 -->
-            <div class="tab-pane fade" id="baseball" role="tabpanel" aria-labelledby="baseball-tab">
-                <div class="match-grid">
-                    <% 
-                    const baseballMatches = matches.filter(match => match.sport_type === 'baseball');
-                    if (baseballMatches.length > 0) {
-                        // 헤더 행 추가
-                    %>
-                        <div class="match-cell" style="background-color: #f8f9fa; font-weight: bold;">
-                            <div class="match-cell-header">팀 정보</div>
-                            <div class="match-cell-info">경기 상태</div>
-                            <div class="match-cell-actions">링크</div>
-                            <div class="delete-container">삭제</div>
-                        </div>
-                    <%
-                        baseballMatches.forEach(function(match) { 
-                    %>
-                        <div class="match-cell" id="match-cell-<%= match.id %>">
-                            <div class="match-cell-header">
-                                <div class="match-cell-teams">
-                                    <%= match.home_team %> vs <%= match.away_team %>
-                                </div>
-                                <div class="match-cell-score">
-                                    <%= match.home_score || 0 %> - <%= match.away_score || 0 %>
-                                </div>
-                            </div>
-                            <div class="match-cell-info">
-                                <div>상태: <%= match.status %></div>
-                                <div>생성일: <%= new Date(match.created_at).toLocaleString() %></div>
-                            </div>
-                            <div class="match-cell-actions">
-                                <div class="control-url">
-                                    <a href="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" class="btn btn-primary"><%= match.sport_type %> 컨트롤</a>
-                                    <input type="text" class="form-control" value="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" readonly>
-                                </div>
-                                <div class="overlay-url">
-                                    <a href="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" class="btn btn-success"><%= match.sport_type %> 오버레이</a>
-                                    <input type="text" class="form-control" value="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" readonly>
-                                </div>
-                            </div>
-                            <div class="delete-container">
-                                <button class="btn delete-btn" onclick="confirmDelete('<%= match.id %>', '<%= match.home_team %> vs <%= match.away_team %>')">삭제</button>
-                            </div>
-                        </div>
-                    <% 
-                        });
-                    } else {
-                    %>
-                        <div class="empty-message">
-                            <i class="bi bi-circle" style="font-size: 3rem;"></i>
-                            <h3>야구 경기가 없습니다</h3>
-                            <p>새 경기를 생성해보세요!</p>
-                        </div>
-                    <% } %>
-                </div>
-            </div>
-            
-            <!-- 사용자별 탭 컨텐츠 -->
-            <% users.forEach(function(user) { %>
-            <div class="tab-pane fade" id="user-<%= user.id %>" role="tabpanel" aria-labelledby="user-<%= user.id %>-tab">
-                <div class="match-grid">
-                    <% 
-                    const userMatches = matches.filter(match => match.created_by === user.id);
-                    if (userMatches.length > 0) {
-                    %>
-                        <!-- 헤더 행 추가 -->
-                        <div class="match-cell" style="background-color: #f8f9fa; font-weight: bold;">
-                            <div class="match-cell-header">팀 정보</div>
-                            <div class="match-cell-info">경기 상태</div>
-                            <div class="match-cell-actions">링크</div>
-                            <div class="delete-container">삭제</div>
-                        </div>
-                        
-                        <% userMatches.forEach(function(match) { %>
                         <div class="match-cell" id="match-cell-<%= match.id %>">
                             <div class="match-cell-header">
                                 <div class="match-cell-teams">
@@ -600,17 +513,148 @@
                                 <button class="btn delete-btn" onclick="confirmDelete('<%= match.id %>', '<%= match.home_team %> vs <%= match.away_team %>')">삭제</button>
                             </div>
                         </div>
-                        <% }); %>
-                    <% } else { %>
+                    <% 
+                        });
+                    } else {
+                    %>
                         <div class="empty-message">
-                            <i class="bi bi-person" style="font-size: 3rem;"></i>
-                            <h3><%= user.full_name || user.username %>의 경기가 없습니다</h3>
+                            <i class="bi bi-emoji-dizzy" style="font-size: 3rem;"></i>
+                            <h3>축구 경기가 없습니다</h3>
                             <p>새 경기를 생성해보세요!</p>
                         </div>
                     <% } %>
                 </div>
             </div>
-            <% }); %>
+            
+            <!-- 야구 경기 탭 -->
+            <div class="tab-pane fade" id="baseball" role="tabpanel" aria-labelledby="baseball-tab">
+                <div class="match-grid">
+                    <% 
+                    const baseballMatches = matches.filter(match => {
+                        // 템플릿 기반 분류 사용
+                        const templateBasedType = sportTemplateMap && sportTemplateMap[match.sport_type] ? sportTemplateMap[match.sport_type] : match.sport_type;
+                        return templateBasedType === 'baseball';
+                    });
+                    if (baseballMatches.length > 0) {
+                        // 헤더 행 추가
+                    %>
+                        <div class="match-cell" style="background-color: #f8f9fa; font-weight: bold;">
+                            <div class="match-cell-header">팀 정보</div>
+                            <div class="match-cell-info">경기 상태</div>
+                            <div class="match-cell-actions">링크</div>
+                            <div class="delete-container">삭제</div>
+                        </div>
+                    <%
+                        baseballMatches.forEach(function(match) { 
+                    %>
+                        <div class="match-cell" id="match-cell-<%= match.id %>">
+                            <div class="match-cell-header">
+                                <div class="match-cell-teams">
+                                    <%= match.home_team %> vs <%= match.away_team %>
+                                </div>
+                                <div class="match-cell-score">
+                                    <%= match.home_score || 0 %> - <%= match.away_score || 0 %>
+                                </div>
+                            </div>
+                            <div class="match-cell-info">
+                                <div>종목: <%= match.sport_type %></div>
+                                <div>상태: <%= match.status %></div>
+                                <div>생성일: <%= new Date(match.created_at).toLocaleString() %></div>
+                                <% if (match.creator) { %>
+                                    <div>생성자: <%= match.creator.full_name || match.creator.username %> (ID: <%= match.creator.id %>)</div>
+                                <% } else { %>
+                                    <div>생성자: <span class="text-muted">시스템</span></div>
+                                <% } %>
+                            </div>
+                            <div class="match-cell-actions">
+                                <div class="control-url">
+                                    <a href="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" class="btn btn-primary"><%= match.sport_type %> 컨트롤</a>
+                                    <input type="text" class="form-control" value="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" readonly>
+                                </div>
+                                <div class="overlay-url">
+                                    <a href="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" class="btn btn-success"><%= match.sport_type %> 오버레이</a>
+                                    <input type="text" class="form-control" value="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" readonly>
+                                </div>
+                            </div>
+                            <div class="delete-container">
+                                <button class="btn delete-btn" onclick="confirmDelete('<%= match.id %>', '<%= match.home_team %> vs <%= match.away_team %>')">삭제</button>
+                            </div>
+                        </div>
+                    <% 
+                        });
+                    } else {
+                    %>
+                        <div class="empty-message">
+                            <i class="bi bi-circle" style="font-size: 3rem;"></i>
+                            <h3>야구 경기가 없습니다</h3>
+                            <p>새 경기를 생성해보세요!</p>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- 사용자별 탭 (admin만) -->
+            <% if (typeof userRole !== 'undefined' && userRole === 'admin' && users) { %>
+                <% users.forEach(user => { %>
+                    <div class="tab-pane fade" id="user-<%= user.id %>" role="tabpanel" aria-labelledby="user-<%= user.id %>-tab">
+                        <div class="match-grid">
+                            <% 
+                            const userMatches = matches.filter(match => match.created_by === user.id);
+                            if (userMatches.length > 0) {
+                                // 헤더 행 추가
+                            %>
+                                <div class="match-cell" style="background-color: #f8f9fa; font-weight: bold;">
+                                    <div class="match-cell-header">팀 정보</div>
+                                    <div class="match-cell-info">경기 상태</div>
+                                    <div class="match-cell-actions">링크</div>
+                                    <div class="delete-container">삭제</div>
+                                </div>
+                            <%
+                                userMatches.forEach(function(match) { 
+                            %>
+                                <div class="match-cell" id="match-cell-<%= match.id %>">
+                                    <div class="match-cell-header">
+                                        <div class="match-cell-teams">
+                                            <%= match.home_team %> vs <%= match.away_team %>
+                                        </div>
+                                        <div class="match-cell-score">
+                                            <%= match.home_score || 0 %> - <%= match.away_score || 0 %>
+                                        </div>
+                                    </div>
+                                    <div class="match-cell-info">
+                                        <div>종목: <%= match.sport_type %></div>
+                                        <div>상태: <%= match.status %></div>
+                                        <div>생성일: <%= new Date(match.created_at).toLocaleString() %></div>
+                                        <div>생성자: <%= user.full_name || user.username %> (ID: <%= user.id %>)</div>
+                                    </div>
+                                    <div class="match-cell-actions">
+                                        <div class="control-url">
+                                            <a href="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" class="btn btn-primary"><%= match.sport_type %> 컨트롤</a>
+                                            <input type="text" class="form-control" value="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/control" readonly>
+                                        </div>
+                                        <div class="overlay-url">
+                                            <a href="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" class="btn btn-success"><%= match.sport_type %> 오버레이</a>
+                                            <input type="text" class="form-control" value="/<%= match.sport_type.toLowerCase() %>/<%= match.id %>/overlay" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="delete-container">
+                                        <button class="btn delete-btn" onclick="confirmDelete('<%= match.id %>', '<%= match.home_team %> vs <%= match.away_team %>')">삭제</button>
+                                    </div>
+                                </div>
+                            <% 
+                                });
+                            } else {
+                            %>
+                                <div class="empty-message">
+                                    <i class="bi bi-person" style="font-size: 3rem;"></i>
+                                    <h3><%= user.full_name || user.username %>님이 생성한 경기가 없습니다</h3>
+                                    <p>새 경기를 생성해보세요!</p>
+                                </div>
+                            <% } %>
+                        </div>
+                    </div>
+                <% }); %>
+            <% } %>
         </div>
     </div>
 
@@ -639,15 +683,48 @@
         </div>
     </div>
 
+    <!-- 일괄 삭제 확인 모달 -->
+    <div class="modal fade" id="bulkDeleteModal" tabindex="-1" role="dialog" aria-labelledby="bulkDeleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content modal-confirm">
+                <div class="modal-header">
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="icon-box">
+                        <i class="fa fa-exclamation-triangle" style="color: #dc3545;"></i>
+                    </div>
+                    <h4 id="bulkDeleteModalLabel">일괄 삭제</h4>
+                    <p id="bulkDeleteModalText">정말로 이 종목의 모든 경기를 삭제하시겠습니까?</p>
+                    <p id="bulkDeleteInfo" class="text-danger"></p>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>주의:</strong> 이 작업은 되돌릴 수 없습니다!
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-danger" id="confirmBulkDeleteBtn">일괄 삭제</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
         let matchIdToDelete = null;
+        let bulkDeleteType = null;
+        let bulkDeleteName = null;
         const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        const bulkDeleteModal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
         
         // 페이지 로드 시 초기화
         document.addEventListener('DOMContentLoaded', function() {
             updateMatchCount();
+            updateBulkDeleteButtons();
         });
 
         // 경기 필터링 함수
@@ -720,6 +797,7 @@
             }
             
             updateMatchCount(visibleCount, allMatches.length);
+            updateBulkDeleteButtons();
         }
         
         // 검색 초기화
@@ -755,10 +833,11 @@
             }
         });
         
-        // 탭 변경 시 필터링 다시 적용
+        // 탭 변경 시 필터링 다시 적용 및 일괄 삭제 버튼 업데이트
         document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(tab => {
             tab.addEventListener('shown.bs.tab', function() {
                 filterMatches();
+                updateBulkDeleteButtons();
             });
         });
         
@@ -940,6 +1019,117 @@
                 cell.setAttribute('data-match-id', matchId);
             });
         });
+
+        // 일괄 삭제 버튼 표시/숨기기 업데이트
+        function updateBulkDeleteButtons() {
+            // 모든 일괄 삭제 버튼 숨기기
+            document.querySelectorAll('.tab-bulk-delete-buttons button').forEach(btn => {
+                btn.style.display = 'none';
+            });
+
+            // 현재 활성 탭 확인
+            const activeTab = document.querySelector('.tab-pane.active');
+            if (!activeTab) return;
+
+            const activeTabId = activeTab.id;
+            const deleteBtn = document.getElementById(`delete-${activeTabId}-btn`);
+            
+            if (deleteBtn) {
+                // 해당 탭에 경기가 있는지 확인
+                const matches = activeTab.querySelectorAll('.match-cell:not([style*="font-weight: bold"]):not([style*="display: none"])');
+                if (matches.length > 0) {
+                    deleteBtn.style.display = 'inline-block';
+                }
+            }
+        }
+
+        // 일괄 삭제 확인
+        function confirmBulkDelete(type, name) {
+            bulkDeleteType = type;
+            bulkDeleteName = name;
+            
+            // 해당 탭의 경기 수 확인
+            const activeTab = document.querySelector('.tab-pane.active');
+            const matches = activeTab.querySelectorAll('.match-cell:not([style*="font-weight: bold"]):not([style*="display: none"])');
+            const matchCount = matches.length;
+            
+            document.getElementById('bulkDeleteModalLabel').textContent = `${name} 일괄 삭제`;
+            document.getElementById('bulkDeleteModalText').textContent = `정말로 ${name}의 모든 경기를 삭제하시겠습니까?`;
+            document.getElementById('bulkDeleteInfo').textContent = `삭제될 경기 수: ${matchCount}개`;
+            
+            bulkDeleteModal.show();
+        }
+
+        // 일괄 삭제 실행
+        document.getElementById('confirmBulkDeleteBtn').addEventListener('click', function() {
+            if (bulkDeleteType && bulkDeleteName) {
+                performBulkDelete(bulkDeleteType, bulkDeleteName);
+            }
+        });
+
+        // 실제 일괄 삭제 수행
+        async function performBulkDelete(type, name) {
+            try {
+                // 모든 경우에 현재 탭에 표시된 경기들만 삭제
+                const apiUrl = '/api/matches/by-tab';
+                
+                // 현재 활성 탭에서 표시된 경기들의 ID 수집
+                const activeTab = document.querySelector('.tab-pane.active');
+                const visibleMatches = activeTab.querySelectorAll('.match-cell:not([style*="font-weight: bold"]):not([style*="display: none"])');
+                
+                const matchIds = [];
+                visibleMatches.forEach(matchCell => {
+                    const matchId = matchCell.id.replace('match-cell-', '');
+                    if (matchId && matchId !== '') {
+                        matchIds.push(matchId);
+                    }
+                });
+                
+                if (matchIds.length === 0) {
+                    alert('삭제할 경기가 없습니다.');
+                    return;
+                }
+                
+                const requestBody = {
+                    matchIds: matchIds,
+                    tabType: type,
+                    tabName: name
+                };
+
+                console.log(`일괄 삭제 시도: ${type} (${name})`);
+                console.log(`삭제할 경기 ID 목록: ${requestBody.matchIds.join(', ')}`);
+                
+                const response = await fetch(apiUrl, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                console.log(`일괄 삭제 응답 상태: ${response.status}`);
+
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // 모달 닫기
+                    bulkDeleteModal.hide();
+                    
+                    // 성공 메시지 표시
+                    alert(data.message || `${name}의 모든 경기가 성공적으로 삭제되었습니다.`);
+                    
+                    // 페이지 새로고침
+                    window.location.reload();
+                } else {
+                    const data = await response.json();
+                    console.error(`일괄 삭제 실패: ${data.error || '알 수 없는 오류가 발생했습니다.'}`);
+                    alert(`일괄 삭제 실패: ${data.error || '알 수 없는 오류가 발생했습니다.'}`);
+                }
+            } catch (error) {
+                console.error('일괄 삭제 중 오류 발생:', error);
+                alert('일괄 삭제 중 오류가 발생했습니다.');
+            }
+        }
     </script>
 </body>
 </html> 

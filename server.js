@@ -7,6 +7,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 const winston = require('winston');
 const { sequelize, Match, Settings, MatchList, SportOverlayImage, SportActiveOverlayImage, User } = require('./models');
+const BackupRestoreManager = require('./backup-restore');
 const multer = require('multer');
 const fs = require('fs').promises;
 const fsSync = require('fs');
@@ -341,6 +342,35 @@ const sportOverlayImageUpload = multer({
             cb(null, true);
         } else {
             cb(new Error('지원하지 않는 파일 형식입니다. JPEG, PNG, GIF, WEBP 파일만 업로드 가능합니다.'));
+        }
+    }
+});
+
+// 백업 파일 업로드를 위한 multer 설정
+const backupUpload = multer({
+    storage: multer.diskStorage({
+        destination: function (req, file, cb) {
+            const tempDir = path.join(__dirname, 'temp');
+            if (!fsSync.existsSync(tempDir)) {
+                fsSync.mkdirSync(tempDir, { recursive: true });
+            }
+            cb(null, tempDir);
+        },
+        filename: function (req, file, cb) {
+            const timestamp = Date.now();
+            cb(null, `backup_${timestamp}.zip`);
+        }
+    }),
+    limits: {
+        fileSize: 100 * 1024 * 1024 // 100MB
+    },
+    fileFilter: function (req, file, cb) {
+        // ZIP 파일만 허용
+        if (file.mimetype === 'application/zip' || file.mimetype === 'application/x-zip-compressed' || 
+            path.extname(file.originalname).toLowerCase() === '.zip') {
+            cb(null, true);
+        } else {
+            cb(new Error('지원하지 않는 파일 형식입니다. ZIP 파일만 업로드 가능합니다.'));
         }
     }
 });
@@ -910,8 +940,29 @@ app.get('/matches', requireAuth, async (req, res) => {
       }];
     }
     
+    // 템플릿 기반 분류를 위해 Sport와 Template 정보 가져오기
+    const sports = await Sport.findAll();
+    const templates = await Template.findAll();
+    
+    // 템플릿 이름을 키로 하는 맵 생성
+    const templateMap = {};
+    templates.forEach(template => {
+      templateMap[template.name] = template.sport_type;
+    });
+    
+    // Sport 코드를 키로 하는 맵 생성
+    const sportTemplateMap = {};
+    sports.forEach(sport => {
+      sportTemplateMap[sport.code] = templateMap[sport.template] || sport.template;
+    });
+    
     logger.info(`경기 목록 조회 (사용자: ${req.session.username}, 권한: ${req.session.userRole}):`, matches.length + '개');
-    res.render('matches', { matches, users, userRole: req.session.userRole });
+    res.render('matches', { 
+      matches, 
+      users, 
+      userRole: req.session.userRole,
+      sportTemplateMap 
+    });
   } catch (error) {
     logger.error('경기 목록 조회 실패:', error);
     res.status(500).json({ error: '서버 오류가 발생했습니다.' });
@@ -1502,16 +1553,27 @@ app.get('/api/sport', async (req, res) => {
   try {
     const sports = await Sport.findAll({
       where: { is_active: true },
-      include: [{
-        model: User,
-        as: 'creator',
-        attributes: ['id', 'username', 'full_name'],
-        required: false
-      }],
       order: [['id', 'ASC']]
     });
     
-    res.json(sports);
+    // 사용자 정보를 별도로 가져와서 매핑
+    const users = await User.findAll({
+      attributes: ['id', 'username', 'full_name']
+    });
+    
+    const userMap = {};
+    users.forEach(user => {
+      userMap[user.id] = user;
+    });
+    
+    // sports에 creator 정보 추가
+    const sportsWithCreators = sports.map(sport => {
+      const sportData = sport.toJSON();
+      sportData.creator = userMap[sportData.created_by] || null;
+      return sportData;
+    });
+    
+    res.json(sportsWithCreators);
   } catch (error) {
     logger.error('종목 목록 조회 오류:', error);
     res.status(500).json({ 
@@ -1542,13 +1604,29 @@ app.get('/api/sport-active-overlay-image/:sportCode', async (req, res) => {
       }]
     });
     
+    // 활성 이미지가 있고 파일이 실제로 존재하는지 확인
+    let validActiveImage = null;
+    if (activeImage && activeImage.active_image_path) {
+      const filePath = path.join(__dirname, 'public', activeImage.active_image_path);
+      if (fsSync.existsSync(filePath)) {
+        validActiveImage = {
+          id: activeImage.active_image_id,
+          path: activeImage.active_image_path,
+          filename: activeImage.SportOverlayImage ? activeImage.SportOverlayImage.filename : null
+        };
+      } else {
+        // 파일이 존재하지 않으면 활성 이미지 정보를 null로 업데이트
+        await activeImage.update({
+          active_image_id: null,
+          active_image_path: null
+        });
+        logger.warn(`활성 이미지 파일이 존재하지 않음: ${filePath}`);
+      }
+    }
+
     res.json({ 
       success: true, 
-      activeImage: activeImage ? {
-        id: activeImage.active_image_id,
-        path: activeImage.active_image_path,
-        filename: activeImage.SportOverlayImage ? activeImage.SportOverlayImage.filename : null
-      } : null,
+      activeImage: validActiveImage,
       sportName: sport.name
     });
   } catch (error) {
@@ -3758,14 +3836,8 @@ server.listen(PORT, '0.0.0.0', async () => {
   await initializeDefaultSettings();
   
   await restoreMatchTimers();
-  
-  // Railway PostgreSQL에서 테이블 자동 생성
-  try {
-    await sequelize.sync({ alter: true });
-    logger.info('데이터베이스 동기화 완료');
-  } catch (error) {
-    logger.error('데이터베이스 동기화 실패:', error);
-  }
+  // 데이터베이스 동기화는 이미 수동으로 완료되었으므로 건너뜀
+  // await sequelize.sync({ alter: true });
   
   // 자동 로그 관리 스케줄러 시작
   startLogManagementScheduler();
@@ -3928,15 +4000,27 @@ app.get('/templates', requireAdmin, (req, res) => {
 app.get('/sports', requireAdmin, async (req, res) => {
   try {
     const sports = await Sport.findAll({
-      include: [{
-        model: User,
-        as: 'creator',
-        attributes: ['id', 'username', 'full_name'],
-        required: false
-      }],
       order: [['id', 'ASC']]
     });
-    res.render('sports', { sports, title: '종목 관리' });
+    
+    // 사용자 정보를 별도로 가져와서 매핑
+    const users = await User.findAll({
+      attributes: ['id', 'username', 'full_name']
+    });
+    
+    const userMap = {};
+    users.forEach(user => {
+      userMap[user.id] = user;
+    });
+    
+    // sports에 creator 정보 추가
+    const sportsWithCreators = sports.map(sport => {
+      const sportData = sport.toJSON();
+      sportData.creator = userMap[sportData.created_by] || null;
+      return sportData;
+    });
+    
+    res.render('sports', { sports: sportsWithCreators, title: '종목 관리' });
   } catch (error) {
     logger.error('종목 목록 조회 중 오류:', error);
     res.status(500).send('종목 목록을 불러오는데 실패했습니다.');
@@ -4137,30 +4221,287 @@ app.delete('/api/templates/:id', async (req, res) => {
     if (template.is_default) {
       return res.status(400).json({ error: '기본 템플릿은 삭제할 수 없습니다.' });
     }
+
+    // 템플릿 참조 관계 확인
+    const referencedSports = await Sport.findAll({
+      where: { template: template.name }
+    });
+
+    if (referencedSports.length > 0) {
+      const sportNames = referencedSports.map(sport => sport.name).join(', ');
+      return res.status(400).json({ 
+        error: '이 템플릿을 사용하는 종목이 있습니다.',
+        details: `다음 종목들이 이 템플릿을 사용하고 있습니다: ${sportNames}`,
+        referencedSports: referencedSports.map(sport => ({
+          id: sport.id,
+          name: sport.name,
+          code: sport.code
+        }))
+      });
+    }
     
     const viewsDir = path.join(__dirname, 'views');
     const templateFile = path.join(viewsDir, `${template.name}-template.ejs`);
     const controlFile = path.join(viewsDir, `${template.name}-control.ejs`);
     const controlMobileFile = path.join(viewsDir, `${template.name}-control-mobile.ejs`);
     
-    // 파일이 존재하는지 확인
-    if (!fsSync.existsSync(templateFile) || !fsSync.existsSync(controlFile) || !fsSync.existsSync(controlMobileFile)) {
-      return res.status(404).json({ error: '템플릿 파일을 찾을 수 없습니다.' });
-    }
+    // 파일 삭제 (파일이 없어도 강제 삭제)
+    const filesToDelete = [templateFile, controlFile, controlMobileFile];
+    let deletedFiles = [];
+    let missingFiles = [];
     
-    // 파일 삭제
-    fsSync.unlinkSync(templateFile);
-    fsSync.unlinkSync(controlFile);
-    fsSync.unlinkSync(controlMobileFile);
+    for (const filePath of filesToDelete) {
+      try {
+        if (fsSync.existsSync(filePath)) {
+          fsSync.unlinkSync(filePath);
+          deletedFiles.push(path.basename(filePath));
+        } else {
+          missingFiles.push(path.basename(filePath));
+        }
+      } catch (error) {
+        logger.warn(`템플릿 파일 삭제 실패: ${filePath}`, error.message);
+        missingFiles.push(path.basename(filePath));
+      }
+    }
     
     // 데이터베이스에서 템플릿 삭제
     await template.destroy();
     
-    logger.info(`템플릿 삭제: ${template.name} - 템플릿, 컨트롤, 모바일 컨트롤 파일 모두 삭제됨`);
-    res.json({ success: true });
+    // 로그 메시지 생성
+    let logMessage = `템플릿 삭제: ${template.name}`;
+    if (deletedFiles.length > 0) {
+      logMessage += ` - 삭제된 파일: ${deletedFiles.join(', ')}`;
+    }
+    if (missingFiles.length > 0) {
+      logMessage += ` - 누락된 파일: ${missingFiles.join(', ')}`;
+    }
+    if (deletedFiles.length === 0 && missingFiles.length > 0) {
+      logMessage += ' (강제 삭제)';
+    }
+    
+    logger.info(logMessage);
+    res.json({ 
+      success: true, 
+      message: '템플릿이 성공적으로 삭제되었습니다.',
+      deletedFiles: deletedFiles,
+      missingFiles: missingFiles
+    });
   } catch (error) {
     logger.error('템플릿 삭제 중 오류:', error);
     res.status(500).json({ error: '템플릿 삭제에 실패했습니다.' });
+  }
+});
+
+// 템플릿 파일 관리 API
+app.get('/api/templates/:id/files', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // 데이터베이스에서 템플릿 찾기
+    const template = await Template.findByPk(id);
+    if (!template) {
+      return res.status(404).json({ error: '템플릿을 찾을 수 없습니다.' });
+    }
+
+    const viewsDir = path.join(__dirname, 'views');
+    const templateFile = path.join(viewsDir, `${template.name}-template.ejs`);
+    const controlFile = path.join(viewsDir, `${template.name}-control.ejs`);
+    const controlMobileFile = path.join(viewsDir, `${template.name}-control-mobile.ejs`);
+    
+    const files = [
+      {
+        name: 'template',
+        displayName: '템플릿 파일',
+        fileName: `${template.name}-template.ejs`,
+        path: templateFile,
+        exists: fsSync.existsSync(templateFile),
+        size: fsSync.existsSync(templateFile) ? fsSync.statSync(templateFile).size : 0
+      },
+      {
+        name: 'control',
+        displayName: '컨트롤 파일',
+        fileName: `${template.name}-control.ejs`,
+        path: controlFile,
+        exists: fsSync.existsSync(controlFile),
+        size: fsSync.existsSync(controlFile) ? fsSync.statSync(controlFile).size : 0
+      },
+      {
+        name: 'control-mobile',
+        displayName: '모바일 컨트롤 파일',
+        fileName: `${template.name}-control-mobile.ejs`,
+        path: controlMobileFile,
+        exists: fsSync.existsSync(controlMobileFile),
+        size: fsSync.existsSync(controlMobileFile) ? fsSync.statSync(controlMobileFile).size : 0
+      }
+    ];
+
+    res.json({ 
+      template: template,
+      files: files
+    });
+  } catch (error) {
+    logger.error('템플릿 파일 정보 조회 중 오류:', error);
+    res.status(500).json({ error: '템플릿 파일 정보 조회에 실패했습니다.' });
+  }
+});
+
+// 템플릿 파일 다운로드 API
+app.get('/api/templates/:id/files/:fileType/download', async (req, res) => {
+  try {
+    const { id, fileType } = req.params;
+    
+    // 데이터베이스에서 템플릿 찾기
+    const template = await Template.findByPk(id);
+    if (!template) {
+      return res.status(404).json({ error: '템플릿을 찾을 수 없습니다.' });
+    }
+
+    const viewsDir = path.join(__dirname, 'views');
+    let filePath;
+    let fileName;
+    
+    switch (fileType) {
+      case 'template':
+        filePath = path.join(viewsDir, `${template.name}-template.ejs`);
+        fileName = `${template.name}-template.ejs`;
+        break;
+      case 'control':
+        filePath = path.join(viewsDir, `${template.name}-control.ejs`);
+        fileName = `${template.name}-control.ejs`;
+        break;
+      case 'control-mobile':
+        filePath = path.join(viewsDir, `${template.name}-control-mobile.ejs`);
+        fileName = `${template.name}-control-mobile.ejs`;
+        break;
+      default:
+        return res.status(400).json({ error: '잘못된 파일 타입입니다.' });
+    }
+
+    if (!fsSync.existsSync(filePath)) {
+      return res.status(404).json({ error: '파일을 찾을 수 없습니다.' });
+    }
+
+    res.download(filePath, fileName);
+  } catch (error) {
+    logger.error('템플릿 파일 다운로드 중 오류:', error);
+    res.status(500).json({ error: '파일 다운로드에 실패했습니다.' });
+  }
+});
+
+// 템플릿 파일 업로드 API
+const templateFileUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, path.join(__dirname, 'views'));
+    },
+    filename: (req, file, cb) => {
+      const { id, fileType } = req.params;
+      const fileName = `${req.templateName}-${fileType}.ejs`;
+      cb(null, fileName);
+    }
+  }),
+  fileFilter: (req, file, cb) => {
+    if (file.originalname.endsWith('.ejs')) {
+      cb(null, true);
+    } else {
+      cb(new Error('EJS 파일만 업로드 가능합니다.'), false);
+    }
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB
+  }
+});
+
+app.post('/api/templates/:id/files/:fileType/upload', async (req, res) => {
+  try {
+    const { id, fileType } = req.params;
+    
+    // 데이터베이스에서 템플릿 찾기
+    const template = await Template.findByPk(id);
+    if (!template) {
+      return res.status(404).json({ error: '템플릿을 찾을 수 없습니다.' });
+    }
+
+    // 기본 템플릿은 파일 수정 불가
+    if (template.is_default) {
+      return res.status(400).json({ error: '기본 템플릿의 파일은 수정할 수 없습니다.' });
+    }
+
+    req.templateName = template.name;
+  } catch (error) {
+    logger.error('템플릿 파일 업로드 중 오류:', error);
+    res.status(500).json({ error: '파일 업로드에 실패했습니다.' });
+  }
+}, templateFileUpload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: '파일이 선택되지 않았습니다.' });
+    }
+
+    logger.info(`템플릿 파일 업로드: ${req.templateName}-${req.params.fileType}.ejs`);
+    res.json({ 
+      success: true, 
+      message: '파일이 성공적으로 업로드되었습니다.',
+      fileName: req.file.filename
+    });
+  } catch (error) {
+    logger.error('템플릿 파일 업로드 중 오류:', error);
+    res.status(500).json({ error: '파일 업로드에 실패했습니다.' });
+  }
+});
+
+// 템플릿 파일 삭제 API
+app.delete('/api/templates/:id/files/:fileType', async (req, res) => {
+  try {
+    const { id, fileType } = req.params;
+    
+    // 데이터베이스에서 템플릿 찾기
+    const template = await Template.findByPk(id);
+    if (!template) {
+      return res.status(404).json({ error: '템플릿을 찾을 수 없습니다.' });
+    }
+
+    // 기본 템플릿은 파일 삭제 불가
+    if (template.is_default) {
+      return res.status(400).json({ error: '기본 템플릿의 파일은 삭제할 수 없습니다.' });
+    }
+
+    const viewsDir = path.join(__dirname, 'views');
+    let filePath;
+    let fileName;
+    
+    switch (fileType) {
+      case 'template':
+        filePath = path.join(viewsDir, `${template.name}-template.ejs`);
+        fileName = `${template.name}-template.ejs`;
+        break;
+      case 'control':
+        filePath = path.join(viewsDir, `${template.name}-control.ejs`);
+        fileName = `${template.name}-control.ejs`;
+        break;
+      case 'control-mobile':
+        filePath = path.join(viewsDir, `${template.name}-control-mobile.ejs`);
+        fileName = `${template.name}-control-mobile.ejs`;
+        break;
+      default:
+        return res.status(400).json({ error: '잘못된 파일 타입입니다.' });
+    }
+
+    if (!fsSync.existsSync(filePath)) {
+      return res.status(404).json({ error: '파일을 찾을 수 없습니다.' });
+    }
+
+    fsSync.unlinkSync(filePath);
+    
+    logger.info(`템플릿 파일 삭제: ${fileName}`);
+    res.json({ 
+      success: true, 
+      message: '파일이 성공적으로 삭제되었습니다.',
+      fileName: fileName
+    });
+  } catch (error) {
+    logger.error('템플릿 파일 삭제 중 오류:', error);
+    res.status(500).json({ error: '파일 삭제에 실패했습니다.' });
   }
 });
 
@@ -4195,13 +4536,99 @@ app.post('/api/sport', requireAuth, async (req, res) => {
       description,
       is_active: true,
       is_default: false,
-      created_by: req.user.id
+      created_by: req.session.userId
     });
 
-    logger.info(`새 종목 생성: ${name} (${sportCode}) by user ${req.user.username}`);
+    logger.info(`새 종목 생성: ${name} (${sportCode}) by user ${req.session.username}`);
     res.json(sport);
   } catch (error) {
     logger.error('종목 생성 실패:', error);
+    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+  }
+});
+
+// 종목 삭제 전 관련 데이터 조회 API
+app.get('/api/sport/:code/delete-info', async (req, res) => {
+  try {
+    const { code } = req.params;
+    
+    const sport = await Sport.findOne({ where: { code } });
+    if (!sport) {
+      return res.status(404).json({ error: '종목을 찾을 수 없습니다.' });
+    }
+
+    // 기본 종목은 삭제 불가
+    if (sport.is_default) {
+      return res.status(400).json({ error: '기본 종목은 삭제할 수 없습니다.' });
+    }
+
+    // 관련 데이터 조회
+    const matchCount = await Match.count({ where: { sport_type: sport.template } });
+    const overlayImageCount = await SportOverlayImage.count({ where: { sport_code: code } });
+    const activeOverlayImageCount = await SportActiveOverlayImage.count({ where: { sport_code: code } });
+    
+    // 오버레이 이미지 파일 목록 조회
+    const overlayImages = await SportOverlayImage.findAll({ 
+      where: { sport_code: code },
+      attributes: ['filename', 'file_path']
+    });
+    
+    // 오버레이 이미지 폴더 경로
+    const overlayImageDir = path.join(__dirname, 'public', 'overlay-images', code);
+    let overlayFolderExists = false;
+    let overlayFolderSize = 0;
+    
+    try {
+      if (fsSync.existsSync(overlayImageDir)) {
+        overlayFolderExists = true;
+        const files = fsSync.readdirSync(overlayImageDir);
+        overlayFolderSize = files.length;
+      }
+    } catch (error) {
+      console.warn('오버레이 이미지 폴더 확인 실패:', error.message);
+    }
+
+    // 팀로고 폴더 경로
+    const teamLogoDir = path.join(__dirname, 'public', 'TEAMLOGO', code);
+    let teamLogoFolderExists = false;
+    let teamLogoFolderSize = 0;
+    
+    try {
+      if (fsSync.existsSync(teamLogoDir)) {
+        teamLogoFolderExists = true;
+        const files = fsSync.readdirSync(teamLogoDir);
+        teamLogoFolderSize = files.length;
+      }
+    } catch (error) {
+      console.warn('팀로고 폴더 확인 실패:', error.message);
+    }
+
+    res.json({
+      sport: {
+        name: sport.name,
+        code: sport.code,
+        template: sport.template
+      },
+      relatedData: {
+        matchCount,
+        overlayImageCount,
+        activeOverlayImageCount,
+        overlayImages: overlayImages.map(img => ({
+          filename: img.filename,
+          file_path: img.file_path
+        })),
+        overlayFolderInfo: {
+          exists: overlayFolderExists,
+          fileCount: overlayFolderSize
+        },
+        teamLogoFolderInfo: {
+          exists: teamLogoFolderExists,
+          fileCount: teamLogoFolderSize
+        }
+      }
+    });
+  } catch (error) {
+    logger.error('종목 삭제 정보 조회 실패:', error);
     res.status(500).json({ error: '서버 오류가 발생했습니다.' });
   }
 });
@@ -4229,8 +4656,35 @@ app.delete('/api/sport/:code', async (req, res) => {
       });
     }
 
+    // 오버레이 이미지 관련 데이터 삭제
+    await SportOverlayImage.destroy({ where: { sport_code: code } });
+    await SportActiveOverlayImage.destroy({ where: { sport_code: code } });
+    
+    // 오버레이 이미지 폴더 삭제
+    const overlayImageDir = path.join(__dirname, 'public', 'overlay-images', code);
+    try {
+      if (fsSync.existsSync(overlayImageDir)) {
+        fsSync.rmSync(overlayImageDir, { recursive: true, force: true });
+        logger.info(`오버레이 이미지 폴더 삭제: ${overlayImageDir}`);
+      }
+    } catch (error) {
+      logger.warn(`오버레이 이미지 폴더 삭제 실패: ${overlayImageDir}`, error.message);
+    }
+
+    // 팀로고 폴더 삭제
+    const teamLogoDir = path.join(__dirname, 'public', 'TEAMLOGO', code);
+    try {
+      if (fsSync.existsSync(teamLogoDir)) {
+        fsSync.rmSync(teamLogoDir, { recursive: true, force: true });
+        logger.info(`팀로고 폴더 삭제: ${teamLogoDir}`);
+      }
+    } catch (error) {
+      logger.warn(`팀로고 폴더 삭제 실패: ${teamLogoDir}`, error.message);
+    }
+
+    // 종목 삭제
     await sport.destroy();
-    logger.info(`종목 삭제: ${sport.name} (${code})`);
+    logger.info(`종목 삭제: ${sport.name} (${code}) - 관련 데이터 모두 삭제됨`);
     res.json({ success: true });
   } catch (error) {
     logger.error('종목 삭제 실패:', error);
@@ -4305,20 +4759,20 @@ app.get('/api/matches', requireAuth, async (req, res) => {
     
     console.log(`조회된 경기 수: ${matches.length} (사용자: ${req.session.username})`);
 
-    // 템플릿 기반 분류를 위해 Sport 정보도 가져오기
-    const sports = await Sport.findAll({
-      include: [{
-        model: Template,
-        as: 'templateInfo',
-        attributes: ['sport_type'],
-        required: false
-      }]
+    // 템플릿 기반 분류를 위해 Sport와 Template 정보 가져오기
+    const sports = await Sport.findAll();
+    const templates = await Template.findAll();
+    
+    // 템플릿 이름을 키로 하는 맵 생성
+    const templateMap = {};
+    templates.forEach(template => {
+      templateMap[template.name] = template.sport_type;
     });
-
+    
     // Sport 코드를 키로 하는 맵 생성
     const sportTemplateMap = {};
     sports.forEach(sport => {
-      sportTemplateMap[sport.code] = sport.templateInfo ? sport.templateInfo.sport_type : sport.template;
+      sportTemplateMap[sport.code] = templateMap[sport.template] || sport.template;
     });
 
     const matchesWithUrls = matches.map(match => {
@@ -4448,6 +4902,78 @@ app.get('/api/logs', (req, res) => {
 });
 
 // 로그 파일 다운로드 API
+// 자동 로그 관리 상태 확인 API (더 구체적인 라우트를 먼저 정의)
+app.get('/api/logs/auto-management-status', (req, res) => {
+  console.log('자동 로그 관리 상태 API 호출됨');
+  try {
+    const autoBackupDir = path.join(__dirname, 'logs', 'auto-backup');
+    let backupCount = 0;
+    let totalBackupSize = 0;
+    let oldestBackup = null;
+    let newestBackup = null;
+    
+    if (fsSync.existsSync(autoBackupDir)) {
+      const backupFolders = fsSync.readdirSync(autoBackupDir);
+      backupCount = backupFolders.length;
+      
+      if (backupCount > 0) {
+        const backupDates = [];
+        
+        backupFolders.forEach(folder => {
+          const folderPath = path.join(autoBackupDir, folder);
+          const stats = fsSync.statSync(folderPath);
+          backupDates.push(stats.mtime);
+          
+          // 폴더 내 파일들의 크기 계산
+          if (fsSync.existsSync(folderPath)) {
+            const files = fsSync.readdirSync(folderPath);
+            files.forEach(file => {
+              const filePath = path.join(folderPath, file);
+              const fileStats = fsSync.statSync(filePath);
+              totalBackupSize += fileStats.size;
+            });
+          }
+        });
+        
+        // 가장 오래된 백업과 가장 최근 백업 찾기
+        if (backupDates.length > 0) {
+          oldestBackup = new Date(Math.min(...backupDates));
+          newestBackup = new Date(Math.max(...backupDates));
+        }
+      }
+    }
+    
+    // 현재 로그 파일 크기 계산
+    let currentLogSize = 0;
+    const logFiles = ['app.log', 'error.log'];
+    logFiles.forEach(logFile => {
+      const logFilePath = path.join(logDir, logFile);
+      if (fsSync.existsSync(logFilePath)) {
+        currentLogSize += fsSync.statSync(logFilePath).size;
+      }
+    });
+    
+    res.json({
+      success: true,
+      data: {
+        backupCount: backupCount,
+        totalBackupSize: totalBackupSize,
+        currentLogSize: currentLogSize,
+        oldestBackup: oldestBackup,
+        newestBackup: newestBackup,
+        maxLogSize: 10 * 1024 * 1024, // 10MB
+        autoBackupEnabled: true
+      }
+    });
+  } catch (error) {
+    console.error('자동 로그 관리 상태 조회 중 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: '자동 로그 관리 상태 조회에 실패했습니다.' 
+    });
+  }
+});
+
 app.get('/api/logs/:filename', (req, res) => {
   try {
     const { filename } = req.params;
@@ -4872,81 +5398,74 @@ app.post('/api/match/:id/team-name', async (req, res) => {
   }
 });
 
-// 자동 로그 관리 상태 확인 API
-app.get('/api/logs/auto-management-status', (req, res) => {
+// 백업 복원 API (파일 업로드 또는 서버 백업 선택)
+app.post('/api/backup/restore', requireAuth, backupUpload.single('backupFile'), async (req, res) => {
   try {
-    const autoBackupDir = path.join(__dirname, 'logs', 'auto-backup');
-    let backupCount = 0;
-    let totalBackupSize = 0;
-    let oldestBackup = null;
-    let newestBackup = null;
-    
-    if (fsSync.existsSync(autoBackupDir)) {
-      const backupFolders = fsSync.readdirSync(autoBackupDir);
-      backupCount = backupFolders.length;
-      
-      if (backupCount > 0) {
-        const backupDates = [];
-        
-        backupFolders.forEach(folder => {
-          const folderPath = path.join(autoBackupDir, folder);
-          const stats = fsSync.statSync(folderPath);
-          backupDates.push(stats.mtime);
-          
-          // 폴더 내 파일들의 크기 계산
-          if (fsSync.existsSync(folderPath)) {
-            const files = fsSync.readdirSync(folderPath);
-            files.forEach(file => {
-              const filePath = path.join(folderPath, file);
-              const fileStats = fsSync.statSync(filePath);
-              totalBackupSize += fileStats.size;
-            });
-          }
-        });
-        
-        oldestBackup = new Date(Math.min(...backupDates));
-        newestBackup = new Date(Math.max(...backupDates));
-      }
+    // 관리자 권한 확인
+    if (req.session.userRole !== 'admin') {
+      return res.status(403).json({ success: false, error: '관리자 권한이 필요합니다.' });
     }
-    
-    // 현재 로그 파일들의 크기 계산
-    const files = fsSync.readdirSync(logDir);
-    let currentLogSize = 0;
-    let logFileCount = 0;
-    
-    files.forEach(file => {
-      if (file.endsWith('.log') && !file.includes('backup')) {
-        const filePath = path.join(logDir, file);
-        const stats = fsSync.statSync(filePath);
-        currentLogSize += stats.size;
-        logFileCount++;
+
+    const uploadedFile = req.file;
+    const { fileName } = req.body;
+
+    // 파일 업로드 또는 서버 백업 선택 확인
+    if (!uploadedFile && !fileName) {
+      return res.status(400).json({ success: false, error: '백업 파일을 업로드하거나 서버의 백업을 선택해주세요.' });
+    }
+
+    if (uploadedFile && fileName) {
+      return res.status(400).json({ success: false, error: '파일 업로드와 서버 백업 중 하나만 선택해주세요.' });
+    }
+
+    let result;
+    let backupName;
+
+    if (uploadedFile) {
+      // 파일 업로드 방식
+      backupName = uploadedFile.originalname;
+      logger.info(`백업 복원 시작 (파일 업로드): ${backupName} (사용자: ${req.session.username})`);
+
+      result = await backupManager.restoreFromFile(uploadedFile.path);
+      
+      // 업로드된 임시 파일 삭제
+      fsSync.unlinkSync(uploadedFile.path);
+    } else {
+      // 서버 백업 선택 방식
+      backupName = fileName;
+      logger.info(`백업 복원 시작 (서버 백업): ${backupName} (사용자: ${req.session.username})`);
+
+      const backupPath = path.join(__dirname, 'backups', fileName);
+      if (!fsSync.existsSync(backupPath)) {
+        return res.status(404).json({ success: false, error: '백업 파일을 찾을 수 없습니다.' });
       }
-    });
-    
-    res.json({
-      success: true,
-      data: {
-        config: {
-          autoBackupInterval: LOG_MANAGEMENT_CONFIG.AUTO_BACKUP_INTERVAL,
-          maxLogSizeMB: LOG_MANAGEMENT_CONFIG.MAX_LOG_SIZE_MB,
-          maxTotalLogSizeMB: LOG_MANAGEMENT_CONFIG.MAX_TOTAL_LOG_SIZE_MB,
-          backupRetentionDays: LOG_MANAGEMENT_CONFIG.BACKUP_RETENTION_DAYS
-        },
-        current: {
-          logFileCount,
-          currentLogSizeMB: (currentLogSize / (1024 * 1024)).toFixed(2),
-          backupCount,
-          totalBackupSizeMB: (totalBackupSize / (1024 * 1024)).toFixed(2),
-          oldestBackup: oldestBackup ? oldestBackup.toISOString() : null,
-          newestBackup: newestBackup ? newestBackup.toISOString() : null
-        }
-      }
-    });
+
+      result = await backupManager.restoreFromFile(backupPath);
+    }
+
+    if (result.success) {
+      logger.info(`백업 복원 완료: ${backupName} (사용자: ${req.session.username})`);
+      res.json({ 
+        success: true, 
+        message: '백업이 성공적으로 복원되었습니다.',
+        data: result.data
+      });
+    } else {
+      logger.error(`백업 복원 실패: ${backupName} - ${result.error}`);
+      res.status(500).json({ 
+        success: false, 
+        error: result.error || '백업 복원 중 오류가 발생했습니다.' 
+      });
+    }
   } catch (error) {
-    logger.error('자동 로그 관리 상태 확인 실패:', error);
-    res.status(500).json({ error: '자동 로그 관리 상태 확인 실패' });
+    logger.error('백업 복원 API 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: '백업 복원 중 오류가 발생했습니다.' 
+    });
   }
 });
+
 
 // 리스트 정보 확인 API (디버깅용)
 app.get('/api/debug/list/:id', async (req, res) => {
@@ -5410,6 +5929,78 @@ app.get('/api/team-logo-map/:sportType', async (req, res) => {
     }
 });
 
+// 탭별 경기 일괄 삭제 API (현재 탭에 표시된 경기들만 삭제)
+app.delete('/api/matches/by-tab', requireAuth, async (req, res) => {
+  try {
+    const { matchIds, tabType, tabName } = req.body;
+    
+    if (!matchIds || !Array.isArray(matchIds) || matchIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: '삭제할 경기 ID 목록이 필요합니다.'
+      });
+    }
+    
+    logger.info(`=== ${tabName} 탭 경기 데이터 삭제 시작 (사용자: ${req.session.username}, 권한: ${req.session.userRole}) ===`);
+    logger.info(`삭제할 경기 ID 목록: ${matchIds.join(', ')}`);
+    
+    let whereCondition = { id: matchIds };
+    let deletedMatches = 0;
+    let deletedLists = 0;
+    
+    // 일반 사용자는 자신이 만든 경기와 리스트만 삭제 가능
+    if (req.session.userRole !== 'admin') {
+      whereCondition.created_by = req.session.userId;
+      logger.info(`${tabName} 탭 일반 사용자 삭제: 사용자 ID ${req.session.userId}의 데이터만 삭제`);
+    } else {
+      logger.info(`${tabName} 탭 관리자 삭제: 모든 데이터 삭제`);
+    }
+    
+    // 해당 경기들 삭제
+    deletedMatches = await Match.destroy({
+      where: whereCondition,
+      truncate: false
+    });
+    
+    // MatchList는 경기 목록을 관리하는 것이므로 개별 경기 삭제 시에는 삭제하지 않음
+    // 대신 MatchList의 matches JSON 배열에서 해당 경기 ID들을 제거
+    if (matchIds.length > 0) {
+      const matchLists = await MatchList.findAll();
+      for (const matchList of matchLists) {
+        if (matchList.matches && Array.isArray(matchList.matches)) {
+          const updatedMatches = matchList.matches.filter(matchId => !matchIds.includes(matchId));
+          if (updatedMatches.length !== matchList.matches.length) {
+            await matchList.update({ matches: updatedMatches });
+            deletedLists++;
+          }
+        }
+      }
+    }
+    
+    const message = req.session.userRole === 'admin' 
+      ? `${tabName} 탭의 모든 경기 데이터가 삭제되었습니다. (경기 ${deletedMatches}개, 리스트 ${deletedLists}개)`
+      : `${tabName} 탭의 본인이 만든 경기 데이터가 삭제되었습니다. (경기 ${deletedMatches}개, 리스트 ${deletedLists}개)`;
+    
+    logger.info(`${tabName} 탭 경기 데이터 삭제 완료: 경기 ${deletedMatches}개, 리스트 ${deletedLists}개 삭제됨 (사용자: ${req.session.username})`);
+    
+    res.json({
+      success: true,
+      message: message,
+      deletedMatches,
+      deletedLists,
+      tabType,
+      tabName,
+      requestedMatchIds: matchIds
+    });
+  } catch (error) {
+    logger.error(`${req.body.tabName} 탭 경기 데이터 삭제 실패:`, error);
+    res.status(500).json({
+      success: false,
+      error: '탭별 경기 데이터 삭제 중 오류가 발생했습니다.'
+    });
+  }
+});
+
 // 모든 경기 데이터 삭제 API
 app.delete('/api/matches/all', requireAuth, async (req, res) => {
   try {
@@ -5573,6 +6164,133 @@ app.post('/api/settings', async (req, res) => {
 // 설정 페이지 라우트
 app.get('/settings', (req, res) => {
   res.render('settings');
+});
+
+// 백업/복원 관리자 인스턴스 생성
+const backupManager = new BackupRestoreManager();
+
+// 백업 생성 API
+app.post('/api/backup/create', requireAuth, async (req, res) => {
+  try {
+    // 관리자만 백업 생성 가능
+    if (req.session.userRole !== 'admin') {
+      return res.status(403).json({ error: '관리자 권한이 필요합니다.' });
+    }
+
+    const { name } = req.body;
+    const backupName = name ? name.trim() : undefined;
+    
+    logger.info(`백업 생성 시작 (사용자: ${req.session.username}${backupName ? `, 이름: ${backupName}` : ''})`);
+    const result = await backupManager.createBackup(backupName);
+    
+    if (result.success) {
+      logger.info(`백업 생성 완료: ${result.fileName} (${result.size} bytes)`);
+      res.json(result);
+    } else {
+      logger.error(`백업 생성 실패: ${result.error}`);
+      res.status(500).json(result);
+    }
+  } catch (error) {
+    logger.error('백업 생성 오류:', error);
+    res.status(500).json({ error: '백업 생성 중 오류가 발생했습니다.' });
+  }
+});
+
+// 백업 목록 조회 API
+app.get('/api/backup/list', requireAuth, async (req, res) => {
+  try {
+    // 관리자만 백업 목록 조회 가능
+    if (req.session.userRole !== 'admin') {
+      return res.status(403).json({ error: '관리자 권한이 필요합니다.' });
+    }
+
+    const backupList = await backupManager.getBackupList();
+    res.json(backupList);
+  } catch (error) {
+    logger.error('백업 목록 조회 오류:', error);
+    res.status(500).json({ error: '백업 목록 조회 중 오류가 발생했습니다.' });
+  }
+});
+
+// 백업 파일 다운로드 API
+app.get('/api/backup/download/:fileName', requireAuth, async (req, res) => {
+  try {
+    // 관리자만 백업 다운로드 가능
+    if (req.session.userRole !== 'admin') {
+      return res.status(403).json({ error: '관리자 권한이 필요합니다.' });
+    }
+
+    const fileName = req.params.fileName;
+    const filePath = path.join(backupManager.backupDir, fileName);
+    
+    // 파일 존재 확인
+    try {
+      await fs.access(filePath);
+    } catch {
+      return res.status(404).json({ error: '백업 파일을 찾을 수 없습니다.' });
+    }
+
+    logger.info(`백업 파일 다운로드: ${fileName} (사용자: ${req.session.username})`);
+    res.download(filePath, fileName);
+  } catch (error) {
+    logger.error('백업 파일 다운로드 오류:', error);
+    res.status(500).json({ error: '백업 파일 다운로드 중 오류가 발생했습니다.' });
+  }
+});
+
+// 백업 파일 삭제 API
+app.delete('/api/backup/:fileName', requireAuth, async (req, res) => {
+  try {
+    // 관리자만 백업 삭제 가능
+    if (req.session.userRole !== 'admin') {
+      return res.status(403).json({ error: '관리자 권한이 필요합니다.' });
+    }
+
+    const fileName = req.params.fileName;
+    const result = await backupManager.deleteBackup(fileName);
+    
+    if (result.success) {
+      logger.info(`백업 파일 삭제: ${fileName} (사용자: ${req.session.username})`);
+      res.json(result);
+    } else {
+      logger.error(`백업 파일 삭제 실패: ${result.error}`);
+      res.status(500).json(result);
+    }
+  } catch (error) {
+    logger.error('백업 파일 삭제 오류:', error);
+    res.status(500).json({ error: '백업 파일 삭제 중 오류가 발생했습니다.' });
+  }
+});
+
+// 백업 복원 API
+app.post('/api/backup/restore', requireAuth, async (req, res) => {
+  try {
+    // 관리자만 백업 복원 가능
+    if (req.session.userRole !== 'admin') {
+      return res.status(403).json({ error: '관리자 권한이 필요합니다.' });
+    }
+
+    const { fileName } = req.body;
+    if (!fileName) {
+      return res.status(400).json({ error: '백업 파일명이 필요합니다.' });
+    }
+
+    const filePath = path.join(backupManager.backupDir, fileName);
+    
+    logger.info(`백업 복원 시작: ${fileName} (사용자: ${req.session.username})`);
+    const result = await backupManager.restoreBackup(filePath);
+    
+    if (result.success) {
+      logger.info(`백업 복원 완료: ${fileName}`);
+      res.json(result);
+    } else {
+      logger.error(`백업 복원 실패: ${result.error}`);
+      res.status(500).json(result);
+    }
+  } catch (error) {
+    logger.error('백업 복원 오류:', error);
+    res.status(500).json({ error: '백업 복원 중 오류가 발생했습니다.' });
+  }
 });
 
 // 경기 리스트 API - 리스트 조회

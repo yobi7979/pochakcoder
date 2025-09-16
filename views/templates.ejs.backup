@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>템플릿 관리 - SportsCoder</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+    <style>
+        .template-card {
+            transition: transform 0.2s;
+        }
+        .template-card:hover {
+            transform: translateY(-5px);
+        }
+        .template-preview {
+            height: 200px;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/header', { title: '템플릿 관리' }) %>
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>템플릿 관리</h2>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newTemplateModal">
+                <i class="bi bi-plus-lg"></i> 새 템플릿
+            </button>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>템플릿 이름</th>
+                                <th>템플릿 파일</th>
+                                <th>컨트롤 파일</th>
+                                <th>모바일 컨트롤 파일</th>
+                                <th>상태</th>
+                                <th>작업</th>
+                            </tr>
+                        </thead>
+                        <tbody id="templatesList">
+                            <!-- 템플릿 목록이 여기에 동적으로 추가됩니다 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 새 템플릿 모달 -->
+    <div class="modal fade" id="newTemplateModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">새 템플릿 생성</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="newTemplateForm">
+                        <div class="mb-3">
+                            <label for="templateName" class="form-label">템플릿 이름</label>
+                            <input type="text" class="form-control" id="templateName" 
+                                   required
+                                   pattern="^[a-z0-9_]+$"
+                                   title="영문 소문자, 숫자, 언더스코어(_)만 사용 가능합니다">
+                            <div class="form-text">영문자, 숫자, 언더스코어(_)만 사용 가능합니다</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="baseTemplate" class="form-label">기본 템플릿 선택</label>
+                            <select class="form-select" id="baseTemplate" required>
+                                <option value="">기본 템플릿을 선택하세요</option>
+                            </select>
+                            <div class="form-text">새 템플릿을 만들 때 복사할 기본 템플릿을 선택하세요</div>
+                        </div>
+                        <div class="mb-3" id="templatePreview" style="display: none;">
+                            <label class="form-label">선택된 템플릿 미리보기</label>
+                            <div class="border rounded p-3 bg-light">
+                                <div id="previewContent">
+                                    <!-- 미리보기 내용이 여기에 표시됩니다 -->
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" id="createTemplateBtn">생성</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 삭제 확인 모달 -->
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">템플릿 삭제</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>정말로 이 템플릿을 삭제하시겠습니까?</p>
+                    <p class="text-danger">이 작업은 되돌릴 수 없습니다.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">삭제</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 템플릿 목록 로드
+        async function loadTemplates() {
+            try {
+                const response = await fetch('/api/templates');
+                const templates = await response.json();
+                
+                const tbody = document.getElementById('templatesList');
+                tbody.innerHTML = templates.map(template => `
+                    <tr>
+                        <td>${template.name}</td>
+                        <td>${template.templateFile}</td>
+                        <td>${template.controlFile}</td>
+                        <td>${template.controlMobileFile}</td>
+                        <td>
+                            <span class="badge ${template.isDefault ? 'bg-primary' : 'bg-success'}">
+                                ${template.isDefault ? '기본' : '사용자 정의'}
+                            </span>
+                        </td>
+                        <td>
+                            ${!template.isDefault ? `
+                                <button class="btn btn-sm btn-danger" onclick="confirmDelete(${template.id})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            ` : ''}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('템플릿 목록 로드 중 오류:', error);
+                alert('템플릿 목록을 불러오는데 실패했습니다.');
+            }
+        }
+
+        // 기본 템플릿 목록 로드
+        async function loadBaseTemplates() {
+            try {
+                const response = await fetch('/api/base-templates');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const select = document.getElementById('baseTemplate');
+                    select.innerHTML = '<option value="">기본 템플릿을 선택하세요</option>';
+                    
+                    // 기본 템플릿과 등록된 템플릿을 구분하여 표시
+                    const baseTemplates = result.templates.filter(t => t.type === 'base');
+                    const registeredTemplates = result.templates.filter(t => t.type === 'registered');
+                    
+                    // 기본 템플릿 그룹
+                    if (baseTemplates.length > 0) {
+                        const baseGroup = document.createElement('optgroup');
+                        baseGroup.label = '기본 템플릿';
+                        baseTemplates.forEach(template => {
+                            const option = document.createElement('option');
+                            option.value = template.name;
+                            option.textContent = template.displayName;
+                            baseGroup.appendChild(option);
+                        });
+                        select.appendChild(baseGroup);
+                    }
+                    
+                    // 등록된 템플릿 그룹
+                    if (registeredTemplates.length > 0) {
+                        const registeredGroup = document.createElement('optgroup');
+                        registeredGroup.label = '등록된 템플릿';
+                        registeredTemplates.forEach(template => {
+                            const option = document.createElement('option');
+                            option.value = template.name;
+                            option.textContent = template.displayName;
+                            registeredGroup.appendChild(option);
+                        });
+                        select.appendChild(registeredGroup);
+                    }
+                }
+            } catch (error) {
+                console.error('기본 템플릿 목록 로드 중 오류:', error);
+            }
+        }
+
+        // 기본 템플릿 미리보기 로드
+        async function loadTemplatePreview(templateName) {
+            if (!templateName) {
+                document.getElementById('templatePreview').style.display = 'none';
+                return;
+            }
+            
+            try {
+                // 먼저 .html 확장자로 시도
+                let response = await fetch(`/api/base-template/${templateName}-template.html`);
+                let result = await response.json();
+                
+                // .html이 없으면 .ejs 확장자로 시도
+                if (!result.success) {
+                    response = await fetch(`/api/base-template/${templateName}-template.ejs`);
+                    result = await response.json();
+                }
+                
+                if (result.success) {
+                    const previewDiv = document.getElementById('previewContent');
+                    // HTML 내용을 안전하게 표시 (첫 200자만)
+                    const previewText = result.content.substring(0, 200) + (result.content.length > 200 ? '...' : '');
+                    previewDiv.innerHTML = `<pre class="mb-0"><code>${previewText}</code></pre>`;
+                    document.getElementById('templatePreview').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('템플릿 미리보기 로드 중 오류:', error);
+            }
+        }
+
+        // 기본 템플릿 선택 이벤트
+        document.getElementById('baseTemplate').addEventListener('change', function() {
+            loadTemplatePreview(this.value);
+        });
+
+        // 새 템플릿 생성
+        document.getElementById('createTemplateBtn').addEventListener('click', async () => {
+            const name = document.getElementById('templateName').value.trim();
+            const baseTemplate = document.getElementById('baseTemplate').value;
+            
+            if (!name) {
+                alert('템플릿 이름을 입력해주세요.');
+                return;
+            }
+            
+            if (!baseTemplate) {
+                alert('기본 템플릿을 선택해주세요.');
+                return;
+            }
+            
+            // 템플릿 이름 유효성 검사
+            const namePattern = /^[a-z0-9_]+$/;
+            if (!namePattern.test(name)) {
+                alert('템플릿 이름은 영문자, 숫자, 언더스코어(_)만 사용 가능합니다.');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/templates', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, baseTemplate })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error);
+                }
+                
+                // 모달 닫기
+                const modal = bootstrap.Modal.getInstance(document.getElementById('newTemplateModal'));
+                modal.hide();
+                
+                // 폼 초기화
+                document.getElementById('newTemplateForm').reset();
+                document.getElementById('templatePreview').style.display = 'none';
+                
+                // 목록 새로고침
+                loadTemplates();
+                
+                alert('템플릿이 생성되었습니다.');
+            } catch (error) {
+                console.error('템플릿 생성 중 오류:', error);
+                alert(error.message || '템플릿 생성에 실패했습니다.');
+            }
+        });
+
+        // 삭제 확인
+        let templateToDelete = null;
+        
+        function confirmDelete(id) {
+            templateToDelete = id;
+            const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+            modal.show();
+        }
+        
+        // 템플릿 삭제
+        document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+            if (!templateToDelete) return;
+            
+            try {
+                const response = await fetch(`/api/templates/${templateToDelete}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error);
+                }
+                
+                // 모달 닫기
+                const modal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'));
+                modal.hide();
+                
+                // 목록 새로고침
+                loadTemplates();
+                
+                alert('템플릿이 삭제되었습니다.');
+            } catch (error) {
+                console.error('템플릿 삭제 중 오류:', error);
+                alert(error.message || '템플릿 삭제에 실패했습니다.');
+            } finally {
+                templateToDelete = null;
+            }
+        });
+
+        // 페이지 로드 시 템플릿 목록과 기본 템플릿 목록 로드
+        document.addEventListener('DOMContentLoaded', () => {
+             loadTemplates();
+            loadBaseTemplates();
+
+            // 템플릿 이름 입력 시 자동으로 소문자로 변환
+         document.getElementById("templateName").addEventListener("input", function () {
+              this.value = this.value.toLowerCase();
+    });
+});
+    </script>
+</body>
+=======
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>템플릿 관리 - SportsCoder</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+    <style>
+        .template-card {
+            transition: transform 0.2s;
+        }
+        .template-card:hover {
+            transform: translateY(-5px);
+        }
+        .template-preview {
+            height: 200px;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/header', { title: '템플릿 관리' }) %>
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>템플릿 관리</h2>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newTemplateModal">
+                <i class="bi bi-plus-lg"></i> 새 템플릿
+            </button>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>템플릿 이름</th>
+                                <th>템플릿 파일</th>
+                                <th>컨트롤 파일</th>
+                                <th>모바일 컨트롤 파일</th>
+                                <th>상태</th>
+                                <th>작업</th>
+                            </tr>
+                        </thead>
+                        <tbody id="templatesList">
+                            <!-- 템플릿 목록이 여기에 동적으로 추가됩니다 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 새 템플릿 모달 -->
+    <div class="modal fade" id="newTemplateModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">새 템플릿 생성</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="newTemplateForm">
+                        <div class="mb-3">
+                            <label for="templateName" class="form-label">템플릿 이름</label>
+                            <input type="text" class="form-control" id="templateName" 
+                                   required
+                                   pattern="^[a-z0-9_]+$"
+                                   title="영문 소문자, 숫자, 언더스코어(_)만 사용 가능합니다">
+                            <div class="form-text">영문자, 숫자, 언더스코어(_)만 사용 가능합니다</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="baseTemplate" class="form-label">기본 템플릿 선택</label>
+                            <select class="form-select" id="baseTemplate" required>
+                                <option value="">기본 템플릿을 선택하세요</option>
+                            </select>
+                            <div class="form-text">새 템플릿을 만들 때 복사할 기본 템플릿을 선택하세요</div>
+                        </div>
+                        <div class="mb-3" id="templatePreview" style="display: none;">
+                            <label class="form-label">선택된 템플릿 미리보기</label>
+                            <div class="border rounded p-3 bg-light">
+                                <div id="previewContent">
+                                    <!-- 미리보기 내용이 여기에 표시됩니다 -->
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" id="createTemplateBtn">생성</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 삭제 확인 모달 -->
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">템플릿 삭제</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>정말로 이 템플릿을 삭제하시겠습니까?</p>
+                    <p class="text-danger">이 작업은 되돌릴 수 없습니다.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">삭제</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 템플릿 목록 로드
+        async function loadTemplates() {
+            try {
+                const response = await fetch('/api/templates');
+                const templates = await response.json();
+                
+                const tbody = document.getElementById('templatesList');
+                tbody.innerHTML = templates.map(template => `
+                    <tr>
+                        <td>${template.name}</td>
+                        <td>${template.templateFile}</td>
+                        <td>${template.controlFile}</td>
+                        <td>${template.controlMobileFile}</td>
+                        <td>
+                            <span class="badge ${template.isDefault ? 'bg-primary' : 'bg-success'}">
+                                ${template.isDefault ? '기본' : '사용자 정의'}
+                            </span>
+                        </td>
+                        <td>
+                            ${!template.isDefault ? `
+                                <button class="btn btn-sm btn-danger" onclick="confirmDelete(${template.id})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            ` : ''}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('템플릿 목록 로드 중 오류:', error);
+                alert('템플릿 목록을 불러오는데 실패했습니다.');
+            }
+        }
+
+        // 기본 템플릿 목록 로드
+        async function loadBaseTemplates() {
+            try {
+                const response = await fetch('/api/base-templates');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const select = document.getElementById('baseTemplate');
+                    select.innerHTML = '<option value="">기본 템플릿을 선택하세요</option>';
+                    
+                    // 기본 템플릿과 등록된 템플릿을 구분하여 표시
+                    const baseTemplates = result.templates.filter(t => t.type === 'base');
+                    const registeredTemplates = result.templates.filter(t => t.type === 'registered');
+                    
+                    // 기본 템플릿 그룹
+                    if (baseTemplates.length > 0) {
+                        const baseGroup = document.createElement('optgroup');
+                        baseGroup.label = '기본 템플릿';
+                        baseTemplates.forEach(template => {
+                            const option = document.createElement('option');
+                            option.value = template.name;
+                            option.textContent = template.displayName;
+                            baseGroup.appendChild(option);
+                        });
+                        select.appendChild(baseGroup);
+                    }
+                    
+                    // 등록된 템플릿 그룹
+                    if (registeredTemplates.length > 0) {
+                        const registeredGroup = document.createElement('optgroup');
+                        registeredGroup.label = '등록된 템플릿';
+                        registeredTemplates.forEach(template => {
+                            const option = document.createElement('option');
+                            option.value = template.name;
+                            option.textContent = template.displayName;
+                            registeredGroup.appendChild(option);
+                        });
+                        select.appendChild(registeredGroup);
+                    }
+                }
+            } catch (error) {
+                console.error('기본 템플릿 목록 로드 중 오류:', error);
+            }
+        }
+
+        // 기본 템플릿 미리보기 로드
+        async function loadTemplatePreview(templateName) {
+            if (!templateName) {
+                document.getElementById('templatePreview').style.display = 'none';
+                return;
+            }
+            
+            try {
+                // 먼저 .html 확장자로 시도
+                let response = await fetch(`/api/base-template/${templateName}-template.html`);
+                let result = await response.json();
+                
+                // .html이 없으면 .ejs 확장자로 시도
+                if (!result.success) {
+                    response = await fetch(`/api/base-template/${templateName}-template.ejs`);
+                    result = await response.json();
+                }
+                
+                if (result.success) {
+                    const previewDiv = document.getElementById('previewContent');
+                    // HTML 내용을 안전하게 표시 (첫 200자만)
+                    const previewText = result.content.substring(0, 200) + (result.content.length > 200 ? '...' : '');
+                    previewDiv.innerHTML = `<pre class="mb-0"><code>${previewText}</code></pre>`;
+                    document.getElementById('templatePreview').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('템플릿 미리보기 로드 중 오류:', error);
+            }
+        }
+
+        // 기본 템플릿 선택 이벤트
+        document.getElementById('baseTemplate').addEventListener('change', function() {
+            loadTemplatePreview(this.value);
+        });
+
+        // 새 템플릿 생성
+        document.getElementById('createTemplateBtn').addEventListener('click', async () => {
+            const name = document.getElementById('templateName').value.trim();
+            const baseTemplate = document.getElementById('baseTemplate').value;
+            
+            if (!name) {
+                alert('템플릿 이름을 입력해주세요.');
+                return;
+            }
+            
+            if (!baseTemplate) {
+                alert('기본 템플릿을 선택해주세요.');
+                return;
+            }
+            
+            // 템플릿 이름 유효성 검사
+            const namePattern = /^[a-z0-9_]+$/;
+            if (!namePattern.test(name)) {
+                alert('템플릿 이름은 영문자, 숫자, 언더스코어(_)만 사용 가능합니다.');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/templates', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, baseTemplate })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error);
+                }
+                
+                // 모달 닫기
+                const modal = bootstrap.Modal.getInstance(document.getElementById('newTemplateModal'));
+                modal.hide();
+                
+                // 폼 초기화
+                document.getElementById('newTemplateForm').reset();
+                document.getElementById('templatePreview').style.display = 'none';
+                
+                // 목록 새로고침
+                loadTemplates();
+                
+                alert('템플릿이 생성되었습니다.');
+            } catch (error) {
+                console.error('템플릿 생성 중 오류:', error);
+                alert(error.message || '템플릿 생성에 실패했습니다.');
+            }
+        });
+
+        // 삭제 확인
+        let templateToDelete = null;
+        
+        function confirmDelete(id) {
+            templateToDelete = id;
+            const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+            modal.show();
+        }
+        
+        // 템플릿 삭제
+        document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+            if (!templateToDelete) return;
+            
+            try {
+                const response = await fetch(`/api/templates/${templateToDelete}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error);
+                }
+                
+                // 모달 닫기
+                const modal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'));
+                modal.hide();
+                
+                // 목록 새로고침
+                loadTemplates();
+                
+                alert('템플릿이 삭제되었습니다.');
+            } catch (error) {
+                console.error('템플릿 삭제 중 오류:', error);
+                alert(error.message || '템플릿 삭제에 실패했습니다.');
+            } finally {
+                templateToDelete = null;
+            }
+        });
+
+        // 페이지 로드 시 템플릿 목록과 기본 템플릿 목록 로드
+        document.addEventListener('DOMContentLoaded', () => {
+             loadTemplates();
+            loadBaseTemplates();
+
+            // 템플릿 이름 입력 시 자동으로 소문자로 변환
+         document.getElementById("templateName").addEventListener("input", function () {
+              this.value = this.value.toLowerCase();
+    });
+});
+    </script>
+</body>
+>>>>>>> fdbd75bfa7c1fc1657df36c8c58c59c2c1d5c9fc
+</html> 
