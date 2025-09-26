@@ -11,12 +11,62 @@ if not exist .git (
     echo [36mGit 저장소 초기화...[0m
     git init
     git remote add origin https://github.com/yobi7979/pochakcoder.git
+) else (
+    echo [36m기존 Git 저장소 확인...[0m
+    git remote -v
 )
 
-:: Python 캐시 파일 제거
-echo [36mPython 캐시 파일을 제거합니다...[0m
-for /d /r . %%d in (__pycache__) do @if exist "%%d" rd /s /q "%%d"
-del /s /q *.pyc 2>nul
+:: 불필요한 파일들 제거
+echo [36m불필요한 파일들을 정리합니다...[0m
+if exist "node_modules" (
+    echo [33mnode_modules 폴더를 제거합니다...[0m
+    rmdir /s /q "node_modules" 2>nul
+)
+if exist "logs" (
+    echo [33mlogs 폴더를 제거합니다...[0m
+    rmdir /s /q "logs" 2>nul
+)
+if exist "temp" (
+    echo [33mtemp 폴더를 제거합니다...[0m
+    rmdir /s /q "temp" 2>nul
+)
+if exist "backups" (
+    echo [33mbackups 폴더를 제거합니다...[0m
+    rmdir /s /q "backups" 2>nul
+)
+
+:: .gitignore 파일 생성
+echo [36m.gitignore 파일을 생성합니다...[0m
+(
+echo node_modules/
+echo logs/
+echo temp/
+echo backups/
+echo *.log
+echo .env
+echo .DS_Store
+echo __pycache__/
+echo *.pyc
+echo *.pyo
+echo *.pyd
+echo .Python
+echo env/
+echo venv/
+echo .venv/
+echo .pytest_cache/
+echo .coverage
+echo htmlcov/
+echo .tox/
+echo .cache
+echo nosetests.xml
+echo coverage.xml
+echo *.cover
+echo .hypothesis/
+echo .pytest_cache/
+echo .mypy_cache/
+echo .dmypy.json
+echo dmypy.json
+) > .gitignore
 
 :: 변경된 파일 확인
 echo.
@@ -32,6 +82,7 @@ if "!commit_msg!"=="" (
 )
 
 :: 변경사항 커밋 및 푸시
+echo [36m변경사항을 커밋합니다...[0m
 git add .
 git commit -m "!commit_msg!"
 
@@ -42,9 +93,11 @@ git push -f origin master
 if !errorlevel! equ 0 (
     echo.
     echo [32m코드가 성공적으로 깃허브에 푸시되었습니다![0m
+    echo [32m저장소 URL: https://github.com/yobi7979/pochakcoder[0m
 ) else (
     echo.
     echo [31m오류: GitHub 푸시 중 문제가 발생했습니다.[0m
+    echo [31m인터넷 연결과 GitHub 인증을 확인해주세요.[0m
 )
 
 echo.
