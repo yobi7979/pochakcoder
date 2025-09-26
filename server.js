@@ -4417,7 +4417,8 @@ async function createAdminUserIfNotExists() {
       await User.create({
         username: 'admin',
         password: 'admin',
-        role: 'admin'
+        role: 'admin',
+        is_active: true
       });
       
       logger.info('관리자 사용자 생성 완료');
@@ -4425,9 +4426,12 @@ async function createAdminUserIfNotExists() {
       logger.info('비밀번호: admin');
     } else {
       logger.info('관리자 사용자가 이미 존재합니다');
+      logger.info('기존 사용자명: admin');
+      logger.info('기존 비밀번호: admin');
     }
   } catch (error) {
     logger.error('관리자 사용자 생성 중 오류 발생:', error);
+    logger.error('에러 상세:', error.message);
     throw error;
   }
 }
