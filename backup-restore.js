@@ -16,17 +16,25 @@ const {
 
 class BackupRestoreManager {
   constructor() {
-    // Railway 환경에서는 임시 디렉토리 사용
+    // Railway 환경에서는 메모리 기반 백업 사용
     if (process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production') {
-      this.backupDir = path.join(require('os').tmpdir(), 'sportscoder-backups');
+      // Railway 환경에서는 메모리 기반 백업
+      this.backupDir = null; // 파일 시스템 사용 안함
+      this.useMemoryBackup = true;
     } else {
       this.backupDir = path.join(__dirname, 'backups');
+      this.useMemoryBackup = false;
     }
     this.publicDir = path.join(__dirname, 'public');
   }
 
   // 백업 디렉토리 생성
   async ensureBackupDir() {
+    if (this.useMemoryBackup) {
+      console.log('메모리 기반 백업 사용 - 디렉토리 생성 건너뛰기');
+      return;
+    }
+    
     try {
       await fs.access(this.backupDir);
     } catch {
@@ -43,7 +51,14 @@ class BackupRestoreManager {
   // 전체 시스템 백업
   async createBackup(customName) {
     try {
-      await this.ensureBackupDir();
+      console.log('백업 생성 시작...');
+      console.log(`메모리 기반 백업: ${this.useMemoryBackup}`);
+      console.log(`Railway 환경: ${process.env.RAILWAY_ENVIRONMENT}`);
+      console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
+      
+      if (!this.useMemoryBackup) {
+        await this.ensureBackupDir();
+      }
       
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       let backupFileName;
@@ -57,71 +72,122 @@ class BackupRestoreManager {
         backupFileName = `sportscoder-backup-${timestamp}.zip`;
       }
       
-      const backupPath = path.join(this.backupDir, backupFileName);
-      
       // Railway 환경에서는 데이터베이스만 백업
+      console.log('백업 데이터 수집 시작...');
       const backupData = await this.collectBackupData();
+      console.log('백업 데이터 수집 완료');
       
-      // ZIP 파일 생성
-      await this.createZipFile(backupPath, backupData);
-      
-      return {
-        success: true,
-        fileName: backupFileName,
-        filePath: backupPath,
-        size: (await fs.stat(backupPath)).size,
-        timestamp: new Date().toISOString()
-      };
+      if (this.useMemoryBackup) {
+        // Railway 환경에서는 메모리 기반 백업
+        console.log('메모리 기반 백업 생성...');
+        const zipBuffer = await this.createZipBuffer(backupData);
+        console.log(`메모리 백업 생성 완료: ${zipBuffer.length} bytes`);
+        
+        return {
+          success: true,
+          fileName: backupFileName,
+          filePath: null, // 파일 시스템 사용 안함
+          size: zipBuffer.length,
+          timestamp: new Date().toISOString(),
+          data: zipBuffer.toString('base64') // Base64 인코딩된 데이터
+        };
+      } else {
+        // 로컬 환경에서는 파일 기반 백업
+        const backupPath = path.join(this.backupDir, backupFileName);
+        console.log(`백업 파일 경로: ${backupPath}`);
+        
+        // ZIP 파일 생성
+        console.log('ZIP 파일 생성 시작...');
+        await this.createZipFile(backupPath, backupData);
+        console.log('ZIP 파일 생성 완료');
+        
+        const fileStats = await fs.stat(backupPath);
+        console.log(`백업 파일 크기: ${fileStats.size} bytes`);
+        
+        return {
+          success: true,
+          fileName: backupFileName,
+          filePath: backupPath,
+          size: fileStats.size,
+          timestamp: new Date().toISOString()
+        };
+      }
     } catch (error) {
       console.error('백업 생성 오류:', error);
+      console.error('에러 상세:', error.message);
+      console.error('스택 트레이스:', error.stack);
       return {
         success: false,
-        error: error.message
+        error: error.message,
+        stack: error.stack
       };
     }
   }
 
   // 백업 데이터 수집
   async collectBackupData() {
-    const backupData = {
-      metadata: {
-        version: '1.0',
-        timestamp: new Date().toISOString(),
-        description: 'SportsCoder 시스템 백업'
-      },
-      database: {},
-      files: []
-    };
+    try {
+      console.log('백업 데이터 수집 시작...');
+      const backupData = {
+        metadata: {
+          version: '1.0',
+          timestamp: new Date().toISOString(),
+          description: 'SportsCoder 시스템 백업'
+        },
+        database: {},
+        files: []
+      };
 
-    // 1. 사용자 생성 템플릿만 백업 (기본 템플릿 제외)
-    backupData.database.templates = await Template.findAll({
-      where: { is_default: false }
-    });
+      // 1. 사용자 생성 템플릿만 백업 (기본 템플릿 제외)
+      console.log('템플릿 데이터 수집...');
+      backupData.database.templates = await Template.findAll({
+        where: { is_default: false }
+      });
+      console.log(`템플릿 ${backupData.database.templates.length}개 수집 완료`);
 
-    // 2. 사용자 생성 종목만 백업 (기본 종목 제외)
-    backupData.database.sports = await Sport.findAll({
-      where: { is_default: false }
-    });
+      // 2. 사용자 생성 종목만 백업 (기본 종목 제외)
+      console.log('종목 데이터 수집...');
+      backupData.database.sports = await Sport.findAll({
+        where: { is_default: false }
+      });
+      console.log(`종목 ${backupData.database.sports.length}개 수집 완료`);
 
-    // 3. 모든 경기 정보 백업
-    backupData.database.matches = await Match.findAll();
+      // 3. 모든 경기 정보 백업
+      console.log('경기 데이터 수집...');
+      backupData.database.matches = await Match.findAll();
+      console.log(`경기 ${backupData.database.matches.length}개 수집 완료`);
 
-    // 4. 모든 경기 목록 백업
-    backupData.database.matchLists = await MatchList.findAll();
+      // 4. 모든 경기 목록 백업
+      console.log('경기 목록 데이터 수집...');
+      backupData.database.matchLists = await MatchList.findAll();
+      console.log(`경기 목록 ${backupData.database.matchLists.length}개 수집 완료`);
 
-    // 5. 종목별 오버레이 이미지 정보 백업
-    backupData.database.sportOverlayImages = await SportOverlayImage.findAll();
+      // 5. 종목별 오버레이 이미지 정보 백업
+      console.log('오버레이 이미지 데이터 수집...');
+      backupData.database.sportOverlayImages = await SportOverlayImage.findAll();
+      console.log(`오버레이 이미지 ${backupData.database.sportOverlayImages.length}개 수집 완료`);
 
-    // 6. 활성 오버레이 이미지 정보 백업
-    backupData.database.sportActiveOverlayImages = await SportActiveOverlayImage.findAll();
+      // 6. 활성 오버레이 이미지 정보 백업
+      console.log('활성 오버레이 이미지 데이터 수집...');
+      backupData.database.sportActiveOverlayImages = await SportActiveOverlayImage.findAll();
+      console.log(`활성 오버레이 이미지 ${backupData.database.sportActiveOverlayImages.length}개 수집 완료`);
 
-    // 7. 시스템 설정 백업
-    backupData.database.settings = await Settings.findAll();
+      // 7. 시스템 설정 백업
+      console.log('시스템 설정 데이터 수집...');
+      backupData.database.settings = await Settings.findAll();
+      console.log(`시스템 설정 ${backupData.database.settings.length}개 수집 완료`);
 
-    // 8. 파일 시스템 백업
-    await this.collectFiles(backupData);
+      // 8. 파일 시스템 백업
+      console.log('파일 시스템 데이터 수집...');
+      await this.collectFiles(backupData);
+      console.log(`파일 ${backupData.files.length}개 수집 완료`);
 
-    return backupData;
+      console.log('백업 데이터 수집 완료');
+      return backupData;
+    } catch (error) {
+      console.error('백업 데이터 수집 오류:', error);
+      throw error;
+    }
   }
 
   // 파일 시스템 수집
@@ -283,6 +349,43 @@ class BackupRestoreManager {
         archive.finalize();
       } catch (error) {
         console.error('ZIP 파일 생성 중 오류:', error);
+        reject(error);
+      }
+    });
+  }
+
+  // 메모리 기반 ZIP 버퍼 생성 (Railway 환경용)
+  async createZipBuffer(backupData) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const chunks = [];
+        const archive = archiver('zip', { zlib: { level: 9 } });
+
+        archive.on('data', (chunk) => {
+          chunks.push(chunk);
+        });
+
+        archive.on('end', () => {
+          const buffer = Buffer.concat(chunks);
+          console.log(`메모리 백업 생성 완료: ${buffer.length} bytes`);
+          resolve(buffer);
+        });
+
+        archive.on('error', (err) => {
+          console.error('메모리 ZIP 생성 오류:', err);
+          reject(err);
+        });
+
+        // 메타데이터와 데이터베이스 정보를 JSON으로 추가
+        archive.append(JSON.stringify(backupData.metadata, null, 2), { name: 'metadata.json' });
+        archive.append(JSON.stringify(backupData.database, null, 2), { name: 'database.json' });
+
+        // Railway 환경에서는 파일 시스템 접근이 제한적이므로 파일 추가 건너뛰기
+        console.log('Railway 환경: 파일 시스템 백업 건너뛰기');
+
+        archive.finalize();
+      } catch (error) {
+        console.error('메모리 ZIP 생성 중 오류:', error);
         reject(error);
       }
     });
@@ -614,6 +717,12 @@ class BackupRestoreManager {
   // 백업 목록 조회
   async getBackupList() {
     try {
+      if (this.useMemoryBackup) {
+        // Railway 환경에서는 메모리 기반 백업이므로 빈 목록 반환
+        console.log('Railway 환경: 메모리 기반 백업 사용 - 백업 목록 없음');
+        return [];
+      }
+      
       await this.ensureBackupDir();
       
       const files = await fs.readdir(this.backupDir);
@@ -642,6 +751,12 @@ class BackupRestoreManager {
   // 백업 파일 삭제
   async deleteBackup(fileName) {
     try {
+      if (this.useMemoryBackup) {
+        // Railway 환경에서는 메모리 기반 백업이므로 삭제 불가
+        console.log('Railway 환경: 메모리 기반 백업 사용 - 삭제 불가');
+        return { success: false, error: 'Railway 환경에서는 백업 파일 삭제가 불가능합니다.' };
+      }
+      
       const filePath = path.join(this.backupDir, fileName);
       await fs.unlink(filePath);
       return { success: true };

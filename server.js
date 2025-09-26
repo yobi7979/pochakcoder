@@ -7183,6 +7183,8 @@ app.post('/api/backup/create', requireAuth, async (req, res) => {
     const backupName = name ? name.trim() : undefined;
     
     logger.info(`백업 생성 시작 (사용자: ${req.session.username}${backupName ? `, 이름: ${backupName}` : ''})`);
+    logger.info(`Railway 환경: RAILWAY_ENVIRONMENT=${process.env.RAILWAY_ENVIRONMENT}, NODE_ENV=${process.env.NODE_ENV}`);
+    
     const result = await backupManager.createBackup(backupName);
     
     if (result.success) {
@@ -7194,7 +7196,13 @@ app.post('/api/backup/create', requireAuth, async (req, res) => {
     }
   } catch (error) {
     logger.error('백업 생성 오류:', error);
-    res.status(500).json({ error: '백업 생성 중 오류가 발생했습니다.' });
+    logger.error('에러 상세:', error.message);
+    logger.error('스택 트레이스:', error.stack);
+    res.status(500).json({ 
+      error: '백업 생성 중 오류가 발생했습니다.',
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
