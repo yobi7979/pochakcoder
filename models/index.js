@@ -1,10 +1,10 @@
 const { Sequelize, DataTypes, Op } = require('sequelize');
 const path = require('path');
 
-// Sequelize 인스턴스 생성 (환경에 따라 데이터베이스 선택)
+// Sequelize 인스턴스 생성 (PostgreSQL 전용)
 let sequelize;
 
-if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
+if (process.env.DATABASE_URL) {
   // 프로덕션 환경: PostgreSQL 사용
   console.log('PostgreSQL 데이터베이스 연결 시도...');
   sequelize = new Sequelize(process.env.DATABASE_URL, {
@@ -19,14 +19,10 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
     }
   });
 } else {
-  // 개발 환경 또는 DATABASE_URL이 없는 경우: SQLite 사용
-  console.log('SQLite 데이터베이스 연결 시도...');
-  sequelize = new Sequelize({
-    dialect: 'sqlite',
-    storage: path.join(__dirname, '../sports.db'),
-    logging: console.log,
-    benchmark: false
-  });
+  // DATABASE_URL이 없는 경우 에러
+  console.error('DATABASE_URL 환경변수가 설정되지 않았습니다.');
+  console.error('Railway에서 PostgreSQL 데이터베이스를 추가해주세요.');
+  process.exit(1);
 }
 
 // Match 모델 정의
