@@ -461,11 +461,11 @@ app.use(session(sessionConfig));
 // 사용자 정보를 템플릿에 전달하는 미들웨어 (모든 라우트에 적용)
 app.use(addUserToTemplate);
 
-// 인증 관련 설정
-const AUTH_CONFIG = {
-  username: 'admin',
-  password: 'sports2024'
-};
+// 인증 관련 설정 (데이터베이스 기반으로 변경)
+// const AUTH_CONFIG = {
+//   username: 'admin',
+//   password: 'sports2024'
+// };
 
 // 인증 미들웨어
 function requireAuth(req, res, next) {
@@ -519,6 +519,15 @@ app.post('/login', async (req, res) => {
       });
     }
     
+    // 데이터베이스 연결 확인
+    if (!sequelize) {
+      logger.error('데이터베이스 연결이 없습니다');
+      return res.render('login', { 
+        error: '데이터베이스 연결 오류가 발생했습니다.',
+        username: username 
+      });
+    }
+    
     // 데이터베이스에서 사용자 찾기
     const user = await User.findOne({ 
       where: { 
@@ -554,10 +563,23 @@ app.post('/login', async (req, res) => {
     logger.error('에러 상세:', error.message);
     logger.error('스택 트레이스:', error.stack);
     
-    res.render('login', { 
-      error: '로그인 처리 중 오류가 발생했습니다.',
-      username: username 
-    });
+    // 에러 타입별 처리
+    if (error.name === 'SequelizeConnectionError') {
+      res.render('login', { 
+        error: '데이터베이스 연결 오류가 발생했습니다.',
+        username: username 
+      });
+    } else if (error.name === 'SequelizeValidationError') {
+      res.render('login', { 
+        error: '입력값이 올바르지 않습니다.',
+        username: username 
+      });
+    } else {
+      res.render('login', { 
+        error: '로그인 처리 중 오류가 발생했습니다.',
+        username: username 
+      });
+    }
   }
 });
 
