@@ -4368,7 +4368,6 @@ server.listen(PORT, HOST, async () => {
     logger.error('서버 초기화 실패:', error);
     process.exit(1);
   }
-});
   
   // 자동 로그 관리 스케줄러 시작
   startLogManagementScheduler();
