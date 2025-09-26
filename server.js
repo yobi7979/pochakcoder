@@ -437,19 +437,21 @@ let sessionConfig = {
   resave: false,
   saveUninitialized: false,
   cookie: { 
-    secure: process.env.NODE_ENV === 'production', // HTTPS에서는 true
-    maxAge: 24 * 60 * 60 * 1000 // 24시간
+    secure: process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT === 'production', // Railway 환경에서 HTTPS 사용
+    maxAge: 24 * 60 * 60 * 1000, // 24시간
+    httpOnly: true,
+    sameSite: (process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT === 'production') ? 'none' : 'lax'
   }
 };
 
-// PostgreSQL 세션 저장소 설정 (DATABASE_URL이 있을 때만)
-// 임시로 메모리 세션 사용 (배포 환경 안정화 후 PostgreSQL 세션 활성화)
-if (false && process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
+// PostgreSQL 세션 저장소 설정 (Railway 환경에서 활성화)
+if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
   try {
     const pgSession = require('connect-pg-simple')(session);
     sessionConfig.store = new pgSession({
       conString: process.env.DATABASE_URL,
-      tableName: 'user_sessions'
+      tableName: 'user_sessions',
+      createTableIfMissing: true
     });
     logger.info('PostgreSQL 세션 저장소 설정 완료');
   } catch (error) {
@@ -457,7 +459,21 @@ if (false && process.env.DATABASE_URL && process.env.DATABASE_URL.includes('post
   }
 }
 
+// Railway 환경에서 프록시 신뢰 설정
+if (process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+  logger.info('프록시 신뢰 설정 활성화 (Railway 환경)');
+}
+
 app.use(session(sessionConfig));
+
+// Railway 환경에서 세션 디버깅 미들웨어
+if (process.env.RAILWAY_ENVIRONMENT === 'production') {
+  app.use((req, res, next) => {
+    logger.info(`Railway 세션 디버깅: session=${!!req.session}, authenticated=${req.session?.authenticated}, username=${req.session?.username}`);
+    next();
+  });
+}
 
 // 사용자 정보를 템플릿에 전달하는 미들웨어 (모든 라우트에 적용)
 app.use(addUserToTemplate);
@@ -569,9 +585,23 @@ app.post('/login', async (req, res) => {
         
         // 리다이렉트 전에 세션 정보 로그
         logger.info(`리다이렉트 전 세션 확인: authenticated=${req.session.authenticated}, username=${req.session.username}, userId=${req.session.userId}`);
+        logger.info(`Railway 환경: RAILWAY_ENVIRONMENT=${process.env.RAILWAY_ENVIRONMENT}, NODE_ENV=${process.env.NODE_ENV}`);
         
-        // 절대 경로로 리다이렉트
-        res.redirect(302, '/matches');
+        // Railway 환경에서 절대 URL로 리다이렉트
+        let redirectUrl = '/matches';
+        
+        // Railway 환경에서 절대 URL 사용
+        if (process.env.RAILWAY_PUBLIC_DOMAIN) {
+          redirectUrl = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}/matches`;
+        } else if (process.env.RAILWAY_STATIC_URL) {
+          redirectUrl = `${process.env.RAILWAY_STATIC_URL}/matches`;
+        } else if (req.get('host')) {
+          const protocol = req.secure ? 'https' : 'http';
+          redirectUrl = `${protocol}://${req.get('host')}/matches`;
+        }
+        
+        logger.info(`리다이렉트 URL: ${redirectUrl}`);
+        res.redirect(302, redirectUrl);
       });
     } else {
       // 로그인 실패
