@@ -567,7 +567,11 @@ app.post('/login', async (req, res) => {
           logger.error('로그인 시간 업데이트 실패:', err);
         });
         
-        res.redirect('/matches');
+        // 리다이렉트 전에 세션 정보 로그
+        logger.info(`리다이렉트 전 세션 확인: authenticated=${req.session.authenticated}, username=${req.session.username}, userId=${req.session.userId}`);
+        
+        // 절대 경로로 리다이렉트
+        res.redirect(302, '/matches');
       });
     } else {
       // 로그인 실패
