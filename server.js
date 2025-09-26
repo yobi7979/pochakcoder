@@ -432,11 +432,20 @@ app.get('/overlay-images/:sportCode/:filename(*)', (req, res) => {
 });
 
 // 세션 설정
+const pgSession = require('connect-pg-simple')(session);
+
 app.use(session({
-  secret: 'sports-coder-secret-key',
+  store: new pgSession({
+    conString: process.env.DATABASE_URL,
+    tableName: 'user_sessions'
+  }),
+  secret: process.env.SESSION_SECRET || 'sports-coder-secret-2024',
   resave: false,
-  saveUninitialized: true,
-  cookie: { secure: false } // 개발 환경에서는 false로 설정
+  saveUninitialized: false,
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production', // HTTPS에서는 true
+    maxAge: 24 * 60 * 60 * 1000 // 24시간
+  }
 }));
 
 // 사용자 정보를 템플릿에 전달하는 미들웨어 (모든 라우트에 적용)
