@@ -4346,17 +4346,29 @@ server.listen(PORT, HOST, async () => {
   logger.info(`서버가 포트 ${PORT}에서 실행 중입니다.`);
   logger.info(`환경: ${process.env.NODE_ENV || 'development'}`);
   logger.info(`Railway 환경: ${process.env.RAILWAY_ENVIRONMENT ? 'Yes' : 'No'}`);
-  logger.info(`데이터베이스: ${process.env.RAILWAY_ENVIRONMENT || process.env.DATABASE_URL ? 'PostgreSQL' : 'SQLite'}`);
+  logger.info(`데이터베이스: ${process.env.DATABASE_URL ? 'PostgreSQL' : 'SQLite'}`);
   
-  // 기본 종목 초기화
-  await initializeDefaultSports();
-  
-  // 기본 설정 초기화
+  try {
+    // 데이터베이스 연결 테스트
+    await sequelize.authenticate();
+    logger.info('데이터베이스 연결 성공');
+    
+    // 기본 종목 초기화
+    await initializeDefaultSports();
+    
+    // 기본 설정 초기화
   await initializeDefaultSettings();
   
-  await restoreMatchTimers();
-  // 데이터베이스 동기화는 이미 수동으로 완료되었으므로 건너뜀
-  // await sequelize.sync({ alter: true });
+    await restoreMatchTimers();
+    // 데이터베이스 동기화는 이미 수동으로 완료되었으므로 건너뜀
+    // await sequelize.sync({ alter: true });
+    
+    logger.info('서버 초기화 완료');
+  } catch (error) {
+    logger.error('서버 초기화 실패:', error);
+    process.exit(1);
+  }
+});
   
   // 자동 로그 관리 스케줄러 시작
   startLogManagementScheduler();
