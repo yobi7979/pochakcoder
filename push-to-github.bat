@@ -31,12 +31,9 @@ if /i not "!confirm!"=="Y" (
 )
 echo [32m푸시를 계속 진행합니다...[0m
 
-:: 불필요한 파일들 제거
+:: 불필요한 파일들 제거 (node_modules는 제외)
 echo [36m불필요한 파일들을 정리합니다...[0m
-if exist "node_modules" (
-    echo [33mnode_modules 폴더를 제거합니다...[0m
-    rmdir /s /q "node_modules" 2>nul
-)
+echo [33mnode_modules는 의존성 모듈이므로 보존합니다...[0m
 if exist "logs" (
     echo [33mlogs 폴더를 제거합니다...[0m
     rmdir /s /q "logs" 2>nul
@@ -53,7 +50,6 @@ if exist "backups" (
 :: .gitignore 파일 생성
 echo [36m.gitignore 파일을 생성합니다...[0m
 (
-echo node_modules/
 echo logs/
 echo temp/
 echo backups/
