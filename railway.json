@@ -1,11 +1,10 @@
 {
   "build": {
-    "builder": "NIXPACKS",
-    "buildCommand": "npm install --production"
+    "builder": "NIXPACKS"
   },
   "deploy": {
     "startCommand": "npm start",
-    "healthcheckPath": "/health",
+    "healthcheckPath": "/matches",
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
