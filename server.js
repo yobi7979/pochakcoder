@@ -4355,21 +4355,10 @@ server.listen(PORT, HOST, async () => {
     
     // 데이터베이스 동기화
     await sequelize.sync({ alter: true });
-    logger.info('데이터베이스 테이블 동기화 완료');
+    logger.info('데이터베이스 동기화 완료');
     
-    // 관리자 사용자 확인 및 생성
-    const { User } = require('./models');
-    const adminUser = await User.findOne({ where: { username: 'admin' } });
-    if (!adminUser) {
-      await User.create({
-        username: 'admin',
-        password: 'admin',
-        role: 'admin'
-      });
-      logger.info('관리자 사용자 생성 완료 (admin/admin)');
-    } else {
-      logger.info('관리자 사용자 이미 존재');
-    }
+    // 관리자 사용자 자동 생성
+    await createAdminUserIfNotExists();
     
     // 기본 종목 초기화
     await initializeDefaultSports();
@@ -4385,8 +4374,36 @@ server.listen(PORT, HOST, async () => {
     process.exit(1);
   }
   
-  // 자동 로그 관리 스케줄러 시작
-  startLogManagementScheduler();
+// 관리자 사용자 자동 생성 함수
+async function createAdminUserIfNotExists() {
+  try {
+    const { User } = require('./models');
+    
+    // 기존 관리자 사용자 확인
+    const existingAdmin = await User.findOne({ where: { username: 'admin' } });
+    
+    if (!existingAdmin) {
+      // 관리자 사용자 생성
+      await User.create({
+        username: 'admin',
+        password: 'admin',
+        role: 'admin'
+      });
+      
+      logger.info('관리자 사용자 생성 완료');
+      logger.info('사용자명: admin');
+      logger.info('비밀번호: admin');
+    } else {
+      logger.info('관리자 사용자가 이미 존재합니다');
+    }
+  } catch (error) {
+    logger.error('관리자 사용자 생성 중 오류 발생:', error);
+    throw error;
+  }
+}
+
+// 자동 로그 관리 스케줄러 시작
+startLogManagementScheduler();
 });
 
 // 템플릿 미리보기 API
