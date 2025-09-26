@@ -11,13 +11,13 @@ async function createAdminUser() {
     // 관리자 사용자 생성
     await User.create({
       username: 'admin',
-      password: 'admin',
+      password: 'admin123',
       role: 'admin'
     });
     
     console.log('관리자 사용자 생성 완료');
     console.log('사용자명: admin');
-    console.log('비밀번호: admin');
+    console.log('비밀번호: admin123');
     
     await sequelize.close();
     console.log('데이터베이스 연결 종료');
