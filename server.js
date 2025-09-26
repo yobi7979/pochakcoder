@@ -5399,7 +5399,53 @@ app.get('/:sport/:id/control', async (req, res) => {
   }
 });
 
-// 동적 모바일 컨트롤 패널 라우트
+// 경기 리스트별 모바일 컨트롤 페이지 (구체적인 라우트를 먼저 배치)
+app.get('/list/:id/control-mobile', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { index = 0 } = req.query;
+    const list = await MatchList.findByPk(id);
+    
+    if (!list) {
+      return res.status(404).send('리스트를 찾을 수 없습니다.');
+    }
+    
+    if (!list.matches || list.matches.length === 0) {
+      return res.status(404).send('리스트에 등록된 경기가 없습니다.');
+    }
+    
+    const matchIndex = parseInt(index);
+    if (matchIndex < 0 || matchIndex >= list.matches.length) {
+      return res.status(400).send('잘못된 경기 인덱스입니다.');
+    }
+    
+    const currentMatch = list.matches[matchIndex];
+    const match = await Match.findByPk(currentMatch.id);
+    
+    if (!match) {
+      return res.status(404).send('경기를 찾을 수 없습니다.');
+    }
+    
+    // 디버깅 로그 추가
+    logger.info(`리스트 모바일 컨트롤 렌더링: listId=${id}, matchId=${match.id}, sport_type=${match.sport_type}, template=${match.sport_type}-control-mobile`);
+    
+    // sport_type이 없으면 기본값 설정
+    const sportType = match.sport_type || 'soccer';
+    
+    res.render(`${sportType}-control-mobile`, { 
+      match: match,
+      listId: id,
+      listName: list.name,
+      currentMatchIndex: matchIndex,
+      totalMatches: list.matches.length
+    });
+  } catch (error) {
+    logger.error('리스트 모바일 컨트롤 로드 실패:', error);
+    res.status(500).send('서버 오류가 발생했습니다.');
+  }
+});
+
+// 동적 모바일 컨트롤 패널 라우트 (일반적인 라우트는 나중에 배치)
 app.get('/:sport/:id/control-mobile', async (req, res) => {
   try {
     const match = await Match.findByPk(req.params.id);
@@ -7146,51 +7192,6 @@ app.delete('/api/match-lists/:id', requireAuth, async (req, res) => {
 
 
 
-// 경기 리스트별 모바일 컨트롤 페이지
-app.get('/list/:id/control-mobile', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { index = 0 } = req.query;
-    const list = await MatchList.findByPk(id);
-    
-    if (!list) {
-      return res.status(404).send('리스트를 찾을 수 없습니다.');
-    }
-    
-    if (!list.matches || list.matches.length === 0) {
-      return res.status(404).send('리스트에 등록된 경기가 없습니다.');
-    }
-    
-    const matchIndex = parseInt(index);
-    if (matchIndex < 0 || matchIndex >= list.matches.length) {
-      return res.status(400).send('잘못된 경기 인덱스입니다.');
-    }
-    
-    const currentMatch = list.matches[matchIndex];
-    const match = await Match.findByPk(currentMatch.id);
-    
-    if (!match) {
-      return res.status(404).send('경기를 찾을 수 없습니다.');
-    }
-    
-    // 디버깅 로그 추가
-    logger.info(`리스트 모바일 컨트롤 렌더링: listId=${id}, matchId=${match.id}, sport_type=${match.sport_type}, template=${match.sport_type}-control-mobile`);
-    
-    // sport_type이 없으면 기본값 설정
-    const sportType = match.sport_type || 'soccer';
-    
-    res.render(`${sportType}-control-mobile`, { 
-      match: match,
-      listId: id,
-      listName: list.name,
-      currentMatchIndex: matchIndex,
-      totalMatches: list.matches.length
-    });
-  } catch (error) {
-    logger.error('리스트 모바일 컨트롤 로드 실패:', error);
-    res.status(500).send('서버 오류가 발생했습니다.');
-  }
-});
 
 // 경기 리스트 API - 현재 경기 정보 조회
 app.get('/api/list/:id/current-match', async (req, res) => {
