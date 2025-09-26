@@ -7189,7 +7189,22 @@ app.post('/api/backup/create', requireAuth, async (req, res) => {
     
     if (result.success) {
       logger.info(`백업 생성 완료: ${result.fileName} (${result.size} bytes)`);
-      res.json(result);
+      
+      // Railway 환경에서는 클라이언트 다운로드 방식
+      if (result.downloadUrl) {
+        logger.info('Railway 환경: 클라이언트 다운로드 방식 사용');
+        res.json({
+          success: true,
+          fileName: result.fileName,
+          size: result.size,
+          timestamp: result.timestamp,
+          downloadUrl: result.downloadUrl,
+          message: '백업이 생성되었습니다. 자동으로 다운로드가 시작됩니다.'
+        });
+      } else {
+        // 로컬 환경에서는 기존 방식
+        res.json(result);
+      }
     } else {
       logger.error(`백업 생성 실패: ${result.error}`);
       res.status(500).json(result);

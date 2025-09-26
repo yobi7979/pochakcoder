@@ -89,7 +89,8 @@ class BackupRestoreManager {
           filePath: null, // 파일 시스템 사용 안함
           size: zipBuffer.length,
           timestamp: new Date().toISOString(),
-          data: zipBuffer.toString('base64') // Base64 인코딩된 데이터
+          data: zipBuffer.toString('base64'), // Base64 인코딩된 데이터
+          downloadUrl: `data:application/zip;base64,${zipBuffer.toString('base64')}` // 다운로드 URL
         };
       } else {
         // 로컬 환경에서는 파일 기반 백업
@@ -404,6 +405,11 @@ class BackupRestoreManager {
   // 백업 파일 복원
   async restoreBackup(backupFilePath) {
     try {
+      if (this.useMemoryBackup) {
+        // Railway 환경에서는 파일 업로드 방식으로만 복원 가능
+        throw new Error('Railway 환경에서는 파일 업로드 방식으로만 백업 복원이 가능합니다.');
+      }
+      
       // 백업 파일 존재 확인
       if (!await this.fileExists(backupFilePath)) {
         throw new Error('백업 파일을 찾을 수 없습니다.');
@@ -448,13 +454,18 @@ class BackupRestoreManager {
     try {
       console.log(`백업 파일 복원 시작: ${filePath}`);
       
-      // 복원 전 자동 백업 생성 (안전장치)
-      console.log('복원 전 자동 백업 생성 중...');
-      const autoBackupResult = await this.createBackup('auto-backup-before-restore');
-      if (autoBackupResult.success) {
-        console.log(`자동 백업 생성 완료: ${autoBackupResult.fileName}`);
+      if (this.useMemoryBackup) {
+        // Railway 환경에서는 자동 백업 생성 건너뛰기
+        console.log('Railway 환경: 자동 백업 생성 건너뛰기');
       } else {
-        console.warn('자동 백업 생성 실패:', autoBackupResult.error);
+        // 복원 전 자동 백업 생성 (안전장치)
+        console.log('복원 전 자동 백업 생성 중...');
+        const autoBackupResult = await this.createBackup('auto-backup-before-restore');
+        if (autoBackupResult.success) {
+          console.log(`자동 백업 생성 완료: ${autoBackupResult.fileName}`);
+        } else {
+          console.warn('자동 백업 생성 실패:', autoBackupResult.error);
+        }
       }
       
       // 임시 디렉토리 생성
