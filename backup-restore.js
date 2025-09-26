@@ -78,19 +78,46 @@ class BackupRestoreManager {
       console.log('백업 데이터 수집 완료');
       
       if (this.useMemoryBackup) {
-        // Railway 환경에서는 메모리 기반 백업
-        console.log('메모리 기반 백업 생성...');
-        const zipBuffer = await this.createZipBuffer(backupData);
-        console.log(`메모리 백업 생성 완료: ${zipBuffer.length} bytes`);
+        // Railway 환경에서는 JSON 데이터만 내보내기
+        console.log('Railway 환경: JSON 데이터 백업 생성...');
+        const jsonData = JSON.stringify(backupData, null, 2);
+        const jsonBuffer = Buffer.from(jsonData, 'utf8');
+        console.log(`JSON 백업 생성 완료: ${jsonBuffer.length} bytes`);
+        
+        // Railway 환경에서 서버 저장 시도
+        let serverSaveResult = null;
+        try {
+          console.log('Railway 환경에서 서버 저장 시도...');
+          const tempDir = path.join(require('os').tmpdir(), 'sportscoder-backups');
+          await fs.mkdir(tempDir, { recursive: true });
+          
+          const serverFilePath = path.join(tempDir, backupFileName.replace('.zip', '.json'));
+          await fs.writeFile(serverFilePath, jsonData, 'utf8');
+          
+          const serverFileStats = await fs.stat(serverFilePath);
+          serverSaveResult = {
+            success: true,
+            filePath: serverFilePath,
+            size: serverFileStats.size
+          };
+          console.log(`Railway 서버 저장 성공: ${serverFilePath} (${serverFileStats.size} bytes)`);
+        } catch (serverError) {
+          console.warn('Railway 서버 저장 실패:', serverError.message);
+          serverSaveResult = {
+            success: false,
+            error: serverError.message
+          };
+        }
         
         return {
           success: true,
-          fileName: backupFileName,
-          filePath: null, // 파일 시스템 사용 안함
-          size: zipBuffer.length,
+          fileName: backupFileName.replace('.zip', '.json'), // JSON 파일로 변경
+          filePath: serverSaveResult?.success ? serverSaveResult.filePath : null,
+          size: jsonBuffer.length,
           timestamp: new Date().toISOString(),
-          data: zipBuffer.toString('base64'), // Base64 인코딩된 데이터
-          downloadUrl: `data:application/zip;base64,${zipBuffer.toString('base64')}` // 다운로드 URL
+          data: jsonData, // JSON 문자열 데이터
+          downloadUrl: `data:application/json;charset=utf-8,${encodeURIComponent(jsonData)}`, // JSON 다운로드 URL
+          serverSave: serverSaveResult // 서버 저장 결과
         };
       } else {
         // 로컬 환경에서는 파일 기반 백업
@@ -141,17 +168,44 @@ class BackupRestoreManager {
 
       // 1. 사용자 생성 템플릿만 백업 (기본 템플릿 제외)
       console.log('템플릿 데이터 수집...');
-      backupData.database.templates = await Template.findAll({
-        where: { is_default: false }
-      });
-      console.log(`템플릿 ${backupData.database.templates.length}개 수집 완료`);
+      try {
+        backupData.database.templates = await Template.findAll({
+          where: { is_default: false }
+        });
+        console.log(`템플릿 ${backupData.database.templates.length}개 수집 완료`);
+      } catch (error) {
+        console.warn('템플릿 데이터 수집 실패:', error.message);
+        try {
+          // 기본 템플릿 제외 없이 모든 템플릿 수집
+          backupData.database.templates = await Template.findAll();
+          console.log(`템플릿 ${backupData.database.templates.length}개 수집 완료 (전체)`);
+        } catch (secondError) {
+          console.warn('템플릿 데이터 수집 완전 실패:', secondError.message);
+          backupData.database.templates = [];
+          console.log('템플릿 데이터 수집 실패 - 빈 배열로 설정');
+        }
+      }
 
       // 2. 사용자 생성 종목만 백업 (기본 종목 제외)
       console.log('종목 데이터 수집...');
-      backupData.database.sports = await Sport.findAll({
-        where: { is_default: false }
-      });
-      console.log(`종목 ${backupData.database.sports.length}개 수집 완료`);
+      try {
+        // 먼저 기본 종목이 아닌 것들만 조회
+        backupData.database.sports = await Sport.findAll({
+          where: { is_default: false }
+        });
+        console.log(`종목 ${backupData.database.sports.length}개 수집 완료`);
+      } catch (error) {
+        console.warn('종목 데이터 수집 실패 (created_by 컬럼 없음):', error.message);
+        try {
+          // created_by 컬럼이 없는 경우 모든 종목 수집
+          backupData.database.sports = await Sport.findAll();
+          console.log(`종목 ${backupData.database.sports.length}개 수집 완료 (전체)`);
+        } catch (secondError) {
+          console.warn('종목 데이터 수집 완전 실패:', secondError.message);
+          backupData.database.sports = [];
+          console.log('종목 데이터 수집 실패 - 빈 배열로 설정');
+        }
+      }
 
       // 3. 모든 경기 정보 백업
       console.log('경기 데이터 수집...');
@@ -160,23 +214,55 @@ class BackupRestoreManager {
 
       // 4. 모든 경기 목록 백업
       console.log('경기 목록 데이터 수집...');
-      backupData.database.matchLists = await MatchList.findAll();
-      console.log(`경기 목록 ${backupData.database.matchLists.length}개 수집 완료`);
+      try {
+        backupData.database.matchLists = await MatchList.findAll({
+          attributes: { exclude: ['created_by'] } // created_by 컬럼 제외
+        });
+        console.log(`경기 목록 ${backupData.database.matchLists.length}개 수집 완료`);
+      } catch (error) {
+        console.warn('경기 목록 데이터 수집 실패 (created_by 컬럼 없음):', error.message);
+        backupData.database.matchLists = await MatchList.findAll();
+        console.log(`경기 목록 ${backupData.database.matchLists.length}개 수집 완료 (created_by 제외)`);
+      }
 
       // 5. 종목별 오버레이 이미지 정보 백업
       console.log('오버레이 이미지 데이터 수집...');
-      backupData.database.sportOverlayImages = await SportOverlayImage.findAll();
-      console.log(`오버레이 이미지 ${backupData.database.sportOverlayImages.length}개 수집 완료`);
+      try {
+        backupData.database.sportOverlayImages = await SportOverlayImage.findAll({
+          attributes: { exclude: ['created_by'] } // created_by 컬럼 제외
+        });
+        console.log(`오버레이 이미지 ${backupData.database.sportOverlayImages.length}개 수집 완료`);
+      } catch (error) {
+        console.warn('오버레이 이미지 데이터 수집 실패 (created_by 컬럼 없음):', error.message);
+        backupData.database.sportOverlayImages = await SportOverlayImage.findAll();
+        console.log(`오버레이 이미지 ${backupData.database.sportOverlayImages.length}개 수집 완료 (created_by 제외)`);
+      }
 
       // 6. 활성 오버레이 이미지 정보 백업
       console.log('활성 오버레이 이미지 데이터 수집...');
-      backupData.database.sportActiveOverlayImages = await SportActiveOverlayImage.findAll();
-      console.log(`활성 오버레이 이미지 ${backupData.database.sportActiveOverlayImages.length}개 수집 완료`);
+      try {
+        backupData.database.sportActiveOverlayImages = await SportActiveOverlayImage.findAll({
+          attributes: { exclude: ['created_by'] } // created_by 컬럼 제외
+        });
+        console.log(`활성 오버레이 이미지 ${backupData.database.sportActiveOverlayImages.length}개 수집 완료`);
+      } catch (error) {
+        console.warn('활성 오버레이 이미지 데이터 수집 실패 (created_by 컬럼 없음):', error.message);
+        backupData.database.sportActiveOverlayImages = await SportActiveOverlayImage.findAll();
+        console.log(`활성 오버레이 이미지 ${backupData.database.sportActiveOverlayImages.length}개 수집 완료 (created_by 제외)`);
+      }
 
       // 7. 시스템 설정 백업
       console.log('시스템 설정 데이터 수집...');
-      backupData.database.settings = await Settings.findAll();
-      console.log(`시스템 설정 ${backupData.database.settings.length}개 수집 완료`);
+      try {
+        backupData.database.settings = await Settings.findAll({
+          attributes: { exclude: ['created_by'] } // created_by 컬럼 제외
+        });
+        console.log(`시스템 설정 ${backupData.database.settings.length}개 수집 완료`);
+      } catch (error) {
+        console.warn('시스템 설정 데이터 수집 실패 (created_by 컬럼 없음):', error.message);
+        backupData.database.settings = await Settings.findAll();
+        console.log(`시스템 설정 ${backupData.database.settings.length}개 수집 완료 (created_by 제외)`);
+      }
 
       // 8. 파일 시스템 백업
       console.log('파일 시스템 데이터 수집...');
@@ -468,28 +554,45 @@ class BackupRestoreManager {
         }
       }
       
-      // 임시 디렉토리 생성
-      const tempDir = path.join(__dirname, 'temp', `restore_${Date.now()}`);
-      await fs.mkdir(tempDir, { recursive: true });
+      // JSON 파일인지 ZIP 파일인지 확인
+      if (filePath.endsWith('.json')) {
+        // JSON 파일 직접 처리
+        console.log('JSON 백업 파일 복원...');
+        const jsonData = await fs.readFile(filePath, 'utf8');
+        const backupData = JSON.parse(jsonData);
+        
+        // 데이터베이스 복원
+        await this.restoreDatabaseFromData(backupData.database);
+        
+        return {
+          success: true,
+          message: 'JSON 백업 복원이 완료되었습니다.',
+          metadata: backupData.metadata
+        };
+      } else {
+        // ZIP 파일 처리 (로컬 환경)
+        const tempDir = path.join(__dirname, 'temp', `restore_${Date.now()}`);
+        await fs.mkdir(tempDir, { recursive: true });
 
-      // ZIP 파일 압축 해제
-      await this.extractZipFile(filePath, tempDir);
+        // ZIP 파일 압축 해제
+        await this.extractZipFile(filePath, tempDir);
 
-      // 메타데이터 확인
-      const metadataPath = path.join(tempDir, 'metadata.json');
-      const databasePath = path.join(tempDir, 'database.json');
-      
-      if (!await this.fileExists(metadataPath) || !await this.fileExists(databasePath)) {
-        throw new Error('백업 파일이 손상되었습니다. 필수 파일이 없습니다.');
+        // 메타데이터 확인
+        const metadataPath = path.join(tempDir, 'metadata.json');
+        const databasePath = path.join(tempDir, 'database.json');
+        
+        if (!await this.fileExists(metadataPath) || !await this.fileExists(databasePath)) {
+          throw new Error('백업 파일이 손상되었습니다. 필수 파일이 없습니다.');
+        }
+
+        // 백업 복원 실행
+        const result = await this.restoreFromDirectory(tempDir);
+        
+        // 임시 디렉토리 정리
+        await this.cleanupTempDir(tempDir);
+
+        return result;
       }
-
-      // 백업 복원 실행
-      const result = await this.restoreFromDirectory(tempDir);
-      
-      // 임시 디렉토리 정리
-      await this.cleanupTempDir(tempDir);
-
-      return result;
     } catch (error) {
       console.error('파일에서 백업 복원 오류:', error);
       return {
@@ -534,6 +637,93 @@ class BackupRestoreManager {
         .on('close', resolve)
         .on('error', reject);
     });
+  }
+
+  // JSON 데이터에서 데이터베이스 복원 (Railway 환경용)
+  async restoreDatabaseFromData(databaseData) {
+    // 트랜잭션으로 복원
+    const transaction = await sequelize.transaction();
+
+    try {
+      // 1. 기존 사용자 데이터 삭제 (기본 데이터 제외)
+      await Match.destroy({ where: {}, transaction });
+      await MatchList.destroy({ where: {}, transaction });
+      await Template.destroy({ where: { is_default: false }, transaction });
+      await Sport.destroy({ where: { is_default: false }, transaction });
+      await SportOverlayImage.destroy({ where: {}, transaction });
+      await SportActiveOverlayImage.destroy({ where: {}, transaction });
+      await Settings.destroy({ where: {}, transaction });
+
+      // 2. 백업 데이터 복원
+      if (databaseData.templates && databaseData.templates.length > 0) {
+        const templatesWithTimestamps = databaseData.templates.map(template => ({
+          ...template,
+          created_at: template.created_at || new Date(),
+          updated_at: template.updated_at || new Date()
+        }));
+        await Template.bulkCreate(templatesWithTimestamps, { transaction });
+      }
+
+      if (databaseData.sports && databaseData.sports.length > 0) {
+        const sportsWithTimestamps = databaseData.sports.map(sport => ({
+          ...sport,
+          created_at: sport.created_at || new Date(),
+          updated_at: sport.updated_at || new Date()
+        }));
+        await Sport.bulkCreate(sportsWithTimestamps, { transaction });
+      }
+
+      if (databaseData.matches && databaseData.matches.length > 0) {
+        const matchesWithTimestamps = databaseData.matches.map(match => ({
+          ...match,
+          created_at: match.created_at || new Date(),
+          updated_at: match.updated_at || new Date()
+        }));
+        await Match.bulkCreate(matchesWithTimestamps, { transaction });
+      }
+
+      if (databaseData.matchLists && databaseData.matchLists.length > 0) {
+        const matchListsWithTimestamps = databaseData.matchLists.map(matchList => ({
+          ...matchList,
+          created_at: matchList.created_at || new Date(),
+          updated_at: matchList.updated_at || new Date()
+        }));
+        await MatchList.bulkCreate(matchListsWithTimestamps, { transaction });
+      }
+
+      if (databaseData.sportOverlayImages && databaseData.sportOverlayImages.length > 0) {
+        const imagesWithTimestamps = databaseData.sportOverlayImages.map(image => ({
+          ...image,
+          created_at: image.created_at || new Date(),
+          updated_at: image.updated_at || new Date()
+        }));
+        await SportOverlayImage.bulkCreate(imagesWithTimestamps, { transaction });
+      }
+
+      if (databaseData.sportActiveOverlayImages && databaseData.sportActiveOverlayImages.length > 0) {
+        const activeImagesWithTimestamps = databaseData.sportActiveOverlayImages.map(image => ({
+          ...image,
+          created_at: image.created_at || new Date(),
+          updated_at: image.updated_at || new Date()
+        }));
+        await SportActiveOverlayImage.bulkCreate(activeImagesWithTimestamps, { transaction });
+      }
+
+      if (databaseData.settings && databaseData.settings.length > 0) {
+        const settingsWithTimestamps = databaseData.settings.map(setting => ({
+          ...setting,
+          created_at: setting.created_at || new Date(),
+          updated_at: setting.updated_at || new Date()
+        }));
+        await Settings.bulkCreate(settingsWithTimestamps, { transaction });
+      }
+
+      await transaction.commit();
+      console.log('JSON 데이터베이스 복원 완료');
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
   }
 
   // 데이터베이스 복원
@@ -729,9 +919,34 @@ class BackupRestoreManager {
   async getBackupList() {
     try {
       if (this.useMemoryBackup) {
-        // Railway 환경에서는 메모리 기반 백업이므로 빈 목록 반환
-        console.log('Railway 환경: 메모리 기반 백업 사용 - 백업 목록 없음');
-        return [];
+        // Railway 환경에서는 임시 디렉토리에서 백업 파일 조회 시도
+        console.log('Railway 환경: 임시 디렉토리에서 백업 목록 조회 시도...');
+        try {
+          const tempDir = path.join(require('os').tmpdir(), 'sportscoder-backups');
+          await fs.access(tempDir);
+          
+          const files = await fs.readdir(tempDir);
+          const backupFiles = files
+            .filter(file => file.endsWith('.json') && file.startsWith('sportscoder-backup-'))
+            .map(file => {
+              const filePath = path.join(tempDir, file);
+              const stats = require('fs').statSync(filePath);
+              return {
+                fileName: file,
+                filePath: filePath,
+                size: stats.size,
+                created: stats.birthtime,
+                modified: stats.mtime
+              };
+            })
+            .sort((a, b) => b.created - a.created);
+          
+          console.log(`Railway 환경에서 ${backupFiles.length}개 백업 파일 발견`);
+          return backupFiles;
+        } catch (error) {
+          console.warn('Railway 환경에서 백업 목록 조회 실패:', error.message);
+          return [];
+        }
       }
       
       await this.ensureBackupDir();
