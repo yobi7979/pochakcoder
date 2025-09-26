@@ -443,7 +443,8 @@ let sessionConfig = {
 };
 
 // PostgreSQL 세션 저장소 설정 (DATABASE_URL이 있을 때만)
-if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
+// 임시로 메모리 세션 사용 (배포 환경 안정화 후 PostgreSQL 세션 활성화)
+if (false && process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
   try {
     const pgSession = require('connect-pg-simple')(session);
     sessionConfig.store = new pgSession({
@@ -4469,22 +4470,38 @@ async function createSessionTable() {
   try {
     const { sequelize } = require('./models');
     
-    // 세션 테이블 생성 SQL
-    const createSessionTableSQL = `
-      CREATE TABLE IF NOT EXISTS user_sessions (
-        sid VARCHAR NOT NULL COLLATE "default",
-        sess JSON NOT NULL,
-        expire TIMESTAMP(6) NOT NULL
-      )
-      WITH (OIDS=FALSE);
-      
-      ALTER TABLE user_sessions DROP CONSTRAINT IF EXISTS session_pkey;
-      ALTER TABLE user_sessions ADD CONSTRAINT session_pkey PRIMARY KEY (sid) NOT DEFERRABLE INITIALLY IMMEDIATE;
-      
-      CREATE INDEX IF NOT EXISTS IDX_session_expire ON user_sessions (expire);
-    `;
+    // 데이터베이스 타입에 따른 SQL 분기
+    if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
+      // PostgreSQL용 SQL
+      const createSessionTableSQL = `
+        CREATE TABLE IF NOT EXISTS user_sessions (
+          sid VARCHAR NOT NULL COLLATE "default",
+          sess JSON NOT NULL,
+          expire TIMESTAMP(6) NOT NULL
+        )
+        WITH (OIDS=FALSE);
+        
+        ALTER TABLE user_sessions DROP CONSTRAINT IF EXISTS session_pkey;
+        ALTER TABLE user_sessions ADD CONSTRAINT session_pkey PRIMARY KEY (sid) NOT DEFERRABLE INITIALLY IMMEDIATE;
+        
+        CREATE INDEX IF NOT EXISTS IDX_session_expire ON user_sessions (expire);
+      `;
+      await sequelize.query(createSessionTableSQL);
+    } else {
+      // SQLite용 SQL
+      const createSessionTableSQL = `
+        CREATE TABLE IF NOT EXISTS user_sessions (
+          sid VARCHAR NOT NULL,
+          sess TEXT NOT NULL,
+          expire DATETIME NOT NULL
+        );
+        
+        CREATE UNIQUE INDEX IF NOT EXISTS session_pkey ON user_sessions (sid);
+        CREATE INDEX IF NOT EXISTS IDX_session_expire ON user_sessions (expire);
+      `;
+      await sequelize.query(createSessionTableSQL);
+    }
     
-    await sequelize.query(createSessionTableSQL);
     logger.info('세션 테이블 생성 완료');
   } catch (error) {
     logger.error('세션 테이블 생성 중 오류 발생:', error);
@@ -4504,18 +4521,18 @@ async function createAdminUserIfNotExists() {
       // 관리자 사용자 생성
       await User.create({
         username: 'admin',
-        password: 'admin',
+        password: 'admin123', // 6자 이상으로 변경
         role: 'admin',
         is_active: true
       });
       
       logger.info('관리자 사용자 생성 완료');
       logger.info('사용자명: admin');
-      logger.info('비밀번호: admin');
+      logger.info('비밀번호: admin123');
     } else {
       logger.info('관리자 사용자가 이미 존재합니다');
       logger.info('기존 사용자명: admin');
-      logger.info('기존 비밀번호: admin');
+      logger.info('기존 비밀번호: admin123');
     }
   } catch (error) {
     logger.error('관리자 사용자 생성 중 오류 발생:', error);
