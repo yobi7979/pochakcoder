@@ -432,13 +432,7 @@ app.get('/overlay-images/:sportCode/:filename(*)', (req, res) => {
 });
 
 // 세션 설정
-const pgSession = require('connect-pg-simple')(session);
-
-app.use(session({
-  store: new pgSession({
-    conString: process.env.DATABASE_URL,
-    tableName: 'user_sessions'
-  }),
+let sessionConfig = {
   secret: process.env.SESSION_SECRET || 'sports-coder-secret-2024',
   resave: false,
   saveUninitialized: false,
@@ -446,7 +440,23 @@ app.use(session({
     secure: process.env.NODE_ENV === 'production', // HTTPS에서는 true
     maxAge: 24 * 60 * 60 * 1000 // 24시간
   }
-}));
+};
+
+// PostgreSQL 세션 저장소 설정 (DATABASE_URL이 있을 때만)
+if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
+  try {
+    const pgSession = require('connect-pg-simple')(session);
+    sessionConfig.store = new pgSession({
+      conString: process.env.DATABASE_URL,
+      tableName: 'user_sessions'
+    });
+    logger.info('PostgreSQL 세션 저장소 설정 완료');
+  } catch (error) {
+    logger.warn('PostgreSQL 세션 저장소 설정 실패, 메모리 저장소 사용:', error.message);
+  }
+}
+
+app.use(session(sessionConfig));
 
 // 사용자 정보를 템플릿에 전달하는 미들웨어 (모든 라우트에 적용)
 app.use(addUserToTemplate);
@@ -4366,6 +4376,9 @@ server.listen(PORT, HOST, async () => {
     await sequelize.sync({ alter: true });
     logger.info('데이터베이스 동기화 완료');
     
+    // 세션 테이블 생성
+    await createSessionTable();
+    
     // 관리자 사용자 자동 생성
     await createAdminUserIfNotExists();
     
@@ -4413,6 +4426,34 @@ server.listen(PORT, HOST, async () => {
     }
   }
   
+// 세션 테이블 생성 함수
+async function createSessionTable() {
+  try {
+    const { sequelize } = require('./models');
+    
+    // 세션 테이블 생성 SQL
+    const createSessionTableSQL = `
+      CREATE TABLE IF NOT EXISTS user_sessions (
+        sid VARCHAR NOT NULL COLLATE "default",
+        sess JSON NOT NULL,
+        expire TIMESTAMP(6) NOT NULL
+      )
+      WITH (OIDS=FALSE);
+      
+      ALTER TABLE user_sessions DROP CONSTRAINT IF EXISTS session_pkey;
+      ALTER TABLE user_sessions ADD CONSTRAINT session_pkey PRIMARY KEY (sid) NOT DEFERRABLE INITIALLY IMMEDIATE;
+      
+      CREATE INDEX IF NOT EXISTS IDX_session_expire ON user_sessions (expire);
+    `;
+    
+    await sequelize.query(createSessionTableSQL);
+    logger.info('세션 테이블 생성 완료');
+  } catch (error) {
+    logger.error('세션 테이블 생성 중 오류 발생:', error);
+    // 세션 테이블 생성 실패해도 서버는 계속 실행
+  }
+}
+
 // 관리자 사용자 자동 생성 함수
 async function createAdminUserIfNotExists() {
   try {
