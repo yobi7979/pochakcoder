@@ -470,9 +470,12 @@ app.use(addUserToTemplate);
 
 // 인증 미들웨어
 function requireAuth(req, res, next) {
+  logger.info(`인증 확인: session=${!!req.session}, authenticated=${req.session?.authenticated}, username=${req.session?.username}`);
+  
   if (req.session && req.session.authenticated) {
     return next();
   } else {
+    logger.warn('인증 실패: 로그인 페이지로 리다이렉트');
     return res.redirect('/login');
   }
 }
@@ -546,11 +549,26 @@ app.post('/login', async (req, res) => {
       req.session.userId = user.id;
       req.session.userRole = user.role;
       
-      // 마지막 로그인 시간 업데이트
-      await user.update({ last_login: new Date() });
-      
-      logger.info(`사용자 로그인 성공: ${username} (${user.role})`);
-      res.redirect('/matches');
+      // 세션 저장 확인
+      req.session.save((err) => {
+        if (err) {
+          logger.error('세션 저장 실패:', err);
+          return res.render('login', { 
+            error: '세션 저장에 실패했습니다.',
+            username: username 
+          });
+        }
+        
+        logger.info(`사용자 로그인 성공: ${username} (${user.role})`);
+        logger.info(`세션 정보: authenticated=${req.session.authenticated}, username=${req.session.username}`);
+        
+        // 마지막 로그인 시간 업데이트
+        user.update({ last_login: new Date() }).catch(err => {
+          logger.error('로그인 시간 업데이트 실패:', err);
+        });
+        
+        res.redirect('/matches');
+      });
     } else {
       // 로그인 실패
       logger.warn(`로그인 실패 시도: ${username}`);
