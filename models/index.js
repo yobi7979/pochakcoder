@@ -1,13 +1,32 @@
 const { Sequelize, DataTypes, Op } = require('sequelize');
 const path = require('path');
 
-// Sequelize 인스턴스 생성
-const sequelize = new Sequelize({
-  dialect: 'sqlite',
-  storage: path.join(__dirname, '../sports.db'),
-  logging: false,
-  benchmark: false
-});
+// Sequelize 인스턴스 생성 (환경에 따라 SQLite 또는 PostgreSQL 사용)
+const sequelize = new Sequelize(
+  process.env.DATABASE_URL || 
+  (process.env.NODE_ENV === 'production' 
+    ? process.env.DATABASE_URL 
+    : {
+        dialect: 'sqlite',
+        storage: path.join(__dirname, '../sports.db'),
+        logging: false,
+        benchmark: false
+      }
+  ),
+  {
+    dialect: process.env.NODE_ENV === 'production' ? 'postgres' : 'sqlite',
+    logging: false,
+    benchmark: false,
+    ...(process.env.NODE_ENV === 'production' && {
+      dialectOptions: {
+        ssl: process.env.NODE_ENV === 'production' ? {
+          require: true,
+          rejectUnauthorized: false
+        } : false
+      }
+    })
+  }
+);
 
 // Match 모델 정의
 const Match = sequelize.define('Match', {
