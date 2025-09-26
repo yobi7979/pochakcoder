@@ -16,6 +16,21 @@ if not exist .git (
     git remote -v
 )
 
+:: 푸시 대상 저장소 최종 확인
+echo.
+echo [33m=== 푸시 대상 저장소 확인 ===[0m
+echo [36m현재 설정된 원격 저장소:[0m
+git remote get-url origin
+echo.
+echo [33m이 저장소로 푸시됩니다. 계속하시겠습니까?[0m
+set /p confirm="계속하려면 Y, 취소하려면 N을 입력하세요 (Y/N): "
+if /i not "!confirm!"=="Y" (
+    echo [31m푸시가 취소되었습니다.[0m
+    pause
+    exit /b
+)
+echo [32m푸시를 계속 진행합니다...[0m
+
 :: 불필요한 파일들 제거
 echo [36m불필요한 파일들을 정리합니다...[0m
 if exist "node_modules" (
