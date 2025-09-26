@@ -4,7 +4,7 @@ const path = require('path');
 // Sequelize 인스턴스 생성 (환경에 따라 데이터베이스 선택)
 let sequelize;
 
-if (process.env.DATABASE_URL) {
+if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
   // 프로덕션 환경: PostgreSQL 사용
   console.log('PostgreSQL 데이터베이스 연결 시도...');
   sequelize = new Sequelize(process.env.DATABASE_URL, {
@@ -19,7 +19,7 @@ if (process.env.DATABASE_URL) {
     }
   });
 } else {
-  // 개발 환경: SQLite 사용
+  // 개발 환경 또는 DATABASE_URL이 없는 경우: SQLite 사용
   console.log('SQLite 데이터베이스 연결 시도...');
   sequelize = new Sequelize({
     dialect: 'sqlite',
