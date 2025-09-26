@@ -53,6 +53,16 @@
       "teamColor": "#ae1e1e",
       "bgColor": "#ffffff",
       "name": "경기 군포시리틀야구단"
+    },
+    "야구홈": {
+      "path": "",
+      "teamColor": "#1e40af",
+      "bgColor": "#ffffff"
+    },
+    "야구어웨이": {
+      "path": "",
+      "teamColor": "#1e40af",
+      "bgColor": "#ffffff"
     }
   }
 }

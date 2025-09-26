@@ -4345,7 +4345,8 @@ const HOST = process.env.HOST || '0.0.0.0';
 server.listen(PORT, HOST, async () => {
   logger.info(`서버가 포트 ${PORT}에서 실행 중입니다.`);
   logger.info(`환경: ${process.env.NODE_ENV || 'development'}`);
-  logger.info(`데이터베이스: ${process.env.DATABASE_URL ? 'PostgreSQL' : 'SQLite'}`);
+  logger.info(`Railway 환경: ${process.env.RAILWAY_ENVIRONMENT ? 'Yes' : 'No'}`);
+  logger.info(`데이터베이스: ${process.env.RAILWAY_ENVIRONMENT || process.env.DATABASE_URL ? 'PostgreSQL' : 'SQLite'}`);
   
   // 기본 종목 초기화
   await initializeDefaultSports();

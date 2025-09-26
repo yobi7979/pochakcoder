@@ -1,24 +1,24 @@
 const { Sequelize, DataTypes, Op } = require('sequelize');
 const path = require('path');
 
-// Sequelize 인스턴스 생성 (환경에 따라 SQLite 또는 PostgreSQL 사용)
+// Sequelize 인스턴스 생성 (Railway에서는 PostgreSQL 강제 사용)
 let sequelize;
 
-if (process.env.DATABASE_URL) {
-  // 프로덕션 환경: PostgreSQL 사용
+if (process.env.RAILWAY_ENVIRONMENT || process.env.DATABASE_URL) {
+  // Railway 환경: PostgreSQL 사용
   sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialect: 'postgres',
     logging: false,
     benchmark: false,
     dialectOptions: {
-      ssl: process.env.NODE_ENV === 'production' ? {
+      ssl: {
         require: true,
         rejectUnauthorized: false
-      } : false
+      }
     }
   });
 } else {
-  // 개발 환경: SQLite 사용
+  // 로컬 개발 환경: SQLite 사용
   sequelize = new Sequelize({
     dialect: 'sqlite',
     storage: path.join(__dirname, '../sports.db'),
