@@ -1,0 +1,11 @@
+# EJS 템플릿 파일들 - 구문 오류 무시
+views/*.ejs
+*.ejs
+
+# 기타 무시할 파일들
+node_modules/
+logs/
+temp/
+backups/
+*.log
+*.zip

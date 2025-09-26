@@ -285,6 +285,18 @@
         </div>
         <% } %>
         
+        <!-- 팀로고 사용 체크박스 -->
+        <div class="row mb-2">
+            <div class="col-12 text-center">
+                <div class="form-check d-inline-block">
+                    <input type="checkbox" class="form-check-input" id="use-team-logos" checked style="transform: scale(0.8);">
+                    <label class="form-check-label" for="use-team-logos" style="font-size: 0.85em;">
+                        팀로고 사용
+                    </label>
+                </div>
+            </div>
+        </div>
+        
         <!-- 팀명 표시 및 수정 -->
         <div class="row mb-1" style="align-items: center;">
             <!-- 홈팀 섹션 -->
@@ -318,6 +330,12 @@
                     
                     <!-- 점수 컨트롤 -->
                     <div class="score-controls-section mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div style="font-size: 1rem; color: #6c757d; font-weight: 600;">점수</div>
+                            <button class="btn btn-outline-warning btn-sm" onclick="resetAllScores()" title="모든 점수 초기화">
+                                <i class="bi bi-arrow-clockwise"></i> 초기화
+                            </button>
+                        </div>
                         <div class="row g-1">
                             <div class="col-6">
                                 <div class="text-center mb-2" style="font-size: 1rem; color: #6c757d; font-weight: 600;">홈</div>
@@ -495,13 +513,278 @@
         const socket = io();
         const matchId = '<%= match.id %>';
         
-        // 점수 변경 이벤트
-        function updateScore(team, change) {
-            const scoreInput = document.getElementById(`${team}-score`);
-            const currentScore = parseInt(scoreInput.value) || 0;
-            const newScore = Math.max(0, currentScore + change);
-            scoreInput.value = newScore;
-            updateMatchInfo();
+        // Socket.IO 연결 상태 확인
+        socket.on('connect', () => {
+            console.log('=== Socket.IO 연결됨 (모바일) ===');
+            console.log('Socket ID:', socket.id);
+            console.log('Match ID:', matchId);
+        });
+        
+        socket.on('disconnect', () => {
+            console.log('=== Socket.IO 연결 끊어짐 (모바일) ===');
+        });
+        
+        socket.on('connect_error', (error) => {
+            console.error('=== Socket.IO 연결 오류 (모바일) ===', error);
+        });
+        
+        // 점수 변경 이벤트 (서버 상태 확인 후 업데이트)
+        async function updateScore(team, change) {
+            if (change < 0) {
+                // - 버튼: 역순으로 점수 삭제
+                await decreaseScoreReverse(team, Math.abs(change));
+            } else {
+                // + 버튼: 기존 방식
+                await increaseScore(team, change);
+            }
+        }
+        
+        // + 버튼 동작 (일반 컨트롤 패널과 완전히 동일)
+        async function increaseScore(team, change) {
+            try {
+                console.log(`=== 점수 증가 시작: ${team}팀 +${change} ===`);
+                
+                // 1. 서버에서 최신 경기 데이터 가져오기
+                const response = await fetch(`/api/match/${matchId}`);
+                if (!response.ok) {
+                    throw new Error('서버에서 경기 데이터를 가져올 수 없습니다.');
+                }
+                
+                const matchData = await response.json();
+                console.log('서버에서 받은 최신 데이터:', matchData);
+                
+                // 2. 서버 상태로 UI 동기화 (다른 클라이언트에서 변경된 경우만)
+                // 모바일에서는 즉시 UI 업데이트하지 않고 서버 응답을 기다림
+                
+                // 3. 현재 이닝 정보 가져오기
+                const currentInning = parseInt(document.getElementById('current-inning').textContent) || 1;
+                const inningType = document.getElementById('inning-type').textContent === '말' ? 'bottom' : 'top';
+                
+                // 4. 현재 이닝의 점수 가져오기 (서버 데이터에서)
+                const innings = matchData.match_data?.innings || {};
+                const currentInningScore = parseInt(innings[`${team}_${currentInning}`]) || 0;
+                const newInningScore = Math.max(0, currentInningScore + change);
+                
+                console.log(`이닝 점수 변경: ${team}팀 ${currentInning}회 ${currentInningScore} + ${change} = ${newInningScore}`);
+                
+                // 5. 서버에 이닝 스코어 업데이트 전송
+                socket.emit('baseball_inning_score_update', {
+                    matchId: matchId,
+                    team: team,
+                    inning: currentInning,
+                    inningType: inningType,
+                    score: newInningScore,
+                    change: change
+                });
+                
+                updateMatchInfo();
+                
+                // 6. 서버에서 최신 점수 다시 가져와서 UI 업데이트 (Socket.IO 이벤트 실패 시 대비)
+                setTimeout(async () => {
+                    try {
+                        const response = await fetch(`/api/match/${matchId}`);
+                        if (response.ok) {
+                            const matchData = await response.json();
+                            const homeScore = matchData.home_score || 0;
+                            const awayScore = matchData.away_score || 0;
+                            
+                            const homeScoreElement = document.getElementById('home-score');
+                            const awayScoreElement = document.getElementById('away-score');
+                            
+                            if (homeScoreElement) {
+                                homeScoreElement.value = homeScore;
+                                console.log(`홈팀 점수 최종 업데이트: ${homeScore}`);
+                            }
+                            if (awayScoreElement) {
+                                awayScoreElement.value = awayScore;
+                                console.log(`원정팀 점수 최종 업데이트: ${awayScore}`);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('최신 점수 가져오기 실패:', error);
+                    }
+                }, 1000); // 1초 후 서버에서 최신 점수 가져오기 (Socket.IO 이벤트 실패 시 대비)
+                
+                console.log(`=== 점수 증가 완료: ${team}팀 ${currentInning}회 ${newInningScore} ===`);
+                
+            } catch (error) {
+                console.error('점수 증가 중 오류 발생:', error);
+                alert('점수 증가 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
+            }
+        }
+        
+        // - 버튼 동작 (역순으로 점수 삭제) - 일반 컨트롤 패널과 완전히 동일
+        async function decreaseScoreReverse(team, amount) {
+            try {
+                console.log(`=== 점수 감소 시작: ${team}팀 -${amount} (역순 삭제) ===`);
+                
+                // 1. 서버에서 최신 경기 데이터 가져오기
+                const response = await fetch(`/api/match/${matchId}`);
+                if (!response.ok) {
+                    throw new Error('서버에서 경기 데이터를 가져올 수 없습니다.');
+                }
+                
+                const matchData = await response.json();
+                const innings = matchData.match_data?.innings || {};
+                
+                // 2. 서버 상태로 UI 동기화 (다른 클라이언트에서 변경된 경우만)
+                // 모바일에서는 즉시 UI 업데이트하지 않고 서버 응답을 기다림
+                
+                // 3. 역순으로 점수 삭제
+                let remainingAmount = amount;
+                const currentInning = parseInt(document.getElementById('current-inning').textContent) || 1;
+                
+                // 현재 이닝부터 역순으로 점수 삭제
+                for (let i = currentInning; i >= 1 && remainingAmount > 0; i--) {
+                    const currentInningScore = parseInt(innings[`${team}_${i}`]) || 0;
+                    const decreaseAmount = Math.min(remainingAmount, currentInningScore);
+                    
+                    if (decreaseAmount > 0) {
+                        const newInningScore = currentInningScore - decreaseAmount;
+                        remainingAmount -= decreaseAmount;
+                        
+                        console.log(`${team}팀 ${i}회: ${currentInningScore} - ${decreaseAmount} = ${newInningScore}`);
+                        
+                        // 서버에 이닝 스코어 업데이트 전송
+                        const inningType = i === currentInning ? 
+                            (document.getElementById('inning-type').textContent === '말' ? 'bottom' : 'top') : 
+                            (i % 2 === 0 ? 'bottom' : 'top');
+                        
+                        socket.emit('baseball_inning_score_update', {
+                            matchId: matchId,
+                            team: team,
+                            inning: i,
+                            inningType: inningType,
+                            score: newInningScore,
+                            change: -decreaseAmount
+                        });
+                    }
+                }
+                
+                updateMatchInfo();
+                
+                // 서버에서 최신 점수 다시 가져와서 UI 업데이트 (Socket.IO 이벤트 실패 시 대비)
+                setTimeout(async () => {
+                    try {
+                        const response = await fetch(`/api/match/${matchId}`);
+                        if (response.ok) {
+                            const matchData = await response.json();
+                            const homeScore = matchData.home_score || 0;
+                            const awayScore = matchData.away_score || 0;
+                            
+                            const homeScoreElement = document.getElementById('home-score');
+                            const awayScoreElement = document.getElementById('away-score');
+                            
+                            if (homeScoreElement) {
+                                homeScoreElement.value = homeScore;
+                                console.log(`홈팀 점수 최종 업데이트: ${homeScore}`);
+                            }
+                            if (awayScoreElement) {
+                                awayScoreElement.value = awayScore;
+                                console.log(`원정팀 점수 최종 업데이트: ${awayScore}`);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('최신 점수 가져오기 실패:', error);
+                    }
+                }, 1000); // 1초 후 서버에서 최신 점수 가져오기 (Socket.IO 이벤트 실패 시 대비)
+                
+                console.log(`=== 점수 감소 완료: ${team}팀 -${amount} ===`);
+                
+            } catch (error) {
+                console.error('점수 감소 중 오류 발생:', error);
+                alert('점수 감소 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
+            }
+        }
+        
+        // 모든 점수 초기화 함수
+        async function resetAllScores() {
+            if (!confirm('모든 점수를 0으로 초기화하시겠습니까?\n(이닝별 점수와 총 점수가 모두 초기화됩니다)')) {
+                return;
+            }
+            
+            try {
+                console.log('=== 모든 점수 초기화 시작 ===');
+                
+                // 1. 서버에서 최신 경기 데이터 가져오기
+                const response = await fetch(`/api/match/${matchId}`);
+                if (!response.ok) {
+                    throw new Error('서버에서 경기 데이터를 가져올 수 없습니다.');
+                }
+                
+                const matchData = await response.json();
+                console.log('서버에서 받은 최신 데이터:', matchData);
+                
+                // 2. 서버 상태로 UI 동기화
+                const serverHomeScore = matchData.home_score || 0;
+                const serverAwayScore = matchData.away_score || 0;
+                
+                const homeScoreElement = document.getElementById('home-score');
+                const awayScoreElement = document.getElementById('away-score');
+                
+                if (homeScoreElement) {
+                    homeScoreElement.value = serverHomeScore;
+                }
+                if (awayScoreElement) {
+                    awayScoreElement.value = serverAwayScore;
+                }
+                
+                // 3. 모든 이닝 스코어 초기화
+                for (let i = 1; i <= 9; i++) {
+                    const homeInningElement = document.getElementById(`home-inning-${i}`);
+                    const awayInningElement = document.getElementById(`away-inning-${i}`);
+                    
+                    if (homeInningElement) {
+                        homeInningElement.value = '0';
+                    }
+                    if (awayInningElement) {
+                        awayInningElement.value = '0';
+                    }
+                }
+                
+                // 4. 총 점수 초기화
+                if (homeScoreElement) {
+                    homeScoreElement.value = '0';
+                }
+                if (awayScoreElement) {
+                    awayScoreElement.value = '0';
+                }
+                
+                // 4. 서버에 모든 이닝 스코어 초기화 전송 (순차적으로 처리)
+                for (let i = 1; i <= 9; i++) {
+                    // 홈팀 이닝 초기화
+                    socket.emit('baseball_inning_score_update', {
+                        matchId: matchId,
+                        team: 'home',
+                        inning: i,
+                        inningType: 'top',
+                        score: 0,
+                        change: 0
+                    });
+                    
+                    // 원정팀 이닝 초기화
+                    socket.emit('baseball_inning_score_update', {
+                        matchId: matchId,
+                        team: 'away',
+                        inning: i,
+                        inningType: 'bottom',
+                        score: 0,
+                        change: 0
+                    });
+                    
+                    console.log(`이닝 ${i} 초기화 전송: 홈팀=0, 원정팀=0`);
+                }
+                
+                // 5. API를 통해서도 업데이트 (모든 이닝 초기화)
+                updateMatchInfo(true);
+                
+                console.log('=== 모든 점수 초기화 완료 ===');
+                alert('모든 점수가 초기화되었습니다.');
+                
+            } catch (error) {
+                console.error('점수 초기화 중 오류 발생:', error);
+                alert('점수 초기화 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
+            }
         }
         
         // 베이스 토글 함수
@@ -630,8 +913,124 @@
             socket.emit('join', matchId);
         });
         
+        // 팀로고 사용 상태 저장
+        async function saveTeamLogoVisibility() {
+            const useLogos = document.getElementById('use-team-logos').checked;
+            try {
+                const response = await fetch('/api/baseball-team-logo-visibility', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ matchId: matchId, useLogos: useLogos })
+                });
+                if (!response.ok) throw new Error('팀로고 사용 상태 저장 실패');
+                console.log('팀로고 사용 상태 저장 완료:', useLogos);
+            } catch (error) {
+                console.error('팀로고 사용 상태 저장 오류:', error);
+            }
+        }
+
+        // 팀로고 사용 상태 불러오기
+        async function loadTeamLogoVisibility() {
+            try {
+                const response = await fetch(`/api/baseball-team-logo-visibility/${matchId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const useLogos = data.useLogos;
+                    console.log('팀로고 사용 상태 불러오기:', useLogos);
+                    const checkbox = document.getElementById('use-team-logos');
+                    if (checkbox) {
+                        checkbox.checked = useLogos;
+                    }
+                } else {
+                    console.log('팀로고 사용 상태 불러오기 실패, 기본값 사용');
+                }
+            } catch (error) {
+                console.error('팀로고 사용 상태 불러오기 오류:', error);
+            }
+        }
+
+        // 서버에서 최신 경기 데이터 로딩
+        async function loadCurrentMatchData() {
+            try {
+                console.log('=== 서버에서 최신 경기 데이터 로딩 시작 ===');
+                const response = await fetch(`/api/match/${matchId}`);
+                
+                if (response.ok) {
+                    const matchData = await response.json();
+                    console.log('서버에서 받은 경기 데이터:', matchData);
+                    
+                    // 서버에서 계산된 최신 점수 사용
+                    const homeScore = matchData.home_score || 0;
+                    const awayScore = matchData.away_score || 0;
+                    
+                    console.log('서버 점수:', { homeScore, awayScore });
+                    
+                    // UI 업데이트
+                    const homeScoreElement = document.getElementById('home-score');
+                    const awayScoreElement = document.getElementById('away-score');
+                    
+                    if (homeScoreElement) {
+                        homeScoreElement.value = homeScore;
+                        console.log(`홈팀 점수 설정: ${homeScore}`);
+                    }
+                    if (awayScoreElement) {
+                        awayScoreElement.value = awayScore;
+                        console.log(`원정팀 점수 설정: ${awayScore}`);
+                    }
+                    
+                    // 이닝별 스코어 데이터 확인 (서버의 match_data.innings)
+                    const innings = matchData.match_data?.innings || {};
+                    console.log('서버 이닝별 스코어:', innings);
+                    
+                    // 이닝별 스코어 합계 계산하여 검증
+                    const homeTotal = Object.keys(innings)
+                        .filter(key => key.startsWith('home_'))
+                        .reduce((sum, key) => sum + (parseInt(innings[key]) || 0), 0);
+                    const awayTotal = Object.keys(innings)
+                        .filter(key => key.startsWith('away_'))
+                        .reduce((sum, key) => sum + (parseInt(innings[key]) || 0), 0);
+                    
+                    console.log('이닝별 스코어 합계:', { homeTotal, awayTotal });
+                    console.log('서버 총 점수:', { homeScore, awayScore });
+                    
+                    // 모바일 컨트롤 페이지에서는 총 점수만 관리하므로 불일치 감지 로직 제거
+                    
+                    console.log('=== 서버에서 최신 경기 데이터 로딩 완료 ===');
+                } else {
+                    console.error('경기 데이터 가져오기 실패:', response.status);
+                }
+            } catch (error) {
+                console.error('현재 경기 데이터 가져오기 오류:', error);
+            }
+        }
+
         // 페이지 로드 시 현재 상태 초기화
         document.addEventListener('DOMContentLoaded', async function() {
+            console.log('=== 모바일 컨트롤 페이지 로드 완료 ===');
+            console.log('현재 matchId:', matchId);
+            
+            // 서버에서 최신 경기 데이터 로딩
+            await loadCurrentMatchData();
+            
+            // 팀로고 사용 상태 불러오기
+            await loadTeamLogoVisibility();
+            
+            // 팀로고 사용 체크박스 이벤트 리스너
+            const useTeamLogosCheckbox = document.getElementById('use-team-logos');
+            if (useTeamLogosCheckbox) {
+                useTeamLogosCheckbox.addEventListener('change', async function() {
+                    console.log('=== 야구 모바일 컨트롤 패널: 팀로고 사용 상태 변경 ===');
+                    console.log('새로운 상태:', this.checked);
+                    await saveTeamLogoVisibility();
+                    
+                    // 소켓을 통해 오버레이에 실시간 업데이트 전송
+                    socket.emit('teamLogoVisibilityChanged', {
+                        matchId: matchId,
+                        useLogos: this.checked
+                    });
+                });
+            }
+            
             // 팀 로고 정보 가져오기
             try {
                 const response = await fetch('/api/team-logo-map/BASEBALL');
@@ -712,8 +1111,8 @@
             }
         });
         
-        // 점수/카운트/이닝 변경 시 서버에 업데이트
-        async function updateMatchInfo() {
+        // 점수/카운트/이닝 변경 시 서버에 업데이트 (일반 컨트롤 패널과 동일)
+        async function updateMatchInfo(resetInnings = false) {
             // 베이스 상태 가져오기
             const firstBase = document.getElementById('first-base').classList.contains('active');
             const secondBase = document.getElementById('second-base').classList.contains('active');
@@ -725,8 +1124,7 @@
             const outs = document.querySelectorAll('.count-dot.out.active').length;
             
             const formData = {
-                home_score: parseInt(document.getElementById('home-score').value) || 0,
-                away_score: parseInt(document.getElementById('away-score').value) || 0,
+                // 총 점수는 전송하지 않음 (서버에서 이닝별 점수로 자동 계산)
                 match_data: {
                     balls: balls,
                     strikes: strikes,
@@ -738,6 +1136,16 @@
                     inning_type: document.getElementById('inning-type').textContent === '말' ? 'bottom' : 'top'
                 }
             };
+            
+            // 점수 초기화인 경우 모든 이닝을 0으로 설정
+            if (resetInnings) {
+                formData.match_data.innings = {};
+                for (let i = 1; i <= 9; i++) {
+                    formData.match_data.innings[`home_${i}`] = 0;
+                    formData.match_data.innings[`away_${i}`] = 0;
+                }
+                console.log('모든 이닝 점수를 0으로 초기화:', formData.match_data.innings);
+            }
             try {
                 await fetch(`/api/match/${matchId}`, {
                     method: 'POST',
@@ -746,10 +1154,8 @@
                 });
                 
                 // 실시간 업데이트를 위한 WebSocket 이벤트 발생
-                socket.emit('match_updated', {
+                socket.emit('match_update', {
                     matchId: matchId,
-                    home_score: formData.home_score,
-                    away_score: formData.away_score,
                     match_data: formData.match_data
                 });
                 
@@ -1139,6 +1545,97 @@
                 
                 // 경기 정보 업데이트
                 updateMatchDisplay(data);
+            }
+        });
+
+        // 야구 이닝 스코어 업데이트 이벤트 처리 (모바일)
+        socket.on('baseball_inning_score_updated', (data) => {
+            console.log('=== 야구 이닝 스코어 업데이트 수신 (모바일) ===');
+            console.log('수신된 데이터:', data);
+            console.log('현재 matchId:', matchId);
+            console.log('데이터 matchId:', data.matchId);
+            
+            if (data.matchId === matchId) {
+                // 서버에서 계산된 총 점수 사용
+                const homeTotal = data.home_score || 0;
+                const awayTotal = data.away_score || 0;
+                
+                console.log(`서버에서 받은 점수: 홈팀 ${homeTotal}, 원정팀 ${awayTotal}`);
+                
+                // 총 점수 표시 업데이트
+                const homeScoreElement = document.getElementById('home-score');
+                const awayScoreElement = document.getElementById('away-score');
+                
+                console.log('업데이트 전 점수:', {
+                    home: homeScoreElement?.value,
+                    away: awayScoreElement?.value
+                });
+                
+                if (homeScoreElement) {
+                    homeScoreElement.value = homeTotal;
+                    console.log(`홈팀 점수 업데이트: ${homeTotal}`);
+                }
+                if (awayScoreElement) {
+                    awayScoreElement.value = awayTotal;
+                    console.log(`원정팀 점수 업데이트: ${awayTotal}`);
+                }
+                
+                console.log('업데이트 후 점수:', {
+                    home: homeScoreElement?.value,
+                    away: awayScoreElement?.value
+                });
+                
+                console.log('=== 야구 이닝 스코어 업데이트 처리 완료 (모바일) ===');
+            } else {
+                console.log('매치 ID가 일치하지 않음 - 이벤트 무시');
+            }
+        });
+
+        // 경기 업데이트 이벤트 처리 (다른 클라이언트에서 변경된 경우만)
+        socket.on('match_update', (data) => {
+            console.log('=== 경기 업데이트 수신 (모바일) ===');
+            console.log('수신된 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                // 점수 업데이트 (다른 클라이언트에서 변경된 경우만)
+                if (data.data && (data.data.home_score !== undefined || data.data.away_score !== undefined)) {
+                    const homeScoreElement = document.getElementById('home-score');
+                    const awayScoreElement = document.getElementById('away-score');
+                    
+                    if (homeScoreElement && data.data.home_score !== undefined) {
+                        homeScoreElement.value = data.data.home_score;
+                        console.log(`홈팀 점수 업데이트: ${data.data.home_score}`);
+                    }
+                    if (awayScoreElement && data.data.away_score !== undefined) {
+                        awayScoreElement.value = data.data.away_score;
+                        console.log(`원정팀 점수 업데이트: ${data.data.away_score}`);
+                    }
+                }
+                console.log('=== 경기 업데이트 처리 완료 (모바일) ===');
+            }
+        });
+
+        // 점수 동기화 완료 이벤트 처리
+        socket.on('match_scores_synced', (data) => {
+            console.log('점수 동기화 완료 수신:', data);
+            
+            if (data.matchId === matchId) {
+                const { home_score, away_score } = data;
+                
+                // UI 업데이트
+                const homeScoreElement = document.getElementById('home-score');
+                const awayScoreElement = document.getElementById('away-score');
+                
+                if (homeScoreElement) {
+                    homeScoreElement.value = home_score;
+                    console.log(`홈팀 점수 동기화: ${home_score}`);
+                }
+                if (awayScoreElement) {
+                    awayScoreElement.value = away_score;
+                    console.log(`원정팀 점수 동기화: ${away_score}`);
+                }
+                
+                console.log('점수 동기화 완료: 홈팀', home_score, '원정팀', away_score);
             }
         });
 

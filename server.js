@@ -232,22 +232,7 @@ function startLogManagementScheduler() {
 
 // 팀 로고 업로드를 위한 multer 설정
 const upload = multer({
-    storage: multer.diskStorage({
-        destination: function (req, file, cb) {
-            // sportType이 없으면 기본값으로 'SOCCER' 사용
-            const sportType = req.body.sportType || 'SOCCER';
-            const dir = path.join(__dirname, 'public', 'TEAMLOGO', sportType);
-            if (!fsSync.existsSync(dir)) {
-                fsSync.mkdirSync(dir, { recursive: true });
-            }
-            cb(null, dir);
-        },
-        filename: function (req, file, cb) {
-            // 원본 파일명을 안전하게 처리
-            const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
-            cb(null, originalName);
-        }
-    }),
+    storage: multer.memoryStorage(),
     limits: {
         fileSize: 5 * 1024 * 1024 // 5MB
     },
@@ -1250,24 +1235,141 @@ app.put('/api/match/:id', async (req, res) => {
 });
 
 // 팀 로고 업로드 API
-app.post('/api/team-logo', requireAuth, upload.single('logo'), async (req, res) => {
+app.post('/api/team-logo', upload.single('logo'), async (req, res) => {
   try {
+    // 디버깅을 위한 로그 추가
+    logger.info(`팀 로고 업로드 요청: matchId=${req.body.matchId}, teamType=${req.body.teamType}, sportType=${req.body.sportType}`);
+    
+    // matchId와 teamType이 있는지 확인 (기본적인 보안)
+    if (!req.body.matchId || !req.body.teamType) {
+      logger.warn(`필수 파라미터 누락: matchId=${req.body.matchId}, teamType=${req.body.teamType}`);
+      return res.status(400).json({ success: false, message: '필수 파라미터가 누락되었습니다.' });
+    }
+
     if (!req.file) {
       return res.status(400).json({ success: false, message: '파일이 없습니다.' });
     }
 
-    // 로고 파일 경로 생성 (public 폴더 기준 상대 경로)
-    // 원본 파일명을 안전하게 인코딩하여 경로 생성
+    // sportType 가져오기 (기본값: SOCCER)
+    const sportType = req.body.sportType || 'SOCCER';
+    
+    // 원본 파일명을 안전하게 처리
     const originalName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
-    const logoPath = `/TEAMLOGO/BASEBALL/${originalName}`;
+    
+    // 최종 저장 경로 설정
+    const targetDir = path.join(__dirname, 'public', 'TEAMLOGO', sportType);
+    const targetPath = path.join(targetDir, originalName);
+    
+    // 대상 디렉토리 생성
+    if (!fsSync.existsSync(targetDir)) {
+      fsSync.mkdirSync(targetDir, { recursive: true });
+      logger.info(`디렉토리 생성됨: ${targetDir}`);
+    }
+    
+    // 메모리에서 파일을 디스크에 저장
+    await fs.writeFile(targetPath, req.file.buffer);
+    
+    // 파일이 올바르게 저장되었는지 확인
+    if (!fsSync.existsSync(targetPath)) {
+      logger.error(`파일 저장 실패: ${targetPath}`);
+      return res.status(500).json({ 
+        success: false, 
+        message: '파일 저장에 실패했습니다.' 
+      });
+    }
+    
+    // 로고 파일 경로 생성 (public 폴더 기준 상대 경로)
+    const logoPath = `/TEAMLOGO/${sportType}/${originalName}`;
+    
+    // match_data에 팀로고 정보 저장
+    logger.info(`팀로고 업로드 요청 데이터: matchId=${req.body.matchId}, teamType=${req.body.teamType}, sportType=${sportType}`);
+    
+    if (req.body.matchId && req.body.teamType) {
+      try {
+        const match = await Match.findByPk(req.body.matchId);
+        if (match) {
+          const matchData = match.match_data || {};
+          
+          if (req.body.teamType === 'home') {
+            matchData.home_team_logo = logoPath;
+          } else if (req.body.teamType === 'away') {
+            matchData.away_team_logo = logoPath;
+          }
+          
+          match.match_data = matchData;
+          await match.save();
+          
+          logger.info(`팀로고 정보가 match_data에 저장됨: ${req.body.matchId}, ${req.body.teamType}: ${logoPath}`);
+          
+          // team_logo_map.json 업데이트 (야구 경기인 경우)
+          logger.info(`스포츠 타입 확인: ${match.sport_type}`);
+          if (match.sport_type === 'BASEBALL' || match.sport_type === 'baseball') {
+            logger.info('야구 경기이므로 team_logo_map.json 업데이트 시작');
+            try {
+              const logoMapPath = path.join(__dirname, 'public/TEAMLOGO/BASEBALL/team_logo_map.json');
+              logger.info(`logoMapPath: ${logoMapPath}`);
+              
+              // 기존 파일 읽기
+              let teamLogoMap = {};
+              if (fsSync.existsSync(logoMapPath)) {
+                const fileContent = await fs.readFile(logoMapPath, 'utf8');
+                const parsed = JSON.parse(fileContent);
+                teamLogoMap = parsed.teamLogoMap || {};
+                logger.info(`기존 teamLogoMap 읽기 성공: ${Object.keys(teamLogoMap).length}개 팀`);
+              } else {
+                logger.warn('team_logo_map.json 파일이 존재하지 않음');
+              }
+              
+              // 팀명 가져오기
+              const teamName = req.body.teamType === 'home' ? match.home_team : match.away_team;
+              logger.info(`업데이트할 팀명: ${teamName}, 팀 타입: ${req.body.teamType}`);
+              
+              // 팀 로고 정보 업데이트
+              if (!teamLogoMap[teamName]) {
+                teamLogoMap[teamName] = {};
+                logger.info(`새 팀 엔트리 생성: ${teamName}`);
+              }
+              teamLogoMap[teamName].path = logoPath;
+              teamLogoMap[teamName].name = teamName;
+              if (!teamLogoMap[teamName].bgColor) {
+                teamLogoMap[teamName].bgColor = '#ffffff';
+              }
+              
+              logger.info(`팀 로고 정보 업데이트: ${teamName} -> ${logoPath}`);
+              
+              // 파일 저장
+              const updatedData = {
+                sport: 'BASEBALL',
+                teamLogoMap: teamLogoMap
+              };
+              
+              await fs.writeFile(logoMapPath, JSON.stringify(updatedData, null, 2), 'utf8');
+              logger.info(`팀 로고 정보가 team_logo_map.json에 저장됨: ${teamName} -> ${logoPath}`);
+            } catch (logoMapError) {
+              logger.error('team_logo_map.json 업데이트 중 오류:', logoMapError);
+            }
+          } else {
+            logger.info(`야구 경기가 아님: ${match.sport_type}`);
+          }
+        } else {
+          logger.warn(`경기를 찾을 수 없음: ${req.body.matchId}`);
+        }
+      } catch (dbError) {
+        logger.error('match_data 저장 중 오류:', dbError);
+      }
+    } else {
+      logger.warn(`matchId 또는 teamType이 없음: matchId=${req.body.matchId}, teamType=${req.body.teamType}`);
+    }
     
     res.json({ 
       success: true, 
       logoPath: logoPath,
+      bgColor: '#ffffff', // 기본 배경색
       message: '로고가 성공적으로 업로드되었습니다.'
     });
     
-    logger.info(`팀 로고 업로드 성공: ${logoPath}, 팀: ${req.body.teamName}, 타입: ${req.body.teamType}`);
+    logger.info(`팀 로고 업로드 성공: ${logoPath}, 팀: ${req.body.teamName}, 타입: ${req.body.teamType}, 종목: ${sportType}`);
+    logger.info(`실제 저장 경로: ${targetPath}`);
   } catch (error) {
     logger.error('로고 업로드 오류:', error);
     res.status(500).json({ 
@@ -2278,6 +2380,70 @@ app.get('/api/kt_soccer-team-logo-visibility/:matchId', async (req, res) => {
   }
 });
 
+// Baseball 팀로고 사용 상태 저장 API
+app.post('/api/baseball-team-logo-visibility', async (req, res) => {
+  try {
+    const { matchId, useLogos } = req.body;
+    
+    if (!matchId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'matchId가 필요합니다.' 
+      });
+    }
+    
+    await Settings.upsert({
+      key: `baseball_team_logo_visibility_${matchId}`,
+      value: useLogos.toString()
+    });
+    
+    // 해당 매치룸의 모든 클라이언트에게 실시간으로 반영
+    io.to(`match_${matchId}`).emit('teamLogoVisibilityChanged', {
+      matchId: matchId,
+      useLogos: useLogos
+    });
+    
+    res.json({ 
+      success: true, 
+      message: '팀로고 사용 상태가 저장되었습니다.'
+    });
+    
+    logger.info(`Baseball 팀로고 사용 상태 저장 완료: ${matchId}, useLogos: ${useLogos}`);
+  } catch (error) {
+    logger.error('Baseball 팀로고 사용 상태 저장 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: '팀로고 사용 상태 저장에 실패했습니다.' 
+    });
+  }
+});
+
+// Baseball 팀로고 사용 상태 조회 API
+app.get('/api/baseball-team-logo-visibility/:matchId', async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    
+    const setting = await Settings.findOne({
+      where: { key: `baseball_team_logo_visibility_${matchId}` }
+    });
+    
+    const useLogos = setting ? setting.value === 'true' : true; // 기본값은 true
+    
+    res.json({ 
+      success: true, 
+      useLogos: useLogos 
+    });
+    
+    logger.info(`Baseball 팀로고 사용 상태 조회: ${matchId}, useLogos: ${useLogos}`);
+  } catch (error) {
+    logger.error('Baseball 팀로고 사용 상태 조회 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: '팀로고 사용 상태 조회에 실패했습니다.' 
+    });
+  }
+});
+
 // 추가 박스 텍스트 저장 API
 app.post('/api/extra-box-text', async (req, res) => {
   try {
@@ -2641,10 +2807,10 @@ app.post('/api/bulk-create-matches', csvUpload.single('csvFile'), async (req, re
 // 팀 로고 매핑 JSON 업데이트 API
 app.post('/api/update-team-logo-map', async (req, res) => {
   try {
-    // 로고 매핑 데이터 확인
-    const { sportType, teamLogoMap } = req.body;
-    if (!sportType || !teamLogoMap) {
-      return res.status(400).json({ error: '필수 데이터가 누락되었습니다.' });
+    const { sportType, teamLogoMap, teamName, logoPath, logoName } = req.body;
+    
+    if (!sportType) {
+      return res.status(400).json({ error: 'sportType이 필요합니다.' });
     }
 
     // 종목별 디렉토리 생성
@@ -2653,12 +2819,46 @@ app.post('/api/update-team-logo-map', async (req, res) => {
       fsSync.mkdirSync(logoDir, { recursive: true });
     }
 
-    // JSON 파일 저장
     const logoMapPath = path.join(logoDir, 'team_logo_map.json');
-    await fs.writeFile(logoMapPath, JSON.stringify({
-      sport: sportType,
-      teamLogoMap: teamLogoMap
-    }, null, 2), 'utf8');
+    
+    // 기존 파일 읽기
+    let existingData = { sport: sportType, teamLogoMap: {} };
+    try {
+      if (fsSync.existsSync(logoMapPath)) {
+        const fileContent = await fs.readFile(logoMapPath, 'utf8');
+        const parsed = JSON.parse(fileContent);
+        
+        // 중첩 구조 정리: teamLogoMap이 중첩되어 있으면 최상위 teamLogoMap만 사용
+        if (parsed.teamLogoMap && typeof parsed.teamLogoMap === 'object') {
+          // teamLogoMap 안에 또 teamLogoMap이 있는지 확인
+          if (parsed.teamLogoMap.teamLogoMap) {
+            existingData.teamLogoMap = parsed.teamLogoMap.teamLogoMap;
+          } else {
+            existingData.teamLogoMap = parsed.teamLogoMap;
+          }
+        }
+      }
+    } catch (readError) {
+      logger.warn('기존 team_logo_map.json 파일 읽기 실패, 새로 생성합니다:', readError.message);
+    }
+
+    // 새로운 데이터 처리
+    if (teamLogoMap && typeof teamLogoMap === 'object') {
+      // 전체 teamLogoMap이 전달된 경우
+      existingData.teamLogoMap = teamLogoMap;
+    } else if (teamName && logoPath) {
+      // 개별 팀 로고 정보가 전달된 경우
+      if (!existingData.teamLogoMap[teamName]) {
+        existingData.teamLogoMap[teamName] = {};
+      }
+      existingData.teamLogoMap[teamName].path = logoPath;
+      if (logoName) {
+        existingData.teamLogoMap[teamName].name = logoName;
+      }
+    }
+
+    // JSON 파일 저장
+    await fs.writeFile(logoMapPath, JSON.stringify(existingData, null, 2), 'utf8');
 
     logger.info(`${sportType} 팀 로고 매핑 데이터가 업데이트되었습니다.`);
     res.json({
@@ -2690,12 +2890,7 @@ io.on('connection', (socket) => {
         });
     });
 
-    // join 이벤트 처리
-    socket.on('join', (matchId) => {
-        const roomName = `match_${matchId}`;
-        socket.join(roomName);
-        logger.info(`클라이언트 ${socket.id}가 방 ${roomName}에 참가함`);
-    });
+    // join 이벤트 처리 (중복 제거됨)
 
     // 타이머 상태 요청 이벤트 처리
     socket.on('request_timer_state', async (data) => {
@@ -3106,6 +3301,29 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 야구 팀로고 업데이트 이벤트 처리
+    socket.on('baseballTeamLogoUpdated', (data) => {
+        try {
+            const { matchId, teamType, path, bgColor, teamColor } = data;
+            const roomName = `match_${matchId}`;
+            
+            logger.info(`야구 팀로고 업데이트: matchId=${matchId}, teamType=${teamType}, path=${path}, bgColor=${bgColor}`);
+            
+            // 해당 매치룸의 모든 클라이언트에게 팀로고 업데이트 전송
+            io.to(roomName).emit('baseballTeamLogoUpdated', {
+                matchId: matchId,
+                teamType: teamType,
+                path: path,
+                bgColor: bgColor,
+                teamColor: teamColor
+            });
+            
+            logger.info(`baseballTeamLogoUpdated 이벤트를 방 ${roomName}의 모든 클라이언트에 전송함`);
+        } catch (error) {
+            logger.error('baseballTeamLogoUpdated 이벤트 처리 중 오류 발생:', error);
+        }
+    });
+
     // 타이머 제어 이벤트 처리 (호환성 지원)
     socket.on('timer_control', async (data) => {
         try {
@@ -3279,6 +3497,40 @@ io.on('connection', (socket) => {
                     [updateField]: teamColor,
                     match_data: matchData
                 });
+                
+                // 야구인 경우 team_logo_map.json에도 팀 컬러 저장
+                if (sportType === 'baseball') {
+                    try {
+                        const teamName = teamType === 'home' ? match.home_team : match.away_team;
+                        const logoMapPath = path.join(__dirname, 'public/TEAMLOGO/BASEBALL/team_logo_map.json');
+                        
+                        // 기존 파일 읽기
+                        let teamLogoMap = {};
+                        if (fsSync.existsSync(logoMapPath)) {
+                            const fileContent = await fs.readFile(logoMapPath, 'utf8');
+                            const parsed = JSON.parse(fileContent);
+                            teamLogoMap = parsed.teamLogoMap || {};
+                        }
+                        
+                        // 팀 컬러 정보 업데이트
+                        if (!teamLogoMap[teamName]) {
+                            teamLogoMap[teamName] = {};
+                        }
+                        teamLogoMap[teamName].teamColor = teamColor;
+                        
+                        // 파일 저장
+                        const updatedData = {
+                            sport: 'BASEBALL',
+                            teamLogoMap: teamLogoMap
+                        };
+                        
+                        await fs.writeFile(logoMapPath, JSON.stringify(updatedData, null, 2), 'utf8');
+                        logger.info(`야구 팀 컬러가 team_logo_map.json에 저장됨: ${teamName} -> ${teamColor}`);
+                    } catch (logoError) {
+                        logger.error('team_logo_map.json 업데이트 중 오류:', logoError);
+                        // 로고 맵 업데이트 실패해도 팀 컬러 업데이트는 계속 진행
+                    }
+                }
             }
             
             // 모든 클라이언트에게 팀 컬러 업데이트 알림
@@ -3403,6 +3655,177 @@ io.on('connection', (socket) => {
         } catch (error) {
             logger.error('팀 이름 업데이트 중 오류 발생:', error);
             socket.emit('teamNameUpdated', { success: false, error: error.message });
+        }
+    });
+
+    // 야구 이닝 스코어 업데이트 이벤트 처리
+    socket.on('baseball_inning_score_update', async (data) => {
+        const { matchId, team, inning, inningType, score, change } = data;
+        const roomName = `match_${matchId}`;
+        
+        logger.info(`야구 이닝 스코어 업데이트: matchId=${matchId}, team=${team}, inning=${inning}, score=${score}, change=${change}`);
+        
+        try {
+            const match = await Match.findByPk(matchId);
+            if (!match) {
+                socket.emit('baseball_inning_score_response', { success: false, error: '경기를 찾을 수 없습니다.' });
+                return;
+            }
+            
+            // 기존 match_data 가져오기
+            const currentMatchData = match.match_data || {};
+            const currentInnings = currentMatchData.innings || {};
+            
+            // 이닝 스코어 키 생성
+            const inningKey = `${team}_${inning}`;
+            
+            // 이닝 스코어 업데이트
+            let updatedInnings;
+            
+            if (change === 0) {
+                // 초기화인 경우
+                updatedInnings = {
+                    ...currentInnings,
+                    [inningKey]: score
+                };
+            } else {
+                // 점수 변경인 경우
+                const currentInningScore = parseInt(currentInnings[inningKey]) || 0;
+                const newInningScore = Math.max(0, currentInningScore + change);
+                
+                updatedInnings = {
+                    ...currentInnings,
+                    [inningKey]: newInningScore
+                };
+                
+                logger.info(`이닝 스코어 변경: ${inningKey} ${currentInningScore} + ${change} = ${newInningScore}`);
+            }
+            
+            // match_data 업데이트
+            const updatedMatchData = {
+                ...currentMatchData,
+                innings: updatedInnings
+            };
+            
+            // 총 점수 계산
+            const homeTotal = Object.keys(updatedInnings)
+                .filter(key => key.startsWith('home_'))
+                .reduce((sum, key) => sum + (parseInt(updatedInnings[key]) || 0), 0);
+            const awayTotal = Object.keys(updatedInnings)
+                .filter(key => key.startsWith('away_'))
+                .reduce((sum, key) => sum + (parseInt(updatedInnings[key]) || 0), 0);
+            
+            // 데이터베이스 업데이트 (총 점수도 함께 업데이트)
+            await match.update({
+                home_score: homeTotal,
+                away_score: awayTotal,
+                match_data: updatedMatchData
+            });
+            
+            // 모든 클라이언트에게 이닝 스코어 업데이트 전송
+            io.to(roomName).emit('baseball_inning_score_updated', {
+                matchId: matchId,
+                team: team,
+                inning: inning,
+                inningType: inningType,
+                score: updatedInnings[inningKey],
+                change: change,
+                innings: updatedInnings,
+                home_score: homeTotal,
+                away_score: awayTotal
+            });
+            
+            logger.info(`야구 이닝 스코어 업데이트 완료: ${inningKey} = ${updatedInnings[inningKey]}`);
+            
+        } catch (error) {
+            logger.error('야구 이닝 스코어 업데이트 오류:', error);
+            socket.emit('baseball_inning_score_response', { success: false, error: error.message });
+        }
+    });
+
+    // 야구 오버레이 표시/숨김 업데이트 이벤트 처리
+    socket.on('baseball_overlay_visibility_update', async (data) => {
+        const { matchId, overlayType, isVisible } = data;
+        const roomName = `match_${matchId}`;
+        
+        logger.info(`야구 오버레이 표시 상태 업데이트: matchId=${matchId}, overlayType=${overlayType}, isVisible=${isVisible}`);
+        
+        try {
+            const match = await Match.findByPk(matchId);
+            if (!match) {
+                socket.emit('baseball_overlay_visibility_response', { success: false, error: '경기를 찾을 수 없습니다.' });
+                return;
+            }
+            
+            // 기존 match_data 가져오기
+            const currentMatchData = match.match_data || {};
+            const currentOverlayVisibility = currentMatchData.overlay_visibility || {};
+            
+            // 오버레이 표시 상태 업데이트
+            const updatedOverlayVisibility = {
+                ...currentOverlayVisibility,
+                [overlayType]: isVisible
+            };
+            
+            // match_data 업데이트
+            const updatedMatchData = {
+                ...currentMatchData,
+                overlay_visibility: updatedOverlayVisibility
+            };
+            
+            // 데이터베이스 업데이트
+            await match.update({
+                match_data: updatedMatchData
+            });
+            
+            // 모든 클라이언트에게 오버레이 표시 상태 업데이트 전송
+            io.to(roomName).emit('baseball_overlay_visibility_updated', {
+                matchId: matchId,
+                overlayType: overlayType,
+                isVisible: isVisible,
+                overlay_visibility: updatedOverlayVisibility
+            });
+            
+            logger.info(`야구 오버레이 표시 상태 업데이트 완료: ${overlayType} = ${isVisible}`);
+            
+        } catch (error) {
+            logger.error('야구 오버레이 표시 상태 업데이트 오류:', error);
+            socket.emit('baseball_overlay_visibility_response', { success: false, error: error.message });
+        }
+    });
+
+    // 점수 동기화 이벤트 처리
+    socket.on('sync_match_scores', async (data) => {
+        const { matchId, home_score, away_score } = data;
+        const roomName = `match_${matchId}`;
+        
+        logger.info(`점수 동기화 요청: matchId=${matchId}, home_score=${home_score}, away_score=${away_score}`);
+        
+        try {
+            const match = await Match.findByPk(matchId);
+            if (!match) {
+                socket.emit('sync_match_scores_response', { success: false, error: '경기를 찾을 수 없습니다.' });
+                return;
+            }
+            
+            // 점수 업데이트
+            await match.update({
+                home_score: home_score,
+                away_score: away_score
+            });
+            
+            // 모든 클라이언트에게 점수 동기화 완료 알림
+            io.to(roomName).emit('match_scores_synced', {
+                matchId: matchId,
+                home_score: home_score,
+                away_score: away_score
+            });
+            
+            logger.info(`점수 동기화 완료: 홈팀 ${home_score}, 원정팀 ${away_score}`);
+            
+        } catch (error) {
+            logger.error('점수 동기화 오류:', error);
+            socket.emit('sync_match_scores_response', { success: false, error: error.message });
         }
     });
 
@@ -4922,6 +5345,42 @@ app.get('/:sport/:id/control', async (req, res) => {
     // 기본 팀 컬러 가져오기
     const defaultColors = await getDefaultTeamColors();
     
+    // 야구 경기인 경우 team_logo_map.json에서 팀 컬러 정보 가져오기
+    let teamColors = {
+      home: defaultColors.home,
+      away: defaultColors.away
+    };
+    
+    if (req.params.sport.toLowerCase() === 'baseball') {
+      try {
+        const logoMapPath = path.join(__dirname, 'public/TEAMLOGO/BASEBALL/team_logo_map.json');
+        if (fsSync.existsSync(logoMapPath)) {
+          const logoMapContent = await fs.readFile(logoMapPath, 'utf8');
+          const logoMapData = JSON.parse(logoMapContent);
+          
+          if (logoMapData.teamLogoMap) {
+            // 홈팀 컬러 정보
+            const homeTeamInfo = logoMapData.teamLogoMap[match.home_team];
+            if (homeTeamInfo && homeTeamInfo.teamColor) {
+              teamColors.home = homeTeamInfo.teamColor;
+            }
+            
+            // 원정팀 컬러 정보
+            const awayTeamInfo = logoMapData.teamLogoMap[match.away_team];
+            if (awayTeamInfo && awayTeamInfo.teamColor) {
+              teamColors.away = awayTeamInfo.teamColor;
+            }
+          }
+        }
+      } catch (error) {
+        logger.warn('team_logo_map.json 읽기 실패, 기본 컬러 사용:', error.message);
+      }
+    }
+    
+    // URL 생성
+    const mobileUrl = `http://localhost:3000/${req.params.sport}/${req.params.id}/control-mobile`;
+    const overlayUrl = `http://localhost:3000/${req.params.sport}/${req.params.id}/overlay`;
+    
     // 해당 스포츠의 컨트롤 템플릿 렌더링
     res.render(`${req.params.sport}-control`, { 
       match: {
@@ -4929,10 +5388,54 @@ app.get('/:sport/:id/control', async (req, res) => {
         home_score: homeScore,
         away_score: awayScore
       },
-      defaultColors
+      mobileUrl: mobileUrl,
+      overlayUrl: overlayUrl,
+      defaultColors,
+      teamColors  // team_logo_map.json에서 가져온 실제 팀 컬러
     });
   } catch (error) {
     logger.error('컨트롤 패널 로드 실패:', error);
+    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+  }
+});
+
+// 동적 모바일 컨트롤 패널 라우트
+app.get('/:sport/:id/control-mobile', async (req, res) => {
+  try {
+    const match = await Match.findByPk(req.params.id);
+    if (!match) {
+      return res.status(404).json({ error: '경기를 찾을 수 없습니다.' });
+    }
+    
+    // 스포츠 타입이 일치하는지 확인
+    if (match.sport_type.toLowerCase() !== req.params.sport.toLowerCase()) {
+      return res.status(400).json({ error: '잘못된 스포츠 타입입니다.' });
+    }
+
+    // 기존 점수 유지
+    const homeScore = match.home_score || 0;
+    const awayScore = match.away_score || 0;
+    
+    // 기본 팀 컬러 가져오기
+    const defaultColors = await getDefaultTeamColors();
+    
+    // URL 생성
+    const mobileUrl = `http://localhost:3000/${req.params.sport}/${req.params.id}/control-mobile`;
+    const overlayUrl = `http://localhost:3000/${req.params.sport}/${req.params.id}/overlay`;
+    
+    // 해당 스포츠의 모바일 컨트롤 템플릿 렌더링
+    res.render(`${req.params.sport}-control-mobile`, { 
+      match: {
+        ...match.toJSON(),
+        home_score: homeScore,
+        away_score: awayScore
+      },
+      mobileUrl: mobileUrl,
+      overlayUrl: overlayUrl,
+      defaultColors
+    });
+  } catch (error) {
+    logger.error('모바일 컨트롤 패널 로드 실패:', error);
     res.status(500).json({ error: '서버 오류가 발생했습니다.' });
   }
 });
@@ -5418,7 +5921,7 @@ app.post('/api/match/:id/swap-teams', async (req, res) => {
 app.post('/api/match/:id/team-name', async (req, res) => {
   try {
     const { id } = req.params;
-    const { team, teamName } = req.body;
+    const { team, teamName, currentLogoPath, currentLogoBgColor, currentTeamColor } = req.body;
     
     if (!team || !teamName) {
       return res.status(400).json({ success: false, error: '팀 정보와 팀명이 필요합니다.' });
@@ -5428,6 +5931,9 @@ app.post('/api/match/:id/team-name', async (req, res) => {
     if (!match) {
       return res.status(404).json({ success: false, error: '경기를 찾을 수 없습니다.' });
     }
+    
+    // 기존 팀명 저장
+    const oldTeamName = team === 'home' ? match.home_team : match.away_team;
     
     // 팀명 업데이트
     if (team === 'home') {
@@ -5439,6 +5945,66 @@ app.post('/api/match/:id/team-name', async (req, res) => {
     }
     
     await match.save();
+    
+    // team_logo_map.json 업데이트 (야구 경기인 경우)
+    if (match.sport_type === 'BASEBALL') {
+      try {
+        const logoMapPath = path.join(__dirname, 'public/TEAMLOGO/BASEBALL/team_logo_map.json');
+        
+        // 기존 파일 읽기
+        let teamLogoMap = {};
+        if (fsSync.existsSync(logoMapPath)) {
+          const fileContent = await fs.readFile(logoMapPath, 'utf8');
+          const parsed = JSON.parse(fileContent);
+          teamLogoMap = parsed.teamLogoMap || {};
+        }
+        
+        // 기존 팀명의 로고 정보가 있으면 새 팀명으로 이동
+        if (teamLogoMap[oldTeamName]) {
+          const logoInfo = teamLogoMap[oldTeamName];
+          
+          // 새 팀명으로 로고 정보 복사 (현재 선택된 정보 우선 사용)
+          teamLogoMap[teamName] = {
+            path: currentLogoPath || logoInfo.path || '',
+            bgColor: currentLogoBgColor || logoInfo.bgColor || '#ffffff',
+            teamColor: currentTeamColor || logoInfo.teamColor || '#1e40af',
+            name: teamName
+          };
+          
+          // 기존 팀명 삭제
+          delete teamLogoMap[oldTeamName];
+          
+          // 파일 저장
+          const updatedData = {
+            sport: 'BASEBALL',
+            teamLogoMap: teamLogoMap
+          };
+          
+          await fs.writeFile(logoMapPath, JSON.stringify(updatedData, null, 2), 'utf8');
+          logger.info(`팀명 변경으로 인한 로고 정보 업데이트: ${oldTeamName} → ${teamName}`);
+        } else {
+          // 기존 팀명의 로고 정보가 없으면 새 팀명으로 현재 선택된 정보로 생성
+          teamLogoMap[teamName] = {
+            path: currentLogoPath || '',
+            bgColor: currentLogoBgColor || '#ffffff',
+            teamColor: currentTeamColor || '#1e40af',
+            name: teamName
+          };
+          
+          // 파일 저장
+          const updatedData = {
+            sport: 'BASEBALL',
+            teamLogoMap: teamLogoMap
+          };
+          
+          await fs.writeFile(logoMapPath, JSON.stringify(updatedData, null, 2), 'utf8');
+          logger.info(`새 팀명으로 로고 정보 생성: ${teamName}`);
+        }
+      } catch (logoError) {
+        logger.error('team_logo_map.json 업데이트 중 오류:', logoError);
+        // 로고 맵 업데이트 실패해도 팀명 업데이트는 계속 진행
+      }
+    }
     
     // 소켓을 통해 실시간 업데이트 전송
     io.to(`match_${id}`).emit('teamNameUpdated', {
@@ -6195,6 +6761,19 @@ app.get('/soccer-control-mobile/:id', async (req, res) => {
       return res.status(404).send('경기를 찾을 수 없습니다.');
     }
     res.render('soccer-control-mobile', { match });
+  } catch (error) {
+    res.status(500).send('서버 오류가 발생했습니다.');
+  }
+});
+
+// 모바일 전용 야구 컨트롤 패널 라우트
+app.get('/baseball-control-mobile/:id', async (req, res) => {
+  try {
+    const match = await Match.findByPk(req.params.id);
+    if (!match) {
+      return res.status(404).send('경기를 찾을 수 없습니다.');
+    }
+    res.render('baseball-control-mobile', { match });
   } catch (error) {
     res.status(500).send('서버 오류가 발생했습니다.');
   }
