@@ -6378,7 +6378,15 @@ app.post('/api/backup/restore', requireAuth, backupUpload.single('backupFile'), 
       backupName = fileName;
       logger.info(`백업 복원 시작 (서버 백업): ${backupName} (사용자: ${req.session.username})`);
 
-      const backupPath = path.join(__dirname, 'backups', fileName);
+      // Railway 환경에서는 임시 디렉토리에서 파일 찾기
+      let backupPath;
+      if (process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production') {
+        const tempDir = path.join(require('os').tmpdir(), 'sportscoder-backups');
+        backupPath = path.join(tempDir, fileName);
+      } else {
+        backupPath = path.join(__dirname, 'backups', fileName);
+      }
+      
       if (!fsSync.existsSync(backupPath)) {
         return res.status(404).json({ success: false, error: '백업 파일을 찾을 수 없습니다.' });
       }
@@ -7287,36 +7295,7 @@ app.delete('/api/backup/:fileName', requireAuth, async (req, res) => {
   }
 });
 
-// 백업 복원 API
-app.post('/api/backup/restore', requireAuth, async (req, res) => {
-  try {
-    // 관리자만 백업 복원 가능
-    if (req.session.userRole !== 'admin') {
-      return res.status(403).json({ error: '관리자 권한이 필요합니다.' });
-    }
-
-    const { fileName } = req.body;
-    if (!fileName) {
-      return res.status(400).json({ error: '백업 파일명이 필요합니다.' });
-    }
-
-    const filePath = path.join(backupManager.backupDir, fileName);
-    
-    logger.info(`백업 복원 시작: ${fileName} (사용자: ${req.session.username})`);
-    const result = await backupManager.restoreBackup(filePath);
-    
-    if (result.success) {
-      logger.info(`백업 복원 완료: ${fileName}`);
-      res.json(result);
-    } else {
-      logger.error(`백업 복원 실패: ${result.error}`);
-      res.status(500).json(result);
-    }
-  } catch (error) {
-    logger.error('백업 복원 오류:', error);
-    res.status(500).json({ error: '백업 복원 중 오류가 발생했습니다.' });
-  }
-});
+// 중복된 백업 복원 API 제거됨 - 첫 번째 API 사용
 
 // 경기 리스트 API - 리스트 조회
 app.get('/api/match-lists', requireAuth, async (req, res) => {
