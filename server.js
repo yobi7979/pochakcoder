@@ -883,6 +883,31 @@ async function restoreMatchTimers() {
     }
 }
 
+// 헬스체크 엔드포인트 (배포 플랫폼용)
+app.get('/health', async (req, res) => {
+  try {
+    // 데이터베이스 연결 확인
+    await sequelize.authenticate();
+    
+    res.status(200).json({ 
+      status: 'OK', 
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      database: 'connected',
+      environment: process.env.NODE_ENV || 'development'
+    });
+  } catch (error) {
+    logger.error('헬스체크 실패:', error);
+    res.status(503).json({ 
+      status: 'ERROR', 
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      database: 'disconnected',
+      error: error.message
+    });
+  }
+});
+
 // 라우트 설정
 app.get('/', requireAuth, (req, res) => {
   res.redirect('/matches');
