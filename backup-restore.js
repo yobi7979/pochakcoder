@@ -16,7 +16,12 @@ const {
 
 class BackupRestoreManager {
   constructor() {
-    this.backupDir = path.join(__dirname, 'backups');
+    // Railway 환경에서는 임시 디렉토리 사용
+    if (process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production') {
+      this.backupDir = path.join(require('os').tmpdir(), 'sportscoder-backups');
+    } else {
+      this.backupDir = path.join(__dirname, 'backups');
+    }
     this.publicDir = path.join(__dirname, 'public');
   }
 
@@ -25,7 +30,13 @@ class BackupRestoreManager {
     try {
       await fs.access(this.backupDir);
     } catch {
-      await fs.mkdir(this.backupDir, { recursive: true });
+      try {
+        await fs.mkdir(this.backupDir, { recursive: true });
+        console.log(`백업 디렉토리 생성 완료: ${this.backupDir}`);
+      } catch (error) {
+        console.error('백업 디렉토리 생성 실패:', error);
+        throw new Error(`백업 디렉토리 생성 실패: ${error.message}`);
+      }
     }
   }
 
@@ -48,7 +59,7 @@ class BackupRestoreManager {
       
       const backupPath = path.join(this.backupDir, backupFileName);
       
-      // 백업 데이터 수집
+      // Railway 환경에서는 데이터베이스만 백업
       const backupData = await this.collectBackupData();
       
       // ZIP 파일 생성
@@ -116,6 +127,13 @@ class BackupRestoreManager {
   // 파일 시스템 수집
   async collectFiles(backupData) {
     const filePaths = [];
+
+    // Railway 환경에서는 파일 시스템 접근이 제한적이므로 데이터베이스만 백업
+    if (process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production') {
+      console.log('Railway 환경: 파일 시스템 백업 건너뛰기');
+      backupData.files = [];
+      return;
+    }
 
     // 사용자 생성 템플릿 파일들 (컨트롤, 모바일 컨트롤, 오버레이 페이지)
     const templates = backupData.database.templates || [];
@@ -226,36 +244,47 @@ class BackupRestoreManager {
   // ZIP 파일 생성
   async createZipFile(zipPath, backupData) {
     return new Promise(async (resolve, reject) => {
-      const output = require('fs').createWriteStream(zipPath);
-      const archive = archiver('zip', { zlib: { level: 9 } });
+      try {
+        const output = require('fs').createWriteStream(zipPath);
+        const archive = archiver('zip', { zlib: { level: 9 } });
 
-      output.on('close', () => {
-        console.log(`백업 파일 생성 완료: ${archive.pointer()} bytes`);
-        resolve();
-      });
+        output.on('close', () => {
+          console.log(`백업 파일 생성 완료: ${archive.pointer()} bytes`);
+          resolve();
+        });
 
-      archive.on('error', (err) => {
-        reject(err);
-      });
+        archive.on('error', (err) => {
+          console.error('ZIP 파일 생성 오류:', err);
+          reject(err);
+        });
 
-      archive.pipe(output);
+        archive.pipe(output);
 
-      // 메타데이터와 데이터베이스 정보를 JSON으로 추가
-      archive.append(JSON.stringify(backupData.metadata, null, 2), { name: 'metadata.json' });
-      archive.append(JSON.stringify(backupData.database, null, 2), { name: 'database.json' });
+        // 메타데이터와 데이터베이스 정보를 JSON으로 추가
+        archive.append(JSON.stringify(backupData.metadata, null, 2), { name: 'metadata.json' });
+        archive.append(JSON.stringify(backupData.database, null, 2), { name: 'database.json' });
 
-      // 파일들 추가
-      for (const fileInfo of backupData.files) {
-        try {
-          await fs.access(fileInfo.source);
-          archive.file(fileInfo.source, { name: `files/${fileInfo.relative}` });
-        } catch {
-          // 파일이 존재하지 않으면 건너뛰기
-          console.warn(`파일을 찾을 수 없습니다: ${fileInfo.source}`);
+        // Railway 환경에서는 파일 시스템 접근이 제한적이므로 파일 추가 건너뛰기
+        if (process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production') {
+          console.log('Railway 환경: 파일 시스템 백업 건너뛰기');
+        } else {
+          // 파일들 추가
+          for (const fileInfo of backupData.files) {
+            try {
+              await fs.access(fileInfo.source);
+              archive.file(fileInfo.source, { name: `files/${fileInfo.relative}` });
+            } catch {
+              // 파일이 존재하지 않으면 건너뛰기
+              console.warn(`파일을 찾을 수 없습니다: ${fileInfo.source}`);
+            }
+          }
         }
-      }
 
-      archive.finalize();
+        archive.finalize();
+      } catch (error) {
+        console.error('ZIP 파일 생성 중 오류:', error);
+        reject(error);
+      }
     });
   }
 
