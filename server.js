@@ -4353,15 +4353,31 @@ server.listen(PORT, HOST, async () => {
     await sequelize.authenticate();
     logger.info('데이터베이스 연결 성공');
     
+    // 데이터베이스 동기화
+    await sequelize.sync({ alter: true });
+    logger.info('데이터베이스 테이블 동기화 완료');
+    
+    // 관리자 사용자 확인 및 생성
+    const { User } = require('./models');
+    const adminUser = await User.findOne({ where: { username: 'admin' } });
+    if (!adminUser) {
+      await User.create({
+        username: 'admin',
+        password: 'admin',
+        role: 'admin'
+      });
+      logger.info('관리자 사용자 생성 완료 (admin/admin)');
+    } else {
+      logger.info('관리자 사용자 이미 존재');
+    }
+    
     // 기본 종목 초기화
     await initializeDefaultSports();
     
     // 기본 설정 초기화
-  await initializeDefaultSettings();
-  
+    await initializeDefaultSettings();
+    
     await restoreMatchTimers();
-    // 데이터베이스 동기화는 이미 수동으로 완료되었으므로 건너뜀
-    // await sequelize.sync({ alter: true });
     
     logger.info('서버 초기화 완료');
   } catch (error) {
