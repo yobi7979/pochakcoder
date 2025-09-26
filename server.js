@@ -508,6 +508,17 @@ app.post('/login', async (req, res) => {
   const { username, password } = req.body;
   
   try {
+    logger.info(`로그인 시도: ${username}`);
+    
+    // 입력값 검증
+    if (!username || !password) {
+      logger.warn('로그인 실패: 사용자명 또는 비밀번호가 비어있음');
+      return res.render('login', { 
+        error: '사용자명과 비밀번호를 입력해주세요.',
+        username: username 
+      });
+    }
+    
     // 데이터베이스에서 사용자 찾기
     const user = await User.findOne({ 
       where: { 
@@ -515,6 +526,8 @@ app.post('/login', async (req, res) => {
         is_active: true 
       } 
     });
+    
+    logger.info(`사용자 조회 결과: ${user ? '존재' : '없음'}`);
     
     if (user && user.password === password) {
       // 로그인 성공
@@ -538,6 +551,9 @@ app.post('/login', async (req, res) => {
     }
   } catch (error) {
     logger.error('로그인 처리 중 오류:', error);
+    logger.error('에러 상세:', error.message);
+    logger.error('스택 트레이스:', error.stack);
+    
     res.render('login', { 
       error: '로그인 처리 중 오류가 발생했습니다.',
       username: username 
