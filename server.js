@@ -4371,7 +4371,37 @@ server.listen(PORT, HOST, async () => {
     logger.info('서버 초기화 완료');
   } catch (error) {
     logger.error('서버 초기화 실패:', error);
-    process.exit(1);
+    logger.error('에러 상세:', error.message);
+    logger.error('스택 트레이스:', error.stack);
+    
+    // PostgreSQL 연결 실패 시 SQLite로 재시도
+    if (error.message.includes('postgres') || error.message.includes('DATABASE_URL')) {
+      logger.info('PostgreSQL 연결 실패, SQLite로 재시도합니다...');
+      try {
+        const { Sequelize } = require('sequelize');
+        const path = require('path');
+        
+        sequelize = new Sequelize({
+          dialect: 'sqlite',
+          storage: path.join(__dirname, 'sports.db'),
+          logging: false
+        });
+        
+        await sequelize.authenticate();
+        logger.info('SQLite 연결 성공');
+        
+        await sequelize.sync({ alter: true });
+        logger.info('SQLite 동기화 완료');
+        
+        await createAdminUserIfNotExists();
+        logger.info('SQLite로 서버 초기화 완료');
+      } catch (sqliteError) {
+        logger.error('SQLite 연결도 실패:', sqliteError);
+        process.exit(1);
+      }
+    } else {
+      process.exit(1);
+    }
   }
   
 // 관리자 사용자 자동 생성 함수

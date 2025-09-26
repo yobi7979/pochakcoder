@@ -7,17 +7,29 @@ let sequelize;
 if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
   // 프로덕션 환경: PostgreSQL 사용
   console.log('PostgreSQL 데이터베이스 연결 시도...');
-  sequelize = new Sequelize(process.env.DATABASE_URL, {
-    dialect: 'postgres',
-    logging: console.log,
-    benchmark: false,
-    dialectOptions: {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false
+  try {
+    sequelize = new Sequelize(process.env.DATABASE_URL, {
+      dialect: 'postgres',
+      logging: console.log,
+      benchmark: false,
+      dialectOptions: {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false
+        }
       }
-    }
-  });
+    });
+    console.log('PostgreSQL 연결 설정 완료');
+  } catch (error) {
+    console.error('PostgreSQL 연결 설정 실패:', error);
+    console.log('SQLite로 대체합니다...');
+    sequelize = new Sequelize({
+      dialect: 'sqlite',
+      storage: path.join(__dirname, '../sports.db'),
+      logging: console.log,
+      benchmark: false
+    });
+  }
 } else {
   // 개발 환경 또는 DATABASE_URL이 없는 경우: SQLite 사용
   console.log('SQLite 데이터베이스 연결 시도...');
