@@ -558,6 +558,10 @@ app.post('/login', async (req, res) => {
     
     logger.info(`사용자 조회 결과: ${user ? '존재' : '없음'}`);
     
+    if (user) {
+      logger.info(`비밀번호 비교: 입력='${password}', 저장='${user.password}', 일치=${user.password === password}`);
+    }
+    
     if (user && user.password === password) {
       // 로그인 성공
       req.session.authenticated = true;
@@ -2315,6 +2319,103 @@ app.post('/api/soccer-match-state-visibility', async (req, res) => {
   }
 });
 
+// 축구 스코어보드 표시 설정 저장 API (팀명, 점수, 시계, 로고만)
+app.post('/api/soccer-scoreboard-visibility', async (req, res) => {
+  try {
+    const { showScoreboard } = req.body;
+    
+    await Settings.upsert({
+      key: 'soccer_scoreboard_visibility',
+      value: showScoreboard.toString()
+    });
+    
+    // 모든 축구 오버레이 페이지에 실시간으로 반영하기 위해 소켓 이벤트 발송
+    io.emit('soccer_scoreboard_visibility_changed', { showScoreboard: showScoreboard });
+    
+    res.json({ 
+      success: true, 
+      message: '스코어보드 표시 설정이 저장되었습니다.'
+    });
+    
+    logger.info(`축구 스코어보드 표시 설정 저장 완료: ${showScoreboard}`);
+  } catch (error) {
+    logger.error('축구 스코어보드 표시 설정 저장 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 축구 스코어보드 디자인 설정 조회 API (스코어보드만 - 팀명, 점수, 시계, 로고)
+app.get('/api/soccer-scoreboard-design', async (req, res) => {
+  try {
+    const settings = await Settings.findAll();
+    const settingsObj = {};
+    
+    settings.forEach(setting => {
+      settingsObj[setting.key] = setting.value;
+    });
+    
+    // 기본값 정의 (스코어보드만)
+    const defaultDesign = {
+      scoreboard: { top: 140, left: 80 },
+      homeLogo: { top: -120, left: 80 },
+      awayLogo: { top: -120, right: 1420 },
+      timer: { marginLeft: 8 }
+    };
+    
+    // 저장된 설정이 있으면 사용, 없으면 기본값 사용
+    const designSettings = {
+      scoreboard: settingsObj.soccer_scoreboard_position ? JSON.parse(settingsObj.soccer_scoreboard_position) : defaultDesign.scoreboard,
+      homeLogo: settingsObj.soccer_home_logo_position ? JSON.parse(settingsObj.soccer_home_logo_position) : defaultDesign.homeLogo,
+      awayLogo: settingsObj.soccer_away_logo_position ? JSON.parse(settingsObj.soccer_away_logo_position) : defaultDesign.awayLogo,
+      timer: settingsObj.soccer_timer_position ? JSON.parse(settingsObj.soccer_timer_position) : defaultDesign.timer
+    };
+    
+    res.json({ success: true, design: designSettings, default: defaultDesign });
+  } catch (error) {
+    logger.error('축구 스코어보드 디자인 설정 조회 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 축구 경기상태 디자인 설정 조회 API (경기상태만 - 전반/후반 텍스트)
+app.get('/api/soccer-matchstate-design', async (req, res) => {
+  try {
+    const settings = await Settings.findAll();
+    const settingsObj = {};
+    
+    settings.forEach(setting => {
+      settingsObj[setting.key] = setting.value;
+    });
+    
+    // 기본값 정의 (경기상태만)
+    const defaultDesign = {
+      matchState: { top: 185, left: 230 }
+    };
+    
+    // 저장된 설정이 있으면 사용, 없으면 기본값 사용
+    const designSettings = {
+      matchState: settingsObj.soccer_match_state_position ? JSON.parse(settingsObj.soccer_match_state_position) : defaultDesign.matchState
+    };
+    
+    res.json({ success: true, design: designSettings, default: defaultDesign });
+  } catch (error) {
+    logger.error('축구 경기상태 디자인 설정 조회 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
 // 팀로고 사용 상태 저장 API (모든 종목 지원)
 app.post('/api/team-logo-visibility', async (req, res) => {
   try {
@@ -2638,6 +2739,23 @@ app.get('/api/extra-box-text/:sportType/:matchId', async (req, res) => {
       message: '서버 오류가 발생했습니다.',
       error: error.message
     });
+  }
+});
+
+// 토너먼트 텍스트 조회 API
+app.get('/api/tournament-text/:matchId', async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const settingKey = `soccer_tournament_text_${matchId}`;
+    
+    const setting = await Settings.findOne({ where: { key: settingKey } });
+    const tournamentText = setting ? setting.value : '';
+    
+    logger.info(`토너먼트 텍스트 조회: ${matchId}, text: ${tournamentText}`);
+    res.json({ tournamentText });
+  } catch (error) {
+    logger.error('토너먼트 텍스트 조회 중 오류 발생:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -2990,6 +3108,15 @@ app.post('/api/update-team-logo-map', async (req, res) => {
       if (logoName) {
         existingData.teamLogoMap[teamName].name = logoName;
       }
+    } else if (teamName && req.body.bgColor) {
+      // 배경색만 업데이트하는 경우
+      if (!existingData.teamLogoMap[teamName]) {
+        existingData.teamLogoMap[teamName] = {};
+      }
+      existingData.teamLogoMap[teamName].bgColor = req.body.bgColor;
+      if (req.body.logoPath) {
+        existingData.teamLogoMap[teamName].path = req.body.logoPath;
+      }
     }
 
     // JSON 파일 저장
@@ -3026,6 +3153,49 @@ io.on('connection', (socket) => {
     });
 
     // join 이벤트 처리 (중복 제거됨)
+
+    // 타이머 동기화 이벤트 처리 (재연결 시)
+    socket.on('timer_sync', async (data) => {
+        try {
+            const { matchId, currentSeconds, isRunning, startTime, pausedTime } = data;
+            logger.info(`타이머 동기화 요청: matchId=${matchId}, currentSeconds=${currentSeconds}, isRunning=${isRunning}`);
+            
+            // 메모리에서 타이머 데이터 업데이트
+            const timerData = {
+                startTime: startTime || Date.now(),
+                pausedTime: pausedTime || currentSeconds || 0,
+                isRunning: isRunning || false,
+                matchId: matchId
+            };
+            
+            matchTimerData.set(matchId, timerData);
+            
+            // DB에도 저장
+            const match = await Match.findByPk(matchId);
+            if (match) {
+                const matchData = { ...match.match_data } || {};
+                matchData.timer_startTime = timerData.startTime;
+                matchData.timer_pausedTime = timerData.pausedTime;
+                matchData.isRunning = timerData.isRunning;
+                
+                await match.update({ match_data: matchData });
+                logger.info(`타이머 동기화 완료: matchId=${matchId}`);
+            }
+            
+            // 다른 클라이언트들에게 동기화된 타이머 상태 전송
+            const roomName = `match_${matchId}`;
+            io.to(roomName).emit('timer_state', {
+                matchId: matchId,
+                currentSeconds: timerData.pausedTime,
+                isRunning: timerData.isRunning,
+                startTime: timerData.startTime,
+                pausedTime: timerData.pausedTime
+            });
+            
+        } catch (error) {
+            logger.error('타이머 동기화 오류:', error);
+        }
+    });
 
     // 타이머 상태 요청 이벤트 처리
     socket.on('request_timer_state', async (data) => {
@@ -3560,26 +3730,63 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 애니메이션 이벤트 처리
-    socket.on('animation', (data) => {
-        const { matchId, section, all } = data;
+    // 스코어보드 토글 이벤트 처리
+    socket.on('toggle_scoreboard', (data) => {
+        const { matchId } = data;
         const roomName = `match_${matchId}`;
         
-        logger.info(`클라이언트 ${socket.id}에서 animation 이벤트 수신: ${JSON.stringify(data)}`);
+        logger.info(`클라이언트 ${socket.id}에서 toggle_scoreboard 이벤트 수신: ${JSON.stringify(data)}`);
         
-        // 해당 방의 모든 클라이언트에게 애니메이션 이벤트 전송
-        io.to(roomName).emit('animation', {
-            section: section,
-            all: all
+        // 해당 방의 모든 클라이언트에게 스코어보드 토글 이벤트 전송
+        io.to(roomName).emit('toggle_scoreboard', {
+            matchId: matchId
         });
         
-        // 응답 전송
-        socket.emit('animation_response', {
-            success: true,
-            message: `애니메이션 이벤트를 방 ${roomName}에 전송함`
+        logger.info(`toggle_scoreboard 이벤트를 방 ${roomName}에 전송함`);
+    });
+    
+    // VS 대진 오버레이 토글 이벤트 처리
+    socket.on('toggle_vs_overlay', (data) => {
+        const { matchId } = data;
+        const roomName = `match_${matchId}`;
+        
+        logger.info(`클라이언트 ${socket.id}에서 toggle_vs_overlay 이벤트 수신: ${JSON.stringify(data)}`);
+        
+        // 해당 방의 모든 클라이언트에게 VS 대진 오버레이 토글 이벤트 전송
+        io.to(roomName).emit('toggle_vs_overlay', {
+            matchId: matchId
         });
         
-        logger.info(`animation 이벤트를 방 ${roomName}에 전송함`);
+        logger.info(`toggle_vs_overlay 이벤트를 방 ${roomName}에 전송함`);
+    });
+    
+    // 토너먼트 텍스트 업데이트 이벤트 처리
+    socket.on('update_tournament_text', async (data) => {
+        const { matchId, tournamentText } = data;
+        const roomName = `match_${matchId}`;
+        
+        logger.info(`클라이언트 ${socket.id}에서 update_tournament_text 이벤트 수신: ${JSON.stringify(data)}`);
+        
+        try {
+            // Settings 테이블에 토너먼트 텍스트 저장
+            const settingKey = `soccer_tournament_text_${matchId}`;
+            await Settings.upsert({
+                key: settingKey,
+                value: tournamentText || '',
+                description: `축구 경기 ${matchId}의 토너먼트 텍스트`
+            });
+            
+            // 해당 방의 모든 클라이언트에게 토너먼트 텍스트 업데이트 이벤트 전송
+            io.to(roomName).emit('tournament_text_updated', {
+                matchId: matchId,
+                tournamentText: tournamentText
+            });
+            
+            logger.info(`토너먼트 텍스트 업데이트 완료: ${matchId}, 텍스트: ${tournamentText}`);
+        } catch (error) {
+            logger.error('토너먼트 텍스트 업데이트 중 오류 발생:', error);
+            socket.emit('tournament_text_updated', { success: false, error: error.message });
+        }
     });
     
     // 팀 컬러 업데이트 이벤트 처리
@@ -3737,26 +3944,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 특수 애니메이션 이벤트 처리
-    socket.on('special_animation', (data) => {
-        const { matchId, type } = data;
-        const roomName = `match_${matchId}`;
-        
-        logger.info(`클라이언트 ${socket.id}에서 special_animation 이벤트 수신: ${JSON.stringify(data)}`);
-        
-        // 해당 방의 모든 클라이언트에게 특수 애니메이션 이벤트 전송
-        io.to(roomName).emit('special_animation', {
-            type: type
-        });
-        
-        // 응답 전송
-        socket.emit('animation_response', {
-            success: true,
-            message: `특수 애니메이션 이벤트를 방 ${roomName}에 전송함`
-        });
-        
-        logger.info(`special_animation 이벤트를 방 ${roomName}에 전송함`);
-    });
+    // 특수 애니메이션 이벤트 제거됨
 
     // 팀 이름 업데이트 이벤트 처리
     socket.on('updateTeamName', async (data) => {
@@ -4037,7 +4225,13 @@ io.on('connection', (socket) => {
             const match = await Match.findByPk(matchId);
             
             if (!match) {
-                socket.emit('error', { message: '경기를 찾을 수 없습니다.' });
+                socket.emit('teamLogoUpdated', {
+                    matchId: data.matchId,
+                    teamType: data.teamType,
+                    teamName: data.teamName,
+                    success: false,
+                    error: '경기를 찾을 수 없습니다.'
+                });
                 return;
             }
 
@@ -4048,31 +4242,48 @@ io.on('connection', (socket) => {
             
             await match.update({ match_data: matchData });
 
-            // 2. 팀별 로고 매핑 정보 업데이트
-            const logoFileName = logoPath ? decodeURIComponent(logoPath.split('/').pop()) : null;
-            
-            const logoDir = path.join(__dirname, 'public/TEAMLOGO/SOCCER');
-            const teamLogoMapPath = path.join(logoDir, 'team_logo_map.json');
-            
-            // 기존 매핑 정보 읽기
-            let teamLogoMap = {};
-            if (fsSync.existsSync(teamLogoMapPath)) {
-                teamLogoMap = JSON.parse(fsSync.readFileSync(teamLogoMapPath, 'utf8'));
+            // 2. 팀별 로고 매핑 정보 업데이트 (안전한 파일 처리)
+            try {
+                const logoFileName = logoPath ? decodeURIComponent(logoPath.split('/').pop()) : null;
+                
+                const logoDir = path.join(__dirname, 'public/TEAMLOGO/SOCCER');
+                const teamLogoMapPath = path.join(logoDir, 'team_logo_map.json');
+                
+                // 디렉토리가 없으면 생성
+                if (!fsSync.existsSync(logoDir)) {
+                    fsSync.mkdirSync(logoDir, { recursive: true });
+                    logger.info(`디렉토리 생성: ${logoDir}`);
+                }
+                
+                // 기존 매핑 정보 읽기
+                let teamLogoMap = {};
+                if (fsSync.existsSync(teamLogoMapPath)) {
+                    try {
+                        const fileContent = fsSync.readFileSync(teamLogoMapPath, 'utf8');
+                        teamLogoMap = JSON.parse(fileContent);
+                    } catch (parseError) {
+                        logger.warn('기존 team_logo_map.json 파싱 오류, 새로 생성합니다:', parseError.message);
+                        teamLogoMap = {};
+                    }
+                }
+                
+                // 새 매핑 정보 추가
+                teamLogoMap[teamName] = {
+                    path: logoPath,
+                    bgColor: logoBgColor,
+                    matchId: matchId,
+                    teamType: teamType,
+                    lastUpdated: new Date().toISOString()
+                };
+                
+                // 파일로 저장 (안전한 처리)
+                await fs.writeFile(teamLogoMapPath, JSON.stringify(teamLogoMap, null, 2), 'utf8');
+                
+                logger.info(`팀 로고 매핑 정보 업데이트: ${teamName} => ${logoFileName}`);
+            } catch (fileError) {
+                logger.error('팀 로고 매핑 파일 처리 오류:', fileError);
+                // 파일 처리 오류는 무시하고 계속 진행
             }
-            
-            // 새 매핑 정보 추가
-            teamLogoMap[teamName] = {
-                path: logoPath,
-                bgColor: logoBgColor,
-                matchId: matchId,
-                teamType: teamType,
-                lastUpdated: new Date().toISOString()
-            };
-            
-            // 파일로 저장
-            await fs.writeFile(teamLogoMapPath, JSON.stringify(teamLogoMap, null, 2), 'utf8');
-            
-            logger.info(`팀 로고 매핑 정보 업데이트: ${teamName} => ${logoFileName}`);
 
             // 3. 소켓 이벤트 발생
             io.to(roomName).emit('teamLogoUpdated', {
@@ -4085,7 +4296,13 @@ io.on('connection', (socket) => {
             });
         } catch (error) {
             logger.error('팀 로고 업데이트 오류:', error);
-            socket.emit('error', { message: '서버 오류가 발생했습니다.' });
+            socket.emit('teamLogoUpdated', {
+                matchId: data.matchId,
+                teamType: data.teamType,
+                teamName: data.teamName,
+                success: false,
+                error: error.message
+            });
         }
     });
 
@@ -4457,15 +4674,26 @@ server.listen(PORT, HOST, async () => {
   logger.info(`환경: ${process.env.NODE_ENV || 'development'}`);
   logger.info(`Railway 환경: ${process.env.RAILWAY_ENVIRONMENT ? 'Yes' : 'No'}`);
   logger.info(`데이터베이스: ${process.env.DATABASE_URL ? 'PostgreSQL' : 'SQLite'}`);
+  logger.info(`로컬 개발 모드: ${process.env.LOCAL_DEV === 'true' ? 'Yes' : 'No'}`);
   
   try {
     // 데이터베이스 연결 테스트
     await sequelize.authenticate();
     logger.info('데이터베이스 연결 성공');
     
-    // 데이터베이스 동기화
-    await sequelize.sync({ alter: true });
-    logger.info('데이터베이스 동기화 완료');
+    // 데이터베이스 동기화 (로컬 개발 모드에 따라 다르게 설정)
+    try {
+      const syncOptions = process.env.LOCAL_DEV === 'true' 
+        ? { alter: false, force: false }  // 로컬 개발 모드: 최소한의 변경
+        : { alter: true, force: false };  // 프로덕션 모드: 스키마 업데이트 허용
+      
+      await sequelize.sync(syncOptions);
+      logger.info('데이터베이스 동기화 완료');
+    } catch (syncError) {
+      logger.warn('데이터베이스 동기화 중 경고 발생:', syncError.message);
+      // 동기화 실패 시에도 서버는 계속 실행
+      logger.info('기존 데이터베이스 구조를 유지합니다.');
+    }
     
     // 세션 테이블 생성
     await createSessionTable();
@@ -4503,8 +4731,13 @@ server.listen(PORT, HOST, async () => {
         await sequelize.authenticate();
         logger.info('SQLite 연결 성공');
         
-        await sequelize.sync({ alter: true });
-        logger.info('SQLite 동기화 완료');
+        try {
+          await sequelize.sync({ alter: true, force: false });
+          logger.info('SQLite 동기화 완료');
+        } catch (syncError) {
+          logger.warn('SQLite 동기화 중 경고 발생:', syncError.message);
+          logger.info('기존 SQLite 데이터베이스 구조를 유지합니다.');
+        }
         
         await createAdminUserIfNotExists();
         logger.info('SQLite로 서버 초기화 완료');
@@ -5642,9 +5875,21 @@ app.get('/:sport/:id/control', async (req, res) => {
       }
     }
     
-    // URL 생성
-    const mobileUrl = `http://localhost:3000/${req.params.sport}/${req.params.id}/control-mobile`;
-    const overlayUrl = `http://localhost:3000/${req.params.sport}/${req.params.id}/overlay`;
+    // URL 생성 (Railway 환경 대응)
+    let baseUrl;
+    if (process.env.RAILWAY_PUBLIC_DOMAIN) {
+      baseUrl = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
+    } else if (process.env.RAILWAY_STATIC_URL) {
+      baseUrl = process.env.RAILWAY_STATIC_URL;
+    } else if (req.get('host')) {
+      const protocol = req.secure ? 'https' : 'http';
+      baseUrl = `${protocol}://${req.get('host')}`;
+    } else {
+      baseUrl = 'http://localhost:3000';
+    }
+    
+    const mobileUrl = `${baseUrl}/${req.params.sport}/${req.params.id}/control-mobile`;
+    const overlayUrl = `${baseUrl}/${req.params.sport}/${req.params.id}/overlay`;
     
     // 해당 스포츠의 컨트롤 템플릿 렌더링
     res.render(`${req.params.sport}-control`, { 
@@ -5730,9 +5975,21 @@ app.get('/:sport/:id/control-mobile', async (req, res) => {
     // 기본 팀 컬러 가져오기
     const defaultColors = await getDefaultTeamColors();
     
-    // URL 생성
-    const mobileUrl = `http://localhost:3000/${req.params.sport}/${req.params.id}/control-mobile`;
-    const overlayUrl = `http://localhost:3000/${req.params.sport}/${req.params.id}/overlay`;
+    // URL 생성 (Railway 환경 대응)
+    let baseUrl;
+    if (process.env.RAILWAY_PUBLIC_DOMAIN) {
+      baseUrl = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
+    } else if (process.env.RAILWAY_STATIC_URL) {
+      baseUrl = process.env.RAILWAY_STATIC_URL;
+    } else if (req.get('host')) {
+      const protocol = req.secure ? 'https' : 'http';
+      baseUrl = `${protocol}://${req.get('host')}`;
+    } else {
+      baseUrl = 'http://localhost:3000';
+    }
+    
+    const mobileUrl = `${baseUrl}/${req.params.sport}/${req.params.id}/control-mobile`;
+    const overlayUrl = `${baseUrl}/${req.params.sport}/${req.params.id}/overlay`;
     
     // 해당 스포츠의 모바일 컨트롤 템플릿 렌더링
     res.render(`${req.params.sport}-control-mobile`, { 

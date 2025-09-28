@@ -401,43 +401,26 @@
             padding: 2px 0;
         }
         
-        .animation-controls {
+        /* 스코어보드 컨트롤 스타일 */
+        .simple-controls {
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 10px;
             max-width: 300px;
             margin: 0 auto;
         }
         
-        .animation-btn-row {
+        .simple-controls button {
             width: 100%;
-        }
-        
-        .animation-btn-row button {
-            width: 100%;
-            text-align: left;
-            padding: 8px 12px;
+            padding: 10px 15px;
             border-radius: 8px;
             transition: all 0.2s ease;
             font-size: 0.9rem;
         }
         
-        .animation-btn-row button:hover {
-            transform: translateX(5px);
-        }
-        
-        .animation-btn-row button i {
-            margin-right: 8px;
-        }
-        
-        .animation-btn-row button.active {
-            background-color: #dc3545;
-            border-color: #dc3545;
-        }
-        
-        .animation-btn-row button.active:hover {
-            background-color: #c82333;
-            border-color: #bd2130;
+        .simple-controls button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
 
         .lineup-section {
@@ -1052,43 +1035,18 @@
 
             <div class="col-6">
                 <div class="stats-section">
-                    <div class="team-name">애니메이션 컨트롤</div>
-                    <div class="animation-controls">
-                        <div class="animation-btn-row">
-                            <button id="animate-scoreboard" class="btn btn-primary w-100 mb-2">
-                                <i class="bi bi-play-fill"></i> 스코어보드 In&Out
-                            </button>
+                    <div class="team-name">스코어보드 컨트롤</div>
+                    <div class="simple-controls">
+                        <div class="mb-3">
+                            <label for="tournament-text" class="form-label">토너먼트 제목</label>
+                            <input type="text" class="form-control" id="tournament-text" placeholder="토너먼트 제목을 입력하세요">
                         </div>
-                        <div class="animation-btn-row">
-                            <button id="animate-match-state" class="btn btn-danger w-100 mb-2">
-                                <i class="bi bi-play-fill"></i> 경기상태 In&Out
-                            </button>
-                        </div>
-                        <div class="animation-btn-row">
-                            <button id="animate-home-team" class="btn btn-primary w-100 mb-2">
-                                <i class="bi bi-play-fill"></i> 홈팀 라인업 In&Out
-                            </button>
-                        </div>
-                        <div class="animation-btn-row">
-                            <button id="animate-away-team" class="btn btn-primary w-100 mb-2">
-                                <i class="bi bi-play-fill"></i> 원정팀 라인업 In&Out
-                            </button>
-                        </div>
-                        <div class="animation-btn-row">
-                            <button id="animate-match-time" class="btn btn-primary w-100 mb-2">
-                                <i class="bi bi-play-fill"></i> 경기시간 In&Out
-                            </button>
-                        </div>
-                        <div class="animation-btn-row">
-                            <button id="animate-stats" class="btn btn-primary w-100 mb-2">
-                                <i class="bi bi-play-fill"></i> 통계 In&Out
-                            </button>
-                        </div>
-                        <div class="animation-btn-row">
-                            <button id="animate-all" class="btn btn-success w-100">
-                                <i class="bi bi-play-fill"></i> 전체 In&Out
-                            </button>
-                        </div>
+                        <button id="toggle-scoreboard" class="btn btn-primary w-100 mb-2">
+                            <i class="bi bi-eye"></i> 스코어보드 전체 보이기/숨기기
+                        </button>
+                        <button id="toggle-vs-overlay" class="btn btn-info w-100 mb-2">
+                            <i class="bi bi-people"></i> VS 대진 오버레이 보이기/숨기기
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1349,8 +1307,21 @@
                 console.log('방 참가 확인:', data);
             });
             
-            // 연결 시 현재 타이머 상태 요청
+            // 연결 시 현재 타이머 상태 요청 (재연결 시 정확한 동기화)
+            console.log('=== 재연결 시 타이머 상태 요청 ===');
             socket.emit('request_timer_state', { matchId: matchId });
+            
+            // 재연결 시 현재 로컬 타이머 상태도 서버에 전송
+            if (timerState.isRunning) {
+                console.log('=== 재연결 시 로컬 타이머 상태 전송 ===');
+                socket.emit('timer_sync', {
+                    matchId: matchId,
+                    currentSeconds: timerState.currentSeconds,
+                    isRunning: timerState.isRunning,
+                    startTime: timerState.startTime,
+                    pausedTime: timerState.pausedTime
+                });
+            }
         });
 
         socket.on('disconnect', () => {
@@ -1362,6 +1333,38 @@
             if (timerState.isRunning) {
                 startLocalTimer();
             }
+        });
+
+        // 소켓 오류 이벤트 처리
+        socket.on('error', (error) => {
+            console.error('소켓 오류 발생:', error);
+            showToast('서버 연결에 문제가 발생했습니다.', 'error');
+        });
+
+        // 소켓 연결 상태 모니터링
+        let connectionCheckInterval;
+        
+        function startConnectionMonitoring() {
+            connectionCheckInterval = setInterval(() => {
+                if (!socket.connected) {
+                    console.log('=== 소켓 연결 끊김 감지, 재연결 시도 ===');
+                    socket.connect();
+                }
+            }, 5000); // 5초마다 체크
+        }
+        
+        function stopConnectionMonitoring() {
+            if (connectionCheckInterval) {
+                clearInterval(connectionCheckInterval);
+            }
+        }
+        
+        // 연결 모니터링 시작
+        startConnectionMonitoring();
+        
+        // 페이지 언로드 시 모니터링 중지
+        window.addEventListener('beforeunload', () => {
+            stopConnectionMonitoring();
         });
 
         // 페이지 언로드 시 방에서 나가기
@@ -1906,62 +1909,164 @@
                 reconnectedTime ? reconnectedTime.toLocaleTimeString() : '-';
         }
 
-        // 애니메이션 컨트롤 이벤트 리스너
-        document.getElementById('animate-scoreboard').addEventListener('click', function() {
-            toggleButtonState(this);
-            socket.emit('animation', {
-                matchId: matchId,
-                section: 'scoreboard'
+        // 스코어보드 토글 컨트롤
+        document.getElementById('toggle-scoreboard').addEventListener('click', function() {
+            socket.emit('toggle_scoreboard', {
+                matchId: matchId
             });
         });
-
-        document.getElementById('animate-match-state').addEventListener('click', function() {
-            toggleButtonState(this);
-            socket.emit('animation', {
-                matchId: matchId,
-                section: 'matchState'
+        
+        // VS 대진 오버레이 토글 컨트롤
+        document.getElementById('toggle-vs-overlay').addEventListener('click', function() {
+            socket.emit('toggle_vs_overlay', {
+                matchId: matchId
             });
         });
-
-        document.getElementById('animate-home-team').addEventListener('click', function() {
-            toggleButtonState(this);
-            socket.emit('animation', {
+        
+        
+        // 토너먼트 텍스트 저장
+        document.getElementById('tournament-text').addEventListener('input', function() {
+            const tournamentText = this.value;
+            socket.emit('update_tournament_text', {
                 matchId: matchId,
-                section: 'homeTeam'
+                tournamentText: tournamentText
             });
         });
-
-        document.getElementById('animate-away-team').addEventListener('click', function() {
-            toggleButtonState(this);
-            socket.emit('animation', {
-                matchId: matchId,
-                section: 'awayTeam'
-            });
-        });
-
-        document.getElementById('animate-match-time').addEventListener('click', function() {
-            toggleButtonState(this);
-            socket.emit('animation', {
-                matchId: matchId,
-                section: 'matchTime'
-            });
-        });
-
-        document.getElementById('animate-stats').addEventListener('click', function() {
-            toggleButtonState(this);
-            socket.emit('animation', {
-                matchId: matchId,
-                section: 'stats'
-            });
-        });
-
-        document.getElementById('animate-all').addEventListener('click', function() {
-            toggleButtonState(this);
-            socket.emit('animation', {
-                matchId: matchId,
-                section: 'all'
-            });
-        });
+        
+        // 기존 토너먼트 텍스트 로드
+        async function loadTournamentText() {
+            try {
+                const response = await fetch(`/api/tournament-text/${matchId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.tournamentText) {
+                        document.getElementById('tournament-text').value = data.tournamentText;
+                    }
+                }
+            } catch (error) {
+                console.error('토너먼트 텍스트 로드 실패:', error);
+            }
+        }
+        
+        // 페이지 로드 시 토너먼트 텍스트 로드
+        loadTournamentText();
+        
+        // 페이지 로드 시 팀 로고 정보 로드 (DOMContentLoaded에서 처리됨)
+        // loadTeamLogoInfo();
+        
+        // 팀 로고 정보 로드 함수
+        async function loadTeamLogoInfo() {
+            try {
+                console.log('팀 로고 정보 로드 시작');
+                
+                // 1. 경기별 팀 로고 정보 로드 (우선순위)
+                const matchResponse = await fetch(`/api/match/${matchId}`);
+                if (matchResponse.ok) {
+                    const matchData = await matchResponse.json();
+                    console.log('경기 데이터 로드 성공:', matchData);
+                    
+                    if (matchData && matchData.match_data) {
+                        const matchDataObj = matchData.match_data;
+                        
+                        // 홈팀 로고 정보
+                        if (matchDataObj.home_team_logo || matchDataObj.home_team_bg_color) {
+                            updateTeamLogoPreview('home', matchDataObj.home_team_logo, matchDataObj.home_team_bg_color);
+                            
+                            const homeBgColorInput = document.getElementById('home-logo-bg-color');
+                            if (homeBgColorInput && matchDataObj.home_team_bg_color) {
+                                homeBgColorInput.value = matchDataObj.home_team_bg_color;
+                            }
+                            
+                            console.log('홈팀 로고 정보 로드 (경기 데이터):', {
+                                logo: matchDataObj.home_team_logo,
+                                bgColor: matchDataObj.home_team_bg_color
+                            });
+                        }
+                        
+                        // 어웨이팀 로고 정보
+                        if (matchDataObj.away_team_logo || matchDataObj.away_team_bg_color) {
+                            updateTeamLogoPreview('away', matchDataObj.away_team_logo, matchDataObj.away_team_bg_color);
+                            
+                            const awayBgColorInput = document.getElementById('away-logo-bg-color');
+                            if (awayBgColorInput && matchDataObj.away_team_bg_color) {
+                                awayBgColorInput.value = matchDataObj.away_team_bg_color;
+                            }
+                            
+                            console.log('어웨이팀 로고 정보 로드 (경기 데이터):', {
+                                logo: matchDataObj.away_team_logo,
+                                bgColor: matchDataObj.away_team_bg_color
+                            });
+                        }
+                    }
+                }
+                
+                // 2. 팀 로고 맵 정보 로드 (백업)
+                const response = await fetch('/api/team-logo-map/SOCCER');
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('팀 로고 맵 로드 성공:', data);
+                    
+                    if (data && data.teamLogoMap) {
+                        const homeTeamName = '<%= match.home_team %>';
+                        const awayTeamName = '<%= match.away_team %>';
+                        
+                        // 홈팀 로고 정보 로드 (경기 데이터에 없을 때만)
+                        if (data.teamLogoMap[homeTeamName]) {
+                            const homeLogoInfo = data.teamLogoMap[homeTeamName];
+                            
+                            // 경기 데이터에 홈팀 로고 정보가 없을 때만 적용
+                            const homeBgColorInput = document.getElementById('home-logo-bg-color');
+                            if (homeBgColorInput && !homeBgColorInput.value) {
+                                updateTeamLogoPreview('home', homeLogoInfo.path, homeLogoInfo.bgColor);
+                                homeBgColorInput.value = homeLogoInfo.bgColor;
+                                console.log('홈팀 로고 정보 로드 (팀 맵):', homeLogoInfo);
+                            }
+                        }
+                        
+                        // 어웨이팀 로고 정보 로드 (경기 데이터에 없을 때만)
+                        if (data.teamLogoMap[awayTeamName]) {
+                            const awayLogoInfo = data.teamLogoMap[awayTeamName];
+                            
+                            // 경기 데이터에 어웨이팀 로고 정보가 없을 때만 적용
+                            const awayBgColorInput = document.getElementById('away-logo-bg-color');
+                            if (awayBgColorInput && !awayBgColorInput.value) {
+                                updateTeamLogoPreview('away', awayLogoInfo.path, awayLogoInfo.bgColor);
+                                awayBgColorInput.value = awayLogoInfo.bgColor;
+                                console.log('어웨이팀 로고 정보 로드 (팀 맵):', awayLogoInfo);
+                            }
+                        }
+                    }
+                } else {
+                    console.log('팀 로고 맵 로드 실패');
+                }
+            } catch (error) {
+                console.error('팀 로고 정보 로드 중 오류 발생:', error);
+            }
+        }
+        
+        // 팀 로고 미리보기 업데이트 함수
+        function updateTeamLogoPreview(teamType, logoPath, bgColor) {
+            const previewId = teamType === 'home' ? 'home-logo-preview' : 'away-logo-preview';
+            const preview = document.getElementById(previewId);
+            
+            if (preview && logoPath) {
+                // 기존 내용 제거
+                preview.innerHTML = '';
+                
+                // 로고 이미지 추가
+                const img = document.createElement('img');
+                img.src = logoPath;
+                img.alt = `${teamType}팀 로고`;
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'contain';
+                
+                preview.appendChild(img);
+                preview.style.backgroundColor = bgColor || '#ffffff';
+                
+                console.log(`${teamType}팀 로고 미리보기 업데이트:`, logoPath, bgColor);
+            }
+        }
 
         // 애니메이션 응답 처리
         socket.on('animation_response', function(data) {
@@ -1974,18 +2079,7 @@
         });
 
         // 버튼 상태 토글 함수
-        function toggleButtonState(button) {
-            const isActive = button.classList.contains('active');
-            button.classList.toggle('active');
-            
-            // 통계 버튼인 경우 match-info 섹션 토글
-            if (button.id === 'animate-stats') {
-                const matchInfo = document.querySelector('.match-info');
-                if (matchInfo) {
-                    matchInfo.classList.toggle('visible');
-                }
-            }
-        }
+        // 기존 toggleButtonState 함수 제거됨
 
         // 팀 컬러 저장 버튼 이벤트
         document.querySelectorAll('.save-team-color').forEach(button => {
@@ -2171,6 +2265,10 @@
         // 라인업에 없는 남은 선수들 저장
         async function saveRemainingPlayers(teamType) {
             try {
+                // 라인업 API가 아직 구현되지 않았으므로 기본값으로 처리
+                console.log('라인업 저장: API가 구현되지 않아 기본값으로 처리');
+                return;
+                
                 // 현재 라인업 정보 가져오기
                 const response = await fetch(`/api/load-lineup/${matchId}`);
                 const data = await response.json();
@@ -2540,15 +2638,6 @@
         async function saveHomeLogoBgColor() {
             const color = document.getElementById('home-logo-bg-color').value;
             try {
-                // 1. 기존 JSON 파일 읽기
-                const logoMapResponse = await fetch('/api/team-logo-map/SOCCER');
-                let teamLogoMap = {};
-                
-                if (logoMapResponse.ok) {
-                    const data = await logoMapResponse.json();
-                    teamLogoMap = data.teamLogoMap || {};
-                }
-                
                 const teamName = '<%= match.home_team %>';
                 const matchId = '<%= match.id %>';
                 
@@ -2556,40 +2645,14 @@
                 console.log('팀명:', teamName);
                 console.log('배경색:', color);
                 
-                // 2. 팀 로고 정보 업데이트
+                // 현재 로고 경로 가져오기
                 const preview = document.getElementById('home-logo-preview');
-                // 홈팀의 현재 로고 경로를 정확히 가져오기
                 let currentLogoPath = '';
                 if (preview && preview.querySelector('img')) {
                     currentLogoPath = preview.querySelector('img').src;
-                } else if (teamLogoMap[teamName] && teamLogoMap[teamName].path) {
-                    // 기존 저장된 경로가 있으면 사용
-                    currentLogoPath = teamLogoMap[teamName].path;
                 }
                 
-                // 홈팀 정보만 업데이트 (다른 팀 정보 보호)
-                if (teamLogoMap[teamName]) {
-                    // 기존 경로가 있으면 유지, 없으면 현재 경로 사용
-                    const existingPath = teamLogoMap[teamName].path || currentLogoPath;
-                    teamLogoMap[teamName] = {
-                        ...teamLogoMap[teamName], // 기존 정보 유지
-                        bgColor: color,
-                        path: existingPath,
-                        matchId: matchId,
-                        teamType: 'home',
-                        lastUpdated: new Date().toISOString()
-                    };
-                } else {
-                    teamLogoMap[teamName] = {
-                        path: currentLogoPath,
-                        bgColor: color,
-                        matchId: matchId,
-                        teamType: 'home',
-                        lastUpdated: new Date().toISOString()
-                    };
-                }
-                
-                // 3. JSON 파일 업데이트
+                // 개별 팀 정보만 업데이트
                 const updateResponse = await fetch('/api/update-team-logo-map', {
                     method: 'POST',
                     headers: {
@@ -2597,7 +2660,9 @@
                     },
                     body: JSON.stringify({
                         sportType: 'SOCCER',
-                        teamLogoMap: teamLogoMap
+                        teamName: teamName,
+                        logoPath: currentLogoPath,
+                        bgColor: color
                     })
                 });
                 
@@ -2605,12 +2670,12 @@
                     throw new Error('로고 배경색 업데이트 실패');
                 }
 
-                // 4. UI 업데이트
+                // UI 업데이트
                 if (preview) {
                     preview.style.backgroundColor = color;
                 }
                 
-                // 5. 소켓으로 로고 배경색 업데이트
+                // 소켓으로 로고 배경색 업데이트
                 socket.emit('teamLogoUpdated', {
                     matchId: matchId,
                     teamType: 'home',
@@ -2622,22 +2687,13 @@
                 showToast('배경색이 성공적으로 저장되었습니다', 'success');
             } catch (error) {
                 console.error('배경색 저장 실패:', error);
-                showToast('배경색 저장에 실패했습니다', 'error');
+                showToast(`배경색 저장에 실패했습니다: ${error.message || '알 수 없는 오류'}`, 'error');
             }
         }
 
         async function saveAwayLogoBgColor() {
             const color = document.getElementById('away-logo-bg-color').value;
             try {
-                // 1. 기존 JSON 파일 읽기
-                const logoMapResponse = await fetch('/api/team-logo-map/SOCCER');
-                let teamLogoMap = {};
-                
-                if (logoMapResponse.ok) {
-                    const data = await logoMapResponse.json();
-                    teamLogoMap = data.teamLogoMap || {};
-                }
-                
                 const teamName = '<%= match.away_team %>';
                 const matchId = '<%= match.id %>';
                 
@@ -2645,40 +2701,14 @@
                 console.log('팀명:', teamName);
                 console.log('배경색:', color);
                 
-                // 2. 팀 로고 정보 업데이트
+                // 현재 로고 경로 가져오기
                 const preview = document.getElementById('away-logo-preview');
-                // 원정팀의 현재 로고 경로를 정확히 가져오기
                 let currentLogoPath = '';
                 if (preview && preview.querySelector('img')) {
                     currentLogoPath = preview.querySelector('img').src;
-                } else if (teamLogoMap[teamName] && teamLogoMap[teamName].path) {
-                    // 기존 저장된 경로가 있으면 사용
-                    currentLogoPath = teamLogoMap[teamName].path;
                 }
                 
-                // 원정팀 정보만 업데이트 (다른 팀 정보 보호)
-                if (teamLogoMap[teamName]) {
-                    // 기존 경로가 있으면 유지, 없으면 현재 경로 사용
-                    const existingPath = teamLogoMap[teamName].path || currentLogoPath;
-                    teamLogoMap[teamName] = {
-                        ...teamLogoMap[teamName], // 기존 정보 유지
-                        bgColor: color,
-                        path: existingPath,
-                        matchId: matchId,
-                        teamType: 'away',
-                        lastUpdated: new Date().toISOString()
-                    };
-                } else {
-                    teamLogoMap[teamName] = {
-                        path: currentLogoPath,
-                        bgColor: color,
-                        matchId: matchId,
-                        teamType: 'away',
-                        lastUpdated: new Date().toISOString()
-                    };
-                }
-                
-                // 3. JSON 파일 업데이트
+                // 개별 팀 정보만 업데이트
                 const updateResponse = await fetch('/api/update-team-logo-map', {
                     method: 'POST',
                     headers: {
@@ -2686,7 +2716,9 @@
                     },
                     body: JSON.stringify({
                         sportType: 'SOCCER',
-                        teamLogoMap: teamLogoMap
+                        teamName: teamName,
+                        logoPath: currentLogoPath,
+                        bgColor: color
                     })
                 });
                 
@@ -2694,12 +2726,12 @@
                     throw new Error('로고 배경색 업데이트 실패');
                 }
 
-                // 4. UI 업데이트
+                // UI 업데이트
                 if (preview) {
                     preview.style.backgroundColor = color;
                 }
                 
-                // 5. 소켓으로 로고 배경색 업데이트
+                // 소켓으로 로고 배경색 업데이트
                 socket.emit('teamLogoUpdated', {
                     matchId: matchId,
                     teamType: 'away',
@@ -2711,7 +2743,7 @@
                 showToast('배경색이 성공적으로 저장되었습니다', 'success');
             } catch (error) {
                 console.error('배경색 저장 실패:', error);
-                showToast('배경색 저장에 실패했습니다', 'error');
+                showToast(`배경색 저장에 실패했습니다: ${error.message || '알 수 없는 오류'}`, 'error');
             }
         }
         
@@ -3047,6 +3079,10 @@
         // 페이지 로드 시 저장된 라인업 불러오기
         async function loadSavedLineup() {
             try {
+                // 라인업 API가 아직 구현되지 않았으므로 기본값으로 초기화
+                console.log('라인업 로드: API가 구현되지 않아 기본값으로 초기화');
+                return;
+                
                 const response = await fetch(`/api/load-lineup/${matchId}`);
                 const data = await response.json();
                 
@@ -3343,8 +3379,74 @@
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('DOM이 로드되었습니다.');
             
-            // 팀 로고 정보 가져오기
+            // 팀 로고 정보 가져오기 (DB 우선 참조)
             try {
+                console.log('=== DOMContentLoaded: 팀 로고 정보 로드 시작 (DB 우선) ===');
+                
+                // 1. 경기별 팀 로고 정보 로드 (우선순위)
+                try {
+                    const matchResponse = await fetch(`/api/match/${matchId}`);
+                    if (matchResponse.ok) {
+                        const matchData = await matchResponse.json();
+                        console.log('경기 데이터 로드 성공:', matchData);
+                        
+                        if (matchData && matchData.match_data) {
+                            const matchDataObj = matchData.match_data;
+                            
+                            // 홈팀 로고 정보 (경기별 데이터 우선)
+                            if (matchDataObj.home_team_logo || matchDataObj.home_team_bg_color) {
+                                const homeLogoPreview = document.getElementById('home-logo-preview');
+                                const homeLogoBgColor = document.getElementById('home-logo-bg-color');
+                                
+                                if (homeLogoPreview) {
+                                    homeLogoPreview.style.backgroundColor = matchDataObj.home_team_bg_color || '#ffffff';
+                                    if (matchDataObj.home_team_logo) {
+                                        homeLogoPreview.innerHTML = `<img src="${matchDataObj.home_team_logo}" alt="홈팀 로고" style="width: 100%; height: 100%; object-fit: contain;">`;
+                                    } else {
+                                        homeLogoPreview.innerHTML = '<div class="no-logo">로고 없음</div>';
+                                    }
+                                }
+                                
+                                if (homeLogoBgColor) {
+                                    homeLogoBgColor.value = matchDataObj.home_team_bg_color || '#ffffff';
+                                }
+                                
+                                console.log('홈팀 로고 정보 로드 (경기 데이터):', {
+                                    logo: matchDataObj.home_team_logo,
+                                    bgColor: matchDataObj.home_team_bg_color
+                                });
+                            }
+                            
+                            // 어웨이팀 로고 정보 (경기별 데이터 우선)
+                            if (matchDataObj.away_team_logo || matchDataObj.away_team_bg_color) {
+                                const awayLogoPreview = document.getElementById('away-logo-preview');
+                                const awayLogoBgColor = document.getElementById('away-logo-bg-color');
+                                
+                                if (awayLogoPreview) {
+                                    awayLogoPreview.style.backgroundColor = matchDataObj.away_team_bg_color || '#ffffff';
+                                    if (matchDataObj.away_team_logo) {
+                                        awayLogoPreview.innerHTML = `<img src="${matchDataObj.away_team_logo}" alt="어웨이팀 로고" style="width: 100%; height: 100%; object-fit: contain;">`;
+                                    } else {
+                                        awayLogoPreview.innerHTML = '<div class="no-logo">로고 없음</div>';
+                                    }
+                                }
+                                
+                                if (awayLogoBgColor) {
+                                    awayLogoBgColor.value = matchDataObj.away_team_bg_color || '#ffffff';
+                                }
+                                
+                                console.log('어웨이팀 로고 정보 로드 (경기 데이터):', {
+                                    logo: matchDataObj.away_team_logo,
+                                    bgColor: matchDataObj.away_team_bg_color
+                                });
+                            }
+                        }
+                    }
+                } catch (matchError) {
+                    console.log('경기 데이터 로드 실패, 팀 맵 데이터로 대체:', matchError);
+                }
+                
+                // 2. 팀 로고 맵 정보 로드 (백업)
                 const response = await fetch('/api/team-logo-map/SOCCER');
                 const teamLogoMap = await response.json();
                 console.log('팀 로고맵 로드:', teamLogoMap);
@@ -3358,14 +3460,13 @@
                 console.log('원정팀명:', awayTeamName);
                 console.log('팀명이 같은가?', homeTeamName === awayTeamName);
                 
-                // 홈팀 로고 설정 (로고가 없어도 배경색은 적용)
+                // 홈팀 로고 설정 (경기 데이터에 없을 때만)
                 const homeLogoPreview = document.getElementById('home-logo-preview');
                 const homeLogoBgColor = document.getElementById('home-logo-bg-color');
                 
-                if (teamLogoMap.teamLogoMap && teamLogoMap.teamLogoMap[homeTeamName]) {
-                    console.log('홈팀 로고 정보:', teamLogoMap.teamLogoMap[homeTeamName]);
+                if (teamLogoMap.teamLogoMap && teamLogoMap.teamLogoMap[homeTeamName] && (!homeLogoBgColor || !homeLogoBgColor.value)) {
+                    console.log('홈팀 로고 정보 로드 (팀 맵):', teamLogoMap.teamLogoMap[homeTeamName]);
                     
-                    // 홈팀 로고 미리보기 업데이트
                     if (homeLogoPreview) {
                         homeLogoPreview.style.backgroundColor = teamLogoMap.teamLogoMap[homeTeamName].bgColor || '#ffffff';
                         if (teamLogoMap.teamLogoMap[homeTeamName].path) {
@@ -3375,11 +3476,10 @@
                         }
                     }
                     
-                    // 홈팀 로고 배경색 입력 필드 업데이트
                     if (homeLogoBgColor) {
                         homeLogoBgColor.value = teamLogoMap.teamLogoMap[homeTeamName].bgColor || '#ffffff';
                     }
-                } else {
+                } else if (!homeLogoBgColor || !homeLogoBgColor.value) {
                     // 로고 정보가 없어도 기본 배경색 적용
                     console.log('홈팀 로고 정보 없음, 기본 배경색 적용');
                     if (homeLogoPreview) {
@@ -3391,14 +3491,13 @@
                     }
                 }
                 
-                // 원정팀 로고 설정 (로고가 없어도 배경색은 적용)
+                // 원정팀 로고 설정 (경기 데이터에 없을 때만)
                 const awayLogoPreview = document.getElementById('away-logo-preview');
                 const awayLogoBgColor = document.getElementById('away-logo-bg-color');
                 
-                if (teamLogoMap.teamLogoMap && teamLogoMap.teamLogoMap[awayTeamName]) {
-                    console.log('원정팀 로고 정보:', teamLogoMap.teamLogoMap[awayTeamName]);
+                if (teamLogoMap.teamLogoMap && teamLogoMap.teamLogoMap[awayTeamName] && (!awayLogoBgColor || !awayLogoBgColor.value)) {
+                    console.log('원정팀 로고 정보 로드 (팀 맵):', teamLogoMap.teamLogoMap[awayTeamName]);
                     
-                    // 원정팀 로고 미리보기 업데이트
                     if (awayLogoPreview) {
                         awayLogoPreview.style.backgroundColor = teamLogoMap.teamLogoMap[awayTeamName].bgColor || '#ffffff';
                         if (teamLogoMap.teamLogoMap[awayTeamName].path) {
@@ -3408,11 +3507,10 @@
                         }
                     }
                     
-                    // 원정팀 로고 배경색 입력 필드 업데이트
                     if (awayLogoBgColor) {
                         awayLogoBgColor.value = teamLogoMap.teamLogoMap[awayTeamName].bgColor || '#ffffff';
                     }
-                } else {
+                } else if (!awayLogoBgColor || !awayLogoBgColor.value) {
                     // 로고 정보가 없어도 기본 배경색 적용
                     console.log('원정팀 로고 정보 없음, 기본 배경색 적용');
                     if (awayLogoPreview) {
@@ -3428,60 +3526,124 @@
             }
         });
 
-        // 팀 로고 정보 로드
+        // 팀 로고 정보 로드 (DB 우선 참조)
         async function loadTeamLogos() {
             try {
-                const response = await fetch('/api/team-logo-map/SOCCER');
-                const data = await response.json();
+                console.log('=== 팀 로고 정보 로드 시작 (DB 우선) ===');
                 
-                if (data && data.teamLogoMap) {
-                    const homeTeam = '<%= match.home_team %>';
-                    const awayTeam = '<%= match.away_team %>';
-                    
-                    // 홈팀 로고 설정
-                    const homeLogoInfo = data.teamLogoMap[homeTeam];
-                    console.log('loadTeamLogos - 홈팀 이름:', homeTeam);
-                    console.log('loadTeamLogos - 홈팀 로고 정보:', homeLogoInfo);
-                    
-                    if (homeLogoInfo) {
-                        const homeLogoPreview = document.getElementById('home-logo-preview');
-                        if (homeLogoPreview) {
-                            homeLogoPreview.style.backgroundColor = homeLogoInfo.bgColor || '#ffffff';
-                            if (homeLogoInfo.path) {
-                                homeLogoPreview.innerHTML = `<img src="${homeLogoInfo.path}" alt="${homeTeam} 로고" style="width: 100%; height: 100%; object-fit: contain;">`;
-                            } else {
-                                homeLogoPreview.innerHTML = '<div class="no-logo">로고 없음</div>';
-                            }
-                        }
+                // 1. 경기별 팀 로고 정보 로드 (우선순위)
+                try {
+                    const matchResponse = await fetch(`/api/match/${matchId}`);
+                    if (matchResponse.ok) {
+                        const matchData = await matchResponse.json();
+                        console.log('경기 데이터 로드 성공:', matchData);
                         
-                        // 홈팀 로고 배경색 입력 필드 업데이트
-                        const homeLogoBgColor = document.getElementById('home-logo-bg-color');
-                        if (homeLogoBgColor) {
-                            homeLogoBgColor.value = homeLogoInfo.bgColor || '#ffffff';
+                        if (matchData && matchData.match_data) {
+                            const matchDataObj = matchData.match_data;
+                            
+                            // 홈팀 로고 정보 (경기별 데이터 우선)
+                            if (matchDataObj.home_team_logo || matchDataObj.home_team_bg_color) {
+                                const homeLogoPreview = document.getElementById('home-logo-preview');
+                                if (homeLogoPreview) {
+                                    homeLogoPreview.style.backgroundColor = matchDataObj.home_team_bg_color || '#ffffff';
+                                    if (matchDataObj.home_team_logo) {
+                                        homeLogoPreview.innerHTML = `<img src="${matchDataObj.home_team_logo}" alt="홈팀 로고" style="width: 100%; height: 100%; object-fit: contain;">`;
+                                    } else {
+                                        homeLogoPreview.innerHTML = '<div class="no-logo">로고 없음</div>';
+                                    }
+                                }
+                                
+                                const homeLogoBgColor = document.getElementById('home-logo-bg-color');
+                                if (homeLogoBgColor) {
+                                    homeLogoBgColor.value = matchDataObj.home_team_bg_color || '#ffffff';
+                                }
+                                
+                                console.log('홈팀 로고 정보 로드 (경기 데이터):', {
+                                    logo: matchDataObj.home_team_logo,
+                                    bgColor: matchDataObj.home_team_bg_color
+                                });
+                            }
+                            
+                            // 어웨이팀 로고 정보 (경기별 데이터 우선)
+                            if (matchDataObj.away_team_logo || matchDataObj.away_team_bg_color) {
+                                const awayLogoPreview = document.getElementById('away-logo-preview');
+                                if (awayLogoPreview) {
+                                    awayLogoPreview.style.backgroundColor = matchDataObj.away_team_bg_color || '#ffffff';
+                                    if (matchDataObj.away_team_logo) {
+                                        awayLogoPreview.innerHTML = `<img src="${matchDataObj.away_team_logo}" alt="어웨이팀 로고" style="width: 100%; height: 100%; object-fit: contain;">`;
+                                    } else {
+                                        awayLogoPreview.innerHTML = '<div class="no-logo">로고 없음</div>';
+                                    }
+                                }
+                                
+                                const awayLogoBgColor = document.getElementById('away-logo-bg-color');
+                                if (awayLogoBgColor) {
+                                    awayLogoBgColor.value = matchDataObj.away_team_bg_color || '#ffffff';
+                                }
+                                
+                                console.log('어웨이팀 로고 정보 로드 (경기 데이터):', {
+                                    logo: matchDataObj.away_team_logo,
+                                    bgColor: matchDataObj.away_team_bg_color
+                                });
+                            }
                         }
                     }
+                } catch (matchError) {
+                    console.log('경기 데이터 로드 실패, 팀 맵 데이터로 대체:', matchError);
+                }
+                
+                // 2. 팀 로고 맵 정보 로드 (백업)
+                const response = await fetch('/api/team-logo-map/SOCCER');
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('팀 로고 맵 로드 성공:', data);
                     
-                    // 어웨이팀 로고 설정
-                    const awayLogoInfo = data.teamLogoMap[awayTeam];
-                    console.log('loadTeamLogos - 어웨이팀 이름:', awayTeam);
-                    console.log('loadTeamLogos - 전체 팀 로고 맵:', data.teamLogoMap);
-                    console.log('loadTeamLogos - 어웨이팀 로고 정보:', awayLogoInfo);
-                    
-                    if (awayLogoInfo) {
-                        const awayLogoPreview = document.getElementById('away-logo-preview');
-                        if (awayLogoPreview) {
-                            awayLogoPreview.style.backgroundColor = awayLogoInfo.bgColor || '#ffffff';
-                            if (awayLogoInfo.path) {
-                                awayLogoPreview.innerHTML = `<img src="${awayLogoInfo.path}" alt="${awayTeam} 로고" style="width: 100%; height: 100%; object-fit: contain;">`;
-                            } else {
-                                awayLogoPreview.innerHTML = '<div class="no-logo">로고 없음</div>';
+                    if (data && data.teamLogoMap) {
+                        const homeTeam = '<%= match.home_team %>';
+                        const awayTeam = '<%= match.away_team %>';
+                        
+                        // 홈팀 로고 설정 (경기 데이터에 없을 때만)
+                        const homeLogoInfo = data.teamLogoMap[homeTeam];
+                        const homeLogoPreview = document.getElementById('home-logo-preview');
+                        const homeLogoBgColor = document.getElementById('home-logo-bg-color');
+                        
+                        if (homeLogoInfo && (!homeLogoBgColor || !homeLogoBgColor.value)) {
+                            console.log('홈팀 로고 정보 로드 (팀 맵):', homeLogoInfo);
+                            
+                            if (homeLogoPreview) {
+                                homeLogoPreview.style.backgroundColor = homeLogoInfo.bgColor || '#ffffff';
+                                if (homeLogoInfo.path) {
+                                    homeLogoPreview.innerHTML = `<img src="${homeLogoInfo.path}" alt="${homeTeam} 로고" style="width: 100%; height: 100%; object-fit: contain;">`;
+                                } else {
+                                    homeLogoPreview.innerHTML = '<div class="no-logo">로고 없음</div>';
+                                }
+                            }
+                            
+                            if (homeLogoBgColor) {
+                                homeLogoBgColor.value = homeLogoInfo.bgColor || '#ffffff';
                             }
                         }
                         
-                        // 어웨이팀 로고 배경색 입력 필드 업데이트
+                        // 어웨이팀 로고 설정 (경기 데이터에 없을 때만)
+                        const awayLogoInfo = data.teamLogoMap[awayTeam];
+                        const awayLogoPreview = document.getElementById('away-logo-preview');
                         const awayLogoBgColor = document.getElementById('away-logo-bg-color');
-                        if (awayLogoBgColor) {
-                            awayLogoBgColor.value = awayLogoInfo.bgColor || '#ffffff';
+                        
+                        if (awayLogoInfo && (!awayLogoBgColor || !awayLogoBgColor.value)) {
+                            console.log('어웨이팀 로고 정보 로드 (팀 맵):', awayLogoInfo);
+                            
+                            if (awayLogoPreview) {
+                                awayLogoPreview.style.backgroundColor = awayLogoInfo.bgColor || '#ffffff';
+                                if (awayLogoInfo.path) {
+                                    awayLogoPreview.innerHTML = `<img src="${awayLogoInfo.path}" alt="${awayTeam} 로고" style="width: 100%; height: 100%; object-fit: contain;">`;
+                                } else {
+                                    awayLogoPreview.innerHTML = '<div class="no-logo">로고 없음</div>';
+                                }
+                            }
+                            
+                            if (awayLogoBgColor) {
+                                awayLogoBgColor.value = awayLogoInfo.bgColor || '#ffffff';
+                            }
                         }
                     }
                 }
@@ -3490,9 +3652,9 @@
             }
         }
 
-        // 페이지 로드 시 로고 정보 로드
+        // 페이지 로드 시 로고 정보 로드 (DOMContentLoaded 이벤트에서 처리됨)
         document.addEventListener('DOMContentLoaded', async () => {
-            await loadTeamLogos();
+            // await loadTeamLogos(); // 중복 제거 - DOMContentLoaded 이벤트에서 처리
             await loadTeamLogoVisibility();
             
             // 로고 미리보기 클릭 이벤트 추가
@@ -3533,7 +3695,8 @@
                 });
 
                 if (!data.success) {
-                    showToast('로고 업데이트에 실패했습니다.', 'error');
+                    console.error('로고 업데이트 실패:', data.error);
+                    showToast(`로고 업데이트에 실패했습니다: ${data.error || '알 수 없는 오류'}`, 'error');
                     return;
                 }
                 
@@ -3637,7 +3800,12 @@
             const teamName = teamType === 'home' ? '<%= match.home_team %>' : '<%= match.away_team %>';
             const preview = document.getElementById(`${teamType}-logo-preview`);
             const logoImg = preview.querySelector('img');
-            const logoPath = logoImg ? logoImg.src : '';
+            // 상대 경로로 변환 (localhost URL 제거)
+            let logoPath = logoImg ? logoImg.src : '';
+            if (logoPath && logoPath.includes('/TEAMLOGO/')) {
+                // localhost:3000/TEAMLOGO/... -> /TEAMLOGO/... 로 변환
+                logoPath = logoPath.replace(/^https?:\/\/[^\/]+/, '');
+            }
 
             try {
                 // 1. 기존 JSON 파일 읽기

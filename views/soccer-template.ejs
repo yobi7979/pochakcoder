@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>축구 경기 오버레이</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="/css/animations.css" rel="stylesheet">
     <script src="/socket.io/socket.io.js"></script>
@@ -97,6 +100,152 @@
 
         .scoreboard-extra-box.show {
             opacity: 1; /* 보일 때는 완전 불투명 */
+        }
+        
+        /* VS 대진 오버레이 스타일 */
+        .vs-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            width: 1200px;
+            height: 600px;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(20, 20, 40, 0.9));
+            border: 3px solid #00bfff;
+            border-radius: 20px;
+            box-shadow: 0 0 30px rgba(0, 191, 255, 0.5), inset 0 0 20px rgba(0, 191, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        /* 상단 구역: 토너먼트 제목 */
+        .vs-top-section {
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(0, 50, 100, 0.8), rgba(0, 100, 150, 0.8));
+            border-bottom: 2px solid #00bfff;
+        }
+        
+        .vs-tournament-title {
+            font-family: 'Noto Sans KR', Arial, sans-serif;
+            font-size: 60px;
+            font-weight: bold;
+            color: #ffffff;
+            text-align: center;
+            /*text-shadow: 0 0 15px rgba(0, 191, 255, 0.9);*/
+            margin: 0;
+            letter-spacing: 2px;
+        }
+        
+        /* 중앙 구역: 팀 로고 + 팀명 */
+        .vs-middle-section {
+            height: 360px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(20, 20, 40, 0.9), rgba(40, 40, 60, 0.9));
+            flex: 1;
+        }
+        
+        /* 하단 구역: 추가 정보 */
+        .vs-bottom-section {
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(0, 50, 100, 0.8), rgba(0, 100, 150, 0.8));
+            border-top: 2px solid #00bfff;
+        }
+        
+        .vs-bottom-content {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffffff;
+            text-align: center;
+            text-shadow: 0 0 10px rgba(0, 191, 255, 0.8);
+        }
+        
+        .vs-teams-section {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+        }
+        
+        .vs-team-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 640px;
+        }
+        
+        .vs-team-logo {
+            width: 352px;
+            height: 264px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+            border: 3px solid #161616;
+            box-shadow: 0 0 20px rgba(3, 3, 3, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .vs-team-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        .vs-team-logo-placeholder {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #333, #555);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .vs-team-name {
+            font-size: 38px;
+            font-weight: bold;
+            color: #ffffff;
+            text-align: center;
+            /*text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);*/
+            line-height: 1.2;
+            max-width: 640px;
+            word-wrap: break-word;
+        }
+        
+        .vs-center-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 300px;
+            height: 100%;
+        }
+        
+        .vs-text {
+            font-size: 64px;
+            font-weight: bold;
+            color: #ffffff;
+            text-shadow: 0 0 15px rgba(0, 191, 255, 0.8);
+            margin: 0;
         }
 
         .scoreboard.animate-slide {
@@ -786,6 +935,46 @@
             <span id="extraBoxText">0 (승부차기) 0</span>
         </div>
         
+        <!-- VS 대진 오버레이 -->
+        <div class="vs-overlay" id="vsOverlay" style="display: none;">
+            <!-- 상단 구역: 토너먼트 제목 -->
+            <div class="vs-top-section" id="vsTopSection">
+                <div class="vs-tournament-title" id="vsTournamentTitle"></div>
+            </div>
+            
+            <!-- 중앙 구역: 팀 로고 + 팀명 -->
+            <div class="vs-middle-section" id="vsMiddleSection">
+                <div class="vs-teams-section">
+                    <div class="vs-team-section home">
+                        <div class="vs-team-logo">
+                            <img id="vs-home-logo" src="" alt="홈팀 로고" style="display: none;">
+                            <div class="vs-team-logo-placeholder" id="vs-home-placeholder"></div>
+                        </div>
+                        <div class="vs-team-name" id="vs-home-name"><%= match.home_team || 'HOME' %></div>
+                    </div>
+                    
+                    <div class="vs-center-section">
+                        <div class="vs-text">VS</div>
+                    </div>
+                    
+                    <div class="vs-team-section away">
+                        <div class="vs-team-logo">
+                            <img id="vs-away-logo" src="" alt="어웨이팀 로고" style="display: none;">
+                            <div class="vs-team-logo-placeholder" id="vs-away-placeholder"></div>
+                        </div>
+                        <div class="vs-team-name" id="vs-away-name"><%= match.away_team || 'AWAY' %></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 하단 구역: 추가 정보 -->
+            <div class="vs-bottom-section" id="vsBottomSection">
+                <div class="vs-bottom-content" id="vsBottomContent">
+                    <!-- 추가 정보를 여기에 표시 -->
+                </div>
+            </div>
+        </div>
+        
         <div class="match-state" id="matchStateContainer">
             <span class="state-text"><%= match.match_data?.state || '전반' %></span>
         </div>
@@ -1016,7 +1205,48 @@
         // 초기 로고 로드 함수
         async function loadInitialLogos() {
             try {
-                console.log('초기 로고 정보 로드 시작');
+                console.log('=== 초기 로고 정보 로드 시작 ===');
+                console.log('홈팀:', '<%= match.home_team %>');
+                console.log('어웨이팀:', '<%= match.away_team %>');
+                
+                // 1. 경기별 팀 로고 정보 로드 (우선순위)
+                try {
+                    const matchResponse = await fetch(`/api/match/${matchId}`);
+                    if (matchResponse.ok) {
+                        const matchData = await matchResponse.json();
+                        console.log('경기 데이터 로드 성공:', matchData);
+                        
+                        if (matchData && matchData.match_data) {
+                            const matchDataObj = matchData.match_data;
+                            
+                            // 홈팀 로고 정보 (경기별 데이터 우선)
+                            if (matchDataObj.home_team_logo || matchDataObj.home_team_bg_color) {
+                                logoState.home = {
+                                    path: matchDataObj.home_team_logo,
+                                    bgColor: matchDataObj.home_team_bg_color || '#ffffff',
+                                    teamName: '<%= match.home_team %>'
+                                };
+                                console.log('홈팀 로고 정보 로드 (경기 데이터):', logoState.home);
+                                updateTeamLogo('home', logoState.home);
+                            }
+                            
+                            // 어웨이팀 로고 정보 (경기별 데이터 우선)
+                            if (matchDataObj.away_team_logo || matchDataObj.away_team_bg_color) {
+                                logoState.away = {
+                                    path: matchDataObj.away_team_logo,
+                                    bgColor: matchDataObj.away_team_bg_color || '#ffffff',
+                                    teamName: '<%= match.away_team %>'
+                                };
+                                console.log('어웨이팀 로고 정보 로드 (경기 데이터):', logoState.away);
+                                updateTeamLogo('away', logoState.away);
+                            }
+                        }
+                    }
+                } catch (matchError) {
+                    console.log('경기 데이터 로드 실패, 팀 맵 데이터로 대체:', matchError);
+                }
+                
+                // 2. 팀 로고 맵 정보 로드 (백업)
                 const response = await fetch('/api/team-logo-map/SOCCER');
                 if (!response.ok) {
                     throw new Error(`팀 로고 맵 로드 실패: ${response.status}`);
@@ -1029,31 +1259,43 @@
                     const homeTeamName = '<%= match.home_team %>';
                     const awayTeamName = '<%= match.away_team %>';
                     
-                    // 홈팀 로고 설정
-                    if (data.teamLogoMap[homeTeamName]) {
+                    console.log('사용 가능한 팀들:', Object.keys(data.teamLogoMap));
+                    
+                    // 홈팀 로고 설정 (경기 데이터에 없을 때만)
+                    if (data.teamLogoMap[homeTeamName] && !logoState.home) {
                         logoState.home = {
                             path: data.teamLogoMap[homeTeamName].path,
                             bgColor: data.teamLogoMap[homeTeamName].bgColor || '#ffffff',
                             teamName: homeTeamName
                         };
-                        console.log('홈팀 로고 정보 로드:', logoState.home);
+                        console.log('홈팀 로고 정보 로드 (팀 맵):', logoState.home);
                         updateTeamLogo('home', logoState.home);
-                    } else {
+                    } else if (!logoState.home) {
                         console.log('홈팀 로고 정보 없음:', homeTeamName);
                     }
                     
-                    // 원정팀 로고 설정
-                    if (data.teamLogoMap[awayTeamName]) {
+                    // 원정팀 로고 설정 (경기 데이터에 없을 때만)
+                    if (data.teamLogoMap[awayTeamName] && !logoState.away) {
                         logoState.away = {
                             path: data.teamLogoMap[awayTeamName].path,
                             bgColor: data.teamLogoMap[awayTeamName].bgColor || '#ffffff',
                             teamName: awayTeamName
                         };
-                        console.log('원정팀 로고 정보 로드:', logoState.away);
+                        console.log('원정팀 로고 정보 로드 (팀 맵):', logoState.away);
                         updateTeamLogo('away', logoState.away);
-                    } else {
+                    } else if (!logoState.away) {
                         console.log('원정팀 로고 정보 없음:', awayTeamName);
                     }
+                    
+                    // VS 오버레이 로고도 업데이트
+                    updateVSOverlayLogos();
+                    
+                    // 팀 색상 적용 후에도 로고 배경색 보호
+                    setTimeout(() => {
+                        updateTeamColors(homeTeamColor, awayTeamColor);
+                    }, 100);
+                } else {
+                    console.log('팀 로고맵 데이터가 없습니다.');
                 }
             } catch (error) {
                 console.error('팀 로고 정보 로드 중 오류 발생:', error);
@@ -1844,43 +2086,181 @@
             window.registerAnimationListeners(socket);
         }
         
-        // 애니메이션 이벤트 수신
-        socket.on('animation', (data) => {
-            const section = data.section;
+        // 스코어보드 토글 이벤트 수신 (타이머, 전반/후반, 팀 로고 포함)
+        socket.on('toggle_scoreboard', (data) => {
+            console.log('스코어보드 토글 이벤트 수신:', data);
             
-            if (section === 'matchState' || section === 'all') {
-                const matchState = document.querySelector('.match-state');
-                const scoreboard = document.querySelector('.scoreboard');
-                
-                if (matchState) {
-                    if (matchState.style.display === 'none') {
-                        matchState.style.display = 'block';
-                        matchState.classList.add('animate-fade');
-                    } else {
-                        matchState.classList.remove('animate-fade');
-                        matchState.style.display = 'none';
-                    }
-                }
-                
-                if (scoreboard) {
-                    if (scoreboard.style.display === 'none') {
-                        scoreboard.style.display = 'flex';
-                        scoreboard.classList.add('animate-slide');
-                    } else {
-                        scoreboard.classList.remove('animate-slide');
-                        scoreboard.style.display = 'none';
-                    }
-                }
-            }           
-                
-            if (section === 'homeTeam') {
-                toggleLineupVisibility('home');
-            }
+            // 팀 정보, 스코어, 타이머, 전반/후반, 팀 로고 모두 토글
+            const homeTeam = document.querySelector('.team-section.home');
+            const awayTeam = document.querySelector('.team-section.away');
+            const scoreSection = document.querySelector('.score-section');
+            const timerSection = document.querySelector('.match-timer-section');
+            const matchState = document.querySelector('.match-state');
+            const homeLogoSection = document.querySelector('.team-logo-section.home-logo');
+            const awayLogoSection = document.querySelector('.team-logo-section.away-logo');
             
-            if (section === 'awayTeam') {
-                toggleLineupVisibility('away');
+            if (homeTeam && awayTeam && scoreSection && timerSection && matchState) {
+                const isVisible = homeTeam.style.display !== 'none';
+                
+                if (isVisible) {
+                    // 숨기기
+                    homeTeam.style.display = 'none';
+                    awayTeam.style.display = 'none';
+                    scoreSection.style.display = 'none';
+                    timerSection.style.display = 'none';
+                    matchState.style.display = 'none';
+                    
+                    // 팀 로고도 숨기기
+                    if (homeLogoSection) {
+                        homeLogoSection.style.display = 'none';
+                    }
+                    if (awayLogoSection) {
+                        awayLogoSection.style.display = 'none';
+                    }
+                    
+                    console.log('스코어보드 전체 숨김 (팀 로고 포함)');
+                } else {
+                    // 보이기
+                    homeTeam.style.display = 'flex';
+                    awayTeam.style.display = 'flex';
+                    scoreSection.style.display = 'flex';
+                    timerSection.style.display = 'flex';
+                    matchState.style.display = 'block';
+                    
+                    // 팀 로고도 보이기
+                    if (homeLogoSection) {
+                        homeLogoSection.style.display = 'block';
+                    }
+                    if (awayLogoSection) {
+                        awayLogoSection.style.display = 'block';
+                    }
+                    
+                    console.log('스코어보드 전체 표시 (팀 로고 포함)');
+                }
             }
         });
+        
+        // VS 대진 오버레이 토글 이벤트 수신
+        socket.on('toggle_vs_overlay', (data) => {
+            console.log('VS 대진 오버레이 토글 이벤트 수신:', data);
+            
+            const vsOverlay = document.getElementById('vsOverlay');
+            if (vsOverlay) {
+                const isVisible = vsOverlay.style.display !== 'none';
+                
+                if (isVisible) {
+                    vsOverlay.style.display = 'none';
+                    console.log('VS 대진 오버레이 숨김');
+                } else {
+                    vsOverlay.style.display = 'flex';
+                    // VS 오버레이가 표시될 때 토너먼트 제목 확인 및 적용
+                    loadTournamentTitle();
+                    // VS 오버레이가 표시될 때 팀 로고 업데이트
+                    updateVSOverlayLogos();
+                    console.log('VS 대진 오버레이 표시');
+                }
+            }
+        });
+        
+        // 토너먼트 제목 로드 함수
+        function loadTournamentTitle() {
+            console.log('토너먼트 제목 로드 시작');
+            
+            // 서버에서 토너먼트 제목 가져오기
+            fetch(`/api/tournament-text/${matchId}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('토너먼트 제목 응답:', data);
+                    
+                    const tournamentTitle = document.querySelector('.vs-tournament-title');
+                    if (tournamentTitle) {
+                        if (data.tournamentText && data.tournamentText.trim() !== '') {
+                            tournamentTitle.textContent = data.tournamentText;
+                            console.log('토너먼트 제목 적용:', data.tournamentText);
+                        } else {
+                            tournamentTitle.textContent = 'FOOTBALL TOURNAMENT';
+                            console.log('기본 토너먼트 제목 적용');
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('토너먼트 제목 로드 실패:', error);
+                    
+                    // 에러 시 기본 제목 적용
+                    const tournamentTitle = document.querySelector('.vs-tournament-title');
+                    if (tournamentTitle) {
+                        tournamentTitle.textContent = 'FOOTBALL TOURNAMENT';
+                        console.log('에러로 인한 기본 토너먼트 제목 적용');
+                    }
+                });
+        }
+
+        // VS 오버레이 팀 로고 업데이트 함수
+        function updateVSOverlayLogos() {
+            console.log('=== VS 오버레이 로고 업데이트 ===');
+            console.log('홈팀 로고 상태:', logoState.home);
+            console.log('어웨이팀 로고 상태:', logoState.away);
+            
+            // 홈팀 로고 업데이트
+            const homeLogoContainer = document.querySelector('.vs-team-section.home .vs-team-logo');
+            const homeLogoImg = document.getElementById('vs-home-logo');
+            const homePlaceholder = document.getElementById('vs-home-placeholder');
+            
+            if (logoState.home && logoState.home.path) {
+                homeLogoImg.src = logoState.home.path;
+                homeLogoImg.style.display = 'block';
+                homePlaceholder.style.display = 'none';
+                // 로고 컨테이너에 배경색 적용
+                if (homeLogoContainer) {
+                    homeLogoContainer.style.backgroundColor = logoState.home.bgColor || '#ffffff';
+                }
+                console.log('홈팀 로고 설정 완료:', logoState.home.path, logoState.home.bgColor);
+            } else {
+                homeLogoImg.style.display = 'none';
+                homePlaceholder.style.display = 'flex';
+                homePlaceholder.textContent = 'HOME';
+                // 기본 배경색
+                if (homeLogoContainer) {
+                    homeLogoContainer.style.backgroundColor = '#ffffff';
+                }
+            }
+            
+            // 어웨이팀 로고 업데이트
+            const awayLogoContainer = document.querySelector('.vs-team-section.away .vs-team-logo');
+            const awayLogoImg = document.getElementById('vs-away-logo');
+            const awayPlaceholder = document.getElementById('vs-away-placeholder');
+            
+            if (logoState.away && logoState.away.path) {
+                awayLogoImg.src = logoState.away.path;
+                awayLogoImg.style.display = 'block';
+                awayPlaceholder.style.display = 'none';
+                // 로고 컨테이너에 배경색 적용
+                if (awayLogoContainer) {
+                    awayLogoContainer.style.backgroundColor = logoState.away.bgColor || '#ffffff';
+                }
+                console.log('어웨이팀 로고 설정 완료:', logoState.away.path, logoState.away.bgColor);
+            } else {
+                awayLogoImg.style.display = 'none';
+                awayPlaceholder.style.display = 'flex';
+                awayPlaceholder.textContent = 'AWAY';
+                // 기본 배경색
+                if (awayLogoContainer) {
+                    awayLogoContainer.style.backgroundColor = '#ffffff';
+                }
+            }
+        }
+        
+        // 토너먼트 텍스트 업데이트 이벤트 수신
+        socket.on('tournament_text_updated', (data) => {
+            console.log('토너먼트 텍스트 업데이트 수신:', data);
+            
+            const tournamentTitle = document.querySelector('.vs-tournament-title');
+            if (tournamentTitle) {
+                tournamentTitle.textContent = data.tournamentText || 'FOOTBALL TOURNAMENT';
+                console.log('토너먼트 제목 업데이트:', data.tournamentText);
+            }
+        });
+        
 
         // 팀 헤더 변경 이벤트 처리
         socket.on('teamHeaderChanged', function(data) {
@@ -2043,6 +2423,31 @@
             }
             
             // 로고 컨테이너의 배경색은 덮어쓰지 않음 (저장된 배경색 유지)
+            // 로고 컨테이너 배경색 보호
+            const homeLogoContainer = document.getElementById('home-team-logo-container');
+            const awayLogoContainer = document.getElementById('away-team-logo-container');
+            
+            if (homeLogoContainer && logoState.home && logoState.home.bgColor) {
+                homeLogoContainer.style.backgroundColor = logoState.home.bgColor;
+                console.log('홈팀 로고 배경색 보호:', logoState.home.bgColor);
+            }
+            if (awayLogoContainer && logoState.away && logoState.away.bgColor) {
+                awayLogoContainer.style.backgroundColor = logoState.away.bgColor;
+                console.log('어웨이팀 로고 배경색 보호:', logoState.away.bgColor);
+            }
+            
+            // VS 오버레이 로고 배경색도 보호
+            const vsHomeLogoContainer = document.querySelector('.vs-team-section.home .vs-team-logo');
+            const vsAwayLogoContainer = document.querySelector('.vs-team-section.away .vs-team-logo');
+            
+            if (vsHomeLogoContainer && logoState.home && logoState.home.bgColor) {
+                vsHomeLogoContainer.style.backgroundColor = logoState.home.bgColor;
+                console.log('VS 홈팀 로고 배경색 보호:', logoState.home.bgColor);
+            }
+            if (vsAwayLogoContainer && logoState.away && logoState.away.bgColor) {
+                vsAwayLogoContainer.style.backgroundColor = logoState.away.bgColor;
+                console.log('VS 어웨이팀 로고 배경색 보호:', logoState.away.bgColor);
+            }
             
             // 라인업 헤더 색상도 업데이트
             const homeLineupHeader = document.querySelector('.lineup-header.home');
