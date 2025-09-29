@@ -908,11 +908,19 @@
         
         <!-- 팀로고 사용 설정 -->
         <div class="mb-3">
+            <div class="d-flex gap-4">
             <div class="form-check">
                 <input type="checkbox" class="form-check-input" id="use-team-logos" checked>
                 <label class="form-check-label" for="use-team-logos">
                     팀로고 사용
                 </label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input toggle-logo-display" type="checkbox" id="global-logo-display">
+                    <label class="form-check-label" for="global-logo-display">
+                        <span class="logo-display-text">로고+배경</span>
+                    </label>
+                </div>
             </div>
         </div>
         
@@ -962,12 +970,6 @@
                                 <button class="btn btn-sm btn-danger remove-logo" data-team-type="home">
                                     <i class="fas fa-trash"></i> 로고 삭제
                                 </button>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input toggle-logo-display" type="checkbox" id="home-logo-display" data-team-type="home">
-                                    <label class="form-check-label" for="home-logo-display">
-                                        <span class="logo-display-text">팀로고 사용</span>
-                                    </label>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -1017,12 +1019,6 @@
                                 <button class="btn btn-sm btn-danger remove-logo" data-team-type="away">
                                     <i class="fas fa-trash"></i> 로고 삭제
                                 </button>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input toggle-logo-display" type="checkbox" id="away-logo-display" data-team-type="away">
-                                    <label class="form-check-label" for="away-logo-display">
-                                        <span class="logo-display-text">팀로고 사용</span>
-                                    </label>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -2359,6 +2355,21 @@
                     if (checkbox) {
                         checkbox.checked = useLogos;
                         console.log('체크박스 상태 설정:', useLogos);
+                        
+                        // 팀로고 사용 상태에 따라 팀로고 배경 사용 체크박스 설정
+                        const globalLogoDisplayCheckbox = document.getElementById('global-logo-display');
+                        if (globalLogoDisplayCheckbox) {
+                            if (!useLogos) {
+                                globalLogoDisplayCheckbox.disabled = true;
+                                globalLogoDisplayCheckbox.checked = false;
+                                globalLogoDisplayState = false;
+                                saveLogoDisplayStates();
+                                console.log('팀로고 사용안함: 팀로고 배경 사용 체크박스 비활성화');
+                            } else {
+                                globalLogoDisplayCheckbox.disabled = false;
+                                console.log('팀로고 사용: 팀로고 배경 사용 체크박스 활성화');
+                            }
+                        }
                     }
                 } else {
                     console.log('팀로고 사용 상태 불러오기 실패, 기본값 사용');
@@ -2378,6 +2389,46 @@
             
             // 서버에 상태 저장
             saveTeamLogoVisibility(useLogos);
+            
+            // 팀로고 사용안함일 때는 팀로고 배경 사용 체크박스 비활성화
+            const globalLogoDisplayCheckbox = document.getElementById('global-logo-display');
+            if (!useLogos) {
+                globalLogoDisplayCheckbox.disabled = true;
+                globalLogoDisplayCheckbox.checked = false;
+                globalLogoDisplayState = false;
+                saveLogoDisplayStates();
+                console.log('팀로고 사용안함: 팀로고 배경 사용 체크박스 비활성화');
+            } else {
+                globalLogoDisplayCheckbox.disabled = false;
+                console.log('팀로고 사용: 팀로고 배경 사용 체크박스 활성화');
+            }
+            
+            // 팀명 위치 조정 (팀로고 사용안함일 때)
+            if (!useLogos) {
+                // 팀로고 사용안함: 팀명을 안쪽으로 25px 이동
+                socket.emit('toggle-logo-display', {
+                    matchId: '<%= match.id %>',
+                    teamType: 'home',
+                    showLogo: false
+                });
+                socket.emit('toggle-logo-display', {
+                    matchId: '<%= match.id %>',
+                    teamType: 'away',
+                    showLogo: false
+                });
+            } else {
+                // 팀로고 사용: 현재 배경 사용 상태에 따라 팀명 위치 조정
+                socket.emit('toggle-logo-display', {
+                    matchId: '<%= match.id %>',
+                    teamType: 'home',
+                    showLogo: globalLogoDisplayState
+                });
+                socket.emit('toggle-logo-display', {
+                    matchId: '<%= match.id %>',
+                    teamType: 'away',
+                    showLogo: globalLogoDisplayState
+                });
+            }
             
             // 소켓으로 오버레이에 전송
             socket.emit('teamLogoVisibilityChanged', {
@@ -4567,77 +4618,80 @@
             });
         });
 
-        // 팀별 로고 표시 상태 추적
-        let logoDisplayStates = {
-            home: true,  // true: 로고 표시, false: 배경색만 표시
-            away: true
-        };
+        // 통합 로고 표시 상태 추적
+        let globalLogoDisplayState = true;  // true: 로고 표시, false: 배경색만 표시
 
         // 로고 표시 상태 로드
         function loadLogoDisplayStates() {
-            const savedStates = localStorage.getItem('logoDisplayStates');
-            if (savedStates) {
-                logoDisplayStates = JSON.parse(savedStates);
-                console.log('로고 표시 상태 로드:', logoDisplayStates);
+            const savedState = localStorage.getItem('globalLogoDisplayState');
+            if (savedState !== null) {
+                globalLogoDisplayState = JSON.parse(savedState);
+                console.log('로고 표시 상태 로드:', globalLogoDisplayState);
                 
-                // 버튼 상태 업데이트
-                updateLogoDisplayButtons();
+                // 체크박스 상태 업데이트
+                updateLogoDisplayCheckbox();
             }
         }
 
         // 로고 표시 상태 저장
         function saveLogoDisplayStates() {
-            localStorage.setItem('logoDisplayStates', JSON.stringify(logoDisplayStates));
-            console.log('로고 표시 상태 저장:', logoDisplayStates);
+            localStorage.setItem('globalLogoDisplayState', JSON.stringify(globalLogoDisplayState));
+            console.log('로고 표시 상태 저장:', globalLogoDisplayState);
         }
 
         // 로고 표시 체크박스 상태 업데이트
-        function updateLogoDisplayCheckboxes() {
-            ['home', 'away'].forEach(teamType => {
-                const checkbox = document.querySelector(`[data-team-type="${teamType}"].toggle-logo-display`);
-                const textSpan = document.querySelector(`#${teamType}-logo-display`).parentElement.querySelector('.logo-display-text');
+        function updateLogoDisplayCheckbox() {
+            const checkbox = document.getElementById('global-logo-display');
+            const textSpan = document.querySelector('.logo-display-text');
+            
+            if (checkbox && textSpan) {
+                checkbox.checked = globalLogoDisplayState;
                 
-                if (checkbox) {
-                    checkbox.checked = logoDisplayStates[teamType];
-                    
-                    if (logoDisplayStates[teamType]) {
-                        // 로고 표시 상태
-                        textSpan.textContent = '팀로고 사용';
-                    } else {
-                        // 배경색만 표시 상태
-                        textSpan.textContent = '팀배경색만 사용';
-                    }
+                if (globalLogoDisplayState) {
+                    // 로고 표시 상태
+                    textSpan.textContent = '배경색';
+                } else {
+                    // 배경색만 표시 상태
+                    textSpan.textContent = '로고+배경';
                 }
-            });
+            }
         }
 
         // 팀로고 사용 체크박스 이벤트 리스너
-        document.querySelectorAll('.toggle-logo-display').forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                const teamType = this.getAttribute('data-team-type');
-                const isChecked = this.checked;
-                toggleLogoDisplay(teamType, isChecked);
-            });
+        document.getElementById('global-logo-display').addEventListener('change', function() {
+            const isChecked = this.checked;
+            toggleGlobalLogoDisplay(isChecked);
         });
 
-        // 로고 표시 토글 함수
-        function toggleLogoDisplay(teamType, isChecked) {
-            logoDisplayStates[teamType] = isChecked;
+        // 통합 로고 표시 토글 함수
+        function toggleGlobalLogoDisplay(isChecked) {
+            globalLogoDisplayState = isChecked;
             
             // 상태 저장
             saveLogoDisplayStates();
             
             // 체크박스 상태 업데이트
-            updateLogoDisplayCheckboxes();
+            updateLogoDisplayCheckbox();
             
-            // Socket.io로 상태 전송
-            socket.emit('toggle-logo-display', {
-                matchId: '<%= match.id %>',
-                teamType: teamType,
-                showLogo: logoDisplayStates[teamType]
+            // 팀로고 사용 체크박스 상태 확인
+            const useTeamLogos = document.getElementById('use-team-logos').checked;
+            
+            // 팀로고 사용이 해제되어 있으면 팀로고배경 설정을 무시
+            if (!useTeamLogos) {
+                console.log('팀로고 사용 안함: 팀로고배경 설정 무시');
+                return;
+            }
+            
+            // 양팀 모두에 Socket.io로 상태 전송
+            ['home', 'away'].forEach(teamType => {
+                socket.emit('toggle-logo-display', {
+                    matchId: '<%= match.id %>',
+                    teamType: teamType,
+                    showLogo: !isChecked  // 체크됨: 배경색만(showLogo: false), 체크 안됨: 로고 표시(showLogo: true)
+                });
             });
             
-            console.log(`${teamType}팀 로고 표시 상태:`, logoDisplayStates[teamType] ? '표시' : '배경색만');
+            console.log('전체 로고 표시 상태:', globalLogoDisplayState ? '표시' : '배경색만');
         }
 
         // 초기화 함수
@@ -4647,7 +4701,7 @@
                 loadLogoDisplayStates();
                 
                 // 체크박스 상태 업데이트
-                updateLogoDisplayCheckboxes();
+                updateLogoDisplayCheckbox();
                 
                 // 팀 로고 매핑 정보 확인
                 const response = await fetch('/api/team-logo-map/SOCCER');

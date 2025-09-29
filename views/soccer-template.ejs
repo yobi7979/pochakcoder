@@ -156,7 +156,7 @@
             border-radius: 20px;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
             z-index: 1000;
             transition: transform 0.3s ease; /* 위치 변화만 애니메이션 */
         }
@@ -415,7 +415,7 @@
         .strip-match-state {
             background: rgba(0, 191, 255, 0.5);
             padding: 10px 20px;
-            border-radius: 25px;
+            border-radius: 20px;
             border: 2px solid #00bfff;
             font-family: 'Noto Sans KR', Arial, sans-serif;
             font-size: 24px;
@@ -2609,6 +2609,34 @@
             const logoImage = logoContainer ? logoContainer.querySelector('img') : null;
             const teamName = document.querySelector(`.team-section.${teamType} .team-name`);
             
+            // 팀로고 사용안함 상태 확인 (로고 섹션이 숨겨져 있는지 확인)
+            const logoSection = document.querySelector(`.team-logo-section.${teamType}-logo`);
+            const isTeamLogoDisabled = logoSection && (logoSection.style.display === 'none' || logoSection.style.visibility === 'hidden');
+            
+            // 팀로고 사용안함 상태를 localStorage에서도 확인
+            const storedLogoStates = localStorage.getItem('logoDisplayStates');
+            let globalLogoDisplayState = false;
+            if (storedLogoStates) {
+                try {
+                    const parsed = JSON.parse(storedLogoStates);
+                    globalLogoDisplayState = parsed.globalLogoDisplayState || false;
+                } catch (e) {
+                    console.error('로고 상태 파싱 오류:', e);
+                }
+            }
+            
+            // 팀로고 사용안함 상태를 더 정확하게 감지
+            const isTeamLogoDisabledFinal = isTeamLogoDisabled || !globalLogoDisplayState;
+            
+            console.log(`${teamType}팀 로고 섹션 상태:`, {
+                logoSection: logoSection,
+                display: logoSection ? logoSection.style.display : 'null',
+                visibility: logoSection ? logoSection.style.visibility : 'null',
+                isTeamLogoDisabled: isTeamLogoDisabled,
+                globalLogoDisplayState: globalLogoDisplayState,
+                isTeamLogoDisabledFinal: isTeamLogoDisabledFinal
+            });
+            
             if (logoContainer) {
                 if (showLogo) {
                     // 로고 표시: 폭 100%
@@ -2618,13 +2646,21 @@
                     }
                     if (logoImage) logoImage.style.display = 'block';
                     
-                    // 팀명 위치 초기화
+                    // 팀명 위치는 항상 고정 (20px 안쪽으로 이동)
                     if (teamName) {
+                        console.log(`${teamType}팀 팀명 위치 고정:`, {
+                            isTeamLogoDisabledFinal: isTeamLogoDisabledFinal,
+                            showLogo: showLogo,
+                            teamName: teamName
+                        });
+                        // 팀명을 20px 안쪽으로 고정 이동
                         if (teamType === 'home') {
-                            teamName.style.marginRight = '0';
+                            teamName.style.transform = 'translateX(20px)';
                         } else {
-                            teamName.style.marginLeft = '0';
+                            teamName.style.transform = 'translateX(-20px)';
                         }
+                    } else {
+                        console.error(`${teamType}팀 팀명 요소를 찾을 수 없습니다.`);
                     }
                     
                     console.log(`${teamType}팀 로고 표시 모드로 변경`);
@@ -2636,13 +2672,21 @@
                     }
                     if (logoImage) logoImage.style.display = 'none';
                     
-                    // 팀명을 안쪽으로 25px 이동
+                    // 팀명 위치는 항상 고정 (20px 안쪽으로 이동)
                     if (teamName) {
+                        console.log(`${teamType}팀 배경색만 팀명 위치 고정:`, {
+                            isTeamLogoDisabledFinal: isTeamLogoDisabledFinal,
+                            showLogo: showLogo,
+                            teamName: teamName
+                        });
+                        // 팀명을 20px 안쪽으로 고정 이동
                         if (teamType === 'home') {
-                            teamName.style.marginRight = '25px';
+                            teamName.style.transform = 'translateX(20px)';
                         } else {
-                            teamName.style.marginLeft = '25px';
+                            teamName.style.transform = 'translateX(-20px)';
                         }
+                    } else {
+                        console.error(`${teamType}팀 배경색만 팀명 요소를 찾을 수 없습니다.`);
                     }
                     
                     console.log(`${teamType}팀 배경색만 표시 모드로 변경`);
