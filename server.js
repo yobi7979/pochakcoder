@@ -6,7 +6,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const morgan = require('morgan');
 const winston = require('winston');
-const { sequelize, Match, Settings, MatchList, SportOverlayImage, SportActiveOverlayImage, User } = require('./models');
+const { sequelize, Match, Settings, MatchList, SportOverlayImage, SportActiveOverlayImage, User, UserSportPermission } = require('./models');
 const BackupRestoreManager = require('./backup-restore');
 const multer = require('multer');
 const fs = require('fs').promises;
@@ -1141,10 +1141,45 @@ app.get('/match-tabs', requireAuth, async (req, res) => {
 // 경기 생성 페이지
 app.get('/matches/new', requireAuth, async (req, res) => {
   try {
-    const sports = await Sport.findAll({
-      where: { is_active: true },
-      order: [['name', 'ASC']]
-    });
+    let sports;
+    
+    // 관리자는 모든 종목에 접근 가능
+    if (req.session.userRole === 'admin') {
+      sports = await Sport.findAll({
+        where: { is_active: true },
+        order: [['name', 'ASC']]
+      });
+    } else {
+      // 일반 사용자는 권한이 있는 종목만 접근 가능
+      // 1. 사용자에게 직접 권한이 부여된 종목들
+      const userPermissions = await UserSportPermission.findAll({
+        where: { user_id: req.session.userId },
+        include: [{
+          model: Sport,
+          as: 'sport',
+          where: { is_active: true }
+        }]
+      });
+      
+      const permittedSports = userPermissions.map(permission => permission.sport);
+      
+      // 2. 권한 제한이 없는 종목들 (모든 사용자 접근 가능)
+      const allActiveSports = await Sport.findAll({
+        where: { is_active: true }
+      });
+      
+      // 권한이 설정된 종목들 찾기
+      const sportsWithAnyPermissions = await UserSportPermission.findAll({
+        where: { sport_id: { [Op.in]: allActiveSports.map(s => s.id) } }
+      });
+      
+      const restrictedSportIds = sportsWithAnyPermissions.map(p => p.sport_id);
+      const unrestrictedSports = allActiveSports.filter(sport => !restrictedSportIds.includes(sport.id));
+      
+      // 권한이 있는 종목들과 제한이 없는 종목들을 합침
+      sports = [...permittedSports, ...unrestrictedSports].sort((a, b) => a.name.localeCompare(b.name));
+    }
+    
     res.render('match-form', { sports });
   } catch (error) {
     logger.error('종목 목록 조회 실패:', error);
@@ -1817,6 +1852,83 @@ app.get('/api/sport', async (req, res) => {
     res.json(sportsWithCreators);
   } catch (error) {
     logger.error('종목 목록 조회 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 사용자 목록 조회 API
+app.get('/api/users', requireAuth, async (req, res) => {
+  try {
+    const users = await User.findAll({
+      attributes: ['id', 'username', 'full_name', 'role'],
+      where: { is_active: true },
+      order: [['username', 'ASC']]
+    });
+    
+    res.json(users);
+  } catch (error) {
+    logger.error('사용자 목록 조회 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 종목별 사용자 권한 조회 API
+app.get('/api/sport/:sportId/permissions', requireAuth, async (req, res) => {
+  try {
+    const { sportId } = req.params;
+    
+    const permissions = await UserSportPermission.findAll({
+      where: { sport_id: sportId },
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: ['id', 'username', 'full_name']
+      }]
+    });
+    
+    res.json(permissions);
+  } catch (error) {
+    logger.error('종목 권한 조회 오류:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '서버 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// 종목별 사용자 권한 저장 API
+app.post('/api/sport/:sportId/permissions', requireAuth, async (req, res) => {
+  try {
+    const { sportId } = req.params;
+    const { selectAllUsers, userIds } = req.body;
+    
+    // 기존 권한 삭제
+    await UserSportPermission.destroy({
+      where: { sport_id: sportId }
+    });
+    
+    // 모든 사용자 접근이 아닌 경우에만 특정 사용자 권한 추가
+    if (!selectAllUsers && userIds && userIds.length > 0) {
+      const permissions = userIds.map(userId => ({
+        user_id: userId,
+        sport_id: sportId
+      }));
+      
+      await UserSportPermission.bulkCreate(permissions);
+    }
+    
+    res.json({ success: true, message: '권한이 성공적으로 저장되었습니다.' });
+  } catch (error) {
+    logger.error('종목 권한 저장 오류:', error);
     res.status(500).json({ 
       success: false, 
       message: '서버 오류가 발생했습니다.',

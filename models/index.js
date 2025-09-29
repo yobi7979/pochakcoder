@@ -402,6 +402,42 @@ const MatchList = sequelize.define('MatchList', {
   tableName: 'MatchLists'
 });
 
+// UserSportPermission 모델 정의 (사용자별 종목 권한)
+const UserSportPermission = sequelize.define('UserSportPermission', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  user_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
+  },
+  sport_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'Sports',
+      key: 'id'
+    }
+  }
+}, {
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  tableName: 'UserSportPermissions',
+  indexes: [
+    {
+      unique: true,
+      fields: ['user_id', 'sport_id']
+    }
+  ]
+});
+
 // 경기 생성 시 스포츠 타입에 따른 기본 데이터 구조 설정
 Match.beforeCreate((match) => {
   // 날짜와 종목 코드를 조합한 ID 생성
@@ -503,6 +539,12 @@ User.hasMany(Template, { foreignKey: 'created_by' });
 MatchList.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
 User.hasMany(MatchList, { foreignKey: 'created_by' });
 
+// UserSportPermission과 User, Sport 간의 관계 설정
+UserSportPermission.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+UserSportPermission.belongsTo(Sport, { foreignKey: 'sport_id', as: 'sport' });
+User.hasMany(UserSportPermission, { foreignKey: 'user_id', as: 'sportPermissions' });
+Sport.hasMany(UserSportPermission, { foreignKey: 'sport_id', as: 'userPermissions' });
+
 // 데이터베이스 연결 및 테이블 생성
 sequelize.sync()
   .then(() => {
@@ -522,5 +564,6 @@ module.exports = {
   Settings,
   MatchList,
   User,
+  UserSportPermission,
   Op
 }; 
