@@ -682,13 +682,15 @@
             font-size: 24px;
         }
         .team-name {
+            font-family: 'Noto Sans KR', Arial, sans-serif;
             font-size: 20px;
             font-weight: bold;
             text-align: center;
             width: 100%;
             margin: 0 auto;
             padding: 0 4px;
-            white-space: normal;
+            white-space: nowrap;
+            overflow: visible;
             transition: transform 0.3s ease;
         }
         .home .team-name,
@@ -698,6 +700,7 @@
         }
         .score-display {
             margin-top: -2px;
+            font-family: 'Noto Sans KR', Arial, sans-serif;
             font-size: 28px;
             font-weight: bold;
             display: flex;
@@ -709,6 +712,7 @@
         }
         .match-time {
             margin-bottom: 15px;
+            font-family: 'Noto Sans KR', Arial, sans-serif;
             font-size: 26px;
             padding: -10px 12px;
             min-width: 80px;
@@ -1125,6 +1129,7 @@
         .match-timer-section .match-time {
             width: 100%;
             text-align: center;
+            font-family: 'Noto Sans KR', Arial, sans-serif;
             font-size: 24px;
             color: #fff;
             font-weight: bold;
@@ -2533,6 +2538,15 @@
                     element.textContent = data.away_team;
                 });
                 
+                // 팀명 길이에 따른 폰트 사이즈 조정
+                document.querySelectorAll('.team-name').forEach(function(el) {
+                    if (el.textContent.trim().length >= 8) {
+                        el.classList.add('small-font');
+                    } else {
+                        el.classList.remove('small-font');
+                    }
+                });
+                
                 // 라인업 헤더 업데이트
                 const homeLineupHeader = document.querySelector('.lineup-header.home span');
                 const awayLineupHeader = document.querySelector('.lineup-header.away span');
@@ -2717,7 +2731,7 @@
                 // 팀 색상 적용 (로고 배경색은 덮어쓰지 않음)
                 updateTeamColors(homeTeamColor, awayTeamColor);
                 document.querySelectorAll('.team-name').forEach(function(el) {
-                    if (el.textContent.trim().length > 8) {
+                    if (el.textContent.trim().length >= 8) {
                         el.classList.add('small-font');
                     } else {
                         el.classList.remove('small-font');
