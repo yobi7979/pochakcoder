@@ -3760,6 +3760,130 @@ io.on('connection', (socket) => {
         logger.info(`toggle_vs_overlay 이벤트를 방 ${roomName}에 전송함`);
     });
     
+    // 하단 스트립 토글 이벤트 처리
+    socket.on('toggle_bottom_strip', (data) => {
+        const { matchId, homeGoals, awayGoals } = data;
+        const roomName = `match_${matchId}`;
+        
+        console.log('=== 서버: 하단 스트립 토글 이벤트 수신 ===');
+        console.log('클라이언트 ID:', socket.id);
+        console.log('받은 데이터:', JSON.stringify(data));
+        console.log('홈팀 득점:', homeGoals);
+        console.log('어웨이팀 득점:', awayGoals);
+        
+        logger.info(`클라이언트 ${socket.id}에서 toggle_bottom_strip 이벤트 수신: ${JSON.stringify(data)}`);
+        
+        // 해당 방의 모든 클라이언트에게 하단 스트립 토글 이벤트와 득점 정보 전송
+        io.to(roomName).emit('toggle_bottom_strip', {
+            matchId: matchId,
+            homeGoals: homeGoals || [],
+            awayGoals: awayGoals || []
+        });
+        
+        console.log('=== 서버: 하단 스트립 토글 이벤트 전송 완료 ===');
+        console.log('전송된 득점 정보:', { homeGoals: homeGoals || [], awayGoals: awayGoals || [] });
+        console.log('대상 방:', roomName);
+        
+        logger.info(`toggle_bottom_strip 이벤트를 방 ${roomName}에 전송함 (득점 정보 포함)`);
+    });
+    
+    // 경기상황 변경 이벤트 처리
+    socket.on('matchStateChanged', (data) => {
+        const { matchId, matchState } = data;
+        const roomName = `match_${matchId}`;
+        
+        logger.info(`클라이언트 ${socket.id}에서 matchStateChanged 이벤트 수신: ${JSON.stringify(data)}`);
+        
+        // 해당 방의 모든 클라이언트에게 경기상황 변경 이벤트 전송
+        io.to(roomName).emit('matchStateChanged', {
+            matchId: matchId,
+            matchState: matchState
+        });
+        
+        logger.info(`matchStateChanged 이벤트를 방 ${roomName}에 전송함: ${matchState}`);
+    });
+    
+        // 점수 변경 이벤트 처리
+        socket.on('scoreChanged', (data) => {
+            const { matchId, homeScore, awayScore } = data;
+            const roomName = `match_${matchId}`;
+            
+            console.log('=== 서버: 점수 변경 이벤트 수신 ===');
+            console.log('클라이언트 ID:', socket.id);
+            console.log('받은 데이터:', JSON.stringify(data));
+            console.log('방 이름:', roomName);
+            console.log('점수:', `${homeScore}-${awayScore}`);
+            
+            logger.info(`클라이언트 ${socket.id}에서 scoreChanged 이벤트 수신: ${JSON.stringify(data)}`);
+            
+            // 해당 방의 모든 클라이언트에게 점수 변경 이벤트 전송
+            io.to(roomName).emit('scoreChanged', {
+                matchId: matchId,
+                homeScore: homeScore,
+                awayScore: awayScore
+            });
+            
+            console.log('=== 서버: 점수 변경 이벤트 전송 완료 ===');
+            console.log('전송된 데이터:', { matchId, homeScore, awayScore });
+            console.log('대상 방:', roomName);
+            
+            logger.info(`scoreChanged 이벤트를 방 ${roomName}에 전송함: ${homeScore}-${awayScore}`);
+        });
+
+    // 득점 정보 업데이트 이벤트 처리
+    socket.on('goalsUpdated', async (data) => {
+        const { matchId, homeGoals, awayGoals } = data;
+        const roomName = `match_${matchId}`;
+        
+        console.log('=== 서버: 득점 정보 업데이트 이벤트 수신 ===');
+        console.log('클라이언트 ID:', socket.id);
+        console.log('받은 데이터:', JSON.stringify(data));
+        console.log('방 이름:', roomName);
+        console.log('홈팀 득점:', homeGoals);
+        console.log('어웨이팀 득점:', awayGoals);
+        
+        logger.info(`클라이언트 ${socket.id}에서 goalsUpdated 이벤트 수신: ${JSON.stringify(data)}`);
+        
+        try {
+            // Match 테이블에서 해당 경기 찾기
+            const match = await Match.findByPk(matchId);
+            if (!match) {
+                console.log('경기를 찾을 수 없습니다:', matchId);
+                socket.emit('goalsUpdated', { success: false, error: '경기를 찾을 수 없습니다.' });
+                return;
+            }
+            
+            // match_data에 득점 정보 저장
+            const matchData = match.match_data || {};
+            matchData.goals = {
+                home: homeGoals,
+                away: awayGoals
+            };
+            
+            await match.update({ match_data: matchData });
+            console.log('득점 정보가 DB에 저장되었습니다.');
+            
+            // 해당 방의 모든 클라이언트에게 득점 정보 업데이트 이벤트 전송
+            io.to(roomName).emit('goalsUpdated', {
+                matchId: matchId,
+                homeGoals: homeGoals,
+                awayGoals: awayGoals,
+                success: true
+            });
+            
+            console.log('=== 서버: 득점 정보 업데이트 이벤트 전송 완료 ===');
+            console.log('전송된 데이터:', { matchId, homeGoals, awayGoals });
+            console.log('대상 방:', roomName);
+            
+            logger.info(`goalsUpdated 이벤트를 방 ${roomName}에 전송함: 홈팀 ${homeGoals.length}개, 어웨이팀 ${awayGoals.length}개`);
+            
+        } catch (error) {
+            console.error('득점 정보 저장 중 오류 발생:', error);
+            logger.error('득점 정보 저장 중 오류:', error);
+            socket.emit('goalsUpdated', { success: false, error: '득점 정보 저장 중 오류가 발생했습니다.' });
+        }
+    });
+    
     // 토너먼트 텍스트 업데이트 이벤트 처리
     socket.on('update_tournament_text', async (data) => {
         const { matchId, tournamentText } = data;
@@ -4214,6 +4338,28 @@ io.on('connection', (socket) => {
         } catch (error) {
             logger.error('야구 경기 데이터 업데이트 중 오류 발생:', error);
             socket.emit('baseball_update_response', { success: false, error: error.message });
+        }
+    });
+
+    // 로고 표시 토글 이벤트
+    socket.on('toggle-logo-display', async (data) => {
+        try {
+            const { matchId, teamType, showLogo } = data;
+            const roomName = `match_${matchId}`;
+            
+            console.log('로고 표시 토글 이벤트 수신:', { matchId, teamType, showLogo });
+            
+            // 모든 클라이언트에게 상태 전송
+            io.to(roomName).emit('logo-display-toggled', {
+                matchId,
+                teamType,
+                showLogo
+            });
+            
+            console.log('로고 표시 토글 상태 전송 완료');
+        } catch (error) {
+            console.error('로고 표시 토글 처리 중 오류:', error);
+            socket.emit('error', { message: '로고 표시 토글 처리 중 오류가 발생했습니다.' });
         }
     });
 

@@ -423,6 +423,71 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
 
+        /* 득점 정보 입력 섹션 스타일 */
+        .goals-input-section {
+            padding: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        .goal-item-control {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 8px;
+            margin: 2px 0;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            gap: 6px;
+        }
+
+        .goal-player-edit, .goal-time-edit {
+            border: 1px solid #007bff;
+            border-radius: 3px;
+            padding: 3px 6px;
+            font-size: 13px;
+            width: 160px;
+            transition: all 0.3s ease;
+        }
+
+        .goal-player-edit:focus, .goal-time-edit:focus {
+            outline: none;
+            border-color: #0056b3;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+        }
+
+        .goal-player-edit:hover, .goal-time-edit:hover {
+            border-color: #0056b3;
+        }
+
+        .goal-item-control .btn {
+            font-size: 11px;
+            padding: 3px 6px;
+            white-space: nowrap;
+            min-width: auto;
+        }
+
+        .goal-player {
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .goal-time {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .home-goals-list, .away-goals-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            background: #ffffff;
+            padding: 10px;
+        }
+
         .lineup-section {
             display: flex;
             justify-content: space-between;
@@ -897,6 +962,12 @@
                                 <button class="btn btn-sm btn-danger remove-logo" data-team-type="home">
                                     <i class="fas fa-trash"></i> 로고 삭제
                                 </button>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input toggle-logo-display" type="checkbox" id="home-logo-display" data-team-type="home">
+                                    <label class="form-check-label" for="home-logo-display">
+                                        <span class="logo-display-text">팀로고 사용</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -946,6 +1017,12 @@
                                 <button class="btn btn-sm btn-danger remove-logo" data-team-type="away">
                                     <i class="fas fa-trash"></i> 로고 삭제
                                 </button>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input toggle-logo-display" type="checkbox" id="away-logo-display" data-team-type="away">
+                                    <label class="form-check-label" for="away-logo-display">
+                                        <span class="logo-display-text">팀로고 사용</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1043,10 +1120,65 @@
                         </div>
                         <button id="toggle-scoreboard" class="btn btn-primary w-100 mb-2">
                             <i class="bi bi-eye"></i> 스코어보드 전체 보이기/숨기기
-                        </button>
+                            </button>
                         <button id="toggle-vs-overlay" class="btn btn-info w-100 mb-2">
                             <i class="bi bi-people"></i> VS 대진 오버레이 보이기/숨기기
-                        </button>
+                            </button>
+                        <button id="toggle-bottom-strip" class="btn btn-warning w-100 mb-2">
+                            <i class="bi bi-layout-text-window-reverse"></i> 하단 스트립 보이기/숨기기
+                            </button>
+                        </div>
+                        </div>
+            </div>
+            
+            <!-- 득점 정보 입력 섹션 -->
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-futbol"></i> 득점 정보 입력
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- 홈팀 득점 입력 -->
+                            <div class="col-md-6">
+                                <div class="goals-input-section">
+                                    <h6 class="text-primary mb-3">
+                                        <i class="fas fa-home"></i> 홈팀 득점
+                                    </h6>
+                                    <div class="input-group mb-2">
+                                        <input type="text" id="homePlayerName" class="form-control" placeholder="선수명">
+                                        <input type="text" id="homeGoalTime" class="form-control" placeholder="시간(예: 10분, 45+2분, 연장 15분)">
+                                        <button class="btn btn-success" onclick="addHomeGoal()">
+                                            <i class="fas fa-plus"></i> 추가
+                            </button>
+                        </div>
+                                    <div class="home-goals-list" id="homeGoalsList">
+                                        <!-- 홈팀 득점 목록이 여기에 표시됩니다 -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 어웨이팀 득점 입력 -->
+                            <div class="col-md-6">
+                                <div class="goals-input-section">
+                                    <h6 class="text-warning mb-3">
+                                        <i class="fas fa-plane"></i> 어웨이팀 득점
+                                    </h6>
+                                    <div class="input-group mb-2">
+                                        <input type="text" id="awayPlayerName" class="form-control" placeholder="선수명">
+                                        <input type="text" id="awayGoalTime" class="form-control" placeholder="시간(예: 10분, 45+2분, 연장 15분)">
+                                        <button class="btn btn-success" onclick="addAwayGoal()">
+                                            <i class="fas fa-plus"></i> 추가
+                            </button>
+                                    </div>
+                                    <div class="away-goals-list" id="awayGoalsList">
+                                        <!-- 어웨이팀 득점 목록이 여기에 표시됩니다 -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1766,8 +1898,403 @@
         }
 
         // 점수 변경 이벤트 리스너
-        document.getElementById('home-score').addEventListener('change', updateMatchInfo);
-        document.getElementById('away-score').addEventListener('change', updateMatchInfo);
+        document.getElementById('home-score').addEventListener('change', function() {
+            updateMatchInfo();
+            emitScoreUpdate();
+        });
+        document.getElementById('away-score').addEventListener('change', function() {
+            updateMatchInfo();
+            emitScoreUpdate();
+        });
+        
+        // 점수 업데이트 이벤트 전송 함수
+        function emitScoreUpdate() {
+            const homeScore = document.getElementById('home-score').value || '0';
+            const awayScore = document.getElementById('away-score').value || '0';
+            
+            console.log('=== 점수 변경 이벤트 전송 ===');
+            console.log('현재 점수:', { homeScore, awayScore });
+            console.log('변환된 점수:', { homeScore: parseInt(homeScore), awayScore: parseInt(awayScore) });
+            console.log('matchId:', matchId);
+            
+            socket.emit('scoreChanged', {
+                matchId: matchId,
+                homeScore: parseInt(homeScore),
+                awayScore: parseInt(awayScore)
+            });
+            
+            console.log('scoreChanged 이벤트 전송 완료');
+        }
+
+        // 득점 정보 관리 변수
+        let homeGoals = [];
+        let awayGoals = [];
+
+        // 홈팀 득점 추가
+        function addHomeGoal() {
+            const playerName = document.getElementById('homePlayerName').value.trim();
+            const goalTime = document.getElementById('homeGoalTime').value.trim();
+            
+            if (!playerName || !goalTime) {
+                showToast('선수명과 시간을 모두 입력해주세요.', 'error');
+                return;
+            }
+            
+            
+            const goal = {
+                player: playerName,
+                time: goalTime, // 텍스트 그대로 저장
+                id: Date.now() // 고유 ID
+            };
+            
+            // 최신 득점이 위로 오도록 unshift 사용
+            homeGoals.unshift(goal);
+            
+            // UI 업데이트
+            updateGoalsDisplay();
+            saveGoalsToServer();
+            
+            // 입력 필드 초기화
+            document.getElementById('homePlayerName').value = '';
+            document.getElementById('homeGoalTime').value = '';
+            
+            showToast(`홈팀 득점 추가: ${playerName} ${goalTime}`, 'success');
+        }
+
+        // 어웨이팀 득점 추가
+        function addAwayGoal() {
+            const playerName = document.getElementById('awayPlayerName').value.trim();
+            const goalTime = document.getElementById('awayGoalTime').value.trim();
+            
+            if (!playerName || !goalTime) {
+                showToast('선수명과 시간을 모두 입력해주세요.', 'error');
+                return;
+            }
+            
+            
+            const goal = {
+                player: playerName,
+                time: goalTime, // 텍스트 그대로 저장
+                id: Date.now() // 고유 ID
+            };
+            
+            // 최신 득점이 위로 오도록 unshift 사용
+            awayGoals.unshift(goal);
+            
+            // UI 업데이트
+            updateGoalsDisplay();
+            saveGoalsToServer();
+            
+            // 입력 필드 초기화
+            document.getElementById('awayPlayerName').value = '';
+            document.getElementById('awayGoalTime').value = '';
+            
+            showToast(`어웨이팀 득점 추가: ${playerName} ${goalTime}`, 'success');
+        }
+
+        // 득점 정보 표시 업데이트 (자동 저장 기능 포함)
+        function updateGoalsDisplay() {
+            // 홈팀 득점 목록 표시
+            const homeGoalsList = document.getElementById('homeGoalsList');
+            if (homeGoalsList) {
+                homeGoalsList.innerHTML = homeGoals.map(goal => 
+                    `<div class="goal-item-control" data-goal-id="${goal.id}">
+                        <input type="text" class="goal-player-edit" value="${goal.player}" onchange="autoSaveHomeGoal(${goal.id})">
+                        <input type="text" class="goal-time-edit" value="${goal.time}" onchange="autoSaveHomeGoal(${goal.id})">
+                        <button class="btn btn-sm btn-outline-danger" onclick="removeHomeGoal(${goal.id})">
+                            <i class="fas fa-times"></i> 삭제
+                        </button>
+                    </div>`
+                ).join('');
+            }
+            
+            // 어웨이팀 득점 목록 표시
+            const awayGoalsList = document.getElementById('awayGoalsList');
+            if (awayGoalsList) {
+                awayGoalsList.innerHTML = awayGoals.map(goal => 
+                    `<div class="goal-item-control" data-goal-id="${goal.id}">
+                        <input type="text" class="goal-player-edit" value="${goal.player}" onchange="autoSaveAwayGoal(${goal.id})">
+                        <input type="text" class="goal-time-edit" value="${goal.time}" onchange="autoSaveAwayGoal(${goal.id})">
+                        <button class="btn btn-sm btn-outline-danger" onclick="removeAwayGoal(${goal.id})">
+                            <i class="fas fa-times"></i> 삭제
+                        </button>
+                    </div>`
+                ).join('');
+            }
+        }
+
+        // 홈팀 득점 자동 저장
+        function autoSaveHomeGoal(goalId) {
+            const goalElement = document.querySelector(`[data-goal-id="${goalId}"]`);
+            if (!goalElement) return;
+            
+            const playerName = goalElement.querySelector('.goal-player-edit').value.trim();
+            const goalTime = goalElement.querySelector('.goal-time-edit').value.trim();
+            
+            if (!playerName || !goalTime) {
+                return; // 빈 값이면 저장하지 않음
+            }
+            
+            // 기존 득점 정보 업데이트
+            const goalIndex = homeGoals.findIndex(goal => goal.id === goalId);
+            if (goalIndex !== -1) {
+                homeGoals[goalIndex].player = playerName;
+                homeGoals[goalIndex].time = goalTime;
+                
+                // 서버에 저장
+                saveGoalsToServer();
+                console.log('홈팀 득점 정보 자동 저장:', playerName, goalTime);
+            }
+        }
+
+        // 홈팀 득점 수정 (수동 저장용 - 현재는 사용하지 않음)
+        function saveHomeGoal(goalId) {
+            const goalElement = document.querySelector(`[data-goal-id="${goalId}"]`);
+            if (!goalElement) return;
+            
+            const playerName = goalElement.querySelector('.goal-player-edit').value.trim();
+            const goalTime = goalElement.querySelector('.goal-time-edit').value.trim();
+            
+            if (!playerName || !goalTime) {
+                showToast('선수명과 시간을 모두 입력해주세요.', 'error');
+                return;
+            }
+            
+            // 기존 득점 정보 업데이트
+            const goalIndex = homeGoals.findIndex(goal => goal.id === goalId);
+            if (goalIndex !== -1) {
+                homeGoals[goalIndex].player = playerName;
+                homeGoals[goalIndex].time = goalTime;
+                
+                // 서버에 저장
+                saveGoalsToServer();
+                showToast('홈팀 득점 정보가 수정되었습니다.', 'success');
+            }
+        }
+
+        // 어웨이팀 득점 자동 저장
+        function autoSaveAwayGoal(goalId) {
+            const goalElement = document.querySelector(`[data-goal-id="${goalId}"]`);
+            if (!goalElement) return;
+            
+            const playerName = goalElement.querySelector('.goal-player-edit').value.trim();
+            const goalTime = goalElement.querySelector('.goal-time-edit').value.trim();
+            
+            if (!playerName || !goalTime) {
+                return; // 빈 값이면 저장하지 않음
+            }
+            
+            // 기존 득점 정보 업데이트
+            const goalIndex = awayGoals.findIndex(goal => goal.id === goalId);
+            if (goalIndex !== -1) {
+                awayGoals[goalIndex].player = playerName;
+                awayGoals[goalIndex].time = goalTime;
+                
+                // 서버에 저장
+                saveGoalsToServer();
+                console.log('어웨이팀 득점 정보 자동 저장:', playerName, goalTime);
+            }
+        }
+
+        // 어웨이팀 득점 수정 (수동 저장용 - 현재는 사용하지 않음)
+        function saveAwayGoal(goalId) {
+            const goalElement = document.querySelector(`[data-goal-id="${goalId}"]`);
+            if (!goalElement) return;
+            
+            const playerName = goalElement.querySelector('.goal-player-edit').value.trim();
+            const goalTime = goalElement.querySelector('.goal-time-edit').value.trim();
+            
+            if (!playerName || !goalTime) {
+                showToast('선수명과 시간을 모두 입력해주세요.', 'error');
+                return;
+            }
+            
+            // 기존 득점 정보 업데이트
+            const goalIndex = awayGoals.findIndex(goal => goal.id === goalId);
+            if (goalIndex !== -1) {
+                awayGoals[goalIndex].player = playerName;
+                awayGoals[goalIndex].time = goalTime;
+                
+                // 서버에 저장
+                saveGoalsToServer();
+                showToast('어웨이팀 득점 정보가 수정되었습니다.', 'success');
+            }
+        }
+
+        // 홈팀 득점 삭제
+        function removeHomeGoal(goalId) {
+            homeGoals = homeGoals.filter(goal => goal.id !== goalId);
+            updateGoalsDisplay();
+            saveGoalsToServer();
+            showToast('홈팀 득점이 삭제되었습니다.', 'info');
+        }
+
+        // 어웨이팀 득점 삭제
+        function removeAwayGoal(goalId) {
+            awayGoals = awayGoals.filter(goal => goal.id !== goalId);
+            updateGoalsDisplay();
+            saveGoalsToServer();
+            showToast('어웨이팀 득점이 삭제되었습니다.', 'info');
+        }
+
+        // 서버에 득점 정보 저장
+        function saveGoalsToServer() {
+            console.log('=== 득점 정보 서버 저장 ===');
+            console.log('홈팀 득점:', homeGoals);
+            console.log('어웨이팀 득점:', awayGoals);
+            console.log('matchId:', matchId);
+            console.log('socket 연결 상태:', socket.connected);
+            
+            // 로컬 스토리지 백업 저장
+            try {
+                const goalsData = {
+                    homeGoals: homeGoals,
+                    awayGoals: awayGoals,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem(`goals_${matchId}`, JSON.stringify(goalsData));
+                console.log('✅ 로컬 스토리지 백업 저장 완료');
+            } catch (error) {
+                console.error('로컬 스토리지 저장 실패:', error);
+            }
+            
+            if (!socket.connected) {
+                console.error('❌ 소켓이 연결되지 않았습니다!');
+                showToast('서버와의 연결이 끊어졌습니다. 페이지를 새로고침해주세요.', 'error');
+                return;
+            }
+            
+            socket.emit('goalsUpdated', {
+                matchId: matchId,
+                homeGoals: homeGoals,
+                awayGoals: awayGoals
+            });
+            
+            console.log('✅ goalsUpdated 이벤트 전송 완료');
+            
+            // 저장 확인을 위해 잠시 후 다시 로드
+            setTimeout(async () => {
+                console.log('=== 득점 정보 저장 확인 ===');
+                try {
+                    const response = await fetch(`/api/match/${matchId}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.match_data && data.match_data.goals) {
+                            console.log('저장 확인 - 서버 득점 정보:', data.match_data.goals);
+                        } else {
+                            console.log('저장 확인 - 서버에 득점 정보 없음');
+                        }
+                    }
+                } catch (error) {
+                    console.error('저장 확인 실패:', error);
+                }
+            }, 1000);
+        }
+
+        // 페이지 로드 시 저장된 득점 정보 로드
+        async function loadSavedGoalsOnPageLoad() {
+            console.log('=== 페이지 로드 시 저장된 득점 정보 로드 시작 ===');
+            console.log('현재 matchId:', matchId);
+            console.log('현재 homeGoals 초기값:', homeGoals);
+            console.log('현재 awayGoals 초기값:', awayGoals);
+            
+            let goalsLoaded = false;
+            
+            try {
+                // 1. 먼저 로컬 스토리지에서 로드 시도
+                console.log('=== 로컬 스토리지에서 득점 정보 로드 시도 ===');
+                try {
+                    const localData = localStorage.getItem(`goals_${matchId}`);
+                    if (localData) {
+                        const goalsData = JSON.parse(localData);
+                        console.log('로컬 스토리지 득점 정보:', goalsData);
+                        
+                        if (goalsData.homeGoals && goalsData.awayGoals) {
+                            homeGoals = goalsData.homeGoals;
+                            awayGoals = goalsData.awayGoals;
+                            updateGoalsDisplay();
+                            goalsLoaded = true;
+                            console.log('✅ 로컬 스토리지에서 득점 정보 로드 완료');
+                        }
+                    } else {
+                        console.log('로컬 스토리지에 득점 정보 없음');
+                    }
+                } catch (localError) {
+                    console.error('로컬 스토리지 로드 실패:', localError);
+                }
+                
+                // 2. 서버에서 현재 매치 정보 가져오기
+                console.log('=== 서버에서 득점 정보 로드 시도 ===');
+                console.log('API 요청 시작: /api/match/' + matchId);
+                const response = await fetch(`/api/match/${matchId}`);
+                console.log('API 응답 상태:', response.status, response.ok);
+                
+                if (!response.ok) {
+                    console.log('매치 정보를 가져올 수 없습니다. 상태:', response.status);
+                    if (!goalsLoaded) {
+                        homeGoals = [];
+                        awayGoals = [];
+                        updateGoalsDisplay();
+                    }
+                    return;
+                }
+                
+                const data = await response.json();
+                console.log('매치 정보 응답:', data);
+                console.log('match_data 존재 여부:', !!data.match_data);
+                console.log('goals 존재 여부:', !!(data.match_data && data.match_data.goals));
+                
+                if (data.match_data && data.match_data.goals) {
+                    const goals = data.match_data.goals;
+                    console.log('서버 저장된 득점 정보:', goals);
+                    console.log('홈팀 득점 개수:', goals.home ? goals.home.length : 0);
+                    console.log('어웨이팀 득점 개수:', goals.away ? goals.away.length : 0);
+                    
+                    // 서버 데이터가 있으면 서버 데이터 우선 사용
+                    if (goals.home && Array.isArray(goals.home)) {
+                        homeGoals = goals.home;
+                        console.log('서버 홈팀 득점 정보 로드 완료:', homeGoals);
+                    } else {
+                        homeGoals = [];
+                        console.log('서버 홈팀 득점 정보 없음, 빈 배열로 초기화');
+                    }
+                    
+                    if (goals.away && Array.isArray(goals.away)) {
+                        awayGoals = goals.away;
+                        console.log('서버 어웨이팀 득점 정보 로드 완료:', awayGoals);
+                    } else {
+                        awayGoals = [];
+                        console.log('서버 어웨이팀 득점 정보 없음, 빈 배열로 초기화');
+                    }
+                    
+                    // UI 업데이트
+                    console.log('UI 업데이트 시작...');
+                    updateGoalsDisplay();
+                    console.log('✅ 서버에서 득점 정보 UI 업데이트 완료');
+                    console.log('최종 homeGoals:', homeGoals);
+                    console.log('최종 awayGoals:', awayGoals);
+                    
+                } else {
+                    console.log('서버에 저장된 득점 정보가 없습니다.');
+                    if (!goalsLoaded) {
+                        console.log('로컬 스토리지에도 없음, 빈 배열로 초기화합니다.');
+                        homeGoals = [];
+                        awayGoals = [];
+                        updateGoalsDisplay();
+                        console.log('빈 배열 초기화 완료');
+                    } else {
+                        console.log('로컬 스토리지 데이터 사용 중');
+                    }
+                }
+                
+            } catch (error) {
+                console.error('득점 정보 로드 중 오류 발생:', error);
+                // 에러 시 빈 배열로 초기화
+                homeGoals = [];
+                awayGoals = [];
+                updateGoalsDisplay();
+            }
+        }
 
         // 팀명 수정 이벤트 리스너
         document.querySelectorAll('.save-team-name').forEach(button => {
@@ -1875,7 +2402,19 @@
 
         // 경기 상태 변경 이벤트 리스너
         document.querySelectorAll('input[name="matchState"]').forEach(radio => {
-            radio.addEventListener('change', updateMatchInfo);
+            radio.addEventListener('change', function() {
+                // 기존 updateMatchInfo 호출
+                updateMatchInfo();
+                
+                // 경기상황 변경 이벤트 전송
+                const matchState = this.value;
+                console.log('경기상황 변경:', matchState);
+                
+                socket.emit('matchStateChanged', {
+                    matchId: matchId,
+                    matchState: matchState
+                });
+            });
         });
 
         // 에러 처리
@@ -1915,12 +2454,28 @@
                 matchId: matchId
             });
         });
-        
+
         // VS 대진 오버레이 토글 컨트롤
         document.getElementById('toggle-vs-overlay').addEventListener('click', function() {
             socket.emit('toggle_vs_overlay', {
                 matchId: matchId
             });
+        });
+
+        // 하단 스트립 토글 컨트롤
+        document.getElementById('toggle-bottom-strip').addEventListener('click', function() {
+            console.log('=== 하단 스트립 토글 버튼 클릭 ===');
+            console.log('현재 홈팀 득점:', homeGoals);
+            console.log('현재 어웨이팀 득점:', awayGoals);
+            
+            // 현재 득점 정보와 함께 토글 이벤트 전송
+            socket.emit('toggle_bottom_strip', {
+                matchId: matchId,
+                homeGoals: homeGoals,
+                awayGoals: awayGoals
+            });
+            
+            console.log('하단 스트립 토글 이벤트 전송 완료 (득점 정보 포함)');
         });
         
         
@@ -1932,7 +2487,7 @@
                 tournamentText: tournamentText
             });
         });
-        
+
         // 기존 토너먼트 텍스트 로드
         async function loadTournamentText() {
             try {
@@ -3524,6 +4079,15 @@
             } catch (error) {
                 console.error('팀 로고 정보 로드 중 오류 발생:', error);
             }
+            
+            // 득점 정보 로드
+            try {
+                console.log('=== DOMContentLoaded: 득점 정보 로드 시작 ===');
+                await loadSavedGoalsOnPageLoad();
+                console.log('✅ DOMContentLoaded: 득점 정보 로드 완료');
+            } catch (error) {
+                console.error('DOMContentLoaded: 득점 정보 로드 중 오류 발생:', error);
+            }
         });
 
         // 팀 로고 정보 로드 (DB 우선 참조)
@@ -3595,54 +4159,54 @@
                 // 2. 팀 로고 맵 정보 로드 (백업)
                 const response = await fetch('/api/team-logo-map/SOCCER');
                 if (response.ok) {
-                    const data = await response.json();
+                const data = await response.json();
                     console.log('팀 로고 맵 로드 성공:', data);
+                
+                if (data && data.teamLogoMap) {
+                    const homeTeam = '<%= match.home_team %>';
+                    const awayTeam = '<%= match.away_team %>';
                     
-                    if (data && data.teamLogoMap) {
-                        const homeTeam = '<%= match.home_team %>';
-                        const awayTeam = '<%= match.away_team %>';
-                        
                         // 홈팀 로고 설정 (경기 데이터에 없을 때만)
-                        const homeLogoInfo = data.teamLogoMap[homeTeam];
+                    const homeLogoInfo = data.teamLogoMap[homeTeam];
                         const homeLogoPreview = document.getElementById('home-logo-preview');
                         const homeLogoBgColor = document.getElementById('home-logo-bg-color');
                         
                         if (homeLogoInfo && (!homeLogoBgColor || !homeLogoBgColor.value)) {
                             console.log('홈팀 로고 정보 로드 (팀 맵):', homeLogoInfo);
                             
-                            if (homeLogoPreview) {
-                                homeLogoPreview.style.backgroundColor = homeLogoInfo.bgColor || '#ffffff';
-                                if (homeLogoInfo.path) {
-                                    homeLogoPreview.innerHTML = `<img src="${homeLogoInfo.path}" alt="${homeTeam} 로고" style="width: 100%; height: 100%; object-fit: contain;">`;
-                                } else {
-                                    homeLogoPreview.innerHTML = '<div class="no-logo">로고 없음</div>';
-                                }
-                            }
-                            
-                            if (homeLogoBgColor) {
-                                homeLogoBgColor.value = homeLogoInfo.bgColor || '#ffffff';
+                        if (homeLogoPreview) {
+                            homeLogoPreview.style.backgroundColor = homeLogoInfo.bgColor || '#ffffff';
+                            if (homeLogoInfo.path) {
+                                homeLogoPreview.innerHTML = `<img src="${homeLogoInfo.path}" alt="${homeTeam} 로고" style="width: 100%; height: 100%; object-fit: contain;">`;
+                            } else {
+                                homeLogoPreview.innerHTML = '<div class="no-logo">로고 없음</div>';
                             }
                         }
                         
+                        if (homeLogoBgColor) {
+                            homeLogoBgColor.value = homeLogoInfo.bgColor || '#ffffff';
+                        }
+                    }
+                    
                         // 어웨이팀 로고 설정 (경기 데이터에 없을 때만)
-                        const awayLogoInfo = data.teamLogoMap[awayTeam];
+                    const awayLogoInfo = data.teamLogoMap[awayTeam];
                         const awayLogoPreview = document.getElementById('away-logo-preview');
                         const awayLogoBgColor = document.getElementById('away-logo-bg-color');
                         
                         if (awayLogoInfo && (!awayLogoBgColor || !awayLogoBgColor.value)) {
                             console.log('어웨이팀 로고 정보 로드 (팀 맵):', awayLogoInfo);
                             
-                            if (awayLogoPreview) {
-                                awayLogoPreview.style.backgroundColor = awayLogoInfo.bgColor || '#ffffff';
-                                if (awayLogoInfo.path) {
-                                    awayLogoPreview.innerHTML = `<img src="${awayLogoInfo.path}" alt="${awayTeam} 로고" style="width: 100%; height: 100%; object-fit: contain;">`;
-                                } else {
-                                    awayLogoPreview.innerHTML = '<div class="no-logo">로고 없음</div>';
-                                }
+                        if (awayLogoPreview) {
+                            awayLogoPreview.style.backgroundColor = awayLogoInfo.bgColor || '#ffffff';
+                            if (awayLogoInfo.path) {
+                                awayLogoPreview.innerHTML = `<img src="${awayLogoInfo.path}" alt="${awayTeam} 로고" style="width: 100%; height: 100%; object-fit: contain;">`;
+                            } else {
+                                awayLogoPreview.innerHTML = '<div class="no-logo">로고 없음</div>';
                             }
-                            
-                            if (awayLogoBgColor) {
-                                awayLogoBgColor.value = awayLogoInfo.bgColor || '#ffffff';
+                        }
+                        
+                        if (awayLogoBgColor) {
+                            awayLogoBgColor.value = awayLogoInfo.bgColor || '#ffffff';
                             }
                         }
                     }
@@ -4003,9 +4567,88 @@
             });
         });
 
+        // 팀별 로고 표시 상태 추적
+        let logoDisplayStates = {
+            home: true,  // true: 로고 표시, false: 배경색만 표시
+            away: true
+        };
+
+        // 로고 표시 상태 로드
+        function loadLogoDisplayStates() {
+            const savedStates = localStorage.getItem('logoDisplayStates');
+            if (savedStates) {
+                logoDisplayStates = JSON.parse(savedStates);
+                console.log('로고 표시 상태 로드:', logoDisplayStates);
+                
+                // 버튼 상태 업데이트
+                updateLogoDisplayButtons();
+            }
+        }
+
+        // 로고 표시 상태 저장
+        function saveLogoDisplayStates() {
+            localStorage.setItem('logoDisplayStates', JSON.stringify(logoDisplayStates));
+            console.log('로고 표시 상태 저장:', logoDisplayStates);
+        }
+
+        // 로고 표시 체크박스 상태 업데이트
+        function updateLogoDisplayCheckboxes() {
+            ['home', 'away'].forEach(teamType => {
+                const checkbox = document.querySelector(`[data-team-type="${teamType}"].toggle-logo-display`);
+                const textSpan = document.querySelector(`#${teamType}-logo-display`).parentElement.querySelector('.logo-display-text');
+                
+                if (checkbox) {
+                    checkbox.checked = logoDisplayStates[teamType];
+                    
+                    if (logoDisplayStates[teamType]) {
+                        // 로고 표시 상태
+                        textSpan.textContent = '팀로고 사용';
+                    } else {
+                        // 배경색만 표시 상태
+                        textSpan.textContent = '팀배경색만 사용';
+                    }
+                }
+            });
+        }
+
+        // 팀로고 사용 체크박스 이벤트 리스너
+        document.querySelectorAll('.toggle-logo-display').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const teamType = this.getAttribute('data-team-type');
+                const isChecked = this.checked;
+                toggleLogoDisplay(teamType, isChecked);
+            });
+        });
+
+        // 로고 표시 토글 함수
+        function toggleLogoDisplay(teamType, isChecked) {
+            logoDisplayStates[teamType] = isChecked;
+            
+            // 상태 저장
+            saveLogoDisplayStates();
+            
+            // 체크박스 상태 업데이트
+            updateLogoDisplayCheckboxes();
+            
+            // Socket.io로 상태 전송
+            socket.emit('toggle-logo-display', {
+                matchId: '<%= match.id %>',
+                teamType: teamType,
+                showLogo: logoDisplayStates[teamType]
+            });
+            
+            console.log(`${teamType}팀 로고 표시 상태:`, logoDisplayStates[teamType] ? '표시' : '배경색만');
+        }
+
         // 초기화 함수
         async function initialize() {
             try {
+                // 로고 표시 상태 로드
+                loadLogoDisplayStates();
+                
+                // 체크박스 상태 업데이트
+                updateLogoDisplayCheckboxes();
+                
                 // 팀 로고 매핑 정보 확인
                 const response = await fetch('/api/team-logo-map/SOCCER');
                 if (!response.ok) {
