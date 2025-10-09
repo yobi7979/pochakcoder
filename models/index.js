@@ -101,16 +101,9 @@ const Match = sequelize.define('Match', {
   match_data: {
     type: DataTypes.JSON,
     defaultValue: {}
-  },
-  created_by: {
-    type: DataTypes.INTEGER,
-    allowNull: true
-    // Railway PostgreSQL 환경에서 외래 키 제약 조건 제거
-    // references: {
-    //   model: 'users',
-    //   key: 'id'
-    // }
   }
+  // Railway PostgreSQL에서 존재하지 않는 컬럼 제거
+  // created_by
 }, {
   timestamps: true,
   createdAt: 'created_at',
@@ -148,16 +141,9 @@ const Template = sequelize.define('Template', {
   is_default: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
-  },
-  created_by: {
-    type: DataTypes.INTEGER,
-    allowNull: true
-    // Railway PostgreSQL 환경에서 외래 키 제약 조건 제거
-    // references: {
-    //   model: 'users',
-    //   key: 'id'
-    // }
   }
+  // Railway PostgreSQL에서 존재하지 않는 컬럼 제거
+  // created_by
 }, {
   timestamps: true,
   createdAt: 'created_at',
@@ -197,16 +183,9 @@ const Sport = sequelize.define('Sport', {
   is_default: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
-  },
-  created_by: {
-    type: DataTypes.INTEGER,
-    allowNull: true
-    // Railway PostgreSQL 환경에서 외래 키 제약 조건 제거
-    // references: {
-    //   model: 'users',
-    //   key: 'id'
-    // }
   }
+  // Railway PostgreSQL에서 존재하지 않는 컬럼 제거
+  // created_by
 }, {
   timestamps: true,
   createdAt: 'created_at',
