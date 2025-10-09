@@ -687,8 +687,18 @@
                                         <div class="card-body">
                                             <div class="alert alert-danger">
                                                 <i class="bi bi-exclamation-triangle-fill"></i>
-                                                <strong>경고:</strong> 이 작업은 기본 종목(축구, 야구)을 제외한 모든 사용자 데이터를 삭제합니다. 
-                                                삭제되는 데이터: 사용자 정의 종목, 경기 정보, 오버레이 이미지, 팀 로고, 경기 목록 등
+                                                <strong>경고:</strong> 이 작업은 모든 데이터를 삭제합니다 (기본 종목 구조만 유지). 
+                                                <br><strong>삭제되는 데이터:</strong>
+                                                <ul class="mb-0 mt-2">
+                                                    <li>모든 경기 정보 (축구, 야구 포함)</li>
+                                                    <li>모든 팀 정보 (축구, 야구 포함)</li>
+                                                    <li>모든 오버레이 이미지 (축구, 야구 포함)</li>
+                                                    <li>모든 팀 로고 (축구, 야구 포함)</li>
+                                                    <li>사용자 정의 종목</li>
+                                                    <li>사용자 정의 템플릿</li>
+                                                    <li>경기 목록</li>
+                                                    <li>기타 설정</li>
+                                                </ul>
                                             </div>
                                             
                                             <div class="mb-3">
@@ -696,13 +706,13 @@
                                                 <div class="form-check">
                                                     <input type="checkbox" id="reset-confirm-1" class="form-check-input">
                                                     <label class="form-check-label" for="reset-confirm-1">
-                                                        기본 종목(축구, 야구)은 유지됩니다
+                                                        모든 경기, 팀, 이미지 데이터가 삭제됩니다
                                                     </label>
                                                 </div>
                                                 <div class="form-check">
                                                     <input type="checkbox" id="reset-confirm-2" class="form-check-input">
                                                     <label class="form-check-label" for="reset-confirm-2">
-                                                        사용자 정의 종목과 관련 데이터가 모두 삭제됩니다
+                                                        사용자 정의 종목과 템플릿이 삭제됩니다
                                                     </label>
                                                 </div>
                                                 <div class="form-check">

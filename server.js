@@ -2022,13 +2022,78 @@ app.post('/api/database/reset', requireAdmin, async (req, res) => {
       console.log(`✅ 종목 삭제 완료: ${sport.name}`);
     }
     
-    // 3. 경기 목록 초기화
+    // 3. 모든 경기 삭제 (기본 종목 포함)
+    await Match.destroy({
+      where: {}
+    });
+    
+    // 4. 모든 팀 정보 삭제 (기본 종목 포함)
+    await TeamInfo.destroy({
+      where: {}
+    });
+    
+    // 5. 모든 오버레이 이미지 삭제 (기본 종목 포함)
+    await SportOverlayImage.destroy({
+      where: {}
+    });
+    
+    await SportActiveOverlayImage.destroy({
+      where: {}
+    });
+    
+    // 6. 경기 목록 초기화
     await MatchList.destroy({
       where: {},
       truncate: true
     });
     
-    // 4. 설정 초기화 (팀로고 관련 설정만 유지)
+    // 7. 사용자 정의 템플릿 삭제
+    const { Template } = require('./models');
+    const customTemplates = await Template.findAll({
+      where: { is_default: false }
+    });
+    
+    for (const template of customTemplates) {
+      // 템플릿 파일 삭제
+      const templateFile = path.join(__dirname, 'views', `${template.name}-template.ejs`);
+      const controlFile = path.join(__dirname, 'views', `${template.name}-control.ejs`);
+      const controlMobileFile = path.join(__dirname, 'views', `${template.name}-control-mobile.ejs`);
+      
+      if (fs.existsSync(templateFile)) {
+        fs.unlinkSync(templateFile);
+        console.log(`✅ 템플릿 파일 삭제: ${templateFile}`);
+      }
+      if (fs.existsSync(controlFile)) {
+        fs.unlinkSync(controlFile);
+        console.log(`✅ 컨트롤 파일 삭제: ${controlFile}`);
+      }
+      if (fs.existsSync(controlMobileFile)) {
+        fs.unlinkSync(controlMobileFile);
+        console.log(`✅ 모바일 컨트롤 파일 삭제: ${controlMobileFile}`);
+      }
+      
+      // 템플릿 DB 삭제
+      await template.destroy();
+      console.log(`✅ 템플릿 삭제 완료: ${template.name}`);
+    }
+    
+    // 8. 기본 종목 오버레이 이미지 폴더 삭제
+    const defaultSports = ['SOCCER', 'BASEBALL'];
+    for (const sportCode of defaultSports) {
+      const overlayFolderPath = path.join(__dirname, 'public', 'overlay-images', sportCode);
+      if (fs.existsSync(overlayFolderPath)) {
+        fs.rmSync(overlayFolderPath, { recursive: true, force: true });
+        console.log(`✅ 기본 종목 오버레이 폴더 삭제: ${overlayFolderPath}`);
+      }
+      
+      const teamLogoFolderPath = path.join(__dirname, 'public', 'TEAMLOGO', sportCode);
+      if (fs.existsSync(teamLogoFolderPath)) {
+        fs.rmSync(teamLogoFolderPath, { recursive: true, force: true });
+        console.log(`✅ 기본 종목 팀로고 폴더 삭제: ${teamLogoFolderPath}`);
+      }
+    }
+    
+    // 9. 설정 초기화 (팀로고 관련 설정만 유지)
     await Settings.destroy({
       where: {
         key: {
