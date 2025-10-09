@@ -1,0 +1,13 @@
+@echo off
+echo 빠른 서버 재시작...
+echo.
+
+echo Node.js 프로세스 종료 중...
+taskkill /f /im node.exe 2>nul
+
+echo 2초 대기...
+timeout /t 2 /nobreak >nul
+
+echo 서버 시작...
+set LOCAL_DEV=true
+npm run dev
