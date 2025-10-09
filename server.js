@@ -3319,7 +3319,7 @@ server.listen(PORT, async () => {
   // 푸시 정보 복원
   await restorePushedMatches();
   
-  // 관리자 계정 자동 생성 (Railway 환경 대응)
+  // 관리자 계정 자동 생성/업데이트 (Railway 환경 대응)
   try {
     const { User } = require('./models');
     const bcrypt = require('bcrypt');
@@ -3338,10 +3338,19 @@ server.listen(PORT, async () => {
       });
       console.log('✅ 관리자 계정 생성 완료 (admin/admin123)');
     } else {
-      console.log('✅ 관리자 계정 이미 존재함');
+      console.log('🔧 기존 관리자 계정 발견, 비밀번호 업데이트 중...');
+      const hash = await bcrypt.hash('admin123', 10);
+      await existingAdmin.update({
+        password: hash,
+        email: 'admin@sportscoder.com',
+        full_name: 'Administrator',
+        role: 'admin',
+        is_active: true
+      });
+      console.log('✅ 관리자 계정 비밀번호 업데이트 완료 (admin/admin123)');
     }
   } catch (error) {
-    console.error('❌ 관리자 계정 생성 실패:', error.message);
+    console.error('❌ 관리자 계정 생성/업데이트 실패:', error.message);
   }
   
   // 등록된 라우트 확인
