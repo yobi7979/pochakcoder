@@ -3381,30 +3381,78 @@ server.listen(PORT, async () => {
     console.error('❌ 데이터베이스 연결 실패:', error);
   }
   
-  // Railway PostgreSQL 스키마 수정
+  // Railway PostgreSQL 모든 테이블 스키마 수정
   if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
     try {
-      console.log('🔧 Railway PostgreSQL 스키마 수정 중...');
+      console.log('🔧 Railway PostgreSQL 모든 테이블 스키마 수정 중...');
       
-      // MatchLists 테이블에 누락된 컬럼들 추가
-      const alterQueries = [
+      // 1. Sports 테이블에 누락된 컬럼들 추가
+      console.log('🔧 Sports 테이블 수정 중...');
+      const sportsAlterQueries = [
+        `ALTER TABLE "Sports" ADD COLUMN IF NOT EXISTS "created_by" INTEGER;`
+      ];
+      
+      for (const query of sportsAlterQueries) {
+        try {
+          await sequelize.query(query);
+          const columnName = query.match(/ADD COLUMN IF NOT EXISTS "([^"]+)"/)?.[1] || 'unknown';
+          console.log(`✅ Sports 컬럼 확인/추가: ${columnName}`);
+        } catch (error) {
+          console.warn(`⚠️ Sports 컬럼 처리 실패: ${error.message}`);
+        }
+      }
+      
+      // 2. Templates 테이블의 created_by 컬럼 타입 수정
+      console.log('🔧 Templates 테이블 수정 중...');
+      try {
+        await sequelize.query(`ALTER TABLE "templates" ALTER COLUMN "created_by" TYPE INTEGER USING "created_by"::INTEGER;`);
+        console.log(`✅ Templates 컬럼 타입 수정: created_by -> INTEGER`);
+      } catch (error) {
+        console.warn(`⚠️ Templates 컬럼 타입 수정 실패: ${error.message}`);
+      }
+      
+      // 3. MatchLists 테이블에 누락된 컬럼들 추가
+      console.log('🔧 MatchLists 테이블 수정 중...');
+      const matchListsAlterQueries = [
         `ALTER TABLE "MatchLists" ADD COLUMN IF NOT EXISTS "pushed_match_id" VARCHAR(255);`,
         `ALTER TABLE "MatchLists" ADD COLUMN IF NOT EXISTS "pushed_match_index" INTEGER DEFAULT 0;`,
         `ALTER TABLE "MatchLists" ADD COLUMN IF NOT EXISTS "pushed_timestamp" BIGINT;`,
         `ALTER TABLE "MatchLists" ADD COLUMN IF NOT EXISTS "created_by" INTEGER;`
       ];
       
-      for (const query of alterQueries) {
+      for (const query of matchListsAlterQueries) {
         try {
           await sequelize.query(query);
           const columnName = query.match(/ADD COLUMN IF NOT EXISTS "([^"]+)"/)?.[1] || 'unknown';
-          console.log(`✅ 컬럼 확인/추가: ${columnName}`);
+          console.log(`✅ MatchLists 컬럼 확인/추가: ${columnName}`);
         } catch (error) {
-          console.warn(`⚠️ 컬럼 처리 실패: ${error.message}`);
+          console.warn(`⚠️ MatchLists 컬럼 처리 실패: ${error.message}`);
         }
       }
       
-      console.log('✅ Railway PostgreSQL 스키마 수정 완료');
+      // 4. 외래키 제약조건 문제 해결
+      console.log('🔧 외래키 제약조건 수정 중...');
+      try {
+        // TeamInfo 테이블의 외래키 제약조건을 CASCADE로 수정
+        await sequelize.query(`
+          ALTER TABLE "TeamInfo" 
+          DROP CONSTRAINT IF EXISTS "TeamInfo_match_id_fkey";
+        `);
+        
+        await sequelize.query(`
+          ALTER TABLE "TeamInfo" 
+          ADD CONSTRAINT "TeamInfo_match_id_fkey" 
+          FOREIGN KEY ("match_id") 
+          REFERENCES "Matches"("id") 
+          ON DELETE CASCADE;
+        `);
+        
+        console.log(`✅ 외래키 제약조건 수정: TeamInfo_match_id_fkey (CASCADE 추가)`);
+      } catch (error) {
+        console.warn(`⚠️ 외래키 제약조건 수정 실패: ${error.message}`);
+      }
+      
+      console.log('✅ Railway PostgreSQL 모든 테이블 스키마 수정 완료');
     } catch (error) {
       console.error('❌ Railway 스키마 수정 실패:', error);
     }
