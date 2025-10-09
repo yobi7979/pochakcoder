@@ -16,6 +16,21 @@ router.get('/api', async (req, res) => {
     const isPostgres = process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres');
     console.log(`데이터베이스 환경: ${isPostgres ? 'PostgreSQL' : 'SQLite'}`);
     
+    // PostgreSQL에서 실제 테이블명 확인
+    if (isPostgres) {
+      try {
+        const [tables] = await sequelize.query(`
+          SELECT table_name 
+          FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          ORDER BY table_name
+        `);
+        console.log('PostgreSQL에서 발견된 테이블들:', tables.map(t => t.table_name));
+      } catch (error) {
+        console.error('테이블 목록 조회 실패:', error);
+      }
+    }
+    
     // 1. 모든 등록된 종목 조회 (Sports 테이블에서)
     const { Sport } = require('../models');
     const allSports = await Sport.findAll({
