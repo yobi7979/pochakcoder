@@ -180,6 +180,45 @@ router.delete('/all', requireAuth, asyncHandler(async (req, res) => {
       whereCondition.created_by = req.session.userId;
     }
 
+    console.log(`모든 경기 삭제 시작 - 관련 데이터 정리 중...`);
+    
+    // 1. 관련된 모든 TeamInfo 데이터 먼저 삭제
+    try {
+      const { TeamInfo } = require('../models');
+      const teamInfoCount = await TeamInfo.count();
+      if (teamInfoCount > 0) {
+        await TeamInfo.destroy({ where: {} });
+        console.log(`관련 TeamInfo 삭제 완료: ${teamInfoCount}개`);
+      }
+    } catch (error) {
+      console.warn(`TeamInfo 삭제 실패: ${error.message}`);
+    }
+    
+    // 2. 관련된 모든 Settings 데이터 삭제 (팀로고 관련 설정)
+    try {
+      const { Settings } = require('../models');
+      const settingsCount = await Settings.count({ 
+        where: { 
+          key: { 
+            [require('sequelize').Op.like]: '%_team_logo_%' 
+          } 
+        } 
+      });
+      if (settingsCount > 0) {
+        await Settings.destroy({ 
+          where: { 
+            key: { 
+              [require('sequelize').Op.like]: '%_team_logo_%' 
+            } 
+          } 
+        });
+        console.log(`관련 Settings 삭제 완료: ${settingsCount}개`);
+      }
+    } catch (error) {
+      console.warn(`Settings 삭제 실패: ${error.message}`);
+    }
+    
+    // 3. 경기 삭제
     const deletedCount = await Match.destroy({
       where: whereCondition
     });
@@ -774,6 +813,45 @@ router.delete('/:id', requireAuth, asyncHandler(async (req, res) => {
       return res.status(403).json({ error: '이 경기를 삭제할 권한이 없습니다.' });
     }
 
+    console.log(`[DEBUG] 경기 삭제 시작: ${match.id} - 관련 데이터 정리 중...`);
+    
+    // 1. 관련된 TeamInfo 데이터 먼저 삭제
+    try {
+      const { TeamInfo } = require('../models');
+      const teamInfoCount = await TeamInfo.count({ where: { match_id: match.id } });
+      if (teamInfoCount > 0) {
+        await TeamInfo.destroy({ where: { match_id: match.id } });
+        console.log(`[DEBUG] 관련 TeamInfo 삭제 완료: ${teamInfoCount}개`);
+      }
+    } catch (error) {
+      console.warn(`[DEBUG] TeamInfo 삭제 실패: ${error.message}`);
+    }
+    
+    // 2. 관련된 Settings 데이터 삭제 (팀로고 관련 설정)
+    try {
+      const { Settings } = require('../models');
+      const settingsCount = await Settings.count({ 
+        where: { 
+          key: { 
+            [require('sequelize').Op.like]: `%${match.id}%` 
+          } 
+        } 
+      });
+      if (settingsCount > 0) {
+        await Settings.destroy({ 
+          where: { 
+            key: { 
+              [require('sequelize').Op.like]: `%${match.id}%` 
+            } 
+          } 
+        });
+        console.log(`[DEBUG] 관련 Settings 삭제 완료: ${settingsCount}개`);
+      }
+    } catch (error) {
+      console.warn(`[DEBUG] Settings 삭제 실패: ${error.message}`);
+    }
+    
+    // 3. 경기 삭제
     await match.destroy();
     console.log(`[DEBUG] 경기 삭제 완료: ${match.id} (사용자: ${req.session.username})`);
     res.json({ success: true, message: '경기가 성공적으로 삭제되었습니다.' });
