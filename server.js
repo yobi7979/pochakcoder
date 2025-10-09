@@ -818,22 +818,40 @@ app.delete('/api/sport/:code', requireAuth, async (req, res) => {
       console.warn('⚠️ 팀 정보 삭제 실패:', error.message);
     }
     
-    // 5. 폴더 삭제
+    // 5. 폴더 삭제 (리팩토링 이전/이후 경로 모두 확인)
     const fs = require('fs');
     const path = require('path');
     
-    // 오버레이 이미지 폴더 삭제
-    const overlayFolderPath = path.join(__dirname, 'public', 'overlay-images', sport.code.toUpperCase());
-    if (fs.existsSync(overlayFolderPath)) {
-      fs.rmSync(overlayFolderPath, { recursive: true, force: true });
-      console.log(`✅ 오버레이 폴더 삭제: ${overlayFolderPath}`);
+    // 오버레이 이미지 폴더 삭제 (여러 가능한 경로 확인)
+    const overlayPaths = [
+      path.join(__dirname, 'public', 'overlay-images', sport.code.toUpperCase()), // 현재 방식
+      path.join(__dirname, 'public', 'overlay-images', sport.name.toUpperCase()), // 리팩토링 이전 방식
+      path.join(__dirname, 'public', 'overlay-images', sport.code), // 소문자
+      path.join(__dirname, 'public', 'overlay-images', sport.name) // 소문자
+    ];
+    
+    for (const overlayPath of overlayPaths) {
+      if (fs.existsSync(overlayPath)) {
+        fs.rmSync(overlayPath, { recursive: true, force: true });
+        console.log(`✅ 오버레이 폴더 삭제: ${overlayPath}`);
+        break; // 하나만 삭제하면 됨
+      }
     }
     
-    // 팀로고 폴더 삭제
-    const teamLogoFolderPath = path.join(__dirname, 'public', 'TEAMLOGO', sport.code.toUpperCase());
-    if (fs.existsSync(teamLogoFolderPath)) {
-      fs.rmSync(teamLogoFolderPath, { recursive: true, force: true });
-      console.log(`✅ 팀로고 폴더 삭제: ${teamLogoFolderPath}`);
+    // 팀로고 폴더 삭제 (여러 가능한 경로 확인)
+    const teamLogoPaths = [
+      path.join(__dirname, 'public', 'TEAMLOGO', sport.code.toUpperCase()), // 현재 방식
+      path.join(__dirname, 'public', 'TEAMLOGO', sport.name.toUpperCase()), // 리팩토링 이전 방식
+      path.join(__dirname, 'public', 'TEAMLOGO', sport.code), // 소문자
+      path.join(__dirname, 'public', 'TEAMLOGO', sport.name) // 소문자
+    ];
+    
+    for (const teamLogoPath of teamLogoPaths) {
+      if (fs.existsSync(teamLogoPath)) {
+        fs.rmSync(teamLogoPath, { recursive: true, force: true });
+        console.log(`✅ 팀로고 폴더 삭제: ${teamLogoPath}`);
+        break; // 하나만 삭제하면 됨
+      }
     }
     
     // 6. 스포츠 삭제
