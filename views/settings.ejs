@@ -924,20 +924,38 @@
             const awayColor = document.getElementById('default-away-color').value;
             
             try {
-                const response = await fetch('/api/settings', {
+                // 홈팀 컬러 저장
+                const homeResponse = await fetch('/api/settings', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        default_home_color: homeColor,
-                        default_away_color: awayColor
+                        key: 'default_home_color',
+                        value: homeColor,
+                        description: '홈팀 기본 컬러'
                     })
                 });
                 
-                if (response.ok) {
+                // 원정팀 컬러 저장
+                const awayResponse = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        key: 'default_away_color',
+                        value: awayColor,
+                        description: '원정팀 기본 컬러'
+                    })
+                });
+                
+                if (homeResponse.ok && awayResponse.ok) {
                     showToast('설정이 성공적으로 저장되었습니다.', 'success');
                 } else {
+                    const homeError = await homeResponse.json().catch(() => ({}));
+                    const awayError = await awayResponse.json().catch(() => ({}));
+                    console.error('설정 저장 실패:', { homeError, awayError });
                     throw new Error('설정 저장 실패');
                 }
             } catch (error) {
