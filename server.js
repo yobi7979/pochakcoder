@@ -1873,6 +1873,7 @@ app.get('/api/logs/auto-management-status', requireAuth, async (req, res) => {
 app.get('/api/sport/:code/delete-info', requireAuth, async (req, res) => {
   try {
     const { code } = req.params;
+    console.log(`🔍 스포츠 삭제 정보 조회 요청: ${code}`);
     
     // 해당 스포츠가 존재하는지 확인
     const sport = await Sport.findOne({
@@ -1881,34 +1882,57 @@ app.get('/api/sport/:code/delete-info', requireAuth, async (req, res) => {
     });
     
     if (!sport) {
+      console.log(`❌ 스포츠를 찾을 수 없음: ${code}`);
       return res.status(404).json({ error: '해당 스포츠를 찾을 수 없습니다.' });
     }
     
+    console.log(`✅ 스포츠 찾음: ${sport.name} (${sport.code})`);
+    
     // 삭제 가능 여부 확인 (기본 스포츠는 삭제 불가)
     const canDelete = !sport.is_default;
+    console.log(`🔍 삭제 가능 여부: ${canDelete} (기본 종목: ${sport.is_default})`);
     
     // 관련 데이터 조회
+    console.log('🔍 관련 데이터 조회 시작...');
     const { Match } = require('./models');
-    const matchCount = await Match.count({
-      where: { sport_type: sport.code }
-    });
+    
+    try {
+      const matchCount = await Match.count({
+        where: { sport_type: sport.code }
+      });
+      console.log(`✅ 경기 수 조회 완료: ${matchCount}개`);
+    } catch (error) {
+      console.error('❌ 경기 수 조회 실패:', error);
+      throw error;
+    }
     
     // 오버레이 이미지 관련 데이터 조회
+    console.log('🔍 오버레이 이미지 데이터 조회 시작...');
     const { SportOverlayImage, SportActiveOverlayImage } = require('./models');
-    const overlayImageCount = await SportOverlayImage.count({
-      where: { sport_code: sport.code }
-    });
     
-    const activeOverlayImageCount = await SportActiveOverlayImage.count({
-      where: { sport_code: sport.code }
-    });
-    
-    const overlayImages = await SportOverlayImage.findAll({
-      where: { sport_code: sport.code },
-      attributes: ['id', 'filename', 'file_path', 'is_active']
-    });
+    try {
+      const overlayImageCount = await SportOverlayImage.count({
+        where: { sport_code: sport.code }
+      });
+      console.log(`✅ 오버레이 이미지 수 조회 완료: ${overlayImageCount}개`);
+      
+      const activeOverlayImageCount = await SportActiveOverlayImage.count({
+        where: { sport_code: sport.code }
+      });
+      console.log(`✅ 활성 오버레이 이미지 수 조회 완료: ${activeOverlayImageCount}개`);
+      
+      const overlayImages = await SportOverlayImage.findAll({
+        where: { sport_code: sport.code },
+        attributes: ['id', 'filename', 'file_path', 'is_active']
+      });
+      console.log(`✅ 오버레이 이미지 목록 조회 완료: ${overlayImages.length}개`);
+    } catch (error) {
+      console.error('❌ 오버레이 이미지 데이터 조회 실패:', error);
+      throw error;
+    }
     
     // 오버레이 이미지 폴더 정보
+    console.log('🔍 폴더 정보 조회 시작...');
     const fs = require('fs');
     const path = require('path');
     const overlayFolderPath = path.join(__dirname, 'public', 'overlay-images', sport.code.toUpperCase());
@@ -1921,9 +1945,12 @@ app.get('/api/sport/:code/delete-info', requireAuth, async (req, res) => {
       try {
         const files = fs.readdirSync(overlayFolderPath);
         overlayFolderInfo.fileCount = files.length;
+        console.log(`✅ 오버레이 폴더 정보: ${overlayFolderPath} (${files.length}개 파일)`);
       } catch (error) {
-        console.warn('오버레이 폴더 읽기 실패:', error.message);
+        console.warn('⚠️ 오버레이 폴더 읽기 실패:', error.message);
       }
+    } else {
+      console.log(`📁 오버레이 폴더 없음: ${overlayFolderPath}`);
     }
     
     // 팀로고 폴더 정보
@@ -1937,11 +1964,15 @@ app.get('/api/sport/:code/delete-info', requireAuth, async (req, res) => {
       try {
         const files = fs.readdirSync(teamLogoFolderPath);
         teamLogoFolderInfo.fileCount = files.length;
+        console.log(`✅ 팀로고 폴더 정보: ${teamLogoFolderPath} (${files.length}개 파일)`);
       } catch (error) {
-        console.warn('팀로고 폴더 읽기 실패:', error.message);
+        console.warn('⚠️ 팀로고 폴더 읽기 실패:', error.message);
       }
+    } else {
+      console.log(`📁 팀로고 폴더 없음: ${teamLogoFolderPath}`);
     }
     
+    console.log('✅ 삭제 정보 조회 완료, 응답 전송 중...');
     res.json({
       sport: {
         name: sport.name,
@@ -1959,8 +1990,16 @@ app.get('/api/sport/:code/delete-info', requireAuth, async (req, res) => {
       canDelete
     });
   } catch (error) {
-    console.error('스포츠 삭제 정보 조회 실패:', error);
-    res.status(500).json({ error: '스포츠 삭제 정보 조회에 실패했습니다.' });
+    console.error('❌ 스포츠 삭제 정보 조회 실패:', error);
+    console.error('❌ 오류 상세:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    res.status(500).json({ 
+      error: '스포츠 삭제 정보 조회에 실패했습니다.',
+      details: error.message
+    });
   }
 });
 
