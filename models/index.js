@@ -407,6 +407,20 @@ const MatchList = sequelize.define('MatchList', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  pushed_match_id: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    defaultValue: null
+  },
+  pushed_match_index: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 0
+  },
+  pushed_timestamp: {
+    type: DataTypes.BIGINT,
+    allowNull: true
+  },
   created_by: {
     type: DataTypes.INTEGER,
     allowNull: true
@@ -416,8 +430,6 @@ const MatchList = sequelize.define('MatchList', {
     //   key: 'id'
     // }
   }
-  // Railway PostgreSQL에서 존재하지 않는 컬럼들 제거
-  // pushed_match_id, pushed_match_index, pushed_timestamp
 }, {
   timestamps: true,
   createdAt: 'created_at',
