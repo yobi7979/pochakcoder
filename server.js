@@ -3412,8 +3412,15 @@ server.listen(PORT, async () => {
       console.log('🔧 데이터베이스 스키마 재생성 중...');
       
       // 모델 동기화로 모든 테이블 재생성
-      await sequelize.sync({ force: true });
-      console.log('✅ 모든 테이블 재생성 완료');
+      try {
+        await sequelize.sync({ force: true, alter: true });
+        console.log('✅ 모든 테이블 재생성 완료');
+      } catch (syncError) {
+        console.warn(`⚠️ 첫 번째 동기화 실패: ${syncError.message}`);
+        console.log('🔧 두 번째 시도: force만 사용');
+        await sequelize.sync({ force: true });
+        console.log('✅ 모든 테이블 재생성 완료 (두 번째 시도)');
+      }
       
       // 기본 사용자 생성
       try {
@@ -3449,8 +3456,8 @@ server.listen(PORT, async () => {
               template: 'soccer',
               description: '축구 경기',
               is_active: true,
-              is_default: true,
-              created_by: 1
+              is_default: true
+              // created_by 필드 제거 - 모델 정의와 스키마 불일치 문제 해결
             },
             {
               name: '야구',
@@ -3458,8 +3465,8 @@ server.listen(PORT, async () => {
               template: 'baseball',
               description: '야구 경기',
               is_active: true,
-              is_default: true,
-              created_by: 1
+              is_default: true
+              // created_by 필드 제거 - 모델 정의와 스키마 불일치 문제 해결
             }
           ];
           
