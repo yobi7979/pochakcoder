@@ -285,19 +285,37 @@
         // 템플릿 목록 로드
         async function loadTemplates() {
             try {
-                // 기본 템플릿 목록만 조회 (축구, 야구 등)
+                // 기본 템플릿과 DB 템플릿 모두 조회
                 const baseResponse = await fetch('/api/templates/base-templates');
                 const baseData = await baseResponse.json();
                 
-                // 기본 템플릿만 사용
+                const dbResponse = await fetch('/api/templates');
+                const dbTemplates = await dbResponse.json();
+                
+                // 기본 템플릿과 DB 템플릿을 합쳐서 옵션 생성
                 const allTemplates = [];
                 
+                // 기본 템플릿 추가
                 if (baseData.success && baseData.templates) {
                     baseData.templates.forEach(template => {
                         allTemplates.push({
                             name: template.name,
                             displayName: template.displayName
                         });
+                    });
+                }
+                
+                // DB 템플릿 추가 (새로 생성한 템플릿들)
+                if (Array.isArray(dbTemplates)) {
+                    dbTemplates.forEach(template => {
+                        // 중복 방지: 이미 기본 템플릿에 있는 것은 제외
+                        const exists = allTemplates.some(t => t.name === template.name);
+                        if (!exists) {
+                            allTemplates.push({
+                                name: template.name,
+                                displayName: template.name // DB 템플릿은 name을 displayName으로 사용
+                            });
+                        }
                     });
                 }
                 
