@@ -13,49 +13,70 @@ const multer = require('multer');
 const pushedMatches = new Map(); // listId -> { matchId, matchIndex, timestamp }
 global.pushedMatches = pushedMatches; // 라우터에서 접근할 수 있도록 전역 변수로 설정
 
-// 서버 시작 시 데이터베이스에서 푸시 정보 복원
+// 서버 시작 시 데이터베이스에서 푸시 정보 복원 (Railway 환경에서 안전하게 처리)
 async function restorePushedMatches() {
   try {
     const { MatchList, Match } = require('./models');
     
-    // 모든 리스트의 푸시 정보 조회
-    const lists = await MatchList.findAll({
-      where: {
-        pushed_match_id: { [Op.ne]: null }
-      }
-    });
+    // Railway 환경에서는 푸시 정보 복원을 건너뛰기
+    if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
+      console.log('Railway PostgreSQL 환경: 푸시 정보 복원 건너뛰기');
+      return;
+    }
     
-    lists.forEach(list => {
-      if (list.pushed_match_id) {
-        global.pushedMatches.set(list.id.toString(), {
-          matchId: list.pushed_match_id,
-          matchIndex: list.pushed_match_index || 0,
-          timestamp: list.pushed_timestamp || Date.now()
-        });
-        console.log(`푸시 정보 복원: 리스트 ${list.id} -> 경기 ${list.pushed_match_id}`);
-      }
-    });
-    
-    console.log(`총 ${lists.length}개의 푸시 정보가 복원되었습니다.`);
+    // 로컬 환경에서만 푸시 정보 복원
+    try {
+      const lists = await MatchList.findAll({
+        where: {
+          pushed_match_id: { [Op.ne]: null }
+        }
+      });
+      
+      lists.forEach(list => {
+        if (list.pushed_match_id) {
+          global.pushedMatches.set(list.id.toString(), {
+            matchId: list.pushed_match_id,
+            matchIndex: list.pushed_match_index || 0,
+            timestamp: list.pushed_timestamp || Date.now()
+          });
+          console.log(`푸시 정보 복원: 리스트 ${list.id} -> 경기 ${list.pushed_match_id}`);
+        }
+      });
+      
+      console.log(`총 ${lists.length}개의 푸시 정보가 복원되었습니다.`);
+    } catch (dbError) {
+      console.warn('푸시 정보 복원 실패 (컬럼이 존재하지 않을 수 있음):', dbError.message);
+    }
   } catch (error) {
     console.error('푸시 정보 복원 실패:', error);
   }
 }
 
-// 푸시 정보를 데이터베이스에 저장
+// 푸시 정보를 데이터베이스에 저장 (Railway 환경에서 안전하게 처리)
 async function savePushedMatchToDatabase(listId, matchId, matchIndex) {
   try {
     const { MatchList } = require('./models');
     
-    await MatchList.update({
-      pushed_match_id: matchId,
-      pushed_match_index: matchIndex,
-      pushed_timestamp: Date.now()
-    }, {
-      where: { id: listId }
-    });
+    // Railway 환경에서는 푸시 정보 저장을 건너뛰기
+    if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
+      console.log('Railway PostgreSQL 환경: 푸시 정보 저장 건너뛰기');
+      return;
+    }
     
-    console.log(`푸시 정보 데이터베이스 저장: 리스트 ${listId} -> 경기 ${matchId}`);
+    // 로컬 환경에서만 푸시 정보 저장
+    try {
+      await MatchList.update({
+        pushed_match_id: matchId,
+        pushed_match_index: matchIndex,
+        pushed_timestamp: Date.now()
+      }, {
+        where: { id: listId }
+      });
+      
+      console.log(`푸시 정보 데이터베이스 저장: 리스트 ${listId} -> 경기 ${matchId}`);
+    } catch (dbError) {
+      console.warn('푸시 정보 데이터베이스 저장 실패 (컬럼이 존재하지 않을 수 있음):', dbError.message);
+    }
   } catch (error) {
     console.error('푸시 정보 데이터베이스 저장 실패:', error);
   }
