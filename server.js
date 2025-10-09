@@ -1893,22 +1893,54 @@ app.get('/api/sport/:code/delete-info', requireAuth, async (req, res) => {
       where: { sport_type: sport.code }
     });
     
-    // 오버레이 이미지 관련 데이터 (임시로 빈 배열로 설정)
-    const overlayImageCount = 0;
-    const activeOverlayImageCount = 0;
-    const overlayImages = [];
+    // 오버레이 이미지 관련 데이터 조회
+    const { SportOverlayImage, SportActiveOverlayImage } = require('./models');
+    const overlayImageCount = await SportOverlayImage.count({
+      where: { sport_code: sport.code }
+    });
     
-    // 오버레이 이미지 폴더 정보 (임시로 false로 설정)
+    const activeOverlayImageCount = await SportActiveOverlayImage.count({
+      where: { sport_code: sport.code }
+    });
+    
+    const overlayImages = await SportOverlayImage.findAll({
+      where: { sport_code: sport.code },
+      attributes: ['id', 'filename', 'file_path', 'is_active']
+    });
+    
+    // 오버레이 이미지 폴더 정보
+    const fs = require('fs');
+    const path = require('path');
+    const overlayFolderPath = path.join(__dirname, 'public', 'overlay-images', sport.code.toUpperCase());
     const overlayFolderInfo = {
-      exists: false,
+      exists: fs.existsSync(overlayFolderPath),
       fileCount: 0
     };
     
-    // 팀로고 폴더 정보 (임시로 false로 설정)
+    if (overlayFolderInfo.exists) {
+      try {
+        const files = fs.readdirSync(overlayFolderPath);
+        overlayFolderInfo.fileCount = files.length;
+      } catch (error) {
+        console.warn('오버레이 폴더 읽기 실패:', error.message);
+      }
+    }
+    
+    // 팀로고 폴더 정보
+    const teamLogoFolderPath = path.join(__dirname, 'public', 'TEAMLOGO', sport.code.toUpperCase());
     const teamLogoFolderInfo = {
-      exists: false,
+      exists: fs.existsSync(teamLogoFolderPath),
       fileCount: 0
     };
+    
+    if (teamLogoFolderInfo.exists) {
+      try {
+        const files = fs.readdirSync(teamLogoFolderPath);
+        teamLogoFolderInfo.fileCount = files.length;
+      } catch (error) {
+        console.warn('팀로고 폴더 읽기 실패:', error.message);
+      }
+    }
     
     res.json({
       sport: {
@@ -1923,11 +1955,103 @@ app.get('/api/sport/:code/delete-info', requireAuth, async (req, res) => {
         overlayImages,
         overlayFolderInfo,
         teamLogoFolderInfo
-      }
+      },
+      canDelete
     });
   } catch (error) {
     console.error('스포츠 삭제 정보 조회 실패:', error);
     res.status(500).json({ error: '스포츠 삭제 정보 조회에 실패했습니다.' });
+  }
+});
+
+// DB 초기화 API - 기본 종목만 남기고 모든 데이터 삭제
+app.post('/api/database/reset', requireAdmin, async (req, res) => {
+  try {
+    console.log('🔧 DB 초기화 시작...');
+    
+    const { Sport, Match, SportOverlayImage, SportActiveOverlayImage, MatchList, TeamInfo, Settings } = require('./models');
+    const fs = require('fs');
+    const path = require('path');
+    
+    // 1. 기본 종목이 아닌 모든 스포츠 조회
+    const customSports = await Sport.findAll({
+      where: { is_default: false }
+    });
+    
+    console.log(`🔧 삭제할 사용자 정의 종목: ${customSports.length}개`);
+    
+    // 2. 각 사용자 정의 종목에 대한 데이터 삭제
+    for (const sport of customSports) {
+      console.log(`🔧 종목 삭제 중: ${sport.name} (${sport.code})`);
+      
+      // 관련 경기 삭제
+      await Match.destroy({
+        where: { sport_type: sport.code }
+      });
+      
+      // 오버레이 이미지 삭제
+      await SportOverlayImage.destroy({
+        where: { sport_code: sport.code }
+      });
+      
+      await SportActiveOverlayImage.destroy({
+        where: { sport_code: sport.code }
+      });
+      
+      // 팀 정보 삭제
+      await TeamInfo.destroy({
+        where: { sport_type: sport.code }
+      });
+      
+      // 오버레이 이미지 폴더 삭제
+      const overlayFolderPath = path.join(__dirname, 'public', 'overlay-images', sport.code.toUpperCase());
+      if (fs.existsSync(overlayFolderPath)) {
+        fs.rmSync(overlayFolderPath, { recursive: true, force: true });
+        console.log(`✅ 오버레이 폴더 삭제: ${overlayFolderPath}`);
+      }
+      
+      // 팀로고 폴더 삭제
+      const teamLogoFolderPath = path.join(__dirname, 'public', 'TEAMLOGO', sport.code.toUpperCase());
+      if (fs.existsSync(teamLogoFolderPath)) {
+        fs.rmSync(teamLogoFolderPath, { recursive: true, force: true });
+        console.log(`✅ 팀로고 폴더 삭제: ${teamLogoFolderPath}`);
+      }
+      
+      // 스포츠 삭제
+      await sport.destroy();
+      console.log(`✅ 종목 삭제 완료: ${sport.name}`);
+    }
+    
+    // 3. 경기 목록 초기화
+    await MatchList.destroy({
+      where: {},
+      truncate: true
+    });
+    
+    // 4. 설정 초기화 (팀로고 관련 설정만 유지)
+    await Settings.destroy({
+      where: {
+        key: {
+          [require('sequelize').Op.notLike]: 'soccer_team_logo_visibility_%'
+        }
+      }
+    });
+    
+    console.log('✅ DB 초기화 완료');
+    
+    res.json({
+      success: true,
+      message: '데이터베이스가 성공적으로 초기화되었습니다.',
+      deletedSports: customSports.length
+    });
+    
+  } catch (error) {
+    console.error('❌ DB 초기화 실패:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: '데이터베이스 초기화에 실패했습니다.',
+      details: error.message
+    });
   }
 });
 
