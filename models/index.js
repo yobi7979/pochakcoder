@@ -403,7 +403,8 @@ const MatchList = sequelize.define('MatchList', {
   },
   pushed_match_id: {
     type: DataTypes.STRING,
-    allowNull: true
+    allowNull: true,
+    defaultValue: null
   },
   pushed_match_index: {
     type: DataTypes.INTEGER,

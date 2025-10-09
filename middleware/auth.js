@@ -1,8 +1,17 @@
 // 인증 미들웨어
 function requireAuth(req, res, next) {
+  console.log('🔐 인증 확인:', {
+    session: !!req.session,
+    authenticated: req.session?.authenticated,
+    userId: req.session?.userId,
+    username: req.session?.username,
+    userRole: req.session?.userRole
+  });
+  
   if (req.session && req.session.authenticated) {
     return next();
   } else {
+    console.log('❌ 인증 실패 - 세션 정보:', req.session);
     return res.status(401).json({ error: '인증이 필요합니다.' });
   }
 }
