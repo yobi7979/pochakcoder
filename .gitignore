@@ -130,6 +130,34 @@ randomize-*.js
 seed.js
 setup.js
 
+# Railway specific files
+railway-*.js
+railway-*.md
+reset-postgres-*.js
+simple-db-reset.js
+delete-sports-postgres.js
+force-delete-sports.js
+fix-active-image.js
+fix-korean-filenames.js
+
+# Database files (local)
+*.db
+*.sqlite
+*.sqlite3
+matches.db
+sports.db
+
+# Backup files
+server_old_backup.js
+soccer-control-backup*.ejs
+soccer-control-old-backup.ejs
+soccer-control-broken.ejs
+soccer-control-clean.ejs
+soccer-control-simple.ejs
+
+# Test files
+test_image.png
+
 # IDE files
 .vscode/
 .idea/
