@@ -401,7 +401,7 @@ router.post('/sport-overlay-image/:sportCode', requireAuth, uploadMiddleware, as
         await existingImage.update({ is_active: false });
         
         // WebSocket으로 오버레이에서 제거 알림
-        const io = require('../server_refactored_new').io;
+        const io = require('../server').getIO();
         if (io) {
           io.emit('sport_overlay_image_updated', { 
             action: 'status_changed',
@@ -433,7 +433,7 @@ router.post('/sport-overlay-image/:sportCode', requireAuth, uploadMiddleware, as
     console.log(`종목별 오버레이 이미지 업로드: ${sportCode} - ${req.file.filename}`);
     
     // 실시간 업데이트를 위한 WebSocket 이벤트 발송
-    const io = require('../server_refactored_new').io;
+    const io = require('../server').getIO();
     if (io) {
       io.emit('sport_overlay_image_updated', { 
         action: 'uploaded',
@@ -527,7 +527,7 @@ router.put('/sport-overlay-image/:sportCode/:filename/status', asyncHandler(asyn
     await image.update({ is_active: isActive });
     
     // WebSocket 이벤트 발송
-    const io = require('../server_refactored_new').io;
+    const io = require('../server').getIO();
     if (io) {
       io.emit('sport_overlay_image_updated', { 
         action: 'status_changed',
@@ -579,7 +579,7 @@ router.post('/sport-active-overlay-image/:sportCode', requireAuth, asyncHandler(
     });
     
     // 실시간 업데이트를 위한 WebSocket 이벤트 발송
-    const io = require('../server_refactored_new').io;
+    const io = require('../server').getIO();
     if (io) {
       io.emit('sport_overlay_image_updated', { 
         action: 'activated',
@@ -673,7 +673,7 @@ router.delete('/sport-overlay-image/:sportCode/:filename', requireAuth, asyncHan
     console.log(`종목별 오버레이 이미지 삭제: ${sportCode} - ${filename}`);
     
     // 실시간 업데이트를 위한 WebSocket 이벤트 발송
-    const io = require('../server_refactored_new').io;
+    const io = require('../server').getIO();
     if (io) {
       io.emit('sport_overlay_image_updated', { 
         action: 'deleted',

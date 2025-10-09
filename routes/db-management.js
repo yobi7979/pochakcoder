@@ -552,7 +552,7 @@ router.put('/team-info/:id', async (req, res) => {
       }
       
       // 4. WebSocket을 통한 실시간 업데이트 이벤트 전송
-      const io = req.app.get('io'); // server_refactored_new.js에서 설정된 io 인스턴스
+      const io = req.app.get('io'); // server.js에서 설정된 io 인스턴스
       if (io) {
         const roomName = `match_${match_id}`;
         

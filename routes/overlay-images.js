@@ -12,7 +12,7 @@ const { SportOverlayImage, SportActiveOverlayImage, Match, Sport } = require('..
 
 // WebSocket 이벤트 전송을 위한 함수 (Room 기반)
 const emitOverlayImageUpdate = (sportCode, isActive, imageData = null) => {
-  const io = require('../server_refactored_new').getIO();
+  const io = require('../server').getIO();
   if (io) {
     // Room에 참여한 클라이언트 수 확인
     const room = io.sockets.adapter.rooms.get(`sport_${sportCode}`);

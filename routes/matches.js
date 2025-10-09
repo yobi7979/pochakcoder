@@ -409,7 +409,7 @@ router.post('/:matchId/swap-teams', async (req, res) => {
     });
     
     // WebSocket으로 팀 위치 변경 이벤트 전송
-    const { io } = require('../server_refactored_new');
+    const io = require('../server').getIO();
     const roomName = `match_${matchId}`;
     io.to(roomName).emit('teamsSwapped', {
       matchId: matchId,
@@ -460,7 +460,7 @@ router.post('/:matchId/team-name', async (req, res) => {
     console.log(`TeamInfo 테이블 동기화 완료: matchId=${matchId}, teamType=${team}, teamName=${teamName}`);
     
     // WebSocket으로 팀명 업데이트 이벤트 전송
-    const { io } = require('../server_refactored_new');
+    const io = require('../server').getIO();
     const roomName = `match_${matchId}`;
     io.to(roomName).emit('teamNameUpdated', {
       matchId: matchId,
@@ -515,7 +515,7 @@ router.post('/:matchId/team-color', async (req, res) => {
     });
     
     // WebSocket으로 팀 컬러 업데이트 이벤트 전송
-    const { io } = require('../server_refactored_new');
+    const io = require('../server').getIO();
     const roomName = `match_${matchId}`;
     io.to(roomName).emit('teamColorUpdated', {
       matchId: matchId,

@@ -392,6 +392,28 @@ const MatchList = sequelize.define('MatchList', {
   custom_url: {
     type: DataTypes.STRING,
     allowNull: true
+  },
+  pushed_match_id: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    defaultValue: null
+  },
+  pushed_match_index: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 0
+  },
+  pushed_timestamp: {
+    type: DataTypes.BIGINT,
+    allowNull: true
+  },
+  created_by: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
   }
 }, {
   timestamps: true,
