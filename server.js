@@ -3355,7 +3355,15 @@ server.listen(PORT, async () => {
 
   // 기본 종목 자동 생성 (Railway 환경 대응)
   try {
+    console.log('🔧 기본 종목 생성 시작...');
     const { Sport } = require('./models');
+    
+    // 기존 종목 확인
+    const existingSports = await Sport.findAll();
+    console.log(`📊 기존 종목 수: ${existingSports.length}개`);
+    existingSports.forEach(sport => {
+      console.log(`  - ${sport.name} (${sport.code}) - 활성: ${sport.is_active}`);
+    });
     
     const defaultSports = [
       {
@@ -3377,17 +3385,36 @@ server.listen(PORT, async () => {
     ];
 
     for (const sportData of defaultSports) {
-      const existingSport = await Sport.findOne({ where: { code: sportData.code } });
-      if (!existingSport) {
-        console.log(`🔧 기본 종목 생성 중: ${sportData.name} (${sportData.code})`);
-        await Sport.create(sportData);
-        console.log(`✅ 기본 종목 생성 완료: ${sportData.name}`);
-      } else {
-        console.log(`✅ 기본 종목 이미 존재: ${sportData.name} (${sportData.code})`);
+      try {
+        const existingSport = await Sport.findOne({ where: { code: sportData.code } });
+        if (!existingSport) {
+          console.log(`🔧 기본 종목 생성 중: ${sportData.name} (${sportData.code})`);
+          const newSport = await Sport.create(sportData);
+          console.log(`✅ 기본 종목 생성 완료: ${newSport.name} (ID: ${newSport.id})`);
+        } else {
+          console.log(`✅ 기본 종목 이미 존재: ${existingSport.name} (${existingSport.code}) - 활성: ${existingSport.is_active}`);
+          // 기존 종목이 비활성화되어 있다면 활성화
+          if (!existingSport.is_active) {
+            await existingSport.update({ is_active: true });
+            console.log(`🔄 기본 종목 활성화: ${existingSport.name}`);
+          }
+        }
+      } catch (sportError) {
+        console.error(`❌ 종목 ${sportData.name} 생성 실패:`, sportError.message);
+        console.error('상세 오류:', sportError);
       }
     }
+    
+    // 최종 종목 목록 확인
+    const finalSports = await Sport.findAll({ where: { is_active: true } });
+    console.log(`📊 최종 활성 종목 수: ${finalSports.length}개`);
+    finalSports.forEach(sport => {
+      console.log(`  ✅ ${sport.name} (${sport.code}) - 기본: ${sport.is_default}`);
+    });
+    
   } catch (error) {
     console.error('❌ 기본 종목 생성 실패:', error.message);
+    console.error('상세 오류:', error);
   }
   
   // 등록된 라우트 확인
