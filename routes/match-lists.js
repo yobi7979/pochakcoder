@@ -104,8 +104,8 @@ router.put('/:id', requireAuth, asyncHandler(async (req, res) => {
       return res.status(404).json({ error: '경기 목록을 찾을 수 없습니다.' });
     }
     
-    // 권한 확인: 일반 사용자는 자신이 만든 목록만 수정 가능
-    if (req.session.userRole !== 'admin' && matchList.created_by !== req.session.userId) {
+    // 권한 확인: 일반 사용자는 자신이 만든 목록만 수정 가능 (created_by 필드가 없는 경우 모든 사용자 허용)
+    if (req.session.userRole !== 'admin' && matchList.created_by && matchList.created_by !== req.session.userId) {
       return res.status(403).json({ error: '권한이 없습니다.' });
     }
     
