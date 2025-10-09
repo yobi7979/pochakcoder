@@ -452,7 +452,7 @@ app.delete('/api/matches/all', requireAuth, async (req, res) => {
     let whereCondition = {};
     
     // 일반 사용자는 자신이 만든 경기만 삭제할 수 있음
-    if (req.session.userRole !== 'admin' && !process.env.DATABASE_URL) {
+    if (req.session.userRole !== 'admin') {
       whereCondition.created_by = req.session.userId;
     }
 
@@ -493,7 +493,7 @@ app.delete('/api/matches/:id', requireAuth, async (req, res) => {
 
     // Railway 환경에서는 created_by 컬럼이 없으므로 권한 체크 건너뛰기
     // 일반 사용자는 자신이 만든 경기만 삭제 가능 (로컬 환경에서만)
-    if (req.session.userRole !== 'admin' && !process.env.DATABASE_URL && match.created_by !== req.session.userId) {
+    if (req.session.userRole !== 'admin' && match.created_by !== req.session.userId) {
       console.log(`[DEBUG] 삭제 권한 없음: 사용자 ${req.session.userId}, 경기 생성자 ${match.created_by}`);
       return res.status(403).json({ error: '이 경기를 삭제할 권한이 없습니다.' });
     }
@@ -579,7 +579,7 @@ app.delete('/api/matches/all', requireAuth, async (req, res) => {
     let whereCondition = {};
     
     // 일반 사용자는 자신이 만든 경기만 삭제할 수 있음
-    if (req.session.userRole !== 'admin' && !process.env.DATABASE_URL) {
+    if (req.session.userRole !== 'admin') {
       whereCondition.created_by = req.session.userId;
     }
 
@@ -603,7 +603,7 @@ app.get('/api/matches', requireAuth, async (req, res) => {
     let whereCondition = {};
     
     // 일반 사용자는 자신이 만든 경기만 볼 수 있음
-    if (req.session.userRole !== 'admin' && !process.env.DATABASE_URL) {
+    if (req.session.userRole !== 'admin') {
       whereCondition.created_by = req.session.userId;
     }
     
@@ -1312,7 +1312,7 @@ app.post('/api/bulk-create-matches', requireAuth, csvUpload.single('csvFile'), a
         away_score: 0,
         status: 'scheduled',
         match_data: {},
-        ...(process.env.DATABASE_URL ? {} : { created_by: req.session.userId })
+        created_by: req.session.userId
       });
 
       // 리스트 확인 및 생성
@@ -1321,7 +1321,7 @@ app.post('/api/bulk-create-matches', requireAuth, csvUpload.single('csvFile'), a
         matchList = await MatchList.create({
           name: listName,
           matches: [],
-          ...(process.env.DATABASE_URL ? {} : { created_by: req.session.userId })
+          created_by: req.session.userId
         });
         createdLists++;
       }
@@ -1942,7 +1942,7 @@ app.put('/api/match/:id', requireAuth, async (req, res) => {
     
     // Railway 환경에서는 created_by 컬럼이 없으므로 권한 체크 건너뛰기
     // 권한 확인: 일반 사용자는 자신이 만든 경기만 수정 가능 (로컬 환경에서만)
-    if (req.session.userRole !== 'admin' && !process.env.DATABASE_URL && match.created_by !== req.session.userId) {
+    if (req.session.userRole !== 'admin' && match.created_by !== req.session.userId) {
       return res.status(403).json({ error: '권한이 없습니다.' });
     }
     
@@ -2399,7 +2399,7 @@ app.get('/matches', requireAuth, async (req, res) => {
     let whereCondition = {};
     
     // 일반 사용자는 자신이 만든 경기만 볼 수 있음
-    if (req.session.userRole !== 'admin' && !process.env.DATABASE_URL) {
+    if (req.session.userRole !== 'admin') {
       whereCondition.created_by = req.session.userId;
     }
     
