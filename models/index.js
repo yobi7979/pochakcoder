@@ -240,6 +240,15 @@ const SportOverlayImage = sequelize.define('SportOverlayImage', {
   upload_time: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW
+  },
+  created_by: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+    // Railway PostgreSQL 환경에서 외래 키 제약 조건 제거
+    // references: {
+    //   model: 'users',
+    //   key: 'id'
+    // }
   }
 }, {
   timestamps: true,
@@ -271,6 +280,15 @@ const SportActiveOverlayImage = sequelize.define('SportActiveOverlayImage', {
   active_image_path: {
     type: DataTypes.STRING,
     allowNull: true
+  },
+  created_by: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+    // Railway PostgreSQL 환경에서 외래 키 제약 조건 제거
+    // references: {
+    //   model: 'users',
+    //   key: 'id'
+    // }
   }
 }, {
   timestamps: true,
