@@ -981,14 +981,19 @@
                         return;
                     }
                     
-                    if (data.logs && data.logs.length > 0) {
+                    // API 응답이 배열인지 객체인지 확인
+                    const logs = Array.isArray(data) ? data : (data.logs || []);
+                    
+                    if (logs && logs.length > 0) {
                         let html = '<div class="list-group">';
-                        data.logs.forEach(log => {
+                        logs.forEach(log => {
+                            // 파일 크기를 MB로 변환
+                            const sizeMB = (log.size / (1024 * 1024)).toFixed(2);
                             html += `
                                 <div class="list-group-item d-flex justify-content-between align-items-center">
                                     <div>
                                         <strong>${log.name}</strong>
-                                        <br><small class="text-muted">${log.sizeMB} MB • ${new Date(log.modified).toLocaleString()}</small>
+                                        <br><small class="text-muted">${sizeMB} MB • ${new Date(log.modified).toLocaleString()}</small>
                                     </div>
                                     <div class="btn-group btn-group-sm">
                                         <button class="btn btn-outline-primary" onclick="downloadLog('${log.name}')">
@@ -1005,10 +1010,10 @@
                         logFilesList.innerHTML = html;
                         
                         // 로그 상태 요약 업데이트
-                        updateLogSummary(data.logs);
+                        updateLogSummary(logs);
                         
                         // 로그 파일 선택 옵션 업데이트
-                        updateLogFileSelect(data.logs);
+                        updateLogFileSelect(logs);
                     } else {
                         logFilesList.innerHTML = '<div class="text-center text-muted">로그 파일이 없습니다.</div>';
                         updateLogSummary([]);
@@ -1033,11 +1038,12 @@
                 return;
             }
 
-            const totalSize = logs.reduce((sum, log) => sum + parseFloat(log.sizeMB), 0);
+            const totalSize = logs.reduce((sum, log) => sum + (log.size || 0), 0);
+            const totalSizeMB = (totalSize / (1024 * 1024)).toFixed(2);
             const dates = logs.map(log => new Date(log.modified)).sort((a, b) => a - b);
             
             document.getElementById('totalLogFiles').textContent = logs.length;
-            document.getElementById('totalLogSize').textContent = `${totalSize.toFixed(2)} MB`;
+            document.getElementById('totalLogSize').textContent = `${totalSizeMB} MB`;
             document.getElementById('oldestLog').textContent = dates[0].toLocaleDateString();
             document.getElementById('newestLog').textContent = dates[dates.length - 1].toLocaleDateString();
         }
@@ -1050,7 +1056,8 @@
             logs.forEach(log => {
                 const option = document.createElement('option');
                 option.value = log.name;
-                option.textContent = `${log.name} (${log.sizeMB} MB)`;
+                const sizeMB = (log.size / (1024 * 1024)).toFixed(2);
+                option.textContent = `${log.name} (${sizeMB} MB)`;
                 select.appendChild(option);
             });
         }
