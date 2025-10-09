@@ -38,17 +38,30 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
       return res.status(400).json({ error: '목록 이름이 필요합니다.' });
     }
     
-    const matchList = await MatchList.create({
+    // PostgreSQL 호환성을 위한 필드 제한
+    const matchListData = {
       name,
       custom_url: custom_url || null,
       matches: []
-    });
+    };
+    
+    console.log(`[DEBUG] 생성할 데이터:`, matchListData);
+    
+    const matchList = await MatchList.create(matchListData);
     
     console.log(`[DEBUG] 경기 목록 생성 성공: ${matchList.id} (사용자: ${req.session.username})`);
     res.json({ success: true, matchList });
   } catch (error) {
     console.error('[DEBUG] 경기 목록 생성 실패:', error);
-    res.status(500).json({ error: '경기 목록 생성 중 오류가 발생했습니다.' });
+    console.error('[DEBUG] 오류 상세:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack
+    });
+    res.status(500).json({ 
+      error: '경기 목록 생성 중 오류가 발생했습니다.',
+      details: error.message 
+    });
   }
 }));
 
