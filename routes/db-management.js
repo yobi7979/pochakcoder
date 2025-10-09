@@ -16,42 +16,76 @@ router.get('/api', async (req, res) => {
     const isPostgres = process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres');
     console.log(`데이터베이스 환경: ${isPostgres ? 'PostgreSQL' : 'SQLite'}`);
     
-    // 1. 모든 종목별 통계 조회 (환경별 쿼리)
-    let sportStats;
-    if (isPostgres) {
-      // PostgreSQL 쿼리
-      const [results] = await sequelize.query(`
-        SELECT 
-          m.sport_type,
-          COUNT(DISTINCT m.id) as match_count,
-          COUNT(t.id) as team_info_count,
-          COUNT(t.logo_path) as logo_count,
-          STRING_AGG(DISTINCT t.team_color, ',') as used_colors,
-          MIN(m.created_at) as first_created,
-          MAX(m.updated_at) as last_updated
-        FROM matches m
-        LEFT JOIN teaminfo t ON m.id = t.match_id
-        GROUP BY m.sport_type
-        ORDER BY m.sport_type
-      `);
-      sportStats = results;
-    } else {
-      // SQLite 쿼리
-      const [results] = await sequelize.query(`
-        SELECT 
-          m.sport_type,
-          COUNT(DISTINCT m.id) as match_count,
-          COUNT(t.id) as team_info_count,
-          COUNT(t.logo_path) as logo_count,
-          GROUP_CONCAT(DISTINCT t.team_color) as used_colors,
-          MIN(m.created_at) as first_created,
-          MAX(m.updated_at) as last_updated
-        FROM Matches m
-        LEFT JOIN TeamInfo t ON m.id = t.match_id
-        GROUP BY m.sport_type
-        ORDER BY m.sport_type
-      `);
-      sportStats = results;
+    // 1. 모든 등록된 종목 조회 (Sports 테이블에서)
+    const { Sport } = require('../models');
+    const allSports = await Sport.findAll({
+      attributes: ['id', 'name', 'code', 'template', 'description', 'is_active', 'is_default', 'created_at', 'updated_at'],
+      order: [['id', 'ASC']]
+    });
+    
+    console.log('등록된 모든 종목:', allSports.map(s => ({ name: s.name, code: s.code, is_default: s.is_default })));
+    
+    // 2. 각 종목별 통계 조회 (경기가 있는 종목만)
+    let sportStats = [];
+    for (const sport of allSports) {
+      let stats;
+      if (isPostgres) {
+        // PostgreSQL 쿼리
+        const [results] = await sequelize.query(`
+          SELECT 
+            $1 as sport_type,
+            COUNT(DISTINCT m.id) as match_count,
+            COUNT(t.id) as team_info_count,
+            COUNT(t.logo_path) as logo_count,
+            STRING_AGG(DISTINCT t.team_color, ',') as used_colors,
+            MIN(m.created_at) as first_created,
+            MAX(m.updated_at) as last_updated
+          FROM matches m
+          LEFT JOIN teaminfo t ON m.id = t.match_id
+          WHERE m.sport_type = $1
+        `, [sport.code]);
+        stats = results[0];
+      } else {
+        // SQLite 쿼리
+        const [results] = await sequelize.query(`
+          SELECT 
+            ? as sport_type,
+            COUNT(DISTINCT m.id) as match_count,
+            COUNT(t.id) as team_info_count,
+            COUNT(t.logo_path) as logo_count,
+            GROUP_CONCAT(DISTINCT t.team_color) as used_colors,
+            MIN(m.created_at) as first_created,
+            MAX(m.updated_at) as last_updated
+          FROM Matches m
+          LEFT JOIN TeamInfo t ON m.id = t.match_id
+          WHERE m.sport_type = ?
+        `, [sport.code, sport.code]);
+        stats = results[0];
+      }
+      
+      // 경기가 없는 종목의 경우 기본값 설정
+      if (!stats.match_count) {
+        stats = {
+          sport_type: sport.code,
+          match_count: 0,
+          team_info_count: 0,
+          logo_count: 0,
+          used_colors: null,
+          first_created: null,
+          last_updated: null
+        };
+      }
+      
+      sportStats.push({
+        ...stats,
+        sport_name: sport.name,
+        sport_template: sport.template,
+        sport_description: sport.description,
+        sport_is_active: sport.is_active,
+        sport_is_default: sport.is_default,
+        sport_created_at: sport.created_at,
+        sport_updated_at: sport.updated_at
+      });
     }
     
     console.log('조회된 종목 통계:', sportStats);
@@ -115,6 +149,13 @@ router.get('/api', async (req, res) => {
       
       detailedStats.push({
         sport_type: stat.sport_type,
+        sport_name: stat.sport_name,
+        sport_template: stat.sport_template,
+        sport_description: stat.sport_description,
+        sport_is_active: stat.sport_is_active,
+        sport_is_default: stat.sport_is_default,
+        sport_created_at: stat.sport_created_at,
+        sport_updated_at: stat.sport_updated_at,
         match_count: stat.match_count,
         team_info_count: stat.team_info_count,
         logo_count: stat.logo_count,
