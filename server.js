@@ -3352,6 +3352,43 @@ server.listen(PORT, async () => {
   } catch (error) {
     console.error('❌ 관리자 계정 생성/업데이트 실패:', error.message);
   }
+
+  // 기본 종목 자동 생성 (Railway 환경 대응)
+  try {
+    const { Sport } = require('./models');
+    
+    const defaultSports = [
+      {
+        name: 'Soccer',
+        code: 'SOCCER',
+        template: 'soccer',
+        description: 'Football/Soccer sport',
+        is_active: true,
+        is_default: true
+      },
+      {
+        name: 'Baseball',
+        code: 'BASEBALL',
+        template: 'baseball',
+        description: 'Baseball sport',
+        is_active: true,
+        is_default: true
+      }
+    ];
+
+    for (const sportData of defaultSports) {
+      const existingSport = await Sport.findOne({ where: { code: sportData.code } });
+      if (!existingSport) {
+        console.log(`🔧 기본 종목 생성 중: ${sportData.name} (${sportData.code})`);
+        await Sport.create(sportData);
+        console.log(`✅ 기본 종목 생성 완료: ${sportData.name}`);
+      } else {
+        console.log(`✅ 기본 종목 이미 존재: ${sportData.name} (${sportData.code})`);
+      }
+    }
+  } catch (error) {
+    console.error('❌ 기본 종목 생성 실패:', error.message);
+  }
   
   // 등록된 라우트 확인
   console.log('\n=== 등록된 DELETE 라우트 ===');
