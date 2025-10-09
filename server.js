@@ -3422,6 +3422,18 @@ server.listen(PORT, async () => {
         console.log('✅ 모든 테이블 재생성 완료 (두 번째 시도)');
       }
       
+      // Sports 테이블의 created_by 컬럼 수동 추가 (Railway PostgreSQL 환경 대응)
+      try {
+        console.log('🔧 Sports 테이블 created_by 컬럼 수동 추가 중...');
+        await sequelize.query(`
+          ALTER TABLE "Sports" 
+          ADD COLUMN IF NOT EXISTS "created_by" INTEGER;
+        `);
+        console.log('✅ Sports 테이블 created_by 컬럼 추가 완료');
+      } catch (error) {
+        console.warn(`⚠️ Sports 테이블 created_by 컬럼 추가 실패: ${error.message}`);
+      }
+      
       // 기본 사용자 생성
       try {
         const { User } = require('./models');
@@ -3456,8 +3468,8 @@ server.listen(PORT, async () => {
               template: 'soccer',
               description: '축구 경기',
               is_active: true,
-              is_default: true
-              // created_by 필드 제거 - 모델 정의와 스키마 불일치 문제 해결
+              is_default: true,
+              created_by: null // 명시적으로 null 값 설정
             },
             {
               name: '야구',
@@ -3465,8 +3477,8 @@ server.listen(PORT, async () => {
               template: 'baseball',
               description: '야구 경기',
               is_active: true,
-              is_default: true
-              // created_by 필드 제거 - 모델 정의와 스키마 불일치 문제 해결
+              is_default: true,
+              created_by: null // 명시적으로 null 값 설정
             }
           ];
           
