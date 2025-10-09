@@ -389,11 +389,11 @@ function validateRouterConnections() {
 // Railway 환경에서 안전한 라우터 연결
 try {
   console.log('🔧 라우터 연결 시작...');
-  connectRouters();
+connectRouters();
   console.log('✅ 라우터 연결 완료');
-  
+
   console.log('🔍 라우터 연결 검증 시작...');
-  validateRouterConnections();
+validateRouterConnections();
   console.log('✅ 라우터 연결 검증 완료');
 } catch (error) {
   console.error('❌ 라우터 연결 실패:', error);
@@ -2039,8 +2039,8 @@ app.get('/api/sport/:code/delete-info', requireAuth, async (req, res) => {
     let matchCount = 0;
     try {
       matchCount = await Match.count({
-        where: { sport_type: sport.code }
-      });
+      where: { sport_type: sport.code }
+    });
       console.log(`✅ 경기 수 조회 완료: ${matchCount}개`);
     } catch (error) {
       console.error('❌ 경기 수 조회 실패:', error);
@@ -3381,140 +3381,91 @@ server.listen(PORT, async () => {
     console.error('❌ 데이터베이스 연결 실패:', error);
   }
   
-  // Railway PostgreSQL 긴급 스키마 수정
+  // Railway PostgreSQL 데이터베이스 완전 초기화
   if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
     try {
-      console.log('🚨 Railway PostgreSQL 긴급 스키마 수정 중...');
+      console.log('🚨 Railway PostgreSQL 데이터베이스 완전 초기화 시작...');
       
-      // 1. Sports 테이블 강제 수정
-      console.log('🔧 Sports 테이블 강제 수정 중...');
-      const sportsQueries = [
-        `ALTER TABLE "Sports" ADD COLUMN IF NOT EXISTS "created_by" INTEGER;`,
-        `ALTER TABLE "Sports" ADD COLUMN IF NOT EXISTS "is_active" BOOLEAN DEFAULT true;`,
-        `ALTER TABLE "Sports" ADD COLUMN IF NOT EXISTS "is_default" BOOLEAN DEFAULT false;`
+      // 모든 테이블을 역순으로 삭제 (외래키 제약조건 고려)
+      const dropTables = [
+        'SportActiveOverlayImages',
+        'SportOverlayImages', 
+        'TeamInfo',
+        'MatchLists',
+        'Matches',
+        'Settings',
+        'UserSportPermissions',
+        'Users',
+        'Templates',
+        'Sports'
       ];
       
-      for (const query of sportsQueries) {
+      for (const tableName of dropTables) {
         try {
-          await sequelize.query(query);
-          const columnName = query.match(/ADD COLUMN IF NOT EXISTS "([^"]+)"/)?.[1] || 'unknown';
-          console.log(`✅ Sports 컬럼 확인/추가: ${columnName}`);
+          await sequelize.query(`DROP TABLE IF EXISTS "${tableName}" CASCADE;`);
+          console.log(`✅ 테이블 삭제: ${tableName}`);
         } catch (error) {
-          console.warn(`⚠️ Sports 컬럼 처리 실패: ${error.message}`);
+          console.warn(`⚠️ 테이블 삭제 실패: ${tableName} - ${error.message}`);
         }
       }
       
-      // 1-1. SportOverlayImage 테이블 강제 수정
-      console.log('🔧 SportOverlayImage 테이블 강제 수정 중...');
-      const sportOverlayImageQueries = [
-        `ALTER TABLE "SportOverlayImages" ADD COLUMN IF NOT EXISTS "created_by" INTEGER;`,
-        `ALTER TABLE "SportOverlayImages" ADD COLUMN IF NOT EXISTS "is_active" BOOLEAN DEFAULT false;`
-      ];
+      console.log('🔧 데이터베이스 스키마 재생성 중...');
       
-      for (const query of sportOverlayImageQueries) {
-        try {
-          await sequelize.query(query);
-          const columnName = query.match(/ADD COLUMN IF NOT EXISTS "([^"]+)"/)?.[1] || 'unknown';
-          console.log(`✅ SportOverlayImages 컬럼 확인/추가: ${columnName}`);
-        } catch (error) {
-          console.warn(`⚠️ SportOverlayImages 컬럼 처리 실패: ${error.message}`);
-        }
-      }
+      // 모델 동기화로 모든 테이블 재생성
+      await sequelize.sync({ force: true });
+      console.log('✅ 모든 테이블 재생성 완료');
       
-      // 1-2. SportActiveOverlayImage 테이블 강제 수정
-      console.log('🔧 SportActiveOverlayImage 테이블 강제 수정 중...');
-      const sportActiveOverlayImageQueries = [
-        `ALTER TABLE "SportActiveOverlayImages" ADD COLUMN IF NOT EXISTS "created_by" INTEGER;`
-      ];
-      
-      for (const query of sportActiveOverlayImageQueries) {
-        try {
-          await sequelize.query(query);
-          const columnName = query.match(/ADD COLUMN IF NOT EXISTS "([^"]+)"/)?.[1] || 'unknown';
-          console.log(`✅ SportActiveOverlayImages 컬럼 확인/추가: ${columnName}`);
-        } catch (error) {
-          console.warn(`⚠️ SportActiveOverlayImages 컬럼 처리 실패: ${error.message}`);
-        }
-      }
-      
-      // 2. Templates 테이블 강제 수정
-      console.log('🔧 Templates 테이블 강제 수정 중...');
-      const templatesQueries = [
-        `ALTER TABLE "templates" ADD COLUMN IF NOT EXISTS "created_by" INTEGER;`,
-        `ALTER TABLE "templates" ADD COLUMN IF NOT EXISTS "is_default" BOOLEAN DEFAULT false;`
-      ];
-      
-      for (const query of templatesQueries) {
-        try {
-          await sequelize.query(query);
-          const columnName = query.match(/ADD COLUMN IF NOT EXISTS "([^"]+)"/)?.[1] || 'unknown';
-          console.log(`✅ Templates 컬럼 확인/추가: ${columnName}`);
-        } catch (error) {
-          console.warn(`⚠️ Templates 컬럼 처리 실패: ${error.message}`);
-        }
-      }
-      
-      // 3. MatchLists 테이블 강제 수정
-      console.log('🔧 MatchLists 테이블 강제 수정 중...');
-      const matchListsQueries = [
-        `ALTER TABLE "MatchLists" ADD COLUMN IF NOT EXISTS "pushed_match_id" VARCHAR(255);`,
-        `ALTER TABLE "MatchLists" ADD COLUMN IF NOT EXISTS "pushed_match_index" INTEGER DEFAULT 0;`,
-        `ALTER TABLE "MatchLists" ADD COLUMN IF NOT EXISTS "pushed_timestamp" BIGINT;`,
-        `ALTER TABLE "MatchLists" ADD COLUMN IF NOT EXISTS "created_by" INTEGER;`
-      ];
-      
-      for (const query of matchListsQueries) {
-        try {
-          await sequelize.query(query);
-          const columnName = query.match(/ADD COLUMN IF NOT EXISTS "([^"]+)"/)?.[1] || 'unknown';
-          console.log(`✅ MatchLists 컬럼 확인/추가: ${columnName}`);
-        } catch (error) {
-          console.warn(`⚠️ MatchLists 컬럼 처리 실패: ${error.message}`);
-        }
-      }
-      
-      // 4. 기본 데이터 확인 및 추가
-      console.log('🔧 기본 데이터 확인 중...');
+      // 기본 사용자 생성
       try {
-        const sportsCount = await sequelize.query(`SELECT COUNT(*) as count FROM "Sports"`, { type: sequelize.QueryTypes.SELECT });
-        console.log(`📊 현재 Sports 테이블 레코드 수: ${sportsCount[0].count}`);
-        
-        if (sportsCount[0].count === 0) {
-          console.log('🔧 기본 스포츠 데이터 추가 중...');
-          await sequelize.query(`
-            INSERT INTO "Sports" ("name", "code", "template", "description", "is_active", "is_default", "created_by", "created_at", "updated_at") 
-            VALUES 
-            ('축구', 'SOCCER', 'soccer', '축구 경기', true, true, 1, NOW(), NOW()),
-            ('야구', 'BASEBALL', 'baseball', '야구 경기', true, true, 1, NOW(), NOW())
-          `);
-          console.log('✅ 기본 스포츠 데이터 추가 완료');
+        const { User } = require('./models');
+        const existingUser = await User.findOne({ where: { username: 'admin' } });
+        if (!existingUser) {
+          await User.create({
+            username: 'admin',
+            password: 'admin123',
+            email: 'admin@example.com',
+            full_name: '관리자',
+            role: 'admin',
+            is_active: true
+          });
+          console.log('✅ 기본 관리자 사용자 생성 완료');
         }
       } catch (error) {
-        console.warn(`⚠️ 기본 데이터 확인 실패: ${error.message}`);
+        console.warn(`⚠️ 기본 사용자 생성 실패: ${error.message}`);
       }
       
-      // 5. 외래키 제약조건 수정
-      console.log('🔧 외래키 제약조건 수정 중...');
+      // 기본 스포츠 데이터 생성
       try {
-        await sequelize.query(`
-          ALTER TABLE "TeamInfo" 
-          DROP CONSTRAINT IF EXISTS "TeamInfo_match_id_fkey";
-        `);
-        
-        await sequelize.query(`
-          ALTER TABLE "TeamInfo" 
-          ADD CONSTRAINT "TeamInfo_match_id_fkey" 
-          FOREIGN KEY ("match_id") 
-          REFERENCES "Matches"("id") 
-          ON DELETE CASCADE;
-        `);
-        
-        console.log(`✅ 외래키 제약조건 수정: TeamInfo_match_id_fkey (CASCADE 추가)`);
+        const { Sport } = require('./models');
+        const existingSports = await Sport.count();
+        if (existingSports === 0) {
+          await Sport.bulkCreate([
+            {
+              name: '축구',
+              code: 'SOCCER',
+              template: 'soccer',
+              description: '축구 경기',
+              is_active: true,
+              is_default: true,
+              created_by: 1
+            },
+            {
+              name: '야구',
+              code: 'BASEBALL', 
+              template: 'baseball',
+              description: '야구 경기',
+              is_active: true,
+              is_default: true,
+              created_by: 1
+            }
+          ]);
+          console.log('✅ 기본 스포츠 데이터 생성 완료');
+        }
       } catch (error) {
-        console.warn(`⚠️ 외래키 제약조건 수정 실패: ${error.message}`);
+        console.warn(`⚠️ 기본 스포츠 데이터 생성 실패: ${error.message}`);
       }
       
-      console.log('✅ Railway PostgreSQL 긴급 스키마 수정 완료');
+      console.log('✅ Railway PostgreSQL 데이터베이스 완전 초기화 및 재생성 완료');
     } catch (error) {
       console.error('❌ Railway 긴급 스키마 수정 실패:', error);
     }
@@ -3531,7 +3482,7 @@ server.listen(PORT, async () => {
   
   // 푸시 정보 복원
   try {
-    await restorePushedMatches();
+  await restorePushedMatches();
     console.log('✅ 푸시 정보 복원 완료');
   } catch (error) {
     console.error('❌ 푸시 정보 복원 실패:', error);
