@@ -28,27 +28,13 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
 }));
 
 // POST /api/match-lists - 경기 목록 생성
-// Railway 환경에서 임시로 인증 우회 (디버깅용)
-const authMiddleware = process.env.NODE_ENV === 'production' && process.env.DATABASE_URL ? 
-  (req, res, next) => {
-    console.log(`[RAILWAY DEBUG] 인증 우회 - Railway 환경에서 임시 적용`);
-    next();
-  } : requireAuth;
-
-router.post('/', authMiddleware, asyncHandler(async (req, res) => {
+router.post('/', requireAuth, asyncHandler(async (req, res) => {
   try {
     const { name, custom_url } = req.body;
     
-    console.log(`[RAILWAY DEBUG] 경기 목록 생성 요청 시작`);
-    console.log(`[RAILWAY DEBUG] 요청 데이터:`, { name, custom_url });
-    console.log(`[RAILWAY DEBUG] 세션 정보:`, {
-      authenticated: req.session?.authenticated,
-      username: req.session?.username,
-      userId: req.session?.userId
-    });
+    console.log(`[DEBUG] 경기 목록 생성 요청: name=${name}, custom_url=${custom_url}`);
     
     if (!name) {
-      console.log(`[RAILWAY DEBUG] 이름 누락으로 400 에러 반환`);
       return res.status(400).json({ error: '목록 이름이 필요합니다.' });
     }
     
@@ -60,79 +46,19 @@ router.post('/', authMiddleware, asyncHandler(async (req, res) => {
       // created_by 필드 제거 - PostgreSQL 외래 키 제약 조건 문제 방지
     };
     
-    console.log(`[RAILWAY DEBUG] 생성할 데이터:`, matchListData);
-    console.log(`[RAILWAY DEBUG] MatchList 모델 확인:`, !!MatchList);
+    console.log(`[DEBUG] 생성할 데이터:`, matchListData);
     
-    // 데이터베이스 연결 상태 확인
-    try {
-      await MatchList.sequelize.authenticate();
-      console.log(`[RAILWAY DEBUG] 데이터베이스 연결 성공`);
-      
-      // 테이블 존재 여부 확인
-      const tableExists = await MatchList.sequelize.getQueryInterface().showAllTables();
-      console.log(`[RAILWAY DEBUG] 존재하는 테이블들:`, tableExists);
-      
-      // MatchLists 테이블 존재 확인
-      const matchListsTableExists = tableExists.includes('MatchLists') || tableExists.includes('matchlists');
-      console.log(`[RAILWAY DEBUG] MatchLists 테이블 존재:`, matchListsTableExists);
-      
-      if (!matchListsTableExists) {
-        console.log(`[RAILWAY DEBUG] MatchLists 테이블이 존재하지 않음 - 테이블 생성 시도`);
-        try {
-          await MatchList.sync({ force: false });
-          console.log(`[RAILWAY DEBUG] MatchLists 테이블 생성 완료`);
-        } catch (syncError) {
-          console.error(`[RAILWAY DEBUG] 테이블 생성 실패:`, syncError);
-          return res.status(500).json({ 
-            error: '테이블 생성 실패',
-            details: syncError.message 
-          });
-        }
-      }
-    } catch (dbError) {
-      console.error(`[RAILWAY DEBUG] 데이터베이스 연결 실패:`, dbError);
-      return res.status(500).json({ 
-        error: '데이터베이스 연결 실패',
-        details: dbError.message 
-      });
-    }
-    
-    console.log(`[RAILWAY DEBUG] MatchList.create() 호출 시작`);
     const matchList = await MatchList.create(matchListData);
-    console.log(`[RAILWAY DEBUG] MatchList.create() 성공:`, matchList.toJSON());
     
-    console.log(`[RAILWAY DEBUG] 경기 목록 생성 성공: ${matchList.id} (사용자: ${req.session?.username || 'unknown'})`);
+    console.log(`[DEBUG] 경기 목록 생성 성공: ${matchList.id} (사용자: ${req.session.username})`);
     res.json({ success: true, matchList: matchList });
   } catch (error) {
     console.error('[DEBUG] 경기 목록 생성 실패:', error);
     console.error('[DEBUG] 오류 상세:', {
       message: error.message,
       name: error.name,
-      stack: error.stack,
-      code: error.code,
-      errno: error.errno,
-      sqlState: error.sqlState
+      stack: error.stack
     });
-    
-    // Railway PostgreSQL 환경에서 발생할 수 있는 특정 오류들 처리
-    if (error.name === 'SequelizeDatabaseError') {
-      console.error('[DEBUG] 데이터베이스 오류:', error.original);
-      return res.status(500).json({ 
-        error: '데이터베이스 연결 오류가 발생했습니다.',
-        details: 'Railway PostgreSQL 환경에서 테이블 구조 문제가 발생했습니다.',
-        suggestion: '데이터베이스를 초기화해주세요.'
-      });
-    }
-    
-    if (error.name === 'SequelizeConnectionError') {
-      console.error('[DEBUG] 데이터베이스 연결 오류:', error.original);
-      return res.status(500).json({ 
-        error: '데이터베이스 연결에 실패했습니다.',
-        details: 'Railway PostgreSQL 서버에 연결할 수 없습니다.',
-        suggestion: '잠시 후 다시 시도해주세요.'
-      });
-    }
-    
     res.status(500).json({ 
       error: '경기 목록 생성 중 오류가 발생했습니다.',
       details: error.message 

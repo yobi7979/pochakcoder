@@ -13,31 +13,13 @@ const { Sport, UserSportPermission, User, Match, SportOverlayImage, SportActiveO
 // GET /api/sport - 모든 스포츠 조회
 router.get('/', asyncHandler(async (req, res) => {
   try {
-    console.log('🔍 종목 목록 조회 요청 받음');
-    
     const sports = await Sport.findAll({
       attributes: ['id', 'name', 'code', 'template', 'description', 'is_active', 'is_default'],
       order: [['id', 'ASC']]
     });
-    
-    console.log(`📊 조회된 종목 수: ${sports.length}`);
-    console.log('📋 종목 목록:', sports.map(sport => ({
-      id: sport.id,
-      name: sport.name,
-      code: sport.code,
-      template: sport.template,
-      is_active: sport.is_active,
-      is_default: sport.is_default
-    })));
-    
     res.json(sports);
   } catch (error) {
     console.error('스포츠 조회 실패:', error);
-    console.error('스포츠 조회 오류 상세:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
     res.status(500).json({ error: '스포츠 조회에 실패했습니다.' });
   }
 }));
@@ -86,8 +68,7 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
       template,
       description,
       is_active: true,
-      is_default: false,
-      created_by: req.session.userId
+      is_default: false
     });
 
     // 종목별 오버레이 이미지 폴더 생성 (종목코드 대문자로)
@@ -109,15 +90,7 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
     res.json(sport);
   } catch (error) {
     console.error('종목 생성 실패:', error);
-    console.error('종목 생성 오류 상세:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
-    res.status(500).json({ 
-      error: '서버 오류가 발생했습니다.',
-      details: error.message 
-    });
+    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
   }
 }));
 

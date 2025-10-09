@@ -4,17 +4,11 @@
   "description": "스포츠 경기 실시간 오버레이 시스템",
   "main": "server.js",
   "scripts": {
-    "start": "node railway-startup-schema-fix.js && node server.js",
-    "start:emergency": "node railway-emergency-schema-fix.js && node server.js",
-    "start:force": "node railway-force-restart.js && node server.js",
-    "start:reset": "node railway-complete-reset.js && node server.js",
-    "start:original": "node server.js",
+    "start": "node server.js",
     "dev": "nodemon server.js",
     "dev:local": "LOCAL_DEV=true nodemon server.js",
     "migrate": "node migrate-to-postgres.js",
-    "build": "npm install --production",
-    "fix-schema": "node railway-startup-schema-fix.js",
-    "emergency-fix": "node railway-emergency-schema-fix.js"
+    "build": "npm install --production"
   },
   "dependencies": {
     "archiver": "^6.0.2",

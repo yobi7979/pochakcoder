@@ -85,34 +85,8 @@ const logsRouter = require('./routes/logs');
 const settingsRouter = require('./routes/settings');
 const dbManagementRouter = require('./routes/db-management');
 
-// 모델들 - Railway 환경에서 안전한 로딩
-let sequelize, Match, Settings, MatchList, SportOverlayImage, SportActiveOverlayImage, User, UserSportPermission;
-
-try {
-  console.log('🔍 모델 로딩 시작...');
-  const models = require('./models');
-  sequelize = models.sequelize;
-  Match = models.Match;
-  Settings = models.Settings;
-  MatchList = models.MatchList;
-  SportOverlayImage = models.SportOverlayImage;
-  SportActiveOverlayImage = models.SportActiveOverlayImage;
-  User = models.User;
-  UserSportPermission = models.UserSportPermission;
-  console.log('✅ 모델 로딩 완료');
-} catch (error) {
-  console.error('❌ 모델 로딩 실패:', error);
-  console.error('❌ 오류 상세:', {
-    message: error.message,
-    stack: error.stack
-  });
-  
-  // Railway 환경에서 모델 로딩 실패 시 서버 종료
-  if (process.env.DATABASE_URL) {
-    console.error('❌ Railway 환경에서 모델 로딩 실패 - 서버 시작 불가');
-    process.exit(1);
-  }
-}
+// 모델들
+const { sequelize, Match, Settings, MatchList, SportOverlayImage, SportActiveOverlayImage, User, UserSportPermission } = require('./models');
 const { Op } = require('sequelize');
 
 // Multer 설정 (CSV 파일 업로드용)
@@ -386,35 +360,11 @@ function validateRouterConnections() {
   console.log(`📊 총 ${connectedPaths.length}개 라우터 연결됨`);
 }
 
-// Railway 환경에서 안전한 라우터 연결
-try {
-  console.log('🔧 라우터 연결 시작...');
+// 라우터 연결 실행
 connectRouters();
-  console.log('✅ 라우터 연결 완료');
 
-  console.log('🔍 라우터 연결 검증 시작...');
+// 라우터 연결 검증
 validateRouterConnections();
-  console.log('✅ 라우터 연결 검증 완료');
-} catch (error) {
-  console.error('❌ 라우터 연결 실패:', error);
-  console.error('❌ 오류 상세:', {
-    message: error.message,
-    stack: error.stack
-  });
-  
-  // Railway 환경에서 라우터 연결 실패 시 재시도
-  if (process.env.DATABASE_URL) {
-    console.log('🔄 Railway 환경에서 라우터 재연결 시도...');
-    setTimeout(() => {
-      try {
-        connectRouters();
-        console.log('✅ 라우터 재연결 성공');
-      } catch (retryError) {
-        console.error('❌ 라우터 재연결 실패:', retryError);
-      }
-    }, 2000);
-  }
-}
 
 // 누락된 API 엔드포인트들 추가
 
@@ -2039,8 +1989,8 @@ app.get('/api/sport/:code/delete-info', requireAuth, async (req, res) => {
     let matchCount = 0;
     try {
       matchCount = await Match.count({
-      where: { sport_type: sport.code }
-    });
+        where: { sport_type: sport.code }
+      });
       console.log(`✅ 경기 수 조회 완료: ${matchCount}개`);
     } catch (error) {
       console.error('❌ 경기 수 조회 실패:', error);
@@ -3363,236 +3313,18 @@ app.post('/api/preview-template', requireAuth, async (req, res) => {
 // 서버 시작
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, async () => {
-  console.log(`🚀 서버가 포트 ${PORT}에서 실행 중입니다.`);
-  console.log(`🔧 리팩토링된 서버 구조로 실행 중입니다.`);
-  
-  // Railway 환경 확인
-  console.log(`🌍 환경 정보:`, {
-    NODE_ENV: process.env.NODE_ENV,
-    DATABASE_URL: process.env.DATABASE_URL ? '설정됨' : '설정되지 않음',
-    PORT: PORT
-  });
-  
-  // 데이터베이스 연결 상태 확인
-  try {
-    await sequelize.authenticate();
-    console.log('✅ 데이터베이스 연결 성공');
-  } catch (error) {
-    console.error('❌ 데이터베이스 연결 실패:', error);
-  }
-  
-  // Railway PostgreSQL 데이터베이스 완전 초기화
-  if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
-    try {
-      console.log('🚨 Railway PostgreSQL 데이터베이스 완전 초기화 시작...');
-      
-      // 모든 테이블을 역순으로 삭제 (외래키 제약조건 고려)
-      const dropTables = [
-        'SportActiveOverlayImages',
-        'SportOverlayImages', 
-        'TeamInfo',
-        'MatchLists',
-        'Matches',
-        'Settings',
-        'UserSportPermissions',
-        'Users',
-        'Templates',
-        'Sports'
-      ];
-      
-      for (const tableName of dropTables) {
-        try {
-          await sequelize.query(`DROP TABLE IF EXISTS "${tableName}" CASCADE;`);
-          console.log(`✅ 테이블 삭제: ${tableName}`);
-        } catch (error) {
-          console.warn(`⚠️ 테이블 삭제 실패: ${tableName} - ${error.message}`);
-        }
-      }
-      
-      console.log('🔧 데이터베이스 스키마 재생성 중...');
-      
-      // 모델 동기화로 모든 테이블 재생성
-      try {
-        await sequelize.sync({ force: true, alter: true });
-        console.log('✅ 모든 테이블 재생성 완료');
-      } catch (syncError) {
-        console.warn(`⚠️ 첫 번째 동기화 실패: ${syncError.message}`);
-        console.log('🔧 두 번째 시도: force만 사용');
-        await sequelize.sync({ force: true });
-        console.log('✅ 모든 테이블 재생성 완료 (두 번째 시도)');
-      }
-      
-      // Sports 테이블의 created_by 컬럼 수동 추가 (Railway PostgreSQL 환경 대응)
-      try {
-        console.log('🔧 Sports 테이블 created_by 컬럼 수동 추가 중...');
-        
-        // 먼저 테이블이 존재하는지 확인
-        const tableExists = await sequelize.query(`
-          SELECT EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_schema = 'public' 
-            AND table_name = 'Sports'
-          );
-        `);
-        
-        if (tableExists[0][0].exists) {
-          console.log('✅ Sports 테이블 존재 확인');
-          
-          // 컬럼이 존재하는지 확인
-          const columnExists = await sequelize.query(`
-            SELECT EXISTS (
-              SELECT FROM information_schema.columns 
-              WHERE table_schema = 'public' 
-              AND table_name = 'Sports' 
-              AND column_name = 'created_by'
-            );
-          `);
-          
-          if (!columnExists[0][0].exists) {
-            console.log('🔧 created_by 컬럼이 존재하지 않음. 추가 중...');
-            await sequelize.query(`
-              ALTER TABLE "Sports" 
-              ADD COLUMN "created_by" INTEGER;
-            `);
-            console.log('✅ Sports 테이블 created_by 컬럼 추가 완료');
-          } else {
-            console.log('✅ Sports 테이블 created_by 컬럼이 이미 존재함');
-          }
-        } else {
-          console.log('⚠️ Sports 테이블이 존재하지 않음');
-        }
-      } catch (error) {
-        console.warn(`⚠️ Sports 테이블 created_by 컬럼 추가 실패: ${error.message}`);
-        console.warn(`⚠️ 오류 상세: ${error.stack}`);
-      }
-      
-      // 기본 사용자 생성
-      try {
-        const { User } = require('./models');
-        const existingUser = await User.findOne({ where: { username: 'admin' } });
-        if (!existingUser) {
-          await User.create({
-            username: 'admin',
-            password: 'admin123',
-            email: 'admin@example.com',
-            full_name: '관리자',
-            role: 'admin',
-            is_active: true
-          });
-          console.log('✅ 기본 관리자 사용자 생성 완료');
-        }
-      } catch (error) {
-        console.warn(`⚠️ 기본 사용자 생성 실패: ${error.message}`);
-      }
-      
-      // 기본 스포츠 데이터 생성
-      try {
-        const { Sport } = require('./models');
-        const existingSports = await Sport.count();
-        console.log(`🔍 기존 스포츠 수: ${existingSports}`);
-        
-        if (existingSports === 0) {
-          console.log('🔧 기본 스포츠 데이터 생성 중...');
-          const defaultSports = [
-            {
-              name: '축구',
-              code: 'SOCCER',
-              template: 'soccer',
-              description: '축구 경기',
-              is_active: true,
-              is_default: true,
-              created_by: null // 명시적으로 null 값 설정
-            },
-            {
-              name: '야구',
-              code: 'BASEBALL', 
-              template: 'baseball',
-              description: '야구 경기',
-              is_active: true,
-              is_default: true,
-              created_by: null // 명시적으로 null 값 설정
-            }
-          ];
-          
-          await Sport.bulkCreate(defaultSports);
-          console.log('✅ 기본 스포츠 데이터 생성 완료');
-          console.log('📋 생성된 기본 스포츠:', defaultSports.map(sport => ({
-            name: sport.name,
-            code: sport.code,
-            template: sport.template
-          })));
-        } else {
-          console.log('📋 기존 스포츠 데이터 확인 중...');
-          const existingSportsList = await Sport.findAll({
-            attributes: ['id', 'name', 'code', 'template', 'is_active', 'is_default']
-          });
-          console.log('📋 기존 스포츠 목록:', existingSportsList.map(sport => ({
-            id: sport.id,
-            name: sport.name,
-            code: sport.code,
-            template: sport.template,
-            is_active: sport.is_active,
-            is_default: sport.is_default
-          })));
-        }
-      } catch (error) {
-        console.error(`❌ 기본 스포츠 데이터 생성 실패: ${error.message}`);
-        console.error('❌ 기본 스포츠 데이터 생성 오류 상세:', {
-          message: error.message,
-          stack: error.stack,
-          name: error.name
-        });
-      }
-      
-      console.log('✅ Railway PostgreSQL 데이터베이스 완전 초기화 및 재생성 완료');
-    } catch (error) {
-      console.error('❌ Railway 긴급 스키마 수정 실패:', error);
-    }
-  }
-  
-  // 모델 동기화 상태 확인 (PostgreSQL 환경에서는 건너뛰기)
-  if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
-    console.log('🔍 PostgreSQL 환경 감지: 모델 동기화 건너뛰기 (railway-complete-reset.js에서 이미 처리됨)');
-  } else {
-    try {
-      console.log('🔍 모델 동기화 상태 확인 중...');
-      await sequelize.sync({ alter: true });
-      console.log('✅ 모델 동기화 완료');
-    } catch (error) {
-      console.error('❌ 모델 동기화 실패:', error);
-    }
-  }
+  console.log(`서버가 포트 ${PORT}에서 실행 중입니다.`);
+  console.log(`리팩토링된 서버 구조로 실행 중입니다.`);
   
   // 푸시 정보 복원
-  try {
   await restorePushedMatches();
-    console.log('✅ 푸시 정보 복원 완료');
-  } catch (error) {
-    console.error('❌ 푸시 정보 복원 실패:', error);
-  }
   
   // 등록된 라우트 확인
-  console.log('\n=== 등록된 라우트 확인 ===');
-  
-  // API 라우트 확인
-  console.log('\n=== API 라우트 확인 ===');
+  console.log('\n=== 등록된 DELETE 라우트 ===');
   app._router.stack.forEach((middleware) => {
-    if (middleware.route) {
-      const methods = Object.keys(middleware.route.methods).join(', ').toUpperCase();
-      console.log(`${methods} ${middleware.route.path}`);
-    } else if (middleware.name === 'router') {
-      console.log(`라우터: ${middleware.regexp}`);
+    if (middleware.route && middleware.route.methods.delete) {
+      console.log(`DELETE ${middleware.route.path}`);
     }
-  });
-  
-  // match-lists 라우트 특별 확인
-  console.log('\n=== match-lists 라우트 특별 확인 ===');
-  const matchListsRoutes = app._router.stack.filter(middleware => 
-    middleware.regexp && middleware.regexp.toString().includes('match-lists')
-  );
-  console.log('match-lists 관련 라우터 개수:', matchListsRoutes.length);
-  matchListsRoutes.forEach((route, index) => {
-    console.log(`라우터 ${index + 1}:`, route.regexp.toString());
   });
 });
 
