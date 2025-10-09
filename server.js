@@ -3425,13 +3425,45 @@ server.listen(PORT, async () => {
       // Sports 테이블의 created_by 컬럼 수동 추가 (Railway PostgreSQL 환경 대응)
       try {
         console.log('🔧 Sports 테이블 created_by 컬럼 수동 추가 중...');
-        await sequelize.query(`
-          ALTER TABLE "Sports" 
-          ADD COLUMN IF NOT EXISTS "created_by" INTEGER;
+        
+        // 먼저 테이블이 존재하는지 확인
+        const tableExists = await sequelize.query(`
+          SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name = 'Sports'
+          );
         `);
-        console.log('✅ Sports 테이블 created_by 컬럼 추가 완료');
+        
+        if (tableExists[0][0].exists) {
+          console.log('✅ Sports 테이블 존재 확인');
+          
+          // 컬럼이 존재하는지 확인
+          const columnExists = await sequelize.query(`
+            SELECT EXISTS (
+              SELECT FROM information_schema.columns 
+              WHERE table_schema = 'public' 
+              AND table_name = 'Sports' 
+              AND column_name = 'created_by'
+            );
+          `);
+          
+          if (!columnExists[0][0].exists) {
+            console.log('🔧 created_by 컬럼이 존재하지 않음. 추가 중...');
+            await sequelize.query(`
+              ALTER TABLE "Sports" 
+              ADD COLUMN "created_by" INTEGER;
+            `);
+            console.log('✅ Sports 테이블 created_by 컬럼 추가 완료');
+          } else {
+            console.log('✅ Sports 테이블 created_by 컬럼이 이미 존재함');
+          }
+        } else {
+          console.log('⚠️ Sports 테이블이 존재하지 않음');
+        }
       } catch (error) {
         console.warn(`⚠️ Sports 테이블 created_by 컬럼 추가 실패: ${error.message}`);
+        console.warn(`⚠️ 오류 상세: ${error.stack}`);
       }
       
       // 기본 사용자 생성
