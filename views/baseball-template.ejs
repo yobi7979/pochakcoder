@@ -467,6 +467,29 @@
         .innings-table td.total {
             background-color: rgba(255, 255, 255, 0.1);
         }
+        
+        /* 오버레이 이미지 */
+        .overlay-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 1920px;
+            height: 1080px;
+            z-index: 1000;
+            display: none; /* 기본적으로 숨김 */
+        }
+
+        .overlay-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 0;
+            box-shadow: none;
+        }
+
+        .overlay-image.show {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -478,6 +501,11 @@
             <div class="match-counter" id="matchCounter"></div>
         </div>
         <% } %>
+        
+        <!-- 오버레이 이미지 -->
+        <div class="overlay-image" id="overlayImage">
+            <!-- 이미지는 JavaScript로 동적으로 로드됩니다 -->
+        </div>
         
         <div class="scoreboard">
             <div class="team-section">
@@ -670,12 +698,50 @@
         const socket = io();
         const matchId = '<%= match.id %>';
         
+        // 경기 데이터 로드 함수
+        async function loadMatchData() {
+            try {
+                const response = await fetch(`/api/matches/${matchId}`);
+                const matchData = await response.json();
+                window.matchData = matchData;  // 전역 변수로 저장
+                console.log('🔧 경기 데이터 로드 완료:', matchData.sport_type);
+                return matchData;
+            } catch (error) {
+                console.error('🔧 경기 데이터 로드 실패:', error);
+                return null;
+            }
+        }
+
         // 소켓 연결
-        socket.on('connect', () => {
+        socket.on('connect', async () => {
             console.log('=== Socket.IO 연결됨 (오버레이) ===');
             console.log('Socket ID:', socket.id);
             console.log('Match ID:', matchId);
             socket.emit('join', matchId);
+            
+            // 경기 데이터 로드 후 종목별 Room에 참여 요청
+            const matchData = await loadMatchData();
+            if (matchData) {
+                // 서버에 종목별 Room 참여 요청
+                socket.emit('join_sport_room', matchData.sport_type);
+                console.log(`🔧 종목별 Room 참여 요청: sport_${matchData.sport_type}`);
+            }
+            
+            // 종목별 Room 참여 확인 이벤트 리스너
+            socket.on('joined_sport_room', (data) => {
+                if (data.success) {
+                    console.log(`🔧 야구 종목별 Room 참여 완료: ${data.roomName}`);
+                    console.log(`🔧 Room 참여자 수: ${data.clientCount}`);
+                    // Room 참여 완료 후 기존 활성 이미지 로드
+                    loadOverlayImage();
+                    
+                    // 이벤트 리스너 재등록 (Room 참여 완료 후)
+                    console.log('🔧 야구 이벤트 리스너 재등록 시작');
+                    registerOverlayImageEventListeners();
+                } else {
+                    console.error(`🔧 야구 종목별 Room 참여 실패: ${data.error}`);
+                }
+            });
             
             if (typeof isListMode !== 'undefined' && isListMode && typeof listId !== 'undefined' && listId) { 
             // 리스트 오버레이 모드일 때 리스트 오버레이 방에도 참가
@@ -691,69 +757,127 @@
             console.error('=== Socket.IO 연결 오류 (오버레이) ===', error);
         });
 
-        // match_update 이벤트 구독
-        socket.on('match_update', function(data) {
+                // match_update 이벤트 제거됨 - match_updated 이벤트로 통합
+
+// 경기 수정 이벤트
+        socket.on('match_updated', (data) => {
             if (data.matchId === matchId) {
-                console.log('경기 정보 업데이트 수신:', data);
+                console.log('경기 수정 이벤트 수신:', data);
                 
-                // 점수 업데이트 (이닝별 점수 합계로 계산)
-                let homeTotalScore = 0;
-                let awayTotalScore = 0;
+                // 팀명 업데이트
+                const homeTeamElement = document.getElementById('home-team-name');
+                const awayTeamElement = document.getElementById('away-team-name');
                 
-                if (data.match_data?.innings) {
-                    // 이닝별 점수 합계 계산
-                    for (let i = 1; i <= 9; i++) {
-                        homeTotalScore += parseInt(data.match_data.innings[`home_${i}`] || '0');
-                        awayTotalScore += parseInt(data.match_data.innings[`away_${i}`] || '0');
-                    }
-                } else {
-                    // 이닝 데이터가 없으면 서버 점수 사용
-                    homeTotalScore = data.home_score || 0;
-                    awayTotalScore = data.away_score || 0;
+                if (homeTeamElement && data.home_team) {
+                    homeTeamElement.textContent = data.home_team;
+                    console.log('홈팀명 업데이트:', data.home_team);
+                }
+                if (awayTeamElement && data.away_team) {
+                    awayTeamElement.textContent = data.away_team;
+                    console.log('원정팀명 업데이트:', data.away_team);
                 }
                 
-                const homeScoreEl = document.querySelector('.home-team .team-score');
-                if (homeScoreEl) homeScoreEl.textContent = homeTotalScore;
-                const awayScoreEl = document.querySelector('.away-team .team-score');
-                if (awayScoreEl) awayScoreEl.textContent = awayTotalScore;
+                // 종목 업데이트 (필요한 경우)
+                if (data.sport_type && data.sport_type !== currentSportType) {
+                    currentSportType = data.sport_type;
+                    console.log('종목 변경됨:', currentSportType);
+                }
                 
-                // 이닝 정보 업데이트
+                // 점수 업데이트
+                const homeScoreElement = document.querySelector('.home-team .team-score');
+                const awayScoreElement = document.querySelector('.away-team .team-score');
+                
+                if (homeScoreElement && data.home_score !== undefined) {
+                    homeScoreElement.textContent = data.home_score;
+                }
+                if (awayScoreElement && data.away_score !== undefined) {
+                    awayScoreElement.textContent = data.away_score;
+                }
+                
+                // 야구 특화 데이터 업데이트 (match_data가 있는 경우)
                 if (data.match_data) {
-                    // 현재 이닝
-                    const inningEl = document.querySelector('.current-inning');
-                    if (inningEl && data.match_data.current_inning) {
-                        inningEl.textContent = data.match_data.current_inning;
-                        // 이닝 인디케이터도 같이 갱신
-                        let indicator = inningEl.querySelector('.inning-indicator');
-                        if (!indicator) {
-                            indicator = document.createElement('div');
-                            indicator.className = 'inning-indicator';
-                            inningEl.appendChild(indicator);
+                    console.log('🔥 야구 match_updated 이벤트 수신:', data.match_data);
+                    console.log('🔥 이닝:', data.match_data.current_inning, '타입:', data.match_data.inning_type);
+                    console.log('🔥 베이스 상태:', data.match_data.first_base, data.match_data.second_base, data.match_data.third_base);
+                    console.log('🔥 볼카운트:', data.match_data.balls, '스트라이크:', data.match_data.strikes, '아웃:', data.match_data.outs);
+                    
+                    // 점수 업데이트 (이닝별 점수 합계로 계산)
+                    let homeTotalScore = 0;
+                    let awayTotalScore = 0;
+                    
+                    if (data.match_data?.innings) {
+                        // 이닝별 점수 합계 계산
+                        for (let i = 1; i <= 9; i++) {
+                            homeTotalScore += parseInt(data.match_data.innings[`home_${i}`] || '0');
+                            awayTotalScore += parseInt(data.match_data.innings[`away_${i}`] || '0');
                         }
-                        indicator.className = `inning-indicator ${data.match_data.inning_type === 'bottom' ? 'bottom' : 'top'}`;
+                    } else {
+                        // 이닝 데이터가 없으면 서버 점수 사용
+                        homeTotalScore = data.home_score || 0;
+                        awayTotalScore = data.away_score || 0;
                     }
                     
-                    // 베이스 상태
-                    const firstBase = document.querySelector('.base.first');
-                    if (firstBase && data.match_data.first_base !== undefined) firstBase.classList.toggle('active', data.match_data.first_base);
-                    const secondBase = document.querySelector('.base.second');
-                    if (secondBase && data.match_data.second_base !== undefined) secondBase.classList.toggle('active', data.match_data.second_base);
-                    const thirdBase = document.querySelector('.base.third');
-                    if (thirdBase && data.match_data.third_base !== undefined) thirdBase.classList.toggle('active', data.match_data.third_base);
+                    const homeScoreEl = document.querySelector('.home-team .team-score');
+                    if (homeScoreEl) homeScoreEl.textContent = homeTotalScore;
+                    const awayScoreEl = document.querySelector('.away-team .team-score');
+                    if (awayScoreEl) awayScoreEl.textContent = awayTotalScore;
                     
-                    // 볼/스트라이크/아웃 카운트
+                    // 이닝 정보 업데이트
+                    const inningElement = document.querySelector('.current-inning');
+                    if (inningElement && data.match_data.current_inning) {
+                        console.log('🔥 이닝 요소 찾음, 업데이트:', data.match_data.current_inning);
+                        inningElement.textContent = data.match_data.current_inning;
+                        const indicator = inningElement.querySelector('.inning-indicator');
+                        if (indicator) {
+                            indicator.className = `inning-indicator ${data.match_data.inning_type === 'bottom' ? 'bottom' : 'top'}`;
+                            console.log('🔥 이닝 인디케이터 업데이트:', indicator.className);
+                        }
+                    } else {
+                        console.log('❌ 이닝 요소를 찾을 수 없음');
+                    }
+                    
+                    // 베이스 상태 업데이트
+                    if (data.match_data.first_base !== undefined) {
+                        const firstBase = document.querySelector('.base.first');
+                        if (firstBase) {
+                            firstBase.classList.toggle('active', data.match_data.first_base);
+                            console.log('🔥 1루 베이스 업데이트:', data.match_data.first_base);
+                        }
+                    }
+                    if (data.match_data.second_base !== undefined) {
+                        const secondBase = document.querySelector('.base.second');
+                        if (secondBase) {
+                            secondBase.classList.toggle('active', data.match_data.second_base);
+                            console.log('🔥 2루 베이스 업데이트:', data.match_data.second_base);
+                        }
+                    }
+                    if (data.match_data.third_base !== undefined) {
+                        const thirdBase = document.querySelector('.base.third');
+                        if (thirdBase) {
+                            thirdBase.classList.toggle('active', data.match_data.third_base);
+                            console.log('🔥 3루 베이스 업데이트:', data.match_data.third_base);
+                        }
+                    }
+                    
+                    // 볼/스트라이크/아웃 카운트 업데이트
                     if (data.match_data.balls !== undefined) {
-                        document.querySelectorAll('.count-dot.ball').forEach((el, index) => {
+                        const ballDots = document.querySelectorAll('.count-dot.ball');
+                        console.log('🔥 볼 카운트 업데이트:', data.match_data.balls, '개 요소:', ballDots.length);
+                        ballDots.forEach((el, index) => {
                             el.classList.toggle('active', index < data.match_data.balls);
                         });
                     }
                     if (data.match_data.strikes !== undefined) {
-                        document.querySelectorAll('.count-dot.strike').forEach((el, index) => {
+                        const strikeDots = document.querySelectorAll('.count-dot.strike');
+                        console.log('🔥 스트라이크 카운트 업데이트:', data.match_data.strikes, '개 요소:', strikeDots.length);
+                        strikeDots.forEach((el, index) => {
                             el.classList.toggle('active', index < data.match_data.strikes);
                         });
                     }
                     if (data.match_data.outs !== undefined) {
-                        document.querySelectorAll('.count-dot.out').forEach((el, index) => {
+                        const outDots = document.querySelectorAll('.count-dot.out');
+                        console.log('🔥 아웃 카운트 업데이트:', data.match_data.outs, '개 요소:', outDots.length);
+                        outDots.forEach((el, index) => {
                             el.classList.toggle('active', index < data.match_data.outs);
                         });
                     }
@@ -792,203 +916,56 @@
                         }
                     }
                     
-                    // 타자/투수 정보
-                    const batterName = document.querySelector('.batter-info .player-name');
-                    if (batterName && data.match_data.batter_name) batterName.textContent = data.match_data.batter_name;
-                    const batterNumber = document.querySelector('.batter-info .player-number');
-                    if (batterNumber && data.match_data.batter_number) batterNumber.textContent = data.match_data.batter_number;
-                    const batterPosition = document.querySelector('.batter-info .player-position');
-                    if (batterPosition && data.match_data.batter_position) batterPosition.textContent = data.match_data.batter_position;
-                    const batterAvg = document.querySelector('.batter-info .stat-value');
-                    if (batterAvg && data.match_data.batter_avg) batterAvg.textContent = data.match_data.batter_avg;
+                    // 선수 정보 업데이트
+                    if (data.match_data.batter_name) {
+                        const batterNameEl = document.querySelector('.batter-name');
+                        if (batterNameEl) batterNameEl.textContent = data.match_data.batter_name;
+                    }
+                    if (data.match_data.batter_number) {
+                        const batterNumberEl = document.querySelector('.batter-number');
+                        if (batterNumberEl) batterNumberEl.textContent = data.match_data.batter_number;
+                    }
+                    if (data.match_data.pitcher_name) {
+                        const pitcherNameEl = document.querySelector('.pitcher-name');
+                        if (pitcherNameEl) pitcherNameEl.textContent = data.match_data.pitcher_name;
+                    }
+                    if (data.match_data.pitcher_number) {
+                        const pitcherNumberEl = document.querySelector('.pitcher-number');
+                        if (pitcherNumberEl) pitcherNumberEl.textContent = data.match_data.pitcher_number;
+                    }
                     
-                    const pitcherName = document.querySelector('.pitcher-info .player-name');
-                    if (pitcherName && data.match_data.pitcher_name) pitcherName.textContent = data.match_data.pitcher_name;
-                    const pitcherNumber = document.querySelector('.pitcher-info .player-number');
-                    if (pitcherNumber && data.match_data.pitcher_number) pitcherNumber.textContent = data.match_data.pitcher_number;
-                    const pitcherPosition = document.querySelector('.pitcher-info .player-position');
-                    if (pitcherPosition && data.match_data.pitcher_position) pitcherPosition.textContent = data.match_data.pitcher_position;
-                    const pitcherEra = document.querySelector('.pitcher-info .stat-value');
-                    if (pitcherEra && data.match_data.pitcher_era) pitcherEra.textContent = data.match_data.pitcher_era;
-                }
-            }
-        });
-
-        // 리스트 오버레이 경기 변경 이벤트 처리
-        socket.on('list_overlay_match_changed', (data) => {
-            console.log('리스트 오버레이 경기 변경 수신:', data);
-            console.log('받은 경기 데이터:', JSON.stringify(data.match, null, 2));
-            
-            if (typeof isListMode !== 'undefined' && isListMode && typeof listId !== 'undefined' && listId) { 
-            if (data.listId === '<%= listId %>') {
-                // 현재 경기 인덱스 업데이트
-                currentMatchIndex = data.matchIndex;
-                
-                // matchId 업데이트 (푸시된 경기의 ID로 변경)
-                if (data.match && data.match.id) {
-                    matchId = data.match.id;
-                    console.log('matchId 업데이트됨:', matchId);
-                }
-                
-                // 경기 정보 업데이트
-                const match = data.match;
-                if (match) {
-                    // 팀명 업데이트
-                    const homeTeamElement = document.querySelector('.home-team .team-name');
-                    const awayTeamElement = document.querySelector('.away-team .team-name');
-                    if (homeTeamElement) homeTeamElement.textContent = match.home_team || 'HOME';
-                    if (awayTeamElement) awayTeamElement.textContent = match.away_team || 'AWAY';
+                    // 팀 통계 업데이트
+                    if (data.match_data.home_hits !== undefined) {
+                        const homeHitsEl = document.querySelector('.home-hits');
+                        if (homeHitsEl) homeHitsEl.textContent = data.match_data.home_hits;
+                    }
+                    if (data.match_data.away_hits !== undefined) {
+                        const awayHitsEl = document.querySelector('.away-hits');
+                        if (awayHitsEl) awayHitsEl.textContent = data.match_data.away_hits;
+                    }
+                    if (data.match_data.home_errors !== undefined) {
+                        const homeErrorsEl = document.querySelector('.home-errors');
+                        if (homeErrorsEl) homeErrorsEl.textContent = data.match_data.home_errors;
+                    }
+                    if (data.match_data.away_errors !== undefined) {
+                        const awayErrorsEl = document.querySelector('.away-errors');
+                        if (awayErrorsEl) awayErrorsEl.textContent = data.match_data.away_errors;
+                    }
                     
-                    // 실제 점수 업데이트 (초기화하지 않음)
-                    const homeScoreElement = document.querySelector('.home-team .team-score');
-                    const awayScoreElement = document.querySelector('.away-team .team-score');
-                    if (homeScoreElement) homeScoreElement.textContent = match.home_score || '0';
-                    if (awayScoreElement) awayScoreElement.textContent = match.away_score || '0';
-                    
-                    // 실제 이닝 정보 업데이트
-                    if (match.match_data) {
-                        const inningElement = document.querySelector('.current-inning');
-                        if (inningElement && match.match_data.current_inning) {
-                            inningElement.textContent = match.match_data.current_inning;
-                            const indicator = inningElement.querySelector('.inning-indicator');
-                            if (indicator) {
-                                indicator.className = `inning-indicator ${match.match_data.inning_type === 'bottom' ? 'bottom' : 'top'}`;
+                    // 이닝별 점수 업데이트
+                    if (data.match_data.innings) {
+                        for (let i = 1; i <= 9; i++) {
+                            const homeInningEl = document.querySelector(`.home-inning-${i}`);
+                            const awayInningEl = document.querySelector(`.away-inning-${i}`);
+                            
+                            if (homeInningEl && data.match_data.innings[`home_${i}`] !== undefined) {
+                                homeInningEl.textContent = data.match_data.innings[`home_${i}`];
+                            }
+                            if (awayInningEl && data.match_data.innings[`away_${i}`] !== undefined) {
+                                awayInningEl.textContent = data.match_data.innings[`away_${i}`];
                             }
                         }
-                        
-                        // 베이스 상태 업데이트
-                        const firstBase = document.querySelector('.base.first');
-                        if (firstBase && match.match_data.first_base !== undefined) firstBase.classList.toggle('active', match.match_data.first_base);
-                        const secondBase = document.querySelector('.base.second');
-                        if (secondBase && match.match_data.second_base !== undefined) secondBase.classList.toggle('active', match.match_data.second_base);
-                        const thirdBase = document.querySelector('.base.third');
-                        if (thirdBase && match.match_data.third_base !== undefined) thirdBase.classList.toggle('active', match.match_data.third_base);
-                        
-                        // 볼/스트라이크/아웃 카운트 업데이트
-                        if (match.match_data.balls !== undefined) {
-                            document.querySelectorAll('.count-dot.ball').forEach((el, index) => {
-                                el.classList.toggle('active', index < match.match_data.balls);
-                            });
-                        }
-                        if (match.match_data.strikes !== undefined) {
-                            document.querySelectorAll('.count-dot.strike').forEach((el, index) => {
-                                el.classList.toggle('active', index < match.match_data.strikes);
-                            });
-                        }
-                        if (match.match_data.outs !== undefined) {
-                            document.querySelectorAll('.count-dot.out').forEach((el, index) => {
-                                el.classList.toggle('active', index < match.match_data.outs);
-                            });
-                        }
                     }
-                    
-                    // 리스트 정보 업데이트
-                    showListInfo();
-                    
-                    console.log('리스트 오버레이 경기 변경 완료:', match);
-                }
-            }
-            }
-        });
-
-        // 실시간 경기 데이터 업데이트 이벤트 처리
-        socket.on('match_data_updated', (data) => {
-            console.log('=== 야구 실시간 경기 데이터 업데이트 수신 ===');
-            console.log('업데이트 데이터:', data);
-            
-            if (data.matchId === matchId) {
-                // 점수 업데이트
-                const homeScoreElement = document.querySelector('.home-team .team-score');
-                const awayScoreElement = document.querySelector('.away-team .team-score');
-                
-                if (homeScoreElement && data.home_score !== undefined) {
-                    homeScoreElement.textContent = data.home_score;
-                    console.log('홈팀 점수 실시간 업데이트:', data.home_score);
-                }
-                if (awayScoreElement && data.away_score !== undefined) {
-                    awayScoreElement.textContent = data.away_score;
-                    console.log('원정팀 점수 실시간 업데이트:', data.away_score);
-                }
-                
-                // 야구 특화 데이터 업데이트
-                if (data.match_data) {
-                    // 이닝 정보 업데이트
-                    const inningElement = document.querySelector('.current-inning');
-                    if (inningElement && data.match_data.current_inning) {
-                        inningElement.textContent = data.match_data.current_inning;
-                        const indicator = inningElement.querySelector('.inning-indicator');
-                        if (indicator) {
-                            indicator.className = `inning-indicator ${data.match_data.inning_type === 'bottom' ? 'bottom' : 'top'}`;
-                        }
-                    }
-                    
-                    // 베이스 상태 업데이트
-                    if (data.match_data.first_base !== undefined) {
-                        const firstBase = document.querySelector('.base.first');
-                        if (firstBase) firstBase.classList.toggle('active', data.match_data.first_base);
-                    }
-                    if (data.match_data.second_base !== undefined) {
-                        const secondBase = document.querySelector('.base.second');
-                        if (secondBase) secondBase.classList.toggle('active', data.match_data.second_base);
-                    }
-                    if (data.match_data.third_base !== undefined) {
-                        const thirdBase = document.querySelector('.base.third');
-                        if (thirdBase) thirdBase.classList.toggle('active', data.match_data.third_base);
-                    }
-                    
-                    // 볼/스트라이크/아웃 카운트 업데이트
-                    if (data.match_data.balls !== undefined) {
-                        document.querySelectorAll('.count-dot.ball').forEach((el, index) => {
-                            el.classList.toggle('active', index < data.match_data.balls);
-                        });
-                    }
-                    if (data.match_data.strikes !== undefined) {
-                        document.querySelectorAll('.count-dot.strike').forEach((el, index) => {
-                            el.classList.toggle('active', index < data.match_data.strikes);
-                        });
-                    }
-                    if (data.match_data.outs !== undefined) {
-                        document.querySelectorAll('.count-dot.out').forEach((el, index) => {
-                            el.classList.toggle('active', index < data.match_data.outs);
-                        });
-                    }
-                }
-            }
-        });
-
-        // 경기 수정 이벤트
-        socket.on('match_updated', (data) => {
-            if (data.matchId === matchId) {
-                console.log('경기 수정 이벤트 수신:', data);
-                
-                // 팀명 업데이트
-                const homeTeamElement = document.getElementById('home-team-name');
-                const awayTeamElement = document.getElementById('away-team-name');
-                
-                if (homeTeamElement && data.home_team) {
-                    homeTeamElement.textContent = data.home_team;
-                    console.log('홈팀명 업데이트:', data.home_team);
-                }
-                if (awayTeamElement && data.away_team) {
-                    awayTeamElement.textContent = data.away_team;
-                    console.log('원정팀명 업데이트:', data.away_team);
-                }
-                
-                // 종목 업데이트 (필요한 경우)
-                if (data.sport_type && data.sport_type !== currentSportType) {
-                    currentSportType = data.sport_type;
-                    console.log('종목 변경됨:', currentSportType);
-                }
-                
-                // 점수 업데이트
-                const homeScoreElement = document.querySelector('.home-team .team-score');
-                const awayScoreElement = document.querySelector('.away-team .team-score');
-                
-                if (homeScoreElement && data.home_score !== undefined) {
-                    homeScoreElement.textContent = data.home_score;
-                }
-                if (awayScoreElement && data.away_score !== undefined) {
-                    awayScoreElement.textContent = data.away_score;
                 }
             }
         });
@@ -1297,11 +1274,292 @@
             }
         }
 
+        // 오버레이 이미지 로드 함수 (활성화된 모든 이미지 표시)
+    // 한글 파일명 디코딩 함수 (브라우저 호환 버전)
+    function decodeKoreanFilename(filename) {
+        try {
+            // 깨진 파일명인지 확인
+            if (filename.includes('ì') || filename.includes('ë') || filename.includes('í') || 
+                filename.includes('â') || filename.includes('ê') || filename.includes('ô')) {
+                
+                // 브라우저 환경에서 한글 파일명 디코딩
+                let decoded = filename;
+                try {
+                    // URL 디코딩 시도
+                    decoded = decodeURIComponent(filename);
+                } catch (e) {
+                    // URL 디코딩 실패 시 원본 반환
+                    console.log(`🔧 URL 디코딩 실패, 원본 사용: ${filename}`);
+                    return filename;
+                }
+                
+                console.log(`🔧 클라이언트 파일명 디코딩: ${filename} -> ${decoded}`);
+                return decoded;
+            }
+            return filename;
+        } catch (error) {
+            console.error('🔧 클라이언트 파일명 디코딩 실패:', error);
+            return filename;
+        }
+    }
+
+    // 오버레이 이미지 이벤트 리스너 재등록 함수 (야구용)
+    function registerOverlayImageEventListeners() {
+        console.log('🔧 야구 오버레이 이미지 이벤트 리스너 재등록');
+        
+        // 기존 이벤트 리스너 제거 (중복 방지)
+        socket.off('overlay_image_status_changed');
+        socket.off('overlay_page_refresh');
+        
+        // 오버레이 이미지 상태 변경 실시간 이벤트 처리 (재등록)
+        socket.on('overlay_image_status_changed', function(data) {
+            console.log('🔧 야구 오버레이 이미지 상태 변경 실시간 이벤트 (재등록):', data);
+            console.log('🔧 현재 window.matchData:', window.matchData);
+            console.log('🔧 현재 경기 sport_type:', window.matchData?.sport_type);
+            console.log('🔧 이벤트 sportCode:', data.sportCode);
+            
+            // 현재 경기의 스포츠 타입과 동적 비교 (window.matchData 사용)
+            if (data.sportCode === window.matchData?.sport_type) {
+                console.log('🔧 야구 스포츠 타입 일치, 이미지 처리 시작 (재등록)');
+                
+                if (data.isActive && data.imageData) {
+                    // 이미지 활성화 - 해당 이미지만 추가 표시
+                    console.log('🔧 야구 오버레이 이미지 활성화 (재등록):', data.imageData);
+                    addOverlayImage(data.imageData);
+                } else if (!data.isActive && data.imageData) {
+                    // 이미지 비활성화 - 해당 이미지만 제거
+                    console.log('🔧 야구 오버레이 이미지 비활성화 (재등록):', data.imageData);
+                    removeOverlayImage(data.imageData.id);
+                }
+            } else {
+                console.log('🔧 야구 스포츠 타입 불일치, Room 재참여 시도 (재등록)');
+                // 스포츠 타입이 일치하지 않으면 Room 재참여 시도
+                if (window.matchData?.sport_type) {
+                    console.log('🔧 야구 Room 재참여 요청 (재등록):', window.matchData.sport_type);
+                    socket.emit('join_sport_room', window.matchData.sport_type);
+                }
+            }
+        });
+
+        // 오버레이 페이지 새로고침 이벤트 처리 (재등록)
+        socket.on('overlay_page_refresh', function(data) {
+            console.log('🔧 야구 오버레이 페이지 새로고침 신호 수신 (재등록):', data);
+            console.log('🔧 현재 window.matchData:', window.matchData);
+            console.log('🔧 현재 경기 sport_type:', window.matchData?.sport_type);
+            console.log('🔧 이벤트 sportCode:', data.sportCode);
+            
+            // 현재 경기의 스포츠 타입과 동적 비교
+            if (data.sportCode === window.matchData?.sport_type) {
+                console.log('🔧 야구 오버레이 페이지 새로고침 실행 (재등록):', data.reason);
+                // 페이지 새로고침
+                location.reload();
+            } else {
+                console.log('🔧 야구 스포츠 타입 불일치로 새로고침 건너뜀 (재등록)');
+                // 대안: window.matchData가 없을 때도 새로고침 (디버깅용)
+                if (!window.matchData) {
+                    console.log('🔧 야구 window.matchData가 없어서 강제 새로고침 실행 (재등록)');
+                    location.reload();
+                }
+            }
+        });
+        
+        console.log('🔧 야구 오버레이 이미지 이벤트 리스너 재등록 완료');
+    }
+
+    // 오버레이 이미지 추가 함수 (다중 이미지 지원) - 야구용
+    function addOverlayImage(imageData) {
+        const overlayImageContainer = document.getElementById('overlayImage');
+        if (!overlayImageContainer) return;
+        
+        console.log('🔧 야구 오버레이 이미지 추가:', imageData);
+        
+        // 이미 존재하는 이미지인지 확인
+        const existingImg = overlayImageContainer.querySelector(`[data-image-id="${imageData.id}"]`);
+        if (existingImg) {
+            console.log('🔧 야구 이미지가 이미 존재함:', imageData.id);
+            return;
+        }
+        
+        const img = document.createElement('img');
+        img.setAttribute('data-image-id', imageData.id);
+        
+        // 파일 경로에서 파일명 추출 및 디코딩
+        const pathParts = imageData.file_path.split('/');
+        const filename = pathParts[pathParts.length - 1];
+        const decodedFilename = decodeKoreanFilename(filename);
+        const decodedPath = imageData.file_path.replace(filename, decodedFilename);
+        
+        img.src = decodedPath;
+        img.alt = '오버레이 이미지';
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'cover';
+        img.style.position = 'absolute';
+        img.style.top = '0';
+        img.style.left = '0';
+        img.style.zIndex = '1';
+        
+        img.onload = () => {
+            overlayImageContainer.appendChild(img);
+            overlayImageContainer.classList.add('show');
+            console.log('🔧 야구 오버레이 이미지 추가 완료:', imageData.id);
+        };
+        
+        img.onerror = (error) => {
+            console.error('🔧 야구 오버레이 이미지 로드 실패:', error);
+        };
+    }
+    
+    // 오버레이 이미지 제거 함수 (다중 이미지 지원) - 야구용
+    function removeOverlayImage(imageId) {
+        const overlayImageContainer = document.getElementById('overlayImage');
+        if (!overlayImageContainer) return;
+        
+        console.log('🔧 야구 오버레이 이미지 제거:', imageId);
+        
+        const imgToRemove = overlayImageContainer.querySelector(`[data-image-id="${imageId}"]`);
+        if (imgToRemove) {
+            imgToRemove.remove();
+            console.log('🔧 야구 오버레이 이미지 제거 완료:', imageId);
+            
+            // 모든 이미지가 제거되었으면 컨테이너 숨김
+            const remainingImages = overlayImageContainer.querySelectorAll('img');
+            if (remainingImages.length === 0) {
+                overlayImageContainer.classList.remove('show');
+            }
+        }
+    }
+    
+    // 오버레이 이미지 표시 함수 (실시간 업데이트용) - 야구용
+    function displayOverlayImage(imageData) {
+        const overlayImageContainer = document.getElementById('overlayImage');
+        if (!overlayImageContainer) return;
+        
+        console.log('🔧 야구 오버레이 이미지 표시:', imageData);
+        
+        // 기존 이미지 제거
+        overlayImageContainer.innerHTML = '';
+        
+        const img = document.createElement('img');
+        // 파일 경로에서 파일명 추출 및 디코딩
+        const pathParts = imageData.file_path.split('/');
+        const filename = pathParts[pathParts.length - 1];
+        const decodedFilename = decodeKoreanFilename(filename);
+        const decodedPath = imageData.file_path.replace(filename, decodedFilename);
+        
+        img.src = decodedPath;
+        img.alt = '오버레이 이미지';
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'cover';
+        img.style.position = 'absolute';
+        img.style.top = '0';
+        img.style.left = '0';
+        img.style.zIndex = '1';
+        
+        img.onload = () => {
+            overlayImageContainer.appendChild(img);
+            overlayImageContainer.classList.add('show');
+            console.log('🔧 야구 오버레이 이미지 로드 완료');
+        };
+        
+        img.onerror = (error) => {
+            console.error('🔧 야구 오버레이 이미지 로드 실패:', error);
+            overlayImageContainer.classList.remove('show');
+        };
+    }
+    
+    // 오버레이 이미지 숨김 함수 (실시간 업데이트용) - 야구용
+    function hideOverlayImage() {
+        const overlayImageContainer = document.getElementById('overlayImage');
+        if (!overlayImageContainer) return;
+        
+        console.log('🔧 야구 오버레이 이미지 숨김');
+        overlayImageContainer.classList.remove('show');
+        overlayImageContainer.innerHTML = '';
+    }
+
+    async function loadOverlayImage() {
+        try {
+            console.log('야구 오버레이 이미지 로드 시작...');
+                
+                // 경기 정보에서 종목 코드 가져오기
+                const matchResponse = await fetch(`/api/matches/${matchId}`);
+                if (!matchResponse.ok) {
+                    console.error('경기 정보를 가져올 수 없습니다.');
+                    return;
+                }
+                
+                const matchData = await matchResponse.json();
+                const sportCode = matchData.sport_type.toUpperCase();
+                console.log('종목 코드:', sportCode);
+                
+                // 종목코드 그대로 사용 (종목명 대신)
+                const sportCodeForPath = sportCode;
+                console.log('종목코드:', sportCodeForPath);
+                
+                // 해당 종목의 활성화된 이미지 조회
+                const response = await fetch(`/api/overlay-images/active/${sportCode}`);
+                const result = await response.json();
+                
+                console.log('야구 활성화된 이미지 목록 조회 결과:', result);
+                
+                const overlayImageContainer = document.getElementById('overlayImage');
+                
+                if (result.success && result.images && result.images.length > 0) {
+                    console.log('🔧 야구 활성화된 이미지들:', result.images);
+                    
+                    // 모든 활성화된 이미지를 표시
+                    overlayImageContainer.innerHTML = '';
+                    
+                    result.images.forEach((image, index) => {
+                        const img = document.createElement('img');
+                        img.setAttribute('data-image-id', image.id);
+                        
+                        // 종목코드 기반 경로로 직접 구성
+                        const filename = image.filename;
+                        const decodedFilename = decodeKoreanFilename(filename);
+                        const imagePath = `/overlay-images/${sportCodeForPath}/${decodedFilename}`;
+                        
+                        console.log(`🔧 야구 이미지 경로 구성: ${imagePath}`);
+                        img.src = imagePath;
+                        img.alt = `야구 오버레이 이미지 ${index + 1}`;
+                        img.style.width = '100%';
+                        img.style.height = '100%';
+                        img.style.objectFit = 'cover';
+                        img.style.position = 'absolute';
+                        img.style.top = '0';
+                        img.style.left = '0';
+                        img.style.zIndex = 1000 + index;
+                        
+                        img.onload = () => {
+                            overlayImageContainer.appendChild(img);
+                            overlayImageContainer.style.display = 'block';
+                            console.log(`야구 활성화된 오버레이 이미지 ${index + 1} 로드됨:`, image.file_path);
+                        };
+                        
+                        img.onerror = (error) => {
+                            console.error(`야구 활성화된 오버레이 이미지 ${index + 1} 로드 실패:`, error);
+                        };
+                    });
+                } else {
+                    overlayImageContainer.style.display = 'none';
+                    console.log('야구 활성화된 오버레이 이미지가 없습니다.');
+                }
+        } catch (error) {
+            console.error('야구 오버레이 이미지 로드 오류:', error);
+            document.getElementById('overlayImage').style.display = 'none';
+        }
+    }
+
         // 초기 팀 색상 설정
         document.addEventListener('DOMContentLoaded', async function() {
             try {
                 // 디자인 설정 로드 및 적용
                 await loadDesignSettings();
+                
+                // 오버레이 이미지 로드
+                await loadOverlayImage();
                 
                 // 팀 로고 정보 가져오기
                 const response = await fetch('/api/team-logo-map/BASEBALL');
@@ -1651,6 +1909,63 @@
             }
         });
 
+        // 팀 색상 업데이트 이벤트 처리
+        socket.on('teamColorUpdated', function(data) {
+            console.log('팀 색상 업데이트 이벤트 수신:', data);
+            
+            if (data.matchId === matchId) {
+                const teamType = data.teamType;
+                const teamColor = data.teamColor;
+                const headerText = data.headerText;
+                
+                // 팀 색상 업데이트
+                const teamElements = document.querySelectorAll(`.team-info.${teamType}-team`);
+                teamElements.forEach(element => {
+                    element.style.backgroundColor = teamColor;
+                });
+                
+                // 팀 헤더 텍스트 업데이트 (있는 경우)
+                if (headerText) {
+                    const headerElements = document.querySelectorAll(`.team-info.${teamType}-team .team-header`);
+                    headerElements.forEach(element => {
+                        element.textContent = headerText;
+                    });
+                }
+                
+                console.log(`${teamType}팀 색상 업데이트 완료: ${teamColor}`);
+            }
+        });
+
+        // 팀 로고 업데이트 이벤트 처리
+        socket.on('teamLogoUpdated', function(data) {
+            console.log('팀 로고 업데이트 이벤트 수신:', data);
+            
+            if (data.matchId === matchId) {
+                const teamType = data.teamType;
+                const logoPath = data.logoPath;
+                const logoBgColor = data.logoBgColor;
+                
+                // 팀 로고 이미지 업데이트
+                const logoElements = document.querySelectorAll(`.team-info.${teamType}-team .team-logo img`);
+                logoElements.forEach(element => {
+                    if (logoPath) {
+                        element.src = `/public/${logoPath}`;
+                        element.style.display = 'block';
+                    } else {
+                        element.style.display = 'none';
+                    }
+                });
+                
+                // 팀 로고 배경색 업데이트
+                const logoContainers = document.querySelectorAll(`.team-info.${teamType}-team .team-logo`);
+                logoContainers.forEach(container => {
+                    container.style.backgroundColor = logoBgColor || '#FFFFFF';
+                });
+                
+                console.log(`${teamType}팀 로고 업데이트 완료: ${logoPath}, 배경색: ${logoBgColor}`);
+            }
+        });
+
         // 스코어 업데이트 이벤트
         socket.on('scoreUpdated', (data) => {
             console.log('스코어 업데이트:', data);
@@ -1890,6 +2205,73 @@
                 }
                 
                 console.log('팀 위치 변경 완료');
+            }
+        });
+
+        // 스포츠 오버레이 이미지 변경 이벤트 처리 (야구용)
+        socket.on('sport_overlay_image_updated', function(data) {
+            console.log('야구 스포츠 오버레이 이미지 업데이트:', data);
+            
+            if (data.action === 'uploaded') {
+                // 새 이미지가 업로드된 경우 - 활성화된 이미지들 다시 로드
+                loadOverlayImage();
+            } else if (data.action === 'deleted') {
+                // 이미지가 삭제된 경우 - 활성화된 이미지들 다시 로드
+                loadOverlayImage();
+            } else if (data.action === 'activated') {
+                // 이미지가 활성화된 경우 - 활성화된 이미지들 다시 로드
+                loadOverlayImage();
+            } else if (data.action === 'status_changed') {
+                // 이미지 상태가 변경된 경우 - 활성화된 이미지들 다시 로드
+                console.log('야구 이미지 상태 변경됨:', data);
+                loadOverlayImage();
+            }
+        });
+
+        // 오버레이 이미지 상태 변경 실시간 이벤트 처리 (동적 처리)
+        socket.on('overlay_image_status_changed', function(data) {
+            console.log('🔧 야구 오버레이 이미지 상태 변경 실시간 이벤트:', data);
+            console.log('🔧 현재 window.matchData:', window.matchData);
+            console.log('🔧 현재 경기 sport_type:', window.matchData?.sport_type);
+            console.log('🔧 이벤트 sportCode:', data.sportCode);
+            
+            // 현재 경기의 스포츠 타입과 동적 비교 (window.matchData 사용)
+            if (data.sportCode === window.matchData?.sport_type) {
+                console.log('🔧 야구 스포츠 타입 일치, 이미지 처리 시작');
+                
+                if (data.isActive && data.imageData) {
+                    // 이미지 활성화 - 해당 이미지만 추가 표시
+                    console.log('🔧 야구 오버레이 이미지 활성화:', data.imageData);
+                    addOverlayImage(data.imageData);
+                } else if (!data.isActive && data.imageData) {
+                    // 이미지 비활성화 - 해당 이미지만 제거
+                    console.log('🔧 야구 오버레이 이미지 비활성화:', data.imageData);
+                    removeOverlayImage(data.imageData.id);
+                }
+            } else {
+                console.log('🔧 야구 스포츠 타입 불일치, Room 재참여 시도');
+                // 스포츠 타입이 일치하지 않으면 Room 재참여 시도
+                if (window.matchData?.sport_type) {
+                    console.log('🔧 야구 Room 재참여 요청:', window.matchData.sport_type);
+                    socket.emit('join_sport_room', window.matchData.sport_type);
+                }
+            }
+        });
+
+        // 오버레이 페이지 새로고침 이벤트 처리
+        socket.on('overlay_page_refresh', function(data) {
+            console.log('🔧 야구 오버레이 페이지 새로고침 신호 수신:', data);
+            console.log('🔧 현재 window.matchData:', window.matchData);
+            console.log('🔧 현재 경기 sport_type:', window.matchData?.sport_type);
+            console.log('🔧 이벤트 sportCode:', data.sportCode);
+            
+            // 현재 경기의 스포츠 타입과 동적 비교
+            if (data.sportCode === window.matchData?.sport_type) {
+                console.log('🔧 야구 오버레이 페이지 새로고침 실행:', data.reason);
+                // 페이지 새로고침
+                location.reload();
+            } else {
+                console.log('🔧 야구 스포츠 타입 불일치로 새로고침 건너뜀');
             }
         });
 

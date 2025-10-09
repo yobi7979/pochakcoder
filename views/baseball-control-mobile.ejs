@@ -285,17 +285,19 @@
         </div>
         <% } %>
         
+        
         <!-- 팀로고 사용 체크박스 -->
         <div class="row mb-2">
             <div class="col-12 text-center">
                 <div class="form-check d-inline-block">
-                    <input type="checkbox" class="form-check-input" id="use-team-logos" checked style="transform: scale(0.8);">
+                    <input type="checkbox" class="form-check-input" id="use-team-logos" <%= match.match_data && match.match_data.use_team_logos ? 'checked' : '' %> style="transform: scale(0.8);">
                     <label class="form-check-label" for="use-team-logos" style="font-size: 0.85em;">
                         팀로고 사용
                     </label>
                 </div>
             </div>
         </div>
+        
         
         <!-- 팀명 표시 및 수정 -->
         <div class="row mb-1" style="align-items: center;">
@@ -545,7 +547,7 @@
                 console.log(`=== 점수 증가 시작: ${team}팀 +${change} ===`);
                 
                 // 1. 서버에서 최신 경기 데이터 가져오기
-                const response = await fetch(`/api/match/${matchId}`);
+                const response = await fetch(`/api/matches/${matchId}`);
                 if (!response.ok) {
                     throw new Error('서버에서 경기 데이터를 가져올 수 없습니다.');
                 }
@@ -582,7 +584,7 @@
                 // 6. 서버에서 최신 점수 다시 가져와서 UI 업데이트 (Socket.IO 이벤트 실패 시 대비)
                 setTimeout(async () => {
                     try {
-                        const response = await fetch(`/api/match/${matchId}`);
+                        const response = await fetch(`/api/matches/${matchId}`);
                         if (response.ok) {
                             const matchData = await response.json();
                             const homeScore = matchData.home_score || 0;
@@ -619,7 +621,7 @@
                 console.log(`=== 점수 감소 시작: ${team}팀 -${amount} (역순 삭제) ===`);
                 
                 // 1. 서버에서 최신 경기 데이터 가져오기
-                const response = await fetch(`/api/match/${matchId}`);
+                const response = await fetch(`/api/matches/${matchId}`);
                 if (!response.ok) {
                     throw new Error('서버에서 경기 데이터를 가져올 수 없습니다.');
                 }
@@ -666,7 +668,7 @@
                 // 서버에서 최신 점수 다시 가져와서 UI 업데이트 (Socket.IO 이벤트 실패 시 대비)
                 setTimeout(async () => {
                     try {
-                        const response = await fetch(`/api/match/${matchId}`);
+                        const response = await fetch(`/api/matches/${matchId}`);
                         if (response.ok) {
                             const matchData = await response.json();
                             const homeScore = matchData.home_score || 0;
@@ -707,7 +709,7 @@
                 console.log('=== 모든 점수 초기화 시작 ===');
                 
                 // 1. 서버에서 최신 경기 데이터 가져오기
-                const response = await fetch(`/api/match/${matchId}`);
+                const response = await fetch(`/api/matches/${matchId}`);
                 if (!response.ok) {
                     throw new Error('서버에서 경기 데이터를 가져올 수 없습니다.');
                 }
@@ -953,7 +955,7 @@
         async function loadCurrentMatchData() {
             try {
                 console.log('=== 서버에서 최신 경기 데이터 로딩 시작 ===');
-                const response = await fetch(`/api/match/${matchId}`);
+                const response = await fetch(`/api/matches/${matchId}`);
                 
                 if (response.ok) {
                     const matchData = await response.json();
@@ -1153,8 +1155,8 @@
                     body: JSON.stringify(formData)
                 });
                 
-                // 실시간 업데이트를 위한 WebSocket 이벤트 발생
-                socket.emit('match_update', {
+                // 실시간 업데이트를 위한 WebSocket 이벤트 발생 (match_updated로 통일)
+                socket.emit('match_updated', {
                     matchId: matchId,
                     match_data: formData.match_data
                 });
@@ -1442,7 +1444,7 @@
         // 팀명 업데이트 함수
         async function updateTeamName(team, newTeamName) {
             try {
-                const response = await fetch(`/api/match/${matchId}/team-name`, {
+                const response = await fetch(`/api/matches/${matchId}/team-name`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

@@ -248,7 +248,7 @@ const SportActiveOverlayImage = sequelize.define('SportActiveOverlayImage', {
   sport_code: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true
+    unique: false
   },
   active_image_id: {
     type: DataTypes.INTEGER,
@@ -262,7 +262,13 @@ const SportActiveOverlayImage = sequelize.define('SportActiveOverlayImage', {
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
-  tableName: 'SportActiveOverlayImages'
+  tableName: 'SportActiveOverlayImages',
+  indexes: [
+    {
+      unique: true,
+      fields: ['sport_code', 'active_image_id']
+    }
+  ]
 });
 
 // Sport와 SportActiveOverlayImage 간의 관계 설정
@@ -394,6 +400,19 @@ const MatchList = sequelize.define('MatchList', {
       model: 'users',
       key: 'id'
     }
+  },
+  pushed_match_id: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  pushed_match_index: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 0
+  },
+  pushed_timestamp: {
+    type: DataTypes.BIGINT,
+    allowNull: true
   }
 }, {
   timestamps: true,
@@ -545,6 +564,64 @@ UserSportPermission.belongsTo(Sport, { foreignKey: 'sport_id', as: 'sport' });
 User.hasMany(UserSportPermission, { foreignKey: 'user_id', as: 'sportPermissions' });
 Sport.hasMany(UserSportPermission, { foreignKey: 'sport_id', as: 'userPermissions' });
 
+// TeamInfo 모델 정의
+const TeamInfo = sequelize.define('TeamInfo', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  match_id: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    references: {
+      model: 'Matches',
+      key: 'id'
+    },
+    onDelete: 'CASCADE'
+  },
+  sport_type: {
+    type: DataTypes.STRING(50),
+    allowNull: false,
+    defaultValue: 'SOCCER'
+  },
+  team_name: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  team_type: {
+    type: DataTypes.STRING(10),
+    allowNull: false,
+    validate: {
+      isIn: [['home', 'away']]
+    }
+  },
+  team_color: {
+    type: DataTypes.STRING(7),
+    defaultValue: '#000000'
+  },
+  team_header: {
+    type: DataTypes.STRING
+  },
+  logo_path: {
+    type: DataTypes.STRING(500),
+    defaultValue: null
+  },
+  logo_bg_color: {
+    type: DataTypes.STRING(7),
+    defaultValue: '#FFFFFF'
+  }
+}, {
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  tableName: 'TeamInfo'
+});
+
+// TeamInfo와 Match 간의 관계 설정
+TeamInfo.belongsTo(Match, { foreignKey: 'match_id', as: 'match' });
+Match.hasMany(TeamInfo, { foreignKey: 'match_id', as: 'teamInfo' });
+
 // 데이터베이스 연결 및 테이블 생성
 sequelize.sync()
   .then(() => {
@@ -565,5 +642,6 @@ module.exports = {
   MatchList,
   User,
   UserSportPermission,
+  TeamInfo,
   Op
 }; 

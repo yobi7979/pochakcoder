@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>데이터베이스 관리 - SportsCoder</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: #34495e;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: #2c3e50;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 0.8rem;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .color-input {
+            width: 60px !important;
+            height: 40px !important;
+            padding: 0 !important;
+            border: 2px solid #ddd !important;
+            border-radius: 6px !important;
+            cursor: pointer;
+        }
+
+        .color-input:hover {
+            border-color: #007bff !important;
+        }
+
+        .logo-select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            background: white;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .data-grid {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .grid-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 18px 24px;
+            border-bottom: 1px solid #e9ecef;
+            font-weight: 600;
+            color: white;
+            font-size: 1.1rem;
+        }
+
+        .grid-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .grid-table th {
+            background: #f8f9fa;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+            font-size: 0.9rem;
+            letter-spacing: 0.3px;
+        }
+
+        .grid-table td {
+            padding: 12px 8px;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 0.85rem;
+            vertical-align: top;
+            line-height: 1.4;
+        }
+
+        .grid-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .grid-table tr:nth-child(even) {
+            background: #fafafa;
+        }
+
+        /* 페이지네이션 스타일 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 30px 0;
+            gap: 8px;
+        }
+
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid #dee2e6;
+            background: white;
+            color: #495057;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .pagination button:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+
+        .pagination button.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .section-divider {
+            height: 2px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            margin: 40px 0;
+            border-radius: 1px;
+        }
+
+        /* 검색 필터 스타일 */
+        .search-filter {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .search-row {
+            display: flex;
+            align-items: end;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .search-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .search-group label {
+            display: block;
+            font-weight: 500;
+            color: #495057;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            transition: border-color 0.2s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+
+        .search-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-actions .btn {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .search-actions .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .search-actions .btn-primary:hover {
+            background: #0056b3;
+        }
+
+        .search-actions .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .search-actions .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .grid-table tr:nth-child(even):hover {
+            background: #f0f0f0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .color-preview {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            border: 1px solid #ddd;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        .logo-path {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .team-type {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            min-width: 20px;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .team-type.home {
+            background: #28a745;
+            color: white;
+        }
+
+        .team-type.away {
+            background: #007bff;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 0;
+            }
+            
+            .content {
+                padding: 15px;
+            }
+            
+            .grid-table {
+                font-size: 0.8rem;
+            }
+            
+            .grid-table th,
+            .grid-table td {
+                padding: 8px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-btn">
+        <i class="bi bi-arrow-left"></i> 메인으로
+    </a>
+
+    <div class="container">
+        <div class="header">
+            <h1><i class="bi bi-database-gear"></i> 데이터베이스 관리</h1>
+            <p>팀 정보 데이터 현황</p>
+        </div>
+
+        <div class="content">
+            <div class="section-title">
+                <i class="bi bi-table"></i> 팀 정보 데이터
+                <div class="header-actions">
+                    <button class="btn btn-success" onclick="backupAllData()">
+                        <i class="bi bi-download"></i> 전체 백업
+                    </button>
+                </div>
+            </div>
+
+            <!-- 검색 필터 -->
+            <div class="search-filter">
+                <div class="search-row">
+                    <div class="search-group">
+                        <label for="searchMatchId">경기 ID 검색:</label>
+                        <input type="text" id="searchMatchId" placeholder="예: 1002SC9485" class="search-input">
+                    </div>
+                    <div class="search-group">
+                        <label for="searchTeamName">팀명 검색:</label>
+                        <input type="text" id="searchTeamName" placeholder="예: 홈팀" class="search-input">
+                    </div>
+                    <div class="search-actions">
+                        <button onclick="applySearch()" class="btn btn-primary">
+                            <i class="bi bi-search"></i> 검색
+                        </button>
+                        <button onclick="clearSearch()" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> 초기화
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="data-container">
+                <div class="loading">
+                    <i class="bi bi-hourglass-split"></i> 데이터를 불러오는 중...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 편집 모달 -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">팀 정보 수정</h3>
+                <button class="close-btn" onclick="closeEditModal()">&times;</button>
+            </div>
+            <form id="editForm">
+                <div class="form-group">
+                    <label class="form-label">팀명</label>
+                    <input type="text" id="editTeamName" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">팀 헤더</label>
+                    <input type="text" id="editTeamHeader" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">팀 로고</label>
+                    <select id="editTeamLogo" class="logo-select">
+                        <option value="">로고 없음</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">팀 컬러</label>
+                        <input type="color" id="editTeamColor" class="color-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">로고 배경색</label>
+                        <input type="color" id="editLogoBgColor" class="color-input">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">취소</button>
+                    <button type="submit" class="btn btn-primary">저장</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 데이터 로드
+        async function loadTeamData() {
+            console.log('🔍 loadTeamData 함수 시작');
+            try {
+                console.log('📡 API 요청 시작: /api/sport-management/api');
+                const response = await fetch('/api/sport-management/api');
+                console.log('📡 API 응답 상태:', response.status);
+                const data = await response.json();
+                console.log('📊 받은 데이터:', data);
+                
+                if (data.success) {
+                    console.log('✅ API 성공, displayTeamData 호출');
+                    displayTeamData(data.sports, data.settings);
+                } else {
+                    console.log('❌ API 실패');
+                    showError('데이터를 불러오는데 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('❌ Error loading team data:', error);
+                showError('데이터를 불러오는 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 전역 변수
+        let currentTeamPage = 1;
+        let currentSettingsPage = 1;
+        const itemsPerPage = 10;
+        let allTeamData = [];
+        let allSettingsData = [];
+        let filteredTeamData = [];
+        let filteredSettingsData = [];
+        let searchMatchId = '';
+        let searchTeamName = '';
+
+        // 데이터 표시
+        function displayTeamData(sports, settings) {
+            console.log('🔍 displayTeamData 함수 시작');
+            const container = document.getElementById('data-container');
+            console.log('📦 컨테이너 요소:', container);
+            
+            console.log('📊 받은 데이터:', sports); // 디버깅용
+            console.log('⚙️ Settings 데이터:', settings); // 디버깅용
+            
+            // sports 데이터가 없어도 Settings 데이터는 표시할 수 있도록 수정
+            if (!sports) {
+                sports = [];
+            }
+
+            allTeamData = [];
+            allSettingsData = settings || [];
+            
+            // 모든 종목의 팀 정보를 수집
+            sports.forEach(sport => {
+                console.log('종목 데이터:', sport); // 디버깅용
+                if (sport.team_details && sport.team_details.length > 0) {
+                    sport.team_details.forEach(team => {
+                        allTeamData.push({
+                            id: team.id, // 팀 ID 추가
+                            sport_type: sport.sport_type,
+                            match_id: team.match_id,
+                            team_name: team.team_name,
+                            team_type: team.team_type,
+                            team_color: team.team_color,
+                            team_header: team.team_header,
+                            logo_path: team.logo_path,
+                            logo_bg_color: team.logo_bg_color,
+                            created_at: team.created_at,
+                            updated_at: team.updated_at
+                        });
+                    });
+                } else {
+                    console.log('팀 상세 정보가 없음:', sport.sport_type);
+                }
+            });
+
+            console.log('수집된 팀 데이터:', allTeamData); // 디버깅용
+
+            // 팀 데이터가 없어도 Settings 데이터는 표시할 수 있도록 수정
+
+            // 페이지 초기화
+            currentTeamPage = 1;
+            currentSettingsPage = 1;
+            
+            // 필터링된 데이터 초기화
+            filteredTeamData = [...allTeamData];
+            filteredSettingsData = [...allSettingsData];
+            
+            // 데이터 표시
+            renderAllData();
+        }
+
+        // 검색 적용
+        function applySearch() {
+            searchMatchId = document.getElementById('searchMatchId').value.trim();
+            searchTeamName = document.getElementById('searchTeamName').value.trim();
+            
+            // 팀 데이터 필터링
+            filteredTeamData = allTeamData.filter(team => {
+                const matchIdMatch = team.match_id.toLowerCase().includes(searchMatchId.toLowerCase());
+                const teamNameMatch = team.team_name.toLowerCase().includes(searchTeamName.toLowerCase());
+                
+                if (searchMatchId && searchTeamName) {
+                    return matchIdMatch && teamNameMatch;
+                } else if (searchMatchId) {
+                    return matchIdMatch;
+                } else if (searchTeamName) {
+                    return teamNameMatch;
+                }
+                return true;
+            });
+            
+            // Settings 데이터 필터링 (경기 ID 기준)
+            filteredSettingsData = allSettingsData.filter(setting => {
+                if (!searchMatchId) return true;
+                
+                const matchIdMatch = setting.key.toLowerCase().includes(searchMatchId.toLowerCase());
+                return matchIdMatch;
+            });
+            
+            // 페이지 초기화
+            currentTeamPage = 1;
+            currentSettingsPage = 1;
+            
+            renderAllData();
+        }
+
+        // 검색 초기화
+        function clearSearch() {
+            document.getElementById('searchMatchId').value = '';
+            document.getElementById('searchTeamName').value = '';
+            
+            searchMatchId = '';
+            searchTeamName = '';
+            
+            // 필터링된 데이터를 원본 데이터로 복원
+            filteredTeamData = [...allTeamData];
+            filteredSettingsData = [...allSettingsData];
+            
+            // 페이지 초기화
+            currentTeamPage = 1;
+            currentSettingsPage = 1;
+            
+            renderAllData();
+        }
+
+        // 팀 데이터 렌더링
+        function renderTeamData() {
+            const startIndex = (currentTeamPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const currentTeamData = filteredTeamData.slice(startIndex, endIndex);
+            const totalPages = Math.ceil(filteredTeamData.length / itemsPerPage);
+
+            // 팀 데이터가 없을 때 처리
+            if (filteredTeamData.length === 0) {
+                return `
+                    <div class="data-grid">
+                        <div class="grid-header">
+                            <i class="bi bi-people"></i> 팀 정보 데이터 (총 0개)
+                        </div>
+                        <div class="no-data" style="padding: 40px; text-align: center; color: #6c757d;">
+                            <i class="bi bi-info-circle"></i> 등록된 팀 정보가 없습니다.
+                        </div>
+                    </div>
+                `;
+            }
+
+            const teamDataHTML = `
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <i class="bi bi-people"></i> 팀 정보 데이터 (총 ${filteredTeamData.length}개)
+                    </div>
+                    <table class="grid-table">
+                        <thead>
+                            <tr>
+                                <th>종목</th>
+                                <th>경기 ID</th>
+                                <th>팀명</th>
+                                <th>팀 타입</th>
+                                <th>팀 컬러</th>
+                                <th>팀 헤더</th>
+                                <th>로고 경로</th>
+                                <th>로고 배경색</th>
+                                <th>생성일</th>
+                                <th>수정일</th>
+                                <th>액션</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${currentTeamData.map(team => `
+                                <tr>
+                                    <td><strong>${team.sport_type}</strong></td>
+                                    <td><code>${team.match_id}</code></td>
+                                    <td><strong>${team.team_name}</strong></td>
+                                    <td>
+                                        <span class="team-type ${team.team_type}">
+                                            ${team.team_type === 'home' ? 'H' : 'A'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="color-preview" style="background-color: ${team.team_color || '#000000'}"></span>
+                                        <code>${team.team_color || 'N/A'}</code>
+                                    </td>
+                                    <td>${team.team_header || 'N/A'}</td>
+                                    <td class="logo-path" title="${team.logo_path || 'N/A'}">
+                                        ${team.logo_path || 'N/A'}
+                                    </td>
+                                    <td>
+                                        <span class="color-preview" style="background-color: ${team.logo_bg_color || '#FFFFFF'}"></span>
+                                        <code>${team.logo_bg_color || 'N/A'}</code>
+                                    </td>
+                                    <td>${formatDate(team.created_at)}</td>
+                                    <td>${formatDate(team.updated_at)}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary" onclick="editTeam(${JSON.stringify(team).replace(/"/g, '&quot;')})">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteTeam(${JSON.stringify(team).replace(/"/g, '&quot;')})">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                ${generatePagination(currentTeamPage, totalPages, 'team')}
+            `;
+
+            return teamDataHTML;
+        }
+
+        // Settings 데이터 렌더링
+        function renderSettingsData() {
+            const startIndex = (currentSettingsPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const currentSettingsData = filteredSettingsData.slice(startIndex, endIndex);
+            const totalPages = Math.ceil(filteredSettingsData.length / itemsPerPage);
+
+            if (filteredSettingsData.length === 0) {
+                return `
+                    <div class="section-divider"></div>
+                    <div class="data-grid">
+                        <div class="grid-header">
+                            <i class="bi bi-gear"></i> Settings 데이터 (총 0개)
+                        </div>
+                        <div class="no-data" style="padding: 40px; text-align: center; color: #6c757d;">
+                            <i class="bi bi-info-circle"></i> 등록된 Settings 데이터가 없습니다.
+                        </div>
+                    </div>
+                `;
+            }
+
+            const settingsHTML = `
+                <div class="section-divider"></div>
+                <div class="data-grid">
+                    <div class="grid-header">
+                        <i class="bi bi-gear"></i> Settings 데이터 (총 ${filteredSettingsData.length}개)
+                    </div>
+                    <table class="grid-table">
+                        <thead>
+                            <tr>
+                                <th>키</th>
+                                <th>값</th>
+                                <th>설명</th>
+                                <th>경기 상태</th>
+                                <th>생성일</th>
+                                <th>수정일</th>
+                                <th>작업</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${currentSettingsData.map(setting => {
+                                // 경기 ID 추출
+                                const matchIdMatch = setting.key.match(/(\d{4}[A-Z]{2}\d{4})/);
+                                const matchId = matchIdMatch ? matchIdMatch[1] : null;
+                                
+                                // 종목 타입 추출
+                                let sportType = null;
+                                if (setting.key.includes('soccer_')) {
+                                    sportType = 'soccer';
+                                } else if (setting.key.includes('baseball_')) {
+                                    sportType = 'baseball';
+                                }
+                                
+                                // 경기 상태 표시
+                                let matchStatus = '';
+                                if (matchId && sportType) {
+                                    matchStatus = `<span class="badge bg-info" data-match-id="${matchId}" data-sport-type="${sportType}">
+                                        <i class="bi bi-clock"></i> 확인 중...
+                                    </span>`;
+                                } else {
+                                    matchStatus = '<span class="badge bg-secondary">N/A</span>';
+                                }
+                                
+                                return `
+                                    <tr>
+                                        <td>${setting.key}</td>
+                                        <td>${setting.value}</td>
+                                        <td>${setting.description || 'N/A'}</td>
+                                        <td>${matchStatus}</td>
+                                        <td>${formatDate(setting.created_at)}</td>
+                                        <td>${formatDate(setting.updated_at)}</td>
+                                        <td>
+                                            <button class="btn btn-danger btn-sm" onclick="deleteSetting(${setting.id}, '${setting.key}')">
+                                                <i class="bi bi-trash"></i> 삭제
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                ${generatePagination(currentSettingsPage, totalPages, 'settings')}
+            `;
+
+            return settingsHTML;
+        }
+
+        // 페이지네이션 생성
+        function generatePagination(currentPage, totalPages, type) {
+            if (totalPages <= 1) return '';
+
+            let paginationHTML = '<div class="pagination">';
+            
+            // 이전 버튼
+            paginationHTML += `<button ${currentPage === 1 ? 'disabled' : ''} onclick="changePage('${type}', ${currentPage - 1})">이전</button>`;
+            
+            // 페이지 번호들
+            const startPage = Math.max(1, currentPage - 2);
+            const endPage = Math.min(totalPages, currentPage + 2);
+            
+            for (let i = startPage; i <= endPage; i++) {
+                paginationHTML += `<button class="${i === currentPage ? 'active' : ''}" onclick="changePage('${type}', ${i})">${i}</button>`;
+            }
+            
+            // 다음 버튼
+            paginationHTML += `<button ${currentPage === totalPages ? 'disabled' : ''} onclick="changePage('${type}', ${currentPage + 1})">다음</button>`;
+            
+            paginationHTML += '</div>';
+            return paginationHTML;
+        }
+
+        // 통합 렌더링 함수
+        function renderAllData() {
+            console.log('🔍 renderAllData 함수 시작');
+            const container = document.getElementById('data-container');
+            console.log('📦 컨테이너 요소:', container);
+            
+            const teamHTML = renderTeamData();
+            console.log('👥 팀 HTML 길이:', teamHTML.length);
+            
+            const settingsHTML = renderSettingsData();
+            console.log('⚙️ Settings HTML 길이:', settingsHTML.length);
+            
+            const finalHTML = teamHTML + settingsHTML;
+            console.log('📄 최종 HTML 길이:', finalHTML.length);
+            
+            container.innerHTML = finalHTML;
+            console.log('✅ HTML 삽입 완료');
+            
+            // Settings 데이터가 있으면 경기 존재 여부 확인
+            if (allSettingsData.length > 0) {
+                checkMatchExistence();
+            }
+        }
+
+        // 페이지 변경
+        function changePage(type, page) {
+            if (type === 'team') {
+                currentTeamPage = page;
+            } else if (type === 'settings') {
+                currentSettingsPage = page;
+            }
+            renderAllData();
+        }
+
+        // 기존 코드 계속...
+
+        // 경기 존재 여부 확인
+        async function checkMatchExistence() {
+            const statusBadges = document.querySelectorAll('[data-match-id]');
+            
+            for (const badge of statusBadges) {
+                const matchId = badge.getAttribute('data-match-id');
+                const sportType = badge.getAttribute('data-sport-type');
+                
+                try {
+                    const response = await fetch(`/api/sport-management/check-match/${matchId}`);
+                    const result = await response.json();
+                    
+                    if (result.exists) {
+                        badge.className = 'badge bg-success';
+                        badge.innerHTML = `<i class="bi bi-check-circle"></i> ${sportType.toUpperCase()} 경기 존재`;
+                    } else {
+                        badge.className = 'badge bg-warning';
+                        badge.innerHTML = `<i class="bi bi-exclamation-triangle"></i> ${sportType.toUpperCase()} 경기 없음`;
+                    }
+                } catch (error) {
+                    console.error('경기 존재 여부 확인 오류:', error);
+                    badge.className = 'badge bg-danger';
+                    badge.innerHTML = '<i class="bi bi-x-circle"></i> 확인 실패';
+                }
+            }
+        }
+
+        // 날짜 포맷팅
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ko-KR') + ' ' + date.toLocaleTimeString('ko-KR', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+        }
+
+        // 오류 표시
+        function showError(message) {
+            const container = document.getElementById('data-container');
+            container.innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        // Settings 데이터 삭제 함수
+        async function deleteSetting(settingId, settingKey) {
+            try {
+                // 경기 ID 추출 (키에서 경기 ID가 포함된 경우)
+                const matchIdMatch = settingKey.match(/(\d{4}[A-Z]{2}\d{4})/);
+                let matchId = null;
+                let sportType = null;
+                
+                if (matchIdMatch) {
+                    matchId = matchIdMatch[1];
+                    
+                    // 종목 타입 추출
+                    if (settingKey.includes('soccer_')) {
+                        sportType = 'soccer';
+                    } else if (settingKey.includes('baseball_')) {
+                        sportType = 'baseball';
+                    }
+                }
+
+                // 경기 존재 여부 확인
+                if (matchId && sportType) {
+                    console.log(`경기 존재 여부 확인: ${sportType} - ${matchId}`);
+                    const matchCheckResponse = await fetch(`/api/sport-management/check-match/${matchId}`);
+                    const matchExists = await matchCheckResponse.json();
+                    
+                    if (matchExists.exists) {
+                        const confirmMessage = `⚠️ 경고: ${sportType.toUpperCase()} 경기 ID "${matchId}"가 아직 존재합니다.\n\n이 설정을 삭제하면 해당 경기의 설정이 초기화됩니다.\n정말로 삭제하시겠습니까?\n\n삭제 후에는 복구할 수 없습니다.`;
+                        if (!confirm(confirmMessage)) {
+                            return;
+                        }
+                    } else {
+                        console.log(`경기 ${matchId}가 존재하지 않음 - 안전하게 삭제 가능`);
+                    }
+                } else if (matchId) {
+                    console.log(`경기 ID는 있지만 종목 정보가 없음: ${matchId}`);
+                } else {
+                    console.log('경기 ID가 없는 설정 - 안전하게 삭제 가능');
+                }
+
+                // 삭제 확인
+                const confirmMessage = `다음 설정을 삭제하시겠습니까?\n\n키: ${settingKey}\n\n삭제 후에는 복구할 수 없습니다.`;
+                if (!confirm(confirmMessage)) {
+                    return;
+                }
+
+                // 삭제 요청
+                const response = await fetch(`/api/sport-management/settings/${settingId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    alert('Settings 데이터가 성공적으로 삭제되었습니다.');
+                    // 데이터 새로고침
+                    location.reload();
+                } else {
+                    const errorData = await response.json();
+                    alert(`삭제 실패: ${errorData.error || '알 수 없는 오류가 발생했습니다.'}`);
+                }
+            } catch (error) {
+                console.error('Settings 삭제 오류:', error);
+                alert('삭제 중 오류가 발생했습니다: ' + error.message);
+            }
+        }
+
+        // 편집 모달 열기
+        async function editTeam(team) {
+            document.getElementById('editTeamName').value = team.team_name;
+            document.getElementById('editTeamColor').value = team.team_color || '#000000';
+            document.getElementById('editTeamHeader').value = team.team_header || '';
+            document.getElementById('editLogoBgColor').value = team.logo_bg_color || '#FFFFFF';
+            
+            // 폼에 팀 ID 저장
+            document.getElementById('editForm').dataset.teamId = team.id;
+            document.getElementById('editForm').dataset.matchId = team.match_id;
+            document.getElementById('editForm').dataset.sportType = team.sport_type;
+            
+            // 팀로고 목록 로드
+            await loadTeamLogos(team.sport_type);
+            
+            // 현재 로고 선택
+            const logoSelect = document.getElementById('editTeamLogo');
+            if (team.logo_path) {
+                logoSelect.value = team.logo_path;
+            } else {
+                logoSelect.value = '';
+            }
+            
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        // 팀로고 목록 로드
+        async function loadTeamLogos(sportType) {
+            try {
+                console.log(`팀로고 목록 로드 요청: ${sportType}`);
+                const response = await fetch(`/api/sport-management/team-logos/${sportType}`);
+                const data = await response.json();
+                
+                console.log('팀로고 API 응답:', data);
+                
+                const logoSelect = document.getElementById('editTeamLogo');
+                logoSelect.innerHTML = '<option value="">로고 없음</option>';
+                
+                if (data.success && data.logos && data.logos.length > 0) {
+                    console.log(`로드된 로고 개수: ${data.logos.length}`);
+                    data.logos.forEach(logo => {
+                        console.log('로고 추가:', logo);
+                        const option = document.createElement('option');
+                        option.value = logo.path;
+                        option.textContent = logo.name;
+                        logoSelect.appendChild(option);
+                    });
+                } else {
+                    console.log('로고가 없거나 데이터 형식이 잘못됨');
+                }
+            } catch (error) {
+                console.error('Error loading team logos:', error);
+            }
+        }
+
+        // 편집 모달 닫기
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        // 팀 정보 삭제
+        async function deleteTeam(team) {
+            if (confirm(`'${team.team_name}' 팀 정보를 삭제하시겠습니까?`)) {
+                try {
+                    const response = await fetch(`/api/sport-management/team-info/${team.id}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok) {
+                        alert('팀 정보가 삭제되었습니다.');
+                        loadTeamData(); // 데이터 새로고침
+                    } else {
+                        alert('삭제 중 오류가 발생했습니다.');
+                    }
+                } catch (error) {
+                    console.error('Error deleting team:', error);
+                    alert('삭제 중 오류가 발생했습니다.');
+                }
+            }
+        }
+
+        // 전체 데이터 백업
+        async function backupAllData() {
+            try {
+                const response = await fetch('/api/sport-management/api');
+                const data = await response.json();
+                
+                if (data.success) {
+                    // 백업 데이터 생성
+                    const backupData = {
+                        backup_date: new Date().toISOString(),
+                        sports: data.sports,
+                        total_sports: data.total_sports,
+                        total_matches: data.total_matches,
+                        total_team_info: data.total_team_info
+                    };
+                    
+                    // JSON 파일로 다운로드
+                    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `sports_backup_${new Date().toISOString().split('T')[0]}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    alert('백업 파일이 다운로드되었습니다.');
+                } else {
+                    alert('백업 데이터를 가져오는데 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('Error backing up data:', error);
+                alert('백업 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 편집 폼 제출
+        document.getElementById('editForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const teamId = this.dataset.teamId;
+            const matchId = this.dataset.matchId;
+            const sportType = this.dataset.sportType;
+            const formData = {
+                team_name: document.getElementById('editTeamName').value,
+                team_color: document.getElementById('editTeamColor').value,
+                team_header: document.getElementById('editTeamHeader').value,
+                logo_path: document.getElementById('editTeamLogo').value,
+                logo_bg_color: document.getElementById('editLogoBgColor').value
+            };
+            
+            try {
+                const response = await fetch(`/api/sport-management/team-info/${teamId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (response.ok) {
+                    alert('팀 정보가 수정되었습니다.');
+                    closeEditModal();
+                    loadTeamData(); // 데이터 새로고침
+                } else {
+                    alert('수정 중 오류가 발생했습니다.');
+                }
+            } catch (error) {
+                console.error('Error updating team:', error);
+                alert('수정 중 오류가 발생했습니다.');
+            }
+        });
+
+        // 모달 외부 클릭 시 닫기
+        window.onclick = function(event) {
+            const modal = document.getElementById('editModal');
+            if (event.target === modal) {
+                closeEditModal();
+            }
+        }
+
+        // 페이지 로드 시 데이터 불러오기
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 DOMContentLoaded 이벤트 발생');
+            console.log('📦 data-container 요소:', document.getElementById('data-container'));
+            loadTeamData();
+        });
+    </script>
+</body>
+</html>

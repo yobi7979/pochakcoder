@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -96,6 +96,16 @@
             z-index: 9999;
             opacity: 0; /* 초기에는 투명 */
             transition: opacity 0.3s ease; /* 부드러운 전환 효과 */
+        }
+        
+        /* 승부차기 박스 텍스트 스타일 */
+        #extraBoxText {
+            color: white !important;
+            font-size: 24px !important;
+            font-weight: bold !important;
+            text-align: center !important;
+            display: block !important;
+            width: 100% !important;
         }
 
         .scoreboard-extra-box.show {
@@ -362,8 +372,7 @@
             font-size: 14px;
             font-weight: bold;
         }
-        
-        
+
         .strip-team-name {
             position: absolute;
             top: 50%;
@@ -775,139 +784,6 @@
                 opacity: 1;
             }
         }
-        
-        /* 라인업 박스 스타일 */
-        .lineup-container {
-            position: absolute;
-            width: 350px;
-            background-color: rgba(0, 0, 0, 0.8);
-            border-radius: 10px;
-            color: white;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            transform: translateX(-150%);
-            transition: transform 0.5s ease;
-            max-height: 80%; /* 화면의 최대 80%까지만 높이 사용 */
-            overflow: hidden; /* 내부 스크롤을 위해 컨테이너 자체는 넘침 숨김 */
-            opacity: 1; /* 투명 */
-        }
-        
-        .lineup-container.home {
-            left: 80px;
-            top: 200px;
-            border-left: 5px solid rgb(0, 204, 51);
-        }
-        
-        .lineup-container.away {
-            right: 50px;
-            top: 200px;
-            border-left: 5px solid rgb(0, 204, 51);
-            transform: translateX(120%);
-        }
-        
-        .lineup-container.visible {
-            transform: translateX(0);
-        }
-        
-        .lineup-header {
-            background-color: rgba(0, 0, 0, 0.6);
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 15px;
-            text-align: center;
-            font-weight: bold;
-            font-size: 18px;
-        }
-        
-        .lineup-header.home {
-            background-color: rgba(0, 204, 51, 0.6);
-        }
-        
-        .lineup-header.away {
-            background-color: rgba(220, 38, 38, 0.6);
-        }
-        
-        .lineup-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            overflow-y: auto; /* 내용이 많으면 스크롤 허용 */
-            flex-grow: 1; /* 컨테이너 내에서 남은 공간 모두 사용 */
-            padding-right: 5px; /* 스크롤바 공간 확보 */
-        }
-        
-        .lineup-player {
-            display: flex;
-            align-items: center;
-            padding: 8px 12px;
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: 5px;
-            font-size: 16px;
-            width: 100%; /* 전체 너비 사용 */
-            height: 40px;
-            gap: 10px; /* 요소 간 간격 추가 */
-        }
-        
-        .lineup-player:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-        }
-        
-        .player-number {
-            width: 40px;
-            height: 24px;
-            background-color: #333;
-            color: white;
-            border-radius: 4px; /* 원형에서 박스형태로 변경 */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            margin-right: 0; /* 간격 제거 */
-            font-size: 14px !important; /* 강제 적용 */
-            flex-shrink: 0;
-        }
-        
-        .home .player-number {
-            background-color: rgb(0, 204, 51);
-        }
-        
-        .away .player-number {
-            background-color: rgb(0, 204, 51);
-        }
-        
-        .player-name {
-            margin-top: 5px;
-            font-weight: bold;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 120px;
-            flex-shrink: 1;
-            flex-grow: 0;
-            font-size: 12px; /* 번호와 동일한 폰트 크기 */
-        }
-        
-        .player-position {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.7);
-            padding: 2px 5px;
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
-            white-space: nowrap;
-            flex-shrink: 0;
-            margin-left: auto; /* 오른쪽으로 밀어내기 */
-        }
-        
-        .goalkeeper-label {
-            background-color: rgba(251, 191, 36, 0.8);
-            color: black;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 12px;
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
 
         /* 선수 카드 */
         .player-card {
@@ -1068,13 +944,6 @@
             }
         }
         
-        .lineup-container.home.visible {
-            animation: slideInLeft 0.8s ease;
-        }
-        
-        .lineup-container.away.visible {
-            animation: slideInRight 0.8s ease;
-        }
         .scoreboard-row {
             display: flex;
             align-items: center;
@@ -1189,7 +1058,7 @@
     <div class="bottom-strip" id="bottomStrip" style="display: none;">
         <!-- 상단 구역: 대회명 -->
         <div class="strip-top-section">
-            <div class="strip-tournament-title" id="strip-tournament-title"><%= match.tournament_name || 'FOOTBALL TOURNAMENT' %></div>
+            <div class="strip-tournament-title" id="strip-tournament-title"><%= match.tournament_name || '' %></div>
         </div>
         
         <!-- 중앙 구역: 득점 정보 -->
@@ -1216,7 +1085,7 @@
             </div>
             
             <!-- 홈팀 점수 (중앙 고정) -->
-            <div class="strip-team-score" id="strip-home-score"><%= match.home_score || '0' %></div>
+            <div class="strip-team-score" id="strip-home-score">0</div>
             
             <div class="strip-center">
                 <div class="strip-match-state" id="strip-match-state">전반</div>
@@ -1232,7 +1101,7 @@
             </div>
             
             <!-- 어웨이팀 점수 (중앙 고정) -->
-            <div class="strip-team-score" id="strip-away-score"><%= match.away_score || '0' %></div>
+            <div class="strip-team-score" id="strip-away-score">0</div>
             </div>
         </div>
         
@@ -1242,7 +1111,7 @@
         </div>
 
         <!-- 스코어보드+타이머 수평 정렬 래퍼 -->
-        <div class="scoreboard-row">
+        <div class="scoreboard-row" id="topScoreboard">
             <div class="scoreboard">
                 <div class="team-section home">
                     <div class="team-content">
@@ -1317,26 +1186,6 @@
         <div class="match-state" id="matchStateContainer">
             <span class="state-text"><%= match.match_data?.state || '전반' %></span>
         </div>
-        
-        <!-- 홈팀 라인업 -->
-        <div class="lineup-container home">
-            <div class="lineup-header home">
-                <span><%= match.home_team %> 라인업</span>
-            </div>
-            <div class="lineup-list" id="home-lineup-list">
-                <!-- 홈팀 선수 목록은 자바스크립트로 채워짐 -->
-            </div>
-        </div>
-        
-        <!-- 원정팀 라인업 -->
-        <div class="lineup-container away">
-            <div class="lineup-header away">
-                <span><%= match.away_team %> 라인업</span>
-            </div>
-            <div class="lineup-list" id="away-lineup-list">
-                <!-- 원정팀 선수 목록은 자바스크립트로 채워짐 -->
-            </div>
-        </div>
 
         <!-- 경기 정보 -->
         <div class="match-info">
@@ -1382,12 +1231,16 @@
         window.socket = socket;
         let matchId = '<%= match.id %>';
         
-        // 소켓 초기화 직후 연결 상태 확인
-        console.log('=== 소켓 초기화 직후 상태 ===');
-        console.log('socket:', socket);
-        console.log('socket.connected:', socket.connected);
-        console.log('matchId:', matchId);
-        
+        // 소켓 연결 상태 확인
+        socket.on('connect', function() {
+            });
+
+        socket.on('disconnect', function() {
+            });
+
+        socket.on('connect_error', function(error) {
+            });
+
         // 경기별 타이머 상태 관리 객체 (호환성 지원)
         const timerState = {
             startTime: Date.now(),
@@ -1400,8 +1253,6 @@
         };
         let homeTeamColor = '<%= match.home_team_color || "#00cc33" %>';
         let awayTeamColor = '<%= match.away_team_color || "#00cc33" %>';
-        
-
 
         // 전역 상태 관리 객체
         const logoState = {
@@ -1419,147 +1270,499 @@
 
         // 로고 업데이트 함수
         function updateTeamLogo(teamType, logoInfo) {
-            console.log(`${teamType}팀 로고 업데이트:`, logoInfo);
             
             // 외부 로고 섹션 업데이트 (메인 로고)
             const externalLogoContainer = document.getElementById(`${teamType}-team-logo-container`);
+            
             if (externalLogoContainer) {
                 // 배경색 업데이트
                 externalLogoContainer.style.backgroundColor = logoInfo.bgColor;
                 
-                // 로고 이미지 업데이트
+                // 로고 이미지 업데이트 (logoPath가 있을 때만)
                 if (logoInfo.path) {
+                    // 올바른 경로로 수정 (앞에 / 추가하고 경로 정리)
+                    let correctPath = logoInfo.path.startsWith('/') ? logoInfo.path : `/${logoInfo.path}`;
+                    
+                    // 경로에서 불필요한 부분 제거 (soccer/1002SC9485/ 제거)
+                    if (correctPath.includes('/soccer/') && correctPath.includes('/TEAMLOGO/')) {
+                        const teamLogoIndex = correctPath.indexOf('/TEAMLOGO/');
+                        correctPath = correctPath.substring(teamLogoIndex);
+                    }
+                    
                     const img = document.createElement('img');
-                    img.src = logoInfo.path;
+                    img.src = correctPath;
                     img.alt = `${teamType}팀 로고`;
                     img.style.width = '100%';
                     img.style.height = '100%';
                     img.style.objectFit = 'contain';
+                    img.style.display = 'block';
                     
                     img.onload = () => {
-                        console.log(`${teamType}팀 외부 로고 이미지 로드 완료:`, logoInfo.path);
-                    };
+                        };
                     
                     img.onerror = (error) => {
-                        console.error(`${teamType}팀 외부 로고 이미지 로드 실패:`, error);
-                        externalLogoContainer.innerHTML = `<div class="team-logo-placeholder"></div>`;
+                        externalLogoContainer.innerHTML = `<div class="team-logo-placeholder" style="background-color: ${logoInfo.bgColor}; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px;">로고 없음</div>`;
                     };
                     
                     externalLogoContainer.innerHTML = '';
                     externalLogoContainer.appendChild(img);
-                } else {
-                    // 로고가 없을 때는 빈 상태로 두고 배경색만 표시
-                    externalLogoContainer.innerHTML = '';
+                    } else {
+                    // 로고 경로가 없을 때는 기존 로고를 유지하고 배경색만 업데이트
+                    }
+            } else {
                 }
-            }
             
             // 기존 팀 섹션 로고도 업데이트 (호환성)
             const logoContainer = document.querySelector(`.team-section.${teamType} .team-logo`);
             if (logoContainer) {
                 // 배경색 업데이트
                 logoContainer.style.backgroundColor = logoInfo.bgColor;
-                
-                // 로고 이미지 업데이트
+                // 로고 이미지 업데이트 (logoPath가 있을 때만)
                 if (logoInfo.path) {
+                    // 올바른 경로로 수정 (앞에 / 추가하고 경로 정리)
+                    let correctPath = logoInfo.path.startsWith('/') ? logoInfo.path : `/${logoInfo.path}`;
+                    
+                    // 경로에서 불필요한 부분 제거 (soccer/1002SC9485/ 제거)
+                    if (correctPath.includes('/soccer/') && correctPath.includes('/TEAMLOGO/')) {
+                        const teamLogoIndex = correctPath.indexOf('/TEAMLOGO/');
+                        correctPath = correctPath.substring(teamLogoIndex);
+                    }
+                    
                     const img = document.createElement('img');
-                    img.src = logoInfo.path;
+                    img.src = correctPath;
                     img.alt = `${teamType}팀 로고`;
                     img.style.width = '100%';
                     img.style.height = '100%';
                     img.style.objectFit = 'contain';
+                    img.style.display = 'block';
                     
                     img.onload = () => {
-                        console.log(`${teamType}팀 로고 이미지 로드 완료:`, logoInfo.path);
-                    };
+                        };
                     
                     img.onerror = (error) => {
-                        console.error(`${teamType}팀 로고 이미지 로드 실패:`, error);
-                        logoContainer.innerHTML = `<div class="team-logo-placeholder"></div>`;
+                        logoContainer.innerHTML = `<div class="team-logo-placeholder" style="background-color: ${logoInfo.bgColor}; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px;">로고 없음</div>`;
                     };
                     
                     logoContainer.innerHTML = '';
                     logoContainer.appendChild(img);
-                } else {
-                    // 로고가 없을 때는 빈 상태로 두고 배경색만 표시
-                    logoContainer.innerHTML = '';
-                }
-
-                // 팀 섹션 배경색 업데이트 (로고 배경색과는 별개)
-                const teamSection = document.querySelector(`.team-section.${teamType}`);
-                if (teamSection) {
-                    // 팀 섹션은 팀 색상 유지, 로고 배경색과는 별개
-                    const teamColor = teamType === 'home' ? homeTeamColor : awayTeamColor;
-                    teamSection.style.backgroundColor = teamColor;
-                }
-
-                // 팀 헤더 배경색 업데이트
-                const teamHeader = document.querySelector(`.team-section.${teamType} .team-header`);
-                if (teamHeader) {
-                    let color = logoInfo.bgColor;
-                    if (color.startsWith('rgba')) {
-                        color = color.replace(/^rgba\(([^,]+),([^,]+),([^,]+),[^\)]+\)/, 'rgb($1,$2,$3)');
+                    } else {
+                    // 로고 경로가 없을 때는 기존 로고를 유지하고 배경색만 업데이트
                     }
-                    teamHeader.style.backgroundColor = color;
+            } else {
                 }
+
+            // 팀 섹션 배경색 업데이트 (로고 배경색과는 별개)
+            const teamSection = document.querySelector(`.team-section.${teamType}`);
+            if (teamSection) {
+                // 팀 섹션은 팀 색상 유지, 로고 배경색과는 별개
+                const teamColor = teamType === 'home' ? homeTeamColor : awayTeamColor;
+                teamSection.style.backgroundColor = teamColor;
             }
+
+            // 팀 헤더 배경색 업데이트
+            const teamHeader = document.querySelector(`.team-section.${teamType} .team-header`);
+            if (teamHeader) {
+                let color = logoInfo.bgColor;
+                if (color.startsWith('rgba')) {
+                    color = color.replace(/^rgba\(([^,]+),([^,]+),([^,]+),[^\)]+\)/, 'rgb($1,$2,$3)');
+                }
+                teamHeader.style.backgroundColor = color;
+            }
+            
         }
 
+        // 오버레이 이미지 로드 함수 (활성화된 모든 이미지 표시)
+    // 한글 파일명 디코딩 함수 (브라우저 호환 버전)
+    function decodeKoreanFilename(filename) {
+        try {
+            // 깨진 파일명인지 확인
+            if (filename.includes('ì') || filename.includes('ë') || filename.includes('í') || 
+                filename.includes('â') || filename.includes('ê') || filename.includes('ô')) {
+                
+                // 브라우저 환경에서 한글 파일명 디코딩
+                let decoded = filename;
+                try {
+                    // URL 디코딩 시도
+                    decoded = decodeURIComponent(filename);
+                } catch (e) {
+                    // URL 디코딩 실패 시 원본 반환
+                    console.log(`🔧 URL 디코딩 실패, 원본 사용: ${filename}`);
+                    return filename;
+                }
+                
+                console.log(`🔧 클라이언트 파일명 디코딩: ${filename} -> ${decoded}`);
+                return decoded;
+            }
+            return filename;
+        } catch (error) {
+            console.error('🔧 클라이언트 파일명 디코딩 실패:', error);
+            return filename;
+        }
+    }
 
+    // 오버레이 이미지 이벤트 리스너 재등록 함수
+    function registerOverlayImageEventListeners() {
+        console.log('🔧 오버레이 이미지 이벤트 리스너 재등록');
+        
+        // 기존 이벤트 리스너 제거 (중복 방지)
+        socket.off('overlay_image_status_changed');
+        socket.off('overlay_page_refresh');
+        
+        // 오버레이 이미지 상태 변경 실시간 이벤트 처리 (재등록)
+        socket.on('overlay_image_status_changed', function(data) {
+            console.log('🔧 오버레이 이미지 상태 변경 실시간 이벤트 (재등록):', data);
+            console.log('🔧 현재 window.matchData:', window.matchData);
+            console.log('🔧 현재 경기 sport_type:', window.matchData?.sport_type);
+            console.log('🔧 이벤트 sportCode:', data.sportCode);
+            
+            // 현재 경기의 스포츠 타입과 동적 비교 (window.matchData 사용)
+            if (data.sportCode === window.matchData?.sport_type) {
+                console.log('🔧 스포츠 타입 일치, 이미지 처리 시작 (재등록)');
+                
+                if (data.isActive && data.imageData) {
+                    // 이미지 활성화 - 해당 이미지만 추가 표시
+                    console.log('🔧 오버레이 이미지 활성화 (재등록):', data.imageData);
+                    addOverlayImage(data.imageData);
+                } else if (!data.isActive && data.imageData) {
+                    // 이미지 비활성화 - 해당 이미지만 제거
+                    console.log('🔧 오버레이 이미지 비활성화 (재등록):', data.imageData);
+                    removeOverlayImage(data.imageData.id);
+                }
+            } else {
+                console.log('🔧 스포츠 타입 불일치, Room 재참여 시도 (재등록)');
+                // 스포츠 타입이 일치하지 않으면 Room 재참여 시도
+                if (window.matchData?.sport_type) {
+                    console.log('🔧 Room 재참여 요청 (재등록):', window.matchData.sport_type);
+                    socket.emit('join_sport_room', window.matchData.sport_type);
+                }
+            }
+        });
 
-        // 오버레이 이미지 로드 함수
-        async function loadOverlayImage() {
-            try {
-                const response = await fetch('/api/overlay-images/SOCCER');
+        // 오버레이 페이지 새로고침 이벤트 처리 (재등록)
+        socket.on('overlay_page_refresh', function(data) {
+            console.log('🔧 오버레이 페이지 새로고침 신호 수신 (재등록):', data);
+            console.log('🔧 현재 window.matchData:', window.matchData);
+            console.log('🔧 현재 경기 sport_type:', window.matchData?.sport_type);
+            console.log('🔧 이벤트 sportCode:', data.sportCode);
+            
+            // 현재 경기의 스포츠 타입과 동적 비교
+            if (data.sportCode === window.matchData?.sport_type) {
+                console.log('🔧 오버레이 페이지 새로고침 실행 (재등록):', data.reason);
+                // 페이지 새로고침
+                location.reload();
+            } else {
+                console.log('🔧 스포츠 타입 불일치로 새로고침 건너뜀 (재등록)');
+                // 대안: window.matchData가 없을 때도 새로고침 (디버깅용)
+                if (!window.matchData) {
+                    console.log('🔧 window.matchData가 없어서 강제 새로고침 실행 (재등록)');
+                    location.reload();
+                }
+            }
+        });
+        
+        console.log('🔧 오버레이 이미지 이벤트 리스너 재등록 완료');
+    }
+
+    // 오버레이 이미지 추가 함수 (다중 이미지 지원)
+    function addOverlayImage(imageData) {
+        const overlayImageContainer = document.getElementById('overlayImage');
+        if (!overlayImageContainer) return;
+        
+        console.log('🔧 오버레이 이미지 추가:', imageData);
+        
+        // 이미 존재하는 이미지인지 확인
+        const existingImg = overlayImageContainer.querySelector(`[data-image-id="${imageData.id}"]`);
+        if (existingImg) {
+            console.log('🔧 이미지가 이미 존재함:', imageData.id);
+            return;
+        }
+        
+        const img = document.createElement('img');
+        img.setAttribute('data-image-id', imageData.id);
+        
+        // 파일 경로에서 파일명 추출 및 디코딩
+        const pathParts = imageData.file_path.split('/');
+        const filename = pathParts[pathParts.length - 1];
+        const decodedFilename = decodeKoreanFilename(filename);
+        const decodedPath = imageData.file_path.replace(filename, decodedFilename);
+        
+        img.src = decodedPath;
+        img.alt = '오버레이 이미지';
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'cover';
+        img.style.position = 'absolute';
+        img.style.top = '0';
+        img.style.left = '0';
+        img.style.zIndex = '1';
+        
+        img.onload = () => {
+            overlayImageContainer.appendChild(img);
+            overlayImageContainer.classList.add('show');
+            console.log('🔧 오버레이 이미지 추가 완료:', imageData.id);
+        };
+        
+        img.onerror = (error) => {
+            console.error('🔧 오버레이 이미지 로드 실패:', error);
+        };
+    }
+    
+    // 오버레이 이미지 제거 함수 (다중 이미지 지원)
+    function removeOverlayImage(imageId) {
+        const overlayImageContainer = document.getElementById('overlayImage');
+        if (!overlayImageContainer) return;
+        
+        console.log('🔧 오버레이 이미지 제거:', imageId);
+        
+        const imgToRemove = overlayImageContainer.querySelector(`[data-image-id="${imageId}"]`);
+        if (imgToRemove) {
+            imgToRemove.remove();
+            console.log('🔧 오버레이 이미지 제거 완료:', imageId);
+            
+            // 모든 이미지가 제거되었으면 컨테이너 숨김
+            const remainingImages = overlayImageContainer.querySelectorAll('img');
+            if (remainingImages.length === 0) {
+                overlayImageContainer.classList.remove('show');
+            }
+        }
+    }
+    
+    // 오버레이 이미지 표시 함수 (실시간 업데이트용) - 단일 이미지용
+    function displayOverlayImage(imageData) {
+        const overlayImageContainer = document.getElementById('overlayImage');
+        if (!overlayImageContainer) return;
+        
+        console.log('🔧 오버레이 이미지 표시:', imageData);
+        
+        // 기존 이미지 제거
+        overlayImageContainer.innerHTML = '';
+        
+        const img = document.createElement('img');
+        // 파일 경로에서 파일명 추출 및 디코딩
+        const pathParts = imageData.file_path.split('/');
+        const filename = pathParts[pathParts.length - 1];
+        const decodedFilename = decodeKoreanFilename(filename);
+        const decodedPath = imageData.file_path.replace(filename, decodedFilename);
+        
+        img.src = decodedPath;
+        img.alt = '오버레이 이미지';
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'cover';
+        img.style.position = 'absolute';
+        img.style.top = '0';
+        img.style.left = '0';
+        img.style.zIndex = '1';
+        
+        img.onload = () => {
+            overlayImageContainer.appendChild(img);
+            overlayImageContainer.classList.add('show');
+            console.log('🔧 오버레이 이미지 로드 완료');
+        };
+        
+        img.onerror = (error) => {
+            console.error('🔧 오버레이 이미지 로드 실패:', error);
+            overlayImageContainer.classList.remove('show');
+        };
+    }
+    
+    // 오버레이 이미지 숨김 함수 (실시간 업데이트용) - 단일 이미지용
+    function hideOverlayImage() {
+        const overlayImageContainer = document.getElementById('overlayImage');
+        if (!overlayImageContainer) return;
+        
+        console.log('🔧 오버레이 이미지 숨김');
+        overlayImageContainer.classList.remove('show');
+        overlayImageContainer.innerHTML = '';
+    }
+
+    async function loadOverlayImage() {
+        try {
+            console.log('오버레이 이미지 로드 시작...');
+                
+                // 경기 정보에서 종목 코드 가져오기
+                const matchResponse = await fetch(`/api/matches/${matchId}`);
+                if (!matchResponse.ok) {
+                    console.error('경기 정보를 가져올 수 없습니다.');
+                    return;
+                }
+                
+                const matchData = await matchResponse.json();
+                const sportCode = matchData.sport_type.toUpperCase();
+                console.log('종목 코드:', sportCode);
+                
+                // 종목코드 그대로 사용 (종목명 대신)
+                const sportCodeForPath = sportCode;
+                console.log('종목코드:', sportCodeForPath);
+                
+                // 해당 종목의 활성화된 이미지 조회
+                const response = await fetch(`/api/overlay-images/active/${sportCode}`);
                 const result = await response.json();
+                
+                console.log('활성화된 이미지 목록 조회 결과:', result);
                 
                 const overlayImageContainer = document.getElementById('overlayImage');
                 
-                if (result.success && result.images.length > 0) {
-                    // 가장 최근에 업로드된 이미지를 사용
-                    const latestImage = result.images[0];
+                if (result.success && result.images && result.images.length > 0) {
+                    console.log('🔧 활성화된 이미지들:', result.images);
                     
-                    const img = document.createElement('img');
-                    img.src = latestImage.path;
-                    img.alt = '오버레이 이미지';
-                    img.onload = () => {
-                        console.log('오버레이 이미지 로드 완료:', latestImage.path);
-                        overlayImageContainer.classList.add('show');
-                    };
-                    img.onerror = (error) => {
-                        console.error('오버레이 이미지 로드 실패:', error);
-                        overlayImageContainer.classList.remove('show');
-                    };
-                    
+                    // 모든 활성화된 이미지를 표시
                     overlayImageContainer.innerHTML = '';
-                    overlayImageContainer.appendChild(img);
+                    
+                    result.images.forEach((image, index) => {
+                        const img = document.createElement('img');
+                        img.setAttribute('data-image-id', image.id);
+                        
+                        // 종목코드 기반 경로로 직접 구성
+                        const filename = image.filename;
+                        const decodedFilename = decodeKoreanFilename(filename);
+                        const imagePath = `/overlay-images/${sportCodeForPath}/${decodedFilename}`;
+                        
+                        console.log(`🔧 이미지 경로 구성: ${imagePath}`);
+                        img.src = imagePath;
+                        img.alt = `오버레이 이미지 ${index + 1}`;
+                        img.style.width = '100%';
+                        img.style.height = '100%';
+                        img.style.objectFit = 'cover';
+                        img.style.position = 'absolute';
+                        img.style.top = '0';
+                        img.style.left = '0';
+                        img.style.zIndex = 1000 + index;
+                        
+                        img.onload = () => {
+                            overlayImageContainer.appendChild(img);
+                            overlayImageContainer.style.display = 'block';
+                            console.log(`활성화된 오버레이 이미지 ${index + 1} 로드됨:`, image.file_path);
+                        };
+                        
+                        img.onerror = (error) => {
+                            console.error(`활성화된 오버레이 이미지 ${index + 1} 로드 실패:`, error);
+                        };
+                    });
                 } else {
-                    overlayImageContainer.classList.remove('show');
+                    overlayImageContainer.style.display = 'none';
+                    console.log('활성화된 오버레이 이미지가 없습니다.');
                 }
+        } catch (error) {
+            console.error('오버레이 이미지 로드 오류:', error);
+            document.getElementById('overlayImage').style.display = 'none';
+        }
+    }
+
+        // 팀 색상 로드 함수
+        async function loadTeamColors() {
+            try {
+                
+                // 팀 색상 정보를 DB에서 로드
+                const response = await fetch(`/api/matches/${matchId}`);
+                if (response.ok) {
+                    const matchData = await response.json();
+                    // 팀 색상 업데이트
+                    if (matchData.home_team_color) {
+                        homeTeamColor = matchData.home_team_color;
+                        }
+                    if (matchData.away_team_color) {
+                        awayTeamColor = matchData.away_team_color;
+                        }
+                    
+                    // 팀 색상 적용
+                    updateTeamColors(homeTeamColor, awayTeamColor);
+                    } else {
+                    }
             } catch (error) {
-                console.error('오버레이 이미지 로드 오류:', error);
-                document.getElementById('overlayImage').classList.remove('show');
-            }
+                }
+        }
+
+        // 강력한 DB 데이터 로드 함수 (모든 데이터 다시 로드)
+        async function reloadAllDataFromDB() {
+            try {
+                
+                // 1. 경기 기본 정보 로드
+                const matchResponse = await fetch(`/api/matches/${matchId}`);
+                if (matchResponse.ok) {
+                    const matchData = await matchResponse.json();
+                    
+                    // 팀 색상 업데이트
+                    if (matchData.home_team_color) {
+                        homeTeamColor = matchData.home_team_color;
+                    }
+                    if (matchData.away_team_color) {
+                        awayTeamColor = matchData.away_team_color;
+                    }
+                    
+                    // 팀 색상 적용
+                    updateTeamColors(homeTeamColor, awayTeamColor);
+                }
+                
+                // 2. 팀로고 정보 로드
+                const teamLogosResponse = await fetch(`/api/matches/${matchId}/team-logos`);
+                if (teamLogosResponse.ok) {
+                    const teamLogosData = await teamLogosResponse.json();
+                    
+                    if (teamLogosData && teamLogosData.teamLogos) {
+                        teamLogosData.teamLogos.forEach((teamInfo) => {
+                            const teamType = teamInfo.team_type;
+                            if (teamInfo.logo_path || teamInfo.logo_bg_color) {
+                                logoState[teamType] = {
+                                    path: teamInfo.logo_path || '',
+                                    bgColor: teamInfo.logo_bg_color || '#ffffff',
+                                    teamName: teamInfo.team_name
+                                };
+                                updateTeamLogo(teamType, logoState[teamType]);
+                            }
+                        });
+                    }
+                }
+                
+                // 3. 팀로고 가시성 상태 로드
+                await loadAndApplyLogoDisplayStates();
+                
+                // 4. 팀로고 표시 모드 상태 로드
+                await loadAndApplyLogoDisplayMode();
+                
+                } catch (error) {
+                }
         }
 
         // 초기 로고 로드 함수
         async function loadInitialLogos() {
             try {
-                console.log('=== 초기 로고 정보 로드 시작 ===');
-                console.log('홈팀:', '<%= match.home_team %>');
-                console.log('어웨이팀:', '<%= match.away_team %>');
-                
-                // 1. 경기별 팀 로고 정보 로드 (우선순위)
+                // 1. DB에서 팀로고 정보 로드 (최우선순위)
                 try {
-                    const matchResponse = await fetch(`/api/match/${matchId}`);
+                    const teamLogosResponse = await fetch(`/api/matches/${matchId}/team-logos`);
+                    if (teamLogosResponse.ok) {
+                        const teamLogosData = await teamLogosResponse.json();
+                        if (teamLogosData && teamLogosData.teamLogos) {
+                            teamLogosData.teamLogos.forEach((teamInfo, index) => {
+                                const teamType = teamInfo.team_type;
+                                if (teamInfo.logo_path || teamInfo.logo_bg_color) {
+                                    logoState[teamType] = {
+                                        path: teamInfo.logo_path || '',
+                                        bgColor: teamInfo.logo_bg_color || '#ffffff',
+                                        teamName: teamInfo.team_name
+                                    };
+                                    console.log(`✅ ${teamType}팀 로고 정보 로드 (DB):`, logoState[teamType]);
+                                    updateTeamLogo(teamType, logoState[teamType]);
+                                } else {
+                                    }
+                            });
+                        } else {
+                            }
+                    } else {
+                        }
+                } catch (dbError) {
+                    }
+                
+                // 2. 경기별 팀 로고 정보 로드 (백업)
+                try {
+                    const matchResponse = await fetch(`/api/matches/${matchId}`);
                     if (matchResponse.ok) {
                         const matchData = await matchResponse.json();
-                        console.log('경기 데이터 로드 성공:', matchData);
-                        
                         if (matchData && matchData.match_data) {
                             const matchDataObj = matchData.match_data;
                             
-                            // 홈팀 로고 정보 (경기별 데이터 우선)
-                            if (matchDataObj.home_team_logo || matchDataObj.home_team_bg_color) {
+                            // 홈팀 로고 정보 (DB에 없을 때만)
+                            if ((matchDataObj.home_team_logo || matchDataObj.home_team_bg_color) && !logoState.home) {
                                 logoState.home = {
                                     path: matchDataObj.home_team_logo,
                                     bgColor: matchDataObj.home_team_bg_color || '#ffffff',
@@ -1569,8 +1772,8 @@
                                 updateTeamLogo('home', logoState.home);
                             }
                             
-                            // 어웨이팀 로고 정보 (경기별 데이터 우선)
-                            if (matchDataObj.away_team_logo || matchDataObj.away_team_bg_color) {
+                            // 어웨이팀 로고 정보 (DB에 없을 때만)
+                            if ((matchDataObj.away_team_logo || matchDataObj.away_team_bg_color) && !logoState.away) {
                                 logoState.away = {
                                     path: matchDataObj.away_team_logo,
                                     bgColor: matchDataObj.away_team_bg_color || '#ffffff',
@@ -1582,18 +1785,15 @@
                         }
                     }
                 } catch (matchError) {
-                    console.log('경기 데이터 로드 실패, 팀 맵 데이터로 대체:', matchError);
-                }
+                    }
                 
                 // 2. 팀 로고 맵 정보 로드 (백업)
-                const response = await fetch('/api/team-logo-map/SOCCER');
+                const response = await fetch('/api/overlay-images/TEAMLOGO/SOCCER');
                 if (!response.ok) {
                     throw new Error(`팀 로고 맵 로드 실패: ${response.status}`);
                 }
                 
                 const data = await response.json();
-                console.log('팀 로고맵 로드 성공:', data);
-                
                 if (data && data.teamLogoMap) {
                     const homeTeamName = '<%= match.home_team %>';
                     const awayTeamName = '<%= match.away_team %>';
@@ -1610,8 +1810,7 @@
                         console.log('홈팀 로고 정보 로드 (팀 맵):', logoState.home);
                         updateTeamLogo('home', logoState.home);
                     } else if (!logoState.home) {
-                        console.log('홈팀 로고 정보 없음:', homeTeamName);
-                    }
+                        }
                     
                     // 원정팀 로고 설정 (경기 데이터에 없을 때만)
                     if (data.teamLogoMap[awayTeamName] && !logoState.away) {
@@ -1623,8 +1822,7 @@
                         console.log('원정팀 로고 정보 로드 (팀 맵):', logoState.away);
                         updateTeamLogo('away', logoState.away);
                     } else if (!logoState.away) {
-                        console.log('원정팀 로고 정보 없음:', awayTeamName);
-                    }
+                        }
                     
                     // VS 오버레이 로고도 업데이트
                     updateVSOverlayLogos();
@@ -1634,78 +1832,69 @@
                         updateTeamColors(homeTeamColor, awayTeamColor);
                     }, 100);
                 } else {
-                    console.log('팀 로고맵 데이터가 없습니다.');
-                }
+                    }
             } catch (error) {
-                console.error('팀 로고 정보 로드 중 오류 발생:', error);
-            }
+                }
         }
 
         // 팀로고 가시성 업데이트 함수
         function updateTeamLogoVisibility(useLogos) {
-            console.log('=== 팀로고 가시성 업데이트 시작 ===');
-            console.log('useLogos:', useLogos);
             
-            // 홈팀과 어웨이팀 로고 섹션
+            // 홈팀과 어웨이팀 로고 섹션 (더 구체적인 셀렉터 사용)
             const homeLogoSection = document.querySelector('.team-logo-section.home-logo');
             const awayLogoSection = document.querySelector('.team-logo-section.away-logo');
             
-            console.log('홈팀 로고 섹션:', homeLogoSection);
-            console.log('어웨이팀 로고 섹션:', awayLogoSection);
+            // 대안 셀렉터들도 시도
+            const homeLogoSectionAlt = document.getElementById('home-team-logo-container');
+            const awayLogoSectionAlt = document.getElementById('away-team-logo-container');
             
             // 홈팀과 어웨이팀 팀명 섹션
             const homeTeamName = document.querySelector('.team-section.home .team-name');
             const awayTeamName = document.querySelector('.team-section.away .team-name');
             
-            console.log('홈팀 팀명:', homeTeamName);
-            console.log('어웨이팀 팀명:', awayTeamName);
-            
             if (useLogos) {
                 // 팀로고 사용: 로고 표시, 팀명 위치 조정
                 if (homeLogoSection) {
                     homeLogoSection.style.opacity = '1';
-                    console.log('홈팀 로고 표시됨');
-                }
+                    } else if (homeLogoSectionAlt) {
+                    homeLogoSectionAlt.style.opacity = '1';
+                    }
                 if (awayLogoSection) {
                     awayLogoSection.style.opacity = '1';
-                    console.log('어웨이팀 로고 표시됨');
-                }
+                    } else if (awayLogoSectionAlt) {
+                    awayLogoSectionAlt.style.opacity = '1';
+                    }
                 
                 // 팀명 위치 조정
                 if (homeTeamName) {
                     homeTeamName.style.transform = 'translateX(20px)'; // 홈팀 우측으로 100px 이동
-                    console.log('홈팀명 우측으로 이동');
-                }
+                    }
                 if (awayTeamName) {
                     awayTeamName.style.transform = 'translateX(-20px)'; // 어웨이팀 좌측으로 100px 이동
-                    console.log('어웨이팀명 좌측으로 이동');
-                }
+                    }
                 
-                console.log('팀로고 표시됨, 팀명 위치 조정됨');
-            } else {
+                } else {
                 // 팀로고 사용 안함: 로고 숨김, 팀명 원래 위치
                 if (homeLogoSection) {
                     homeLogoSection.style.opacity = '0';
-                    console.log('홈팀 로고 숨김');
-                }
+                    } else if (homeLogoSectionAlt) {
+                    homeLogoSectionAlt.style.opacity = '0';
+                    }
                 if (awayLogoSection) {
                     awayLogoSection.style.opacity = '0';
-                    console.log('어웨이팀 로고 숨김');
-                }
+                    } else if (awayLogoSectionAlt) {
+                    awayLogoSectionAlt.style.opacity = '0';
+                    }
                 
                 // 팀명 원래 위치로 복원
                 if (homeTeamName) {
                     homeTeamName.style.transform = 'translateX(0)';
-                    console.log('홈팀명 원래 위치로 복원');
-                }
+                    }
                 if (awayTeamName) {
                     awayTeamName.style.transform = 'translateX(0)';
-                    console.log('어웨이팀명 원래 위치로 복원');
-                }
+                    }
                 
-                console.log('팀로고 숨김, 팀명 원래 위치로 복원');
-            }
-            console.log('=== 팀로고 가시성 업데이트 완료 ===');
+                }
         }
 
         // 경기 상태 표시 설정 로드
@@ -1721,27 +1910,57 @@
                     }
                 }
             } catch (error) {
-                console.error('경기 상태 표시 설정 로드 오류:', error);
+                }
+        }
+
+        // 경기 데이터 로드 함수
+        async function loadMatchData() {
+            try {
+                const response = await fetch(`/api/matches/${matchId}`);
+                const matchData = await response.json();
+                window.matchData = matchData;  // 전역 변수로 저장
+                console.log('🔧 경기 데이터 로드 완료:', matchData.sport_type);
+                return matchData;
+            } catch (error) {
+                console.error('🔧 경기 데이터 로드 실패:', error);
+                return null;
             }
         }
 
         // 소켓 연결 이벤트
-        socket.on('connect', () => {
-            console.log('=== 오버레이: 소켓 연결됨 ===');
-            console.log('matchId:', matchId);
-            console.log('socket.connected:', socket.connected);
-            console.log('socket.id:', socket.id);
-            
+        socket.on('connect', async () => {
             // 이전 방에서 나가기
             socket.emit('leave_all_rooms');
             
             // 새 방에 참가
             socket.emit('join', matchId);
-            console.log('방 참가 요청:', matchId);
+            
+            // 경기 데이터 로드 후 종목별 Room에 참여 요청
+            const matchData = await loadMatchData();
+            if (matchData) {
+                // 서버에 종목별 Room 참여 요청
+                socket.emit('join_sport_room', matchData.sport_type);
+                console.log(`🔧 종목별 Room 참여 요청: sport_${matchData.sport_type}`);
+            }
             
             // 방 참가 확인을 위한 이벤트 리스너 추가
             socket.on('joined_room', (data) => {
-                console.log('방 참가 확인:', data);
+                });
+            
+            // 종목별 Room 참여 확인 이벤트 리스너
+            socket.on('joined_sport_room', (data) => {
+                if (data.success) {
+                    console.log(`🔧 종목별 Room 참여 완료: ${data.roomName}`);
+                    console.log(`🔧 Room 참여자 수: ${data.clientCount}`);
+                    // Room 참여 완료 후 기존 활성 이미지 로드
+                    loadOverlayImage();
+                    
+                    // 이벤트 리스너 재등록 (Room 참여 완료 후)
+                    console.log('🔧 이벤트 리스너 재등록 시작');
+                    registerOverlayImageEventListeners();
+                } else {
+                    console.error(`🔧 종목별 Room 참여 실패: ${data.error}`);
+                }
             });
             
             if (typeof isListMode !== 'undefined' && isListMode && typeof listId !== 'undefined' && listId) { 
@@ -1755,47 +1974,37 @@
 
         // 소켓 연결 실패 이벤트
         socket.on('connect_error', (error) => {
-            console.error('=== 소켓 연결 실패 ===');
-            console.error('Error:', error);
-        });
+            });
 
         // 소켓 재연결 이벤트
         socket.on('reconnect', (attemptNumber) => {
-            console.log('=== 소켓 재연결됨 ===');
-            console.log('재연결 시도 횟수:', attemptNumber);
         });
 
         socket.on('disconnect', () => {
-            console.log('서버 연결이 끊어짐');
             timerState.lastUpdateTime = Date.now();
             startLocalTimer();
         });
 
         // 페이지 언로드 시 방에서 나가기
         window.addEventListener('beforeunload', () => {
-            console.log('=== 페이지 언로드 - 방에서 나가기 ===');
             socket.emit('leave_all_rooms');
         });
 
         // match_update 이벤트 처리
         socket.on('match_update', (data) => {
             if (data.matchId === matchId) {
-                console.log('경기 정보 업데이트 수신:', data);
-                
                 // 점수 업데이트
                 if (data.home_score !== undefined) {
                     const homeScoreElement = document.querySelector('.home-score');
                     if (homeScoreElement) {
                         homeScoreElement.textContent = data.home_score;
-                        console.log('홈팀 점수 업데이트:', data.home_score);
-                    }
+                        }
                 }
                 if (data.away_score !== undefined) {
                     const awayScoreElement = document.querySelector('.away-score');
                     if (awayScoreElement) {
                         awayScoreElement.textContent = data.away_score;
-                        console.log('원정팀 점수 업데이트:', data.away_score);
-                    }
+                        }
                 }
                 
                 // 경기 상태 업데이트
@@ -1806,171 +2015,70 @@
                     }
                 }
                 
-                // 🔥 하단 스트립 점수 업데이트 - match_update 이벤트에서
-                console.log('🔥 === match_update에서 하단 스트립 점수 업데이트 ===');
+                // 하단 스트립 점수 업데이트 - match_update 이벤트에서
                 
                 // 하단 스트립이 표시 중인지 확인
                 const bottomStrip = document.getElementById('bottomStrip');
                 const isBottomStripVisible = bottomStrip && bottomStrip.style.display !== 'none';
                 
-                console.log('🔥 하단 스트립 상태:', {
-                    bottomStrip: bottomStrip ? '존재' : '없음',
-                    display: bottomStrip ? bottomStrip.style.display : '없음',
-                    isVisible: isBottomStripVisible
-                });
-                
-                if (isBottomStripVisible) {
-                    console.log('🔥 ✅ 하단 스트립이 표시 중 - match_update에서 점수 업데이트 진행');
-                    
-                    const stripHomeScore = document.getElementById('strip-home-score');
-                    const stripAwayScore = document.getElementById('strip-away-score');
-                    
-                    console.log('🔥 하단 스트립 점수 엘리먼트 찾기:', { 
-                        stripHomeScore: stripHomeScore ? '존재' : '없음', 
-                        stripAwayScore: stripAwayScore ? '존재' : '없음' 
-                    });
-                    console.log('🔥 업데이트할 점수:', { homeScore: data.home_score, awayScore: data.away_score });
-                    
-                    // 홈팀 점수 업데이트
-                    if (stripHomeScore && data.home_score !== undefined) {
-                        const oldHomeScore = stripHomeScore.textContent;
-                        stripHomeScore.textContent = data.home_score;
-                        stripHomeScore.innerHTML = data.home_score;
-                        
-                        // DOM 강제 리플로우
-                        stripHomeScore.style.display = 'none';
-                        stripHomeScore.offsetHeight;
-                        stripHomeScore.style.display = '';
-                        
-                        console.log('🔥 ✅ 하단 스트립 홈팀 점수 match_update에서 업데이트 성공:', { 
-                            이전: oldHomeScore, 
-                            현재: data.home_score,
-                            업데이트후: stripHomeScore.textContent 
-                        });
-                    } else {
-                        console.log('🔥 ❌ 하단 스트립 홈팀 점수 엘리먼트를 찾을 수 없거나 데이터 없음');
-                    }
-                    
-                    // 어웨이팀 점수 업데이트
-                    if (stripAwayScore && data.away_score !== undefined) {
-                        const oldAwayScore = stripAwayScore.textContent;
-                        stripAwayScore.textContent = data.away_score;
-                        stripAwayScore.innerHTML = data.away_score;
-                        
-                        // DOM 강제 리플로우
-                        stripAwayScore.style.display = 'none';
-                        stripAwayScore.offsetHeight;
-                        stripAwayScore.style.display = '';
-                        
-                        console.log('🔥 ✅ 하단 스트립 어웨이팀 점수 match_update에서 업데이트 성공:', { 
-                            이전: oldAwayScore, 
-                            현재: data.away_score,
-                            업데이트후: stripAwayScore.textContent 
-                        });
-                    } else {
-                        console.log('🔥 ❌ 하단 스트립 어웨이팀 점수 엘리먼트를 찾을 수 없거나 데이터 없음');
-                    }
-                    
-                    console.log('🔥 === match_update에서 하단 스트립 점수 업데이트 완료 ===');
-                } else {
-                    console.log('🔥 ⚠️ 하단 스트립이 숨김 상태 - match_update에서 점수 업데이트 건너뜀');
-                }
+                // 하단 스트립이 표시되지 않아도 스코어는 항상 업데이트
+                console.log('🔥 ✅ 하단 스트립 스코어 업데이트 진행 (표시 여부 무관)');
+                updateBottomStripScore(data.home_score, data.away_score);
             }
         });
 
-
-
         // 실시간 경기 데이터 업데이트 이벤트 처리
         socket.on('match_data_updated', (data) => {
-            console.log('=== 실시간 경기 데이터 업데이트 수신 ===');
-            console.log('업데이트 데이터:', data);
-            console.log('현재 matchId:', matchId);
-            console.log('데이터 matchId:', data.matchId);
-            console.log('matchId 일치 여부:', data.matchId === matchId);
             
             if (data.matchId === matchId) {
                 // 점수 업데이트
                 const homeScoreElement = document.querySelector('.home-score');
                 const awayScoreElement = document.querySelector('.away-score');
                 
-                console.log('홈팀 점수 요소:', homeScoreElement);
-                console.log('원정팀 점수 요소:', awayScoreElement);
-                
                 if (homeScoreElement && data.home_score !== undefined) {
                     homeScoreElement.textContent = data.home_score;
-                    console.log('홈팀 점수 실시간 업데이트:', data.home_score);
-                }
+                    }
                 if (awayScoreElement && data.away_score !== undefined) {
                     awayScoreElement.textContent = data.away_score;
-                    console.log('원정팀 점수 실시간 업데이트:', data.away_score);
-                }
+                    }
                 
                 // 경기 상태 업데이트
                 const stateElement = document.querySelector('.state-text');
                 if (stateElement && data.state) {
                     stateElement.textContent = data.state;
-                    console.log('경기 상태 실시간 업데이트:', data.state);
-                }
+                    }
             } else {
-                console.log('matchId가 일치하지 않아 업데이트를 건너뜀');
-            }
+                }
         });
 
         // 득점 정보 업데이트 이벤트 처리
         socket.on('goalsUpdated', (data) => {
             if (data.matchId === matchId) {
-                console.log('=== 득점 정보 업데이트 이벤트 수신 ===');
-                console.log('받은 데이터:', data);
-                console.log('홈팀 득점:', data.homeGoals);
-                console.log('어웨이팀 득점:', data.awayGoals);
-                
                 // 하단 스트립이 표시 중인지 확인
                 const bottomStrip = document.getElementById('bottomStrip');
                 const isBottomStripVisible = bottomStrip && bottomStrip.style.display !== 'none';
                 
                 if (isBottomStripVisible) {
-                    console.log('✅ 하단 스트립이 표시 중 - 득점 정보 업데이트 진행');
-                    
                     const homeGoalsCount = data.homeGoals ? data.homeGoals.length : 0;
                     const awayGoalsCount = data.awayGoals ? data.awayGoals.length : 0;
                     const totalGoals = homeGoalsCount + awayGoalsCount;
                     
-                    console.log('실시간 득점 정보 확인:', {
-                        홈팀: homeGoalsCount + '개',
-                        어웨이팀: awayGoalsCount + '개',
-                        총합: totalGoals + '개'
-                    });
-                    
                     if (totalGoals > 0) {
-                        console.log('득점 정보가 있음 - 중단 섹션 표시');
                         updateBottomStripGoals(data.homeGoals, data.awayGoals);
                         adjustStripSize(homeGoalsCount, awayGoalsCount);
-                        console.log('✅ 실시간 득점 정보 업데이트 완료');
-                    } else {
-                        console.log('득점 정보가 없음 - 중단 섹션 숨김');
+                        } else {
                         hideCenterSection();
-                        console.log('✅ 중단 섹션 숨김 완료');
-                    }
+                        }
                 } else {
-                    console.log('⚠️ 하단 스트립이 숨김 상태 - 득점 정보 업데이트 건너뜀');
-                }
+                    }
             } else {
-                console.log('matchId가 일치하지 않아 득점 정보 업데이트를 건너뜀');
-            }
+                }
         });
 
         // 하단 스트립 득점 정보 업데이트 함수 (2명씩 가로 배치)
         function updateBottomStripGoals(homeGoals, awayGoals) {
-            console.log('=== 하단 스트립 득점 정보 업데이트 시작 (2명씩 가로 배치) ===');
-            console.log('홈팀 득점:', homeGoals);
-            console.log('어웨이팀 득점:', awayGoals);
-            console.log('홈팀 득점 개수:', homeGoals ? homeGoals.length : 0);
-            console.log('어웨이팀 득점 개수:', awayGoals ? awayGoals.length : 0);
-            
             // 홈팀 득점 목록 업데이트 (2명씩 그룹화)
             const homeGoalsContainer = document.getElementById('strip-home-goals');
-            console.log('홈팀 득점 컨테이너 찾기:', homeGoalsContainer ? '존재' : '없음');
-            
             if (homeGoalsContainer) {
                 if (homeGoals && homeGoals.length > 0) {
                     // 홈팀: 아래에서부터 위로 쌓기 (역순 처리)
@@ -1996,16 +2104,12 @@
                     console.log('✅ 홈팀 득점 목록 업데이트 완료 (아래에서 위로):', homeGoals.length + '개');
                 } else {
                     homeGoalsContainer.innerHTML = '';
-                    console.log('홈팀 득점이 없어서 빈 상태로 설정');
-                }
+                    }
             } else {
-                console.log('❌ 홈팀 득점 컨테이너를 찾을 수 없습니다.');
-            }
+                }
             
             // 어웨이팀 득점 목록 업데이트 (2명씩 그룹화)
             const awayGoalsContainer = document.getElementById('strip-away-goals');
-            console.log('어웨이팀 득점 컨테이너 찾기:', awayGoalsContainer ? '존재' : '없음');
-            
             if (awayGoalsContainer) {
                 if (awayGoals && awayGoals.length > 0) {
                     // 어웨이팀: 아래에서부터 위로 쌓기 (역순 처리)
@@ -2031,47 +2135,36 @@
                     console.log('✅ 어웨이팀 득점 목록 업데이트 완료 (아래에서 위로):', awayGoals.length + '개');
                 } else {
                     awayGoalsContainer.innerHTML = '';
-                    console.log('어웨이팀 득점이 없어서 빈 상태로 설정');
-                }
+                    }
             } else {
-                console.log('❌ 어웨이팀 득점 컨테이너를 찾을 수 없습니다.');
-            }
+                }
             
-            console.log('=== 하단 스트립 득점 정보 업데이트 완료 (2명씩 가로 배치) ===');
         }
 
         // 저장된 득점 정보 로드 함수
         function loadSavedGoals() {
-            console.log('=== 저장된 득점 정보 로드 시작 ===');
             
             // 서버에서 현재 매치 정보 가져오기
-            fetch(`/api/match/${matchId}`)
+            fetch(`/api/matches/${matchId}`)
                 .then(response => response.json())
                 .then(data => {
-                    console.log('득점 정보 로드 응답:', data);
-                    
                     if (data.match_data && data.match_data.goals) {
                         const goals = data.match_data.goals;
-                        console.log('저장된 득점 정보:', goals);
-                        
                         // 홈팀과 어웨이팀 득점 정보를 모두 로드
                         const homeGoals = goals.home || [];
                         const awayGoals = goals.away || [];
                         
-                        console.log('홈팀 득점 정보:', homeGoals);
-                        console.log('어웨이팀 득점 정보:', awayGoals);
-                        
                         // 득점 정보 표시
                         updateBottomStripGoals(homeGoals, awayGoals);
+                        // 득점 개수에 따른 스트립 크기 조정
+                        adjustStripSize(homeGoals.length, awayGoals.length);
                         
                     } else {
-                        console.log('매치 데이터에 득점 정보가 없습니다.');
                         // 빈 상태로 초기화
                         updateBottomStripGoals([], []);
                     }
                 })
                 .catch(error => {
-                    console.error('득점 정보 로드 실패:', error);
                     // 에러 시 빈 상태로 초기화
                     updateBottomStripGoals([], []);
                 });
@@ -2079,60 +2172,41 @@
 
         // 하단 스트립 표시 시 득점 정보 로드 및 반영 함수
         async function loadAndDisplayGoals() {
-            console.log('=== 하단 스트립 표시 시 득점 정보 로드 및 반영 시작 ===');
             
             try {
                 // 서버에서 현재 매치 정보 가져오기
-                const response = await fetch(`/api/match/${matchId}`);
+                const response = await fetch(`/api/matches/${matchId}`);
                 if (!response.ok) {
-                    console.log('매치 정보를 가져올 수 없습니다.');
                     hideCenterSection();
                     return;
                 }
                 
                 const data = await response.json();
-                console.log('득점 정보 로드 응답:', data);
-                
                 if (data.match_data && data.match_data.goals) {
                     const goals = data.match_data.goals;
-                    console.log('저장된 득점 정보:', goals);
-                    
                     // 홈팀과 어웨이팀 득점 정보를 모두 로드
                     const homeGoals = goals.home || [];
                     const awayGoals = goals.away || [];
                     const totalGoals = homeGoals.length + awayGoals.length;
                     
-                    console.log('저장된 득점 개수:', {
-                        홈팀: homeGoals.length + '개',
-                        어웨이팀: awayGoals.length + '개',
-                        총합: totalGoals + '개'
-                    });
-                    
                     if (totalGoals > 0) {
-                        console.log('저장된 득점 정보가 있음 - 중단 섹션 표시');
                         updateBottomStripGoals(homeGoals, awayGoals);
                         adjustStripSize(homeGoals.length, awayGoals.length);
-                        console.log('✅ 저장된 득점 정보로 스트립 표시 완료');
-                    } else {
-                        console.log('저장된 득점 정보가 없음 - 중단 섹션 숨김');
+                        } else {
                         hideCenterSection();
-                        console.log('✅ 중단 섹션 숨김 완료');
-                    }
+                        }
                     
                 } else {
-                    console.log('매치 데이터에 득점 정보가 없음 - 중단 섹션 숨김');
                     hideCenterSection();
                 }
                 
             } catch (error) {
-                console.error('득점 정보 로드 실패:', error);
                 hideCenterSection();
             }
         }
 
         // 중단 섹션 숨김 함수
         function hideCenterSection() {
-            console.log('=== 중단 섹션 숨김 시작 ===');
             
             const centerSection = document.querySelector('.strip-center-section');
             const bottomStrip = document.getElementById('bottomStrip');
@@ -2145,27 +2219,21 @@
                 // 하단 스트립은 항상 고정 위치 유지
                 bottomStrip.style.transform = 'translateX(-50%)';
                 
-                console.log('✅ 중단 섹션 숨김 완료 - 하단 스트립 고정 위치 유지');
-            }
+                }
         }
 
         // 중단 섹션 표시 함수
         function showCenterSection() {
-            console.log('=== 중단 섹션 표시 시작 ===');
             
             const centerSection = document.querySelector('.strip-center-section');
             
             if (centerSection) {
                 centerSection.style.display = 'flex';
-                console.log('✅ 중단 섹션 표시 완료');
-            }
+                }
         }
 
         // 스트립 크기 조정 함수 (하단 스트립 고정, 중단 섹션만 확장)
         function adjustStripSize(homeGoalsCount, awayGoalsCount) {
-            console.log('=== 스트립 크기 조정 시작 ===');
-            console.log('홈팀 득점 개수:', homeGoalsCount);
-            console.log('어웨이팀 득점 개수:', awayGoalsCount);
             
             const centerSection = document.querySelector('.strip-center-section');
             const bottomStrip = document.getElementById('bottomStrip');
@@ -2201,67 +2269,73 @@
                 
                 // 중단 섹션 높이 설정
                 centerSection.style.height = centerHeight + 'px';
-                console.log('중단 섹션 높이 조정:', centerHeight + 'px');
-                
                 // 하단 스트립은 항상 고정 위치 유지 (bottom: 30px)
                 bottomStrip.style.transform = 'translateX(-50%)';
-                console.log('하단 스트립 고정 위치 유지');
-                
-                console.log('✅ 스트립 크기 조정 완료 - 하단 스트립 고정, 중단 섹션만 확장');
-            }
+                }
         }
 
         // 경기 수정 이벤트
         socket.on('match_updated', (data) => {
             if (data.matchId === matchId) {
-                console.log('경기 수정 이벤트 수신:', data);
-                
                 // 팀명 업데이트
                 const homeTeamElement = document.getElementById('home-team-name');
                 const awayTeamElement = document.getElementById('away-team-name');
                 
                 if (homeTeamElement && data.home_team) {
                     homeTeamElement.textContent = data.home_team;
-                    console.log('홈팀명 업데이트:', data.home_team);
-                }
+                    }
                 if (awayTeamElement && data.away_team) {
                     awayTeamElement.textContent = data.away_team;
-                    console.log('원정팀명 업데이트:', data.away_team);
-                }
+                    }
                 
                 // 종목 업데이트 (필요한 경우)
                 if (data.sport_type && data.sport_type !== currentSportType) {
                     currentSportType = data.sport_type;
-                    console.log('종목 변경됨:', currentSportType);
-                }
+                    }
                 
-                // 점수 업데이트
+                // 점수 업데이트 - 강화된 실시간 업데이트
+                
+                // 스코어보드 점수 업데이트
+                const homeScoreInput = document.getElementById('home-score');
+                const awayScoreInput = document.getElementById('away-score');
+                
+                if (homeScoreInput && data.home_score !== undefined) {
+                    homeScoreInput.value = data.home_score;
+                    }
+                if (awayScoreInput && data.away_score !== undefined) {
+                    awayScoreInput.value = data.away_score;
+                    }
+                
+                // VS 그래픽 점수 업데이트
+                const vsHomeScore = document.querySelector('.vs-home-score');
+                const vsAwayScore = document.querySelector('.vs-away-score');
+                
+                if (vsHomeScore && data.home_score !== undefined) {
+                    vsHomeScore.textContent = data.home_score;
+                    }
+                if (vsAwayScore && data.away_score !== undefined) {
+                    vsAwayScore.textContent = data.away_score;
+                    }
+                
+                // 하단 스트립 점수 업데이트
                 const homeScoreElement = document.querySelector('.home-score');
                 const awayScoreElement = document.querySelector('.away-score');
                 
                 if (homeScoreElement && data.home_score !== undefined) {
                     homeScoreElement.textContent = data.home_score;
-                }
+                    }
                 if (awayScoreElement && data.away_score !== undefined) {
                     awayScoreElement.textContent = data.away_score;
-                }
+                    }
             }
         });
 
         // 통합된 타이머 상태 수신 처리 (호환성 지원)
         function handleTimerUpdate(data) {
-            console.log('=== 타이머 상태 수신 ===');
-            console.log('수신된 데이터:', data);
-            console.log('현재 matchId:', matchId);
-            console.log('수신된 matchId:', data.matchId);
-            
             // 현재 표시 중인 경기의 타이머만 처리
             if (data.matchId !== matchId) {
-                console.log('다른 경기의 타이머 상태이므로 무시:', data.matchId);
                 return;
             }
-            
-            console.log('현재 경기의 타이머 상태 업데이트');
             
             let currentSeconds = 0;
             let serverIsRunning = false;
@@ -2270,10 +2344,6 @@
             if (data.startTime && data.pausedTime !== undefined) {
                 // 0값 무시 로직: 현재 타이머가 0이 아닌데 서버에서 0을 받으면 무시
                 if (timerState.currentSeconds > 0 && data.pausedTime === 0) {
-                    console.log('현재 타이머가 0이 아닌데 서버에서 0을 받음 - 무시:', {
-                        currentTimer: timerState.currentSeconds,
-                        serverPausedTime: data.pausedTime
-                    });
                     return;
                 }
                 
@@ -2290,23 +2360,12 @@
                     currentSeconds = timerState.pausedTime;
                 }
                 
-                console.log('새로운 타이머 시스템:', {
-                    startTime: timerState.startTime,
-                    pausedTime: timerState.pausedTime,
-                    isRunning: timerState.isRunning,
-                    currentSeconds
-                });
-                
-            } else {
+                } else {
                 // 기존 방식 호환성 지원
                 const serverTime = data.currentSeconds || data.timer || 0;
                 
                 // 0값 무시 로직: 현재 타이머가 0이 아닌데 서버에서 0을 받으면 무시
                 if (timerState.currentSeconds > 0 && serverTime === 0) {
-                    console.log('현재 타이머가 0이 아닌데 서버에서 0을 받음 - 무시:', {
-                        currentTimer: timerState.currentSeconds,
-                        serverTime: serverTime
-                    });
                     return;
                 }
                 
@@ -2325,13 +2384,7 @@
                 timerState.lastUpdateTime = serverUpdateTime;
                 timerState.isRunning = serverIsRunning;
                 
-                console.log('기존 타이머 시스템:', {
-                    serverTime,
-                    serverIsRunning,
-                    timeDiff,
-                    currentSeconds
-                });
-            }
+                }
             
             timerState.currentSeconds = Math.max(0, currentSeconds);
             
@@ -2341,33 +2394,19 @@
             
             // 타이머 실행 상태에 따라 로컬 타이머 제어
             if (serverIsRunning && !timerState.localTimer) {
-                console.log('타이머 실행 중 - 로컬 타이머 시작');
                 startLocalTimer();
             } else if (!serverIsRunning && timerState.localTimer) {
-                console.log('타이머 정지 상태 - 로컬 타이머 중지');
                 stopLocalTimer();
             }
             
-            console.log('타이머 상태 업데이트 완료:', { 
-                currentSeconds, 
-                serverIsRunning
-            });
-        }
+            }
 
         // 리셋 전용 핸들러 (0값 무시하지 않음)
         function handleTimerReset(data) {
-            console.log('=== 타이머 리셋 수신 ===');
-            console.log('수신된 데이터:', data);
-            console.log('현재 matchId:', matchId);
-            console.log('수신된 matchId:', data.matchId);
-            
             // 현재 표시 중인 경기의 타이머만 처리
             if (data.matchId !== matchId) {
-                console.log('다른 경기의 타이머 상태이므로 무시:', data.matchId);
                 return;
             }
-            
-            console.log('현재 경기의 타이머 리셋');
             
             let currentSeconds = 0;
             let serverIsRunning = false;
@@ -2387,14 +2426,7 @@
                     currentSeconds = timerState.pausedTime;
                 }
                 
-                console.log('새로운 타이머 시스템 리셋:', {
-                    startTime: timerState.startTime,
-                    pausedTime: timerState.pausedTime,
-                    isRunning: timerState.isRunning,
-                    currentSeconds
-                });
-                
-            } else {
+                } else {
                 // 기존 방식 호환성 지원
                 const serverTime = data.currentSeconds || data.timer || 0;
                 serverIsRunning = data.isRunning || false;
@@ -2412,13 +2444,7 @@
                 timerState.lastUpdateTime = serverUpdateTime;
                 timerState.isRunning = serverIsRunning;
                 
-                console.log('기존 타이머 시스템 리셋:', {
-                    serverTime,
-                    serverIsRunning,
-                    timeDiff,
-                    currentSeconds
-                });
-            }
+                }
             
             timerState.currentSeconds = Math.max(0, currentSeconds);
             
@@ -2428,18 +2454,12 @@
             
             // 타이머 실행 상태에 따라 로컬 타이머 제어
             if (serverIsRunning && !timerState.localTimer) {
-                console.log('타이머 실행 중 - 로컬 타이머 시작');
                 startLocalTimer();
             } else if (!serverIsRunning && timerState.localTimer) {
-                console.log('타이머 정지 상태 - 로컬 타이머 중지');
                 stopLocalTimer();
             }
             
-            console.log('타이머 리셋 완료:', { 
-                currentSeconds, 
-                serverIsRunning
-            });
-        }
+            }
 
         // 모든 타이머 이벤트를 하나의 핸들러로 통합 (호환성 지원)
         socket.on('timer_state', handleTimerUpdate);
@@ -2456,19 +2476,14 @@
 
         // 경기 상태 표시 설정 변경 이벤트 처리
         socket.on('soccer_match_state_visibility_changed', function(data) {
-            console.log('경기 상태 표시 설정 변경 이벤트 수신:', data);
-            
             const matchStateContainer = document.getElementById('matchStateContainer');
             if (matchStateContainer) {
                 matchStateContainer.style.display = data.showMatchState ? 'block' : 'none';
-                console.log('경기 상태 표시 설정 실시간 업데이트:', data.showMatchState ? '표시' : '숨김');
-            }
+                }
         });
 
         // 오버레이 이미지 변경 이벤트 처리
         socket.on('overlay_image_updated', function(data) {
-            console.log('오버레이 이미지 변경 이벤트 수신:', data);
-            
             if (data.action === 'uploaded') {
                 // 새 이미지가 업로드된 경우
                 const overlayImageContainer = document.getElementById('overlayImage');
@@ -2477,13 +2492,11 @@
                     img.src = data.imagePath;
                     img.alt = '오버레이 이미지';
                     img.onload = () => {
-                        console.log('새 오버레이 이미지 로드 완료:', data.imagePath);
                         overlayImageContainer.innerHTML = '';
                         overlayImageContainer.appendChild(img);
                         overlayImageContainer.classList.add('show');
                     };
                     img.onerror = (error) => {
-                        console.error('새 오버레이 이미지 로드 실패:', error);
                         overlayImageContainer.classList.remove('show');
                     };
                 }
@@ -2493,15 +2506,84 @@
                 if (overlayImageContainer) {
                     overlayImageContainer.classList.remove('show');
                     overlayImageContainer.innerHTML = '';
-                    console.log('오버레이 이미지 삭제됨');
+                    }
+            }
+        });
+
+        // 스포츠 오버레이 이미지 변경 이벤트 처리 (새로운 이벤트)
+        socket.on('sport_overlay_image_updated', function(data) {
+            console.log('스포츠 오버레이 이미지 업데이트:', data);
+            
+            if (data.action === 'uploaded') {
+                // 새 이미지가 업로드된 경우 - 활성화된 이미지들 다시 로드
+                loadOverlayImage();
+            } else if (data.action === 'deleted') {
+                // 이미지가 삭제된 경우 - 활성화된 이미지들 다시 로드
+                loadOverlayImage();
+            } else if (data.action === 'activated') {
+                // 이미지가 활성화된 경우 - 활성화된 이미지들 다시 로드
+                loadOverlayImage();
+            } else if (data.action === 'status_changed') {
+                // 이미지 상태가 변경된 경우 - 활성화된 이미지들 다시 로드
+                console.log('이미지 상태 변경됨:', data);
+                loadOverlayImage();
+            }
+        });
+
+        // 오버레이 이미지 상태 변경 실시간 이벤트 처리 (동적 처리)
+        socket.on('overlay_image_status_changed', function(data) {
+            console.log('🔧 오버레이 이미지 상태 변경 실시간 이벤트:', data);
+            console.log('🔧 현재 window.matchData:', window.matchData);
+            console.log('🔧 현재 경기 sport_type:', window.matchData?.sport_type);
+            console.log('🔧 이벤트 sportCode:', data.sportCode);
+            
+            // 현재 경기의 스포츠 타입과 동적 비교 (window.matchData 사용)
+            if (data.sportCode === window.matchData?.sport_type) {
+                console.log('🔧 스포츠 타입 일치, 이미지 처리 시작');
+                
+                if (data.isActive && data.imageData) {
+                    // 이미지 활성화 - 해당 이미지만 추가 표시
+                    console.log('🔧 오버레이 이미지 활성화:', data.imageData);
+                    addOverlayImage(data.imageData);
+                } else if (!data.isActive && data.imageData) {
+                    // 이미지 비활성화 - 해당 이미지만 제거
+                    console.log('🔧 오버레이 이미지 비활성화:', data.imageData);
+                    removeOverlayImage(data.imageData.id);
+                }
+            } else {
+                console.log('🔧 스포츠 타입 불일치, Room 재참여 시도');
+                // 스포츠 타입이 일치하지 않으면 Room 재참여 시도
+                if (window.matchData?.sport_type) {
+                    console.log('🔧 Room 재참여 요청:', window.matchData.sport_type);
+                    socket.emit('join_sport_room', window.matchData.sport_type);
+                }
+            }
+        });
+
+        // 오버레이 페이지 새로고침 이벤트 처리
+        socket.on('overlay_page_refresh', function(data) {
+            console.log('🔧 오버레이 페이지 새로고침 신호 수신:', data);
+            console.log('🔧 현재 window.matchData:', window.matchData);
+            console.log('🔧 현재 경기 sport_type:', window.matchData?.sport_type);
+            console.log('🔧 이벤트 sportCode:', data.sportCode);
+            
+            // 현재 경기의 스포츠 타입과 동적 비교
+            if (data.sportCode === window.matchData?.sport_type) {
+                console.log('🔧 오버레이 페이지 새로고침 실행:', data.reason);
+                // 페이지 새로고침
+                location.reload();
+            } else {
+                console.log('🔧 스포츠 타입 불일치로 새로고침 건너뜀');
+                // 대안: window.matchData가 없을 때도 새로고침 (디버깅용)
+                if (!window.matchData) {
+                    console.log('🔧 window.matchData가 없어서 강제 새로고침 실행');
+                    location.reload();
                 }
             }
         });
 
         // 팀명 업데이트 이벤트 처리
         socket.on('teamNameUpdated', function(data) {
-            console.log('팀명 업데이트 이벤트 수신:', data);
-            
             if (data.matchId === matchId) {
                 const team = data.team;
                 const teamName = data.teamName;
@@ -2511,21 +2593,58 @@
                 teamNameElements.forEach(element => {
                     element.textContent = teamName;
                 });
+
+                }
+        });
+
+        // 팀 색상 업데이트 이벤트 처리
+        socket.on('teamColorUpdated', function(data) {
+            if (data.matchId === matchId) {
+                const teamType = data.teamType;
+                const teamColor = data.teamColor;
+                const headerText = data.headerText;
                 
-                // 라인업 헤더의 팀명도 업데이트
-                const lineupHeader = document.querySelector(`.lineup-header.${team} span`);
-                if (lineupHeader) {
-                    lineupHeader.textContent = `${teamName} 라인업`;
+                // 팀 색상 업데이트
+                const teamElements = document.querySelectorAll(`.team-section.${teamType}`);
+                teamElements.forEach(element => {
+                    element.style.backgroundColor = teamColor;
+                });
+                
+                // 팀 헤더 텍스트 업데이트 (있는 경우)
+                if (headerText) {
+                    const headerElements = document.querySelectorAll(`.team-section.${teamType} .team-header`);
+                    headerElements.forEach(element => {
+                        element.textContent = headerText;
+                    });
                 }
                 
-                console.log(`${team}팀명 업데이트 완료: ${teamName}`);
-            }
+                }
         });
+
+        // 데이터 변경 이벤트 처리 (DB에서 최신 데이터 로드)
+        socket.on('dataChanged', async function(data) {
+            
+            if (data.matchId === matchId) {
+                try {
+                    await reloadAllDataFromDB();
+                    } catch (error) {
+                    }
+            } else {
+                }
+        });
+
+        // 소켓 연결 상태 확인
+        socket.on('connect', function() {
+            });
+
+        socket.on('disconnect', function() {
+            });
+
+        socket.on('connect_error', function(error) {
+            });
 
         // 팀 위치 변경 이벤트 처리
         socket.on('teamsSwapped', function(data) {
-            console.log('팀 위치 변경 이벤트 수신:', data);
-            
             if (data.matchId === matchId) {
                 // 팀명 업데이트
                 const homeTeamElements = document.querySelectorAll('.team-section.home .team-name');
@@ -2546,18 +2665,7 @@
                         el.classList.remove('small-font');
                     }
                 });
-                
-                // 라인업 헤더 업데이트
-                const homeLineupHeader = document.querySelector('.lineup-header.home span');
-                const awayLineupHeader = document.querySelector('.lineup-header.away span');
-                
-                if (homeLineupHeader) {
-                    homeLineupHeader.textContent = `${data.home_team} 라인업`;
-                }
-                if (awayLineupHeader) {
-                    awayLineupHeader.textContent = `${data.away_team} 라인업`;
-                }
-                
+
                 // 점수 업데이트
                 const homeScoreElements = document.querySelectorAll('.home-score');
                 const awayScoreElements = document.querySelectorAll('.away-score');
@@ -2569,33 +2677,70 @@
                     element.textContent = data.away_score;
                 });
                 
-                console.log('팀 위치 변경 완료');
-            }
+                // 팀 컬러 업데이트 (서버에서 최신 데이터 가져오기)
+                updateTeamColorsAfterSwap();
+                
+                }
         });
 
+        // 팀 위치 변경 후 팀 컬러 업데이트 함수
+        async function updateTeamColorsAfterSwap() {
+            try {
+                
+                const response = await fetch(`/api/matches/${matchId}`);
+                if (!response.ok) {
+                    throw new Error('경기 데이터 로드 실패');
+                }
+                
+                const matchData = await response.json();
+                // 직접 필드에서 홈팀 컬러 업데이트
+                if (matchData.home_team_color) {
+                    const homeTeamElements = document.querySelectorAll('.team-section.home');
+                    homeTeamElements.forEach(element => {
+                        element.style.backgroundColor = matchData.home_team_color;
+                    });
+                    console.log('오버레이 홈팀 컬러 업데이트 (직접 필드):', matchData.home_team_color);
+                }
+                
+                // 직접 필드에서 어웨이팀 컬러 업데이트
+                if (matchData.away_team_color) {
+                    const awayTeamElements = document.querySelectorAll('.team-section.away');
+                    awayTeamElements.forEach(element => {
+                        element.style.backgroundColor = matchData.away_team_color;
+                    });
+                    console.log('오버레이 어웨이팀 컬러 업데이트 (직접 필드):', matchData.away_team_color);
+                }
+                
+                // match_data에서도 팀 컬러 확인 (백업용)
+                if (matchData.match_data) {
+                    const matchDataObj = matchData.match_data;
+                    // match_data에서 홈팀 컬러 업데이트 (직접 필드가 없을 때만)
+                    if (matchDataObj.home_team_color && !matchData.home_team_color) {
+                        const homeTeamElements = document.querySelectorAll('.team-section.home');
+                        homeTeamElements.forEach(element => {
+                            element.style.backgroundColor = matchDataObj.home_team_color;
+                        });
+                        console.log('오버레이 홈팀 컬러 업데이트 (match_data):', matchDataObj.home_team_color);
+                    }
+                    
+                    // match_data에서 어웨이팀 컬러 업데이트 (직접 필드가 없을 때만)
+                    if (matchDataObj.away_team_color && !matchData.away_team_color) {
+                        const awayTeamElements = document.querySelectorAll('.team-section.away');
+                        awayTeamElements.forEach(element => {
+                            element.style.backgroundColor = matchDataObj.away_team_color;
+                        });
+                        console.log('오버레이 어웨이팀 컬러 업데이트 (match_data):', matchDataObj.away_team_color);
+                    }
+                }
+
+            } catch (error) {
+                }
+        }
+
         // 팀 로고 업데이트 이벤트 처리
-        socket.on('teamLogoUpdated', function(data) {
-            console.log('로고 업데이트 이벤트 수신:', data);
-            
-            if (data.matchId === matchId) {
-                const teamType = data.teamType;
-                
-                // 현재 팀의 상태 업데이트
-                logoState[teamType] = {
-                    path: data.path || '',
-                    bgColor: data.bgColor || '#ffffff',
-                    teamName: data.teamName || (teamType === 'home' ? '<%= match.home_team %>' : '<%= match.away_team %>')
-                };
-                
-                // UI 업데이트 (updateTeamLogo 함수 사용)
-                updateTeamLogo(teamType, logoState[teamType]);
-            }
-        });
 
         // 로고 표시 토글 이벤트 처리
         socket.on('logo-display-toggled', function(data) {
-            console.log('로고 표시 토글 이벤트 수신:', data);
-            
             if (data.matchId === matchId) {
                 toggleLogoDisplay(data.teamType, data.showLogo);
             }
@@ -2603,11 +2748,33 @@
 
         // 로고 표시 토글 함수
         function toggleLogoDisplay(teamType, showLogo) {
-            console.log(`${teamType}팀 로고 표시 토글:`, showLogo ? '표시' : '배경색만');
             
             const logoContainer = document.getElementById(`${teamType}-team-logo-container`);
             const logoImage = logoContainer ? logoContainer.querySelector('img') : null;
             const teamName = document.querySelector(`.team-section.${teamType} .team-name`);
+            // DB에서 가져온 로고 정보가 있다면 적용
+            if (logoState[teamType]) {
+                const logoInfo = logoState[teamType];
+                // 로고 이미지 업데이트
+                if (logoImage && logoInfo.path) {
+                    // 올바른 경로로 수정
+                    let correctPath = logoInfo.path.startsWith('/') ? logoInfo.path : `/${logoInfo.path}`;
+                    
+                    // 경로에서 불필요한 부분 제거 (soccer/1002SC9485/ 제거)
+                    if (correctPath.includes('/soccer/') && correctPath.includes('/TEAMLOGO/')) {
+                        const teamLogoIndex = correctPath.indexOf('/TEAMLOGO/');
+                        correctPath = correctPath.substring(teamLogoIndex);
+                    }
+                    
+                    logoImage.src = correctPath;
+                    logoImage.style.display = showLogo ? 'block' : 'none';
+                }
+                
+                // 로고 배경색 업데이트
+                if (logoContainer) {
+                    logoContainer.style.backgroundColor = logoInfo.bgColor || '#ffffff';
+                }
+            }
             
             // 팀로고 사용안함 상태 확인 (로고 섹션이 숨겨져 있는지 확인)
             const logoSection = document.querySelector(`.team-logo-section.${teamType}-logo`);
@@ -2621,21 +2788,11 @@
                     const parsed = JSON.parse(storedLogoStates);
                     globalLogoDisplayState = parsed.globalLogoDisplayState || false;
                 } catch (e) {
-                    console.error('로고 상태 파싱 오류:', e);
-                }
+                    }
             }
             
             // 팀로고 사용안함 상태를 더 정확하게 감지
             const isTeamLogoDisabledFinal = isTeamLogoDisabled || !globalLogoDisplayState;
-            
-            console.log(`${teamType}팀 로고 섹션 상태:`, {
-                logoSection: logoSection,
-                display: logoSection ? logoSection.style.display : 'null',
-                visibility: logoSection ? logoSection.style.visibility : 'null',
-                isTeamLogoDisabled: isTeamLogoDisabled,
-                globalLogoDisplayState: globalLogoDisplayState,
-                isTeamLogoDisabledFinal: isTeamLogoDisabledFinal
-            });
             
             if (logoContainer) {
                 if (showLogo) {
@@ -2648,11 +2805,6 @@
                     
                     // 팀명 위치는 항상 고정 (20px 안쪽으로 이동)
                     if (teamName) {
-                        console.log(`${teamType}팀 팀명 위치 고정:`, {
-                            isTeamLogoDisabledFinal: isTeamLogoDisabledFinal,
-                            showLogo: showLogo,
-                            teamName: teamName
-                        });
                         // 팀명을 20px 안쪽으로 고정 이동
                         if (teamType === 'home') {
                             teamName.style.transform = 'translateX(20px)';
@@ -2660,11 +2812,9 @@
                             teamName.style.transform = 'translateX(-20px)';
                         }
                     } else {
-                        console.error(`${teamType}팀 팀명 요소를 찾을 수 없습니다.`);
-                    }
+                        }
                     
-                    console.log(`${teamType}팀 로고 표시 모드로 변경`);
-                } else {
+                    } else {
                     // 배경색만 표시: 폭 25%
                     logoContainer.style.width = '25%';
                     if (teamType === 'away') {
@@ -2674,11 +2824,6 @@
                     
                     // 팀명 위치는 항상 고정 (20px 안쪽으로 이동)
                     if (teamName) {
-                        console.log(`${teamType}팀 배경색만 팀명 위치 고정:`, {
-                            isTeamLogoDisabledFinal: isTeamLogoDisabledFinal,
-                            showLogo: showLogo,
-                            teamName: teamName
-                        });
                         // 팀명을 20px 안쪽으로 고정 이동
                         if (teamType === 'home') {
                             teamName.style.transform = 'translateX(20px)';
@@ -2686,15 +2831,13 @@
                             teamName.style.transform = 'translateX(-20px)';
                         }
                     } else {
-                        console.error(`${teamType}팀 배경색만 팀명 요소를 찾을 수 없습니다.`);
-                    }
+                        }
                     
-                    console.log(`${teamType}팀 배경색만 표시 모드로 변경`);
-                }
+                    }
             } else {
-                console.error(`${teamType}팀 로고 컨테이너를 찾을 수 없습니다.`);
+                }
+            
             }
-        }
 
         // 로고 표시 상태 로드 및 적용
         function loadAndApplyLogoDisplayStates() {
@@ -2702,8 +2845,6 @@
                 const savedStates = localStorage.getItem('logoDisplayStates');
                 if (savedStates) {
                     const logoDisplayStates = JSON.parse(savedStates);
-                    console.log('로고 표시 상태 로드:', logoDisplayStates);
-                    
                     // 각 팀의 상태 적용
                     ['home', 'away'].forEach(teamType => {
                         if (logoDisplayStates[teamType] !== undefined) {
@@ -2712,14 +2853,34 @@
                     });
                 }
             } catch (error) {
-                console.error('로고 표시 상태 로드 중 오류:', error);
-            }
+                }
+        }
+        
+        // 팀로고 표시 모드 상태 로드 및 적용
+        async function loadAndApplyLogoDisplayMode() {
+            try {
+                
+                const response = await fetch(`/api/matches/${matchId}/team-logo-display-mode`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const displayMode = data.displayMode;
+                    
+                    // 표시 모드에 따라 로고 표시 상태 설정
+                    const showLogo = displayMode === 'logo';
+                    
+                    // 홈팀과 어웨이팀 모두에 적용
+                    ['home', 'away'].forEach(teamType => {
+                        toggleLogoDisplay(teamType, showLogo);
+                    });
+                } else {
+                    }
+            } catch (error) {
+                }
         }
 
         // 팀 로고 삭제 이벤트 처리
         socket.on('teamLogoRemoved', function(data) {
-            console.log('로고 삭제 이벤트 수신:', data);
-            
             if (data.matchId === matchId) {
                 const teamType = data.teamType;
                 
@@ -2742,11 +2903,9 @@
                 
                 if (response.ok) {
                     const data = await response.json();
+                    // API 응답 구조: { success: true, useLogos: false }
                     const useLogos = data.useLogos;
-                    
-                    console.log('=== 오버레이: 팀로고 사용 상태 불러오기 ===');
-                    console.log('useLogos:', useLogos);
-                    
+
                     // 팀로고 가시성 적용
                     updateTeamLogoVisibility(useLogos);
                 } else {
@@ -2754,16 +2913,43 @@
                     updateTeamLogoVisibility(true);
                 }
             } catch (error) {
-                console.error('팀로고 사용 상태 불러오기 오류:', error);
                 updateTeamLogoVisibility(true);
+            }
+        }
+
+        // 팀로고 표시 모드 상태 불러오기 함수
+        async function loadTeamLogoDisplayMode() {
+            try {
+                
+                const response = await fetch(`/api/matches/${matchId}/team-logo-display-mode`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const displayMode = data.displayMode;
+                    
+                    // 표시 모드에 따라 UI 업데이트
+                    const showLogo = displayMode === 'logo';
+                    // 홈팀과 어웨이팀 모두에 적용
+                    ['home', 'away'].forEach(teamType => {
+                        toggleLogoDisplay(teamType, showLogo);
+                    });
+                    
+                    } else {
+                    console.log('팀로고 표시 모드 불러오기 실패, 기본값(logo) 사용');
+                    // 기본값으로 로고 표시 모드 적용
+                    ['home', 'away'].forEach(teamType => {
+                        toggleLogoDisplay(teamType, true);
+                    });
+                }
+            } catch (error) {
+                // 오류 시 기본값으로 로고 표시 모드 적용
+                ['home', 'away'].forEach(teamType => {
+                    toggleLogoDisplay(teamType, true);
+                });
             }
         }
 
         // 단일 DOMContentLoaded 이벤트 리스너
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('=== DOMContentLoaded 시작 ===');
-            console.log('socket.connected:', socket.connected);
-            console.log('matchId:', matchId);
             
             try {
                 // 초기 로고 로드 (팀 색상 적용 전에 먼저 실행)
@@ -2771,6 +2957,9 @@
                 
                 // 로고 표시 상태 로드 및 적용
                 loadAndApplyLogoDisplayStates();
+                
+                // 팀로고 표시 모드 상태 로드 및 적용
+                await loadAndApplyLogoDisplayMode();
                 
                 // 팀 색상 적용 (로고 배경색은 덮어쓰지 않음)
                 updateTeamColors(homeTeamColor, awayTeamColor);
@@ -2785,23 +2974,29 @@
                 // 팀로고 사용 상태 불러오기 및 적용
                 await loadTeamLogoVisibility();
                 
-                // 추가 박스 텍스트 불러오기
-                await loadExtraBoxText();
+                // 팀로고 표시 모드 상태 불러오기 및 적용
+                await loadTeamLogoDisplayMode();
+                
+                // 추가 박스 텍스트 불러오기 (404 오류 방지를 위해 주석 처리)
+                // await loadExtraBoxText();
                 
                 // 타이머 초기화
-                console.log('=== 타이머 초기화 시작 ===');
                 const matchData = {
                     currentSeconds: Math.max(0, <%= match.match_data?.currentSeconds || match.match_data?.timer || 0 %>),
                     isRunning: <%= match.match_data?.isRunning || false %>
                 };
-                console.log('초기 타이머 데이터:', matchData);
                 syncTimerWithMatch(matchData);
                 
                 // 서버에 타이머 상태 요청
                 requestTimerStateFromServer(matchId);
                 
+                // 오버레이 이미지 로드
+                await loadOverlayImage();
+                
+                // 하단 스트립 초기 스코어 설정
+                initializeBottomStripScore();
+                
             } catch (error) {
-                console.error('초기화 중 오류 발생:', error);
                 showError('초기화 중 오류가 발생했습니다.');
             }
         });
@@ -2815,8 +3010,7 @@
                 updateTeamColors(homeTeamColor, awayTeamColor);
                 
                 // 로고 배경색은 유지 (팀 색상과 별개)
-                console.log('팀 색상 변경됨, 로고 배경색 유지');
-            }
+                }
         });
         
         // 단일 팀 색상 업데이트 이벤트 처리 (teamColorUpdate)
@@ -2832,61 +3026,93 @@
                 }
                 
                 // 로고 배경색은 유지 (팀 색상과 별개)
-                console.log(`${data.teamType}팀 색상 변경됨, 로고 배경색 유지`);
-            }
+                }
         });
 
         // 테스트 이벤트 처리
         socket.on('test_event', function(data) {
-            console.log('=== 오버레이: 테스트 이벤트 수신 ===');
-            console.log('수신된 데이터:', data);
-            console.log('현재 matchId:', matchId);
-            console.log('데이터 matchId:', data.matchId);
-            console.log('matchId 일치 여부:', data.matchId === matchId);
+            // 테스트 이벤트 처리
         });
 
-        // 팀로고 가시성 변경 이벤트 처리
+        // 팀로고 가시성 변경 이벤트 처리 (즉시 UI 업데이트)
         socket.on('teamLogoVisibilityChanged', function(data) {
-            console.log('=== 오버레이: 팀로고 가시성 변경 이벤트 수신 ===');
-            console.log('수신된 데이터:', data);
-            console.log('현재 matchId:', matchId);
-            console.log('데이터 matchId:', data.matchId);
-            console.log('matchId 일치 여부:', data.matchId === matchId);
-            console.log('소켓 연결 상태:', socket.connected);
-            
             if (data.matchId === matchId) {
-                console.log('matchId 일치, updateTeamLogoVisibility 호출');
                 updateTeamLogoVisibility(data.useLogos);
             } else {
-                console.log('matchId 불일치, 이벤트 무시');
-            }
+                }
+        });
+        
+        // 팀로고 표시 모드 변경 이벤트 처리 (즉시 UI 업데이트)
+        socket.on('teamLogoDisplayModeChanged', function(data) {
+            console.log('이벤트 수신 시간:', new Date().toISOString());
+            
+            if (data.matchId === matchId) {
+                const showLogo = data.displayMode === 'logo';
+                // 홈팀과 어웨이팀 모두에 적용
+                ['home', 'away'].forEach(teamType => {
+                    toggleLogoDisplay(teamType, showLogo);
+                });
+                } else {
+                }
         });
 
         // 스코어 보드 추가 박스 토글 이벤트 처리
-        socket.on('toggleExtraBox', function(data) {
-            console.log('=== 오버레이: 추가 박스 토글 이벤트 수신 ===');
-            console.log('수신된 데이터:', data);
+        socket.on('extra_box_toggled', function(data) {
             
             if (data.matchId === matchId) {
                 const extraBox = document.getElementById('scoreboardExtraBox');
                 if (extraBox) {
                     extraBox.classList.toggle('show');
-                    console.log('추가 박스 토글 완료');
-                }
+                    }
             }
         });
 
+        // 그래픽 토글 이벤트 처리
+        socket.on('toggleGraphic', function(data) {
+            console.log('이벤트 수신 시간:', new Date().toISOString());
+            
+            if (data.matchId === matchId) {
+                // 하단 스트립의 경우 추가 데이터 처리
+                if (data.graphicType === 'bottom-strip' && data.visible) {
+                    // 스코어 정보가 있으면 업데이트
+                    if (data.score) {
+                        // 새로운 하단 스트립 스코어 업데이트 함수 사용
+                        updateBottomStripScore(data.score.home, data.score.away);
+                    } else {
+                        }
+                    
+                    // 득점 정보가 있으면 업데이트
+                    if (data.goals) {
+                        updateBottomStripGoals(data.goals.home || [], data.goals.away || []);
+                        // 득점 개수에 따른 스트립 크기 조정
+                        adjustStripSize((data.goals.home || []).length, (data.goals.away || []).length);
+                    } else {
+                        }
+                }
+                
+                toggleGraphicElement(data.graphicType, data.visible, data);
+            } else {
+                }
+        });
+
         // 스코어 보드 추가 박스 텍스트 업데이트 이벤트 처리
-        socket.on('updateExtraBoxText', function(data) {
-            console.log('=== 오버레이: 추가 박스 텍스트 업데이트 이벤트 수신 ===');
-            console.log('수신된 데이터:', data);
+        socket.on('extra_box_text_updated', function(data) {
             
             if (data.matchId === matchId) {
                 const extraBoxText = document.getElementById('extraBoxText');
                 if (extraBoxText) {
                     extraBoxText.textContent = data.text || '0 (승부차기) 0';
-                    console.log('추가 박스 텍스트 업데이트 완료:', data.text);
-                }
+                    }
+            }
+        });
+
+        // 승부차기 텍스트 실시간 업데이트 이벤트 처리
+        socket.on('updateExtraBoxText', function(data) {
+            if (data.matchId === matchId) {
+                const extraBoxText = document.getElementById('extraBoxText');
+                if (extraBoxText) {
+                    extraBoxText.textContent = data.text || '0 (승부차기) 0';
+                    }
             }
         });
 
@@ -2900,21 +3126,31 @@
                     const extraBoxText = document.getElementById('extraBoxText');
                     if (extraBoxText) {
                         extraBoxText.textContent = data.text;
-                        console.log('오버레이: 저장된 추가 박스 텍스트 불러오기 완료:', data.text);
-                    }
+                        }
                 }
             } catch (error) {
-                console.error('오버레이: 추가 박스 텍스트 불러오기 오류:', error);
-            }
+                }
         }
 
         // 소켓 연결 상태 확인 함수
         function checkSocketConnection() {
-            console.log('=== 소켓 연결 상태 확인 ===');
-            console.log('socket.connected:', socket.connected);
-            console.log('socket.id:', socket.id);
-            console.log('matchId:', matchId);
-        }
+            }
+
+        // 요소 존재 확인 함수 (디버깅용)
+        window.checkElements = function() {
+            console.log('상단 스코어보드:', document.getElementById('topScoreboard'));
+            console.log('VS 오버레이:', document.getElementById('vsOverlay'));
+            console.log('하단 스트립:', document.getElementById('bottomStrip'));
+            
+            console.log('VS 홈팀 로고:', document.querySelector('#vs-home-logo'));
+            console.log('VS 어웨이팀 로고:', document.querySelector('#vs-away-logo'));
+            
+            console.log('스트립 홈팀 로고:', document.querySelector('#strip-home-logo'));
+            console.log('스트립 어웨이팀 로고:', document.querySelector('#strip-away-logo'));
+            
+            console.log('스코어보드 홈팀 로고:', document.querySelector('.team-section.home .team-logo'));
+            console.log('스코어보드 어웨이팀 로고:', document.querySelector('.team-section.away .team-logo'));
+        };
 
         // 페이지 로드 시 소켓 연결 상태 확인
         setTimeout(checkSocketConnection, 1000);
@@ -2928,8 +3164,6 @@
         
         // 스코어보드 토글 이벤트 수신 (타이머, 전반/후반, 팀 로고 포함)
         socket.on('toggle_scoreboard', (data) => {
-            console.log('스코어보드 토글 이벤트 수신:', data);
-            
             // 팀 정보, 스코어, 타이머, 전반/후반, 팀 로고 모두 토글
             const homeTeam = document.querySelector('.team-section.home');
             const awayTeam = document.querySelector('.team-section.away');
@@ -2982,15 +3216,12 @@
         
         // VS 대진 오버레이 토글 이벤트 수신
         socket.on('toggle_vs_overlay', (data) => {
-            console.log('VS 대진 오버레이 토글 이벤트 수신:', data);
-            
             const vsOverlay = document.getElementById('vsOverlay');
             if (vsOverlay) {
                 const isVisible = vsOverlay.style.display !== 'none';
                 
                 if (isVisible) {
                     vsOverlay.style.display = 'none';
-                    console.log('VS 대진 오버레이 숨김');
                     } else {
                     vsOverlay.style.display = 'flex';
                     // VS 오버레이가 표시될 때 토너먼트 제목 확인 및 적용
@@ -3005,35 +3236,24 @@
                     
                     if (homeTeamHeader && vsHomeTeamName) {
                         vsHomeTeamName.textContent = homeTeamHeader.textContent;
-                        console.log('VS 홈팀명 초기화:', homeTeamHeader.textContent);
-                    }
+                        }
                     if (awayTeamHeader && vsAwayTeamName) {
                         vsAwayTeamName.textContent = awayTeamHeader.textContent;
-                        console.log('VS 어웨이팀명 초기화:', awayTeamHeader.textContent);
+                        }
                     }
-                    console.log('VS 대진 오버레이 표시');
-                }
             }
         });
         
         // 하단 스트립 토글 이벤트 수신
         socket.on('toggle_bottom_strip', (data) => {
-            console.log('=== 하단 스트립 토글 이벤트 수신 ===');
-            console.log('받은 데이터:', data);
-            console.log('홈팀 득점:', data.homeGoals);
-            console.log('어웨이팀 득점:', data.awayGoals);
-            
             const bottomStrip = document.getElementById('bottomStrip');
             if (bottomStrip) {
                 const isVisible = bottomStrip.style.display !== 'none';
                 
                 if (isVisible) {
                     bottomStrip.style.display = 'none';
-                    console.log('하단 스트립 숨김');
                     } else {
                     bottomStrip.style.display = 'flex';
-                    console.log('하단 스트립 표시 시작');
-                    
                     // 하단 스트립이 표시될 때 토너먼트 제목 확인 및 적용
                     loadTournamentTitleForStrip();
                     
@@ -3052,145 +3272,102 @@
                         const awayGoalsCount = data.awayGoals.length;
                         const totalGoals = homeGoalsCount + awayGoalsCount;
                         
-                        console.log('득점 정보 확인:', {
-                            홈팀: homeGoalsCount + '개',
-                            어웨이팀: awayGoalsCount + '개',
-                            총합: totalGoals + '개'
-                        });
-                        
                         if (totalGoals > 0) {
-                            console.log('득점 정보가 있음 - 중단 섹션 표시');
                             updateBottomStripGoals(data.homeGoals, data.awayGoals);
                             adjustStripSize(homeGoalsCount, awayGoalsCount);
-                            console.log('✅ 득점 정보로 스트립 표시 완료');
-                        } else {
-                            console.log('득점 정보가 없음 - 중단 섹션 숨김');
+                            } else {
                             hideCenterSection();
-                            console.log('✅ 중단 섹션 숨김 완료');
-                        }
+                            }
                     } else {
-                        console.log('득점 정보가 없어서 저장된 정보 로드');
                         // 득점 정보가 없으면 저장된 정보 로드
                         loadAndDisplayGoals();
                     }
                     
-                    console.log('하단 스트립 표시 완료');
-                }
+                    }
             }
         });
         
         // 하단 스트립용 토너먼트 제목 로드 함수
         function loadTournamentTitleForStrip() {
-            console.log('하단 스트립 토너먼트 제목 로드 시작');
-            
             // 서버에서 토너먼트 제목 가져오기
             fetch(`/api/tournament-text/${matchId}`)
                 .then(response => response.json())
                 .then(data => {
-                    console.log('하단 스트립 토너먼트 제목 응답:', data);
-                    
                     const stripTournamentTitle = document.getElementById('strip-tournament-title');
                     if (stripTournamentTitle) {
                         if (data.tournamentText && data.tournamentText.trim() !== '') {
                             stripTournamentTitle.textContent = data.tournamentText;
-                            console.log('하단 스트립 토너먼트 제목 적용:', data.tournamentText);
-                        } else {
-                            stripTournamentTitle.textContent = 'FOOTBALL TOURNAMENT';
-                            console.log('하단 스트립 기본 토너먼트 제목 적용');
-                        }
+                            } else {
+                            stripTournamentTitle.textContent = '';
+                            }
                     }
                 })
                 .catch(error => {
-                    console.error('하단 스트립 토너먼트 제목 로드 실패:', error);
-                    
                     // 에러 시 기본 제목 적용
                     const stripTournamentTitle = document.getElementById('strip-tournament-title');
                     if (stripTournamentTitle) {
-                        stripTournamentTitle.textContent = 'FOOTBALL TOURNAMENT';
-                        console.log('에러로 인한 하단 스트립 기본 토너먼트 제목 적용');
-                    }
+                        stripTournamentTitle.textContent = '';
+                        }
                 });
         }
 
         // 하단 스트립 초기 점수 로드 함수
         function loadInitialStripScores() {
-            console.log('하단 스트립 초기 점수 로드 시작');
-            
             // 서버에서 현재 매치 정보 가져오기
-            fetch(`/api/match/${matchId}`)
+            fetch(`/api/matches/${matchId}`)
                 .then(response => response.json())
                 .then(data => {
-                    console.log('하단 스트립 매치 정보 응답:', data);
-                    
                     const stripHomeScore = document.getElementById('strip-home-score');
                     const stripAwayScore = document.getElementById('strip-away-score');
                     
                     if (stripHomeScore && data.home_score !== undefined) {
                         stripHomeScore.textContent = data.home_score;
-                        console.log('하단 스트립 홈팀 초기 점수 적용:', data.home_score);
-                    }
+                        }
                     
                     if (stripAwayScore && data.away_score !== undefined) {
                         stripAwayScore.textContent = data.away_score;
-                        console.log('하단 스트립 어웨이팀 초기 점수 적용:', data.away_score);
-                    }
+                        }
                 })
                 .catch(error => {
-                    console.error('하단 스트립 초기 점수 로드 실패:', error);
-                    
                     // 에러 시 기본 점수 적용
                     const stripHomeScore = document.getElementById('strip-home-score');
                     const stripAwayScore = document.getElementById('strip-away-score');
                     
                     if (stripHomeScore) {
                         stripHomeScore.textContent = '0';
-                        console.log('에러로 인한 하단 스트립 홈팀 기본 점수 적용');
-                    }
+                        }
                     if (stripAwayScore) {
                         stripAwayScore.textContent = '0';
-                        console.log('에러로 인한 하단 스트립 어웨이팀 기본 점수 적용');
-                    }
+                        }
                 });
         }
 
         // 토너먼트 제목 로드 함수
         function loadTournamentTitle() {
-            console.log('토너먼트 제목 로드 시작');
-            
             // 서버에서 토너먼트 제목 가져오기
             fetch(`/api/tournament-text/${matchId}`)
                 .then(response => response.json())
                 .then(data => {
-                    console.log('토너먼트 제목 응답:', data);
-                    
                     const tournamentTitle = document.querySelector('.vs-tournament-title');
                     if (tournamentTitle) {
                         if (data.tournamentText && data.tournamentText.trim() !== '') {
                             tournamentTitle.textContent = data.tournamentText;
-                            console.log('토너먼트 제목 적용:', data.tournamentText);
-                        } else {
-                            tournamentTitle.textContent = 'FOOTBALL TOURNAMENT';
-                            console.log('기본 토너먼트 제목 적용');
-                        }
+                            } else {
+                            tournamentTitle.textContent = '';
+                            }
                     }
                 })
                 .catch(error => {
-                    console.error('토너먼트 제목 로드 실패:', error);
-                    
                     // 에러 시 기본 제목 적용
                     const tournamentTitle = document.querySelector('.vs-tournament-title');
                     if (tournamentTitle) {
-                        tournamentTitle.textContent = 'FOOTBALL TOURNAMENT';
-                        console.log('에러로 인한 기본 토너먼트 제목 적용');
-                    }
+                        tournamentTitle.textContent = '';
+                        }
                 });
         }
 
         // VS 오버레이 팀 로고 업데이트 함수
         function updateVSOverlayLogos() {
-            console.log('=== VS 오버레이 로고 업데이트 ===');
-            console.log('홈팀 로고 상태:', logoState.home);
-            console.log('어웨이팀 로고 상태:', logoState.away);
             
             // 홈팀 로고 업데이트
             const homeLogoContainer = document.querySelector('.vs-team-section.home .vs-team-logo');
@@ -3198,15 +3375,15 @@
             const homePlaceholder = document.getElementById('vs-home-placeholder');
             
             if (logoState.home && logoState.home.path) {
-                homeLogoImg.src = logoState.home.path;
+                // 잘못된 경로 호출 방지를 위해 주석 처리
+                // homeLogoImg.src = logoState.home.path;
                 homeLogoImg.style.display = 'block';
                 homePlaceholder.style.display = 'none';
                 // 로고 컨테이너에 배경색 적용
                 if (homeLogoContainer) {
                     homeLogoContainer.style.backgroundColor = logoState.home.bgColor || '#ffffff';
                 }
-                console.log('홈팀 로고 설정 완료:', logoState.home.path, logoState.home.bgColor);
-            } else {
+                } else {
                 homeLogoImg.style.display = 'none';
                 homePlaceholder.style.display = 'flex';
                 homePlaceholder.textContent = 'HOME';
@@ -3222,15 +3399,15 @@
             const awayPlaceholder = document.getElementById('vs-away-placeholder');
             
             if (logoState.away && logoState.away.path) {
-                awayLogoImg.src = logoState.away.path;
+                // 잘못된 경로 호출 방지를 위해 주석 처리
+                // awayLogoImg.src = logoState.away.path;
                 awayLogoImg.style.display = 'block';
                 awayPlaceholder.style.display = 'none';
                 // 로고 컨테이너에 배경색 적용
                 if (awayLogoContainer) {
                     awayLogoContainer.style.backgroundColor = logoState.away.bgColor || '#ffffff';
                 }
-                console.log('어웨이팀 로고 설정 완료:', logoState.away.path, logoState.away.bgColor);
-            } else {
+                } else {
                 awayLogoImg.style.display = 'none';
                 awayPlaceholder.style.display = 'flex';
                 awayPlaceholder.textContent = 'AWAY';
@@ -3243,102 +3420,69 @@
         
         // 토너먼트 텍스트 업데이트 이벤트 수신
         socket.on('tournament_text_updated', (data) => {
-            console.log('토너먼트 텍스트 업데이트 수신:', data);
-            
             const tournamentTitle = document.querySelector('.vs-tournament-title');
             if (tournamentTitle) {
-                tournamentTitle.textContent = data.tournamentText || 'FOOTBALL TOURNAMENT';
-                console.log('토너먼트 제목 업데이트:', data.tournamentText);
-            }
+                tournamentTitle.textContent = data.tournamentText || '';
+                }
             
             // 하단 스트립 대회명도 동시 업데이트
             const stripTournamentTitle = document.getElementById('strip-tournament-title');
             if (stripTournamentTitle) {
-                stripTournamentTitle.textContent = data.tournamentText || 'FOOTBALL TOURNAMENT';
-                console.log('하단 스트립 대회명 업데이트:', data.tournamentText);
-            }
+                stripTournamentTitle.textContent = data.tournamentText || '';
+                }
         });
-        
 
         // 팀 헤더 변경 이벤트 처리
         socket.on('teamHeaderChanged', function(data) {
-            console.log('=== 팀 헤더 변경 이벤트 수신 ===');
-            console.log('받은 데이터:', data);
-            console.log('현재 matchId:', matchId);
-            console.log('데이터 matchId:', data.matchId);
-            
             if (data.matchId === matchId) {
-                console.log('매치 ID 일치 - 팀 헤더 업데이트 시작');
-                
                 const homeTeamHeader = document.querySelector('.team-section.home .team-header');
                 const awayTeamHeader = document.querySelector('.team-section.away .team-header');
                 
-                console.log('홈팀 헤더 엘리먼트:', homeTeamHeader);
-                console.log('어웨이팀 헤더 엘리먼트:', awayTeamHeader);
-                
                 if (homeTeamHeader) {
                     homeTeamHeader.textContent = data.homeHeader;
-                    console.log('홈팀 헤더 업데이트:', data.homeHeader);
-                }
+                    }
                 if (awayTeamHeader) {
                     awayTeamHeader.textContent = data.awayHeader;
-                    console.log('어웨이팀 헤더 업데이트:', data.awayHeader);
-                }
+                    }
                 
                 // VS 그래픽의 팀명도 실시간 업데이트 (스코어보드와 동일한 방식)
-                console.log('VS 그래픽 팀명 업데이트 호출');
                 const vsHomeTeamName = document.querySelector('.vs-team-section.home .vs-team-name');
                 const vsAwayTeamName = document.querySelector('.vs-team-section.away .vs-team-name');
                 
                 if (vsHomeTeamName) {
                     vsHomeTeamName.textContent = data.homeHeader;
-                    console.log('VS 홈팀명 직접 업데이트:', data.homeHeader);
-                }
+                    }
                 if (vsAwayTeamName) {
                     vsAwayTeamName.textContent = data.awayHeader;
-                    console.log('VS 어웨이팀명 직접 업데이트:', data.awayHeader);
-                }
+                    }
             } else {
-                console.log('매치 ID 불일치 - 이벤트 무시');
-            }
+                }
         });
 
         // 팀명 변경 이벤트 처리
         socket.on('teamNameUpdated', function(data) {
-            console.log('=== 팀명 변경 이벤트 수신 ===');
-            console.log('받은 데이터:', data);
-            console.log('현재 matchId:', matchId);
-            console.log('데이터 matchId:', data.matchId);
-            
             if (data.matchId === matchId) {
-                console.log('매치 ID 일치 - 팀명 업데이트 시작');
-                
                 // 스코어보드 팀명 업데이트
                 const homeTeamHeader = document.querySelector('.team-section.home .team-header');
                 const awayTeamHeader = document.querySelector('.team-section.away .team-header');
                 
                 if (data.team === 'home' && homeTeamHeader) {
                     homeTeamHeader.textContent = data.teamName;
-                    console.log('스코어보드 홈팀명 업데이트:', data.teamName);
-                }
+                    }
                 if (data.team === 'away' && awayTeamHeader) {
                     awayTeamHeader.textContent = data.teamName;
-                    console.log('스코어보드 어웨이팀명 업데이트:', data.teamName);
-                }
+                    }
                 
                 // VS 그래픽 팀명도 실시간 업데이트
-                console.log('VS 그래픽 팀명 업데이트 호출');
                 const vsHomeTeamName = document.querySelector('.vs-team-section.home .vs-team-name');
                 const vsAwayTeamName = document.querySelector('.vs-team-section.away .vs-team-name');
                 
                 if (data.team === 'home' && vsHomeTeamName) {
                     vsHomeTeamName.textContent = data.teamName;
-                    console.log('VS 홈팀명 직접 업데이트:', data.teamName);
-                }
+                    }
                 if (data.team === 'away' && vsAwayTeamName) {
                     vsAwayTeamName.textContent = data.teamName;
-                    console.log('VS 어웨이팀명 직접 업데이트:', data.teamName);
-                }
+                    }
                 
                 // 하단 스트립 팀명도 실시간 업데이트
                 const stripHomeName = document.getElementById('strip-home-name');
@@ -3346,15 +3490,12 @@
                 
                 if (data.team === 'home' && stripHomeName) {
                     stripHomeName.textContent = data.teamName;
-                    console.log('하단 스트립 홈팀명 직접 업데이트:', data.teamName);
-                }
+                    }
                 if (data.team === 'away' && stripAwayName) {
                     stripAwayName.textContent = data.teamName;
-                    console.log('하단 스트립 어웨이팀명 직접 업데이트:', data.teamName);
-                }
+                    }
             } else {
-                console.log('매치 ID 불일치 - 이벤트 무시');
-            }
+                }
         });
 
         // 팀명 길이에 따른 폰트 사이즈 조정 함수
@@ -3365,12 +3506,9 @@
             // 홈팀명 길이 확인 및 폰트 사이즈 조정
             if (stripHomeName) {
                 const homeNameLength = stripHomeName.textContent.length;
-                console.log('홈팀명 길이:', homeNameLength);
-                
                 if (homeNameLength >= 8) {
                     stripHomeName.style.fontSize = '32px'; // 40px에서 32px로 축소
-                    console.log('홈팀명 8글자 이상 - 폰트 사이즈 축소');
-                } else {
+                    } else {
                     stripHomeName.style.fontSize = '40px'; // 기본값
                 }
             }
@@ -3378,12 +3516,9 @@
             // 어웨이팀명 길이 확인 및 폰트 사이즈 조정
             if (stripAwayName) {
                 const awayNameLength = stripAwayName.textContent.length;
-                console.log('어웨이팀명 길이:', awayNameLength);
-                
                 if (awayNameLength >= 8) {
                     stripAwayName.style.fontSize = '32px'; // 40px에서 32px로 축소
-                    console.log('어웨이팀명 8글자 이상 - 폰트 사이즈 축소');
-                } else {
+                    } else {
                     stripAwayName.style.fontSize = '40px'; // 기본값
                 }
             }
@@ -3391,7 +3526,6 @@
 
         // 하단 스트립 데이터 업데이트 함수
         function updateBottomStripData() {
-            console.log('=== 하단 스트립 데이터 업데이트 ===');
             
             // 현재 스코어보드 데이터 읽기
             const homeTeamHeader = document.querySelector('.team-section.home .team-header');
@@ -3416,44 +3550,28 @@
             // 팀명 업데이트
             if (homeTeamHeader && stripHomeName) {
                 stripHomeName.textContent = homeTeamHeader.textContent;
-                console.log('하단 스트립 홈팀명 업데이트:', homeTeamHeader.textContent);
-            }
+                }
             if (awayTeamHeader && stripAwayName) {
                 stripAwayName.textContent = awayTeamHeader.textContent;
-                console.log('하단 스트립 어웨이팀명 업데이트:', awayTeamHeader.textContent);
-            }
+                }
             
             // 점수 업데이트 - 스코어보드에서 현재 점수 가져오기
-            console.log('=== 하단 스트립 점수 실시간 업데이트 ===');
-            console.log('스코어보드 점수:', { 
-                homeScore: homeScore ? homeScore.value : '없음', 
-                awayScore: awayScore ? awayScore.value : '없음' 
-            });
-            console.log('하단 스트립 점수 엘리먼트:', { stripHomeScore, stripAwayScore });
-            
             if (homeScore && stripHomeScore) {
                 const newHomeScore = homeScore.value || '0';
                 stripHomeScore.textContent = newHomeScore;
-                console.log('✅ 하단 스트립 홈팀 점수 실시간 업데이트:', newHomeScore);
-                console.log('업데이트 후 홈팀 점수:', stripHomeScore.textContent);
-            } else {
-                console.log('❌ 홈팀 점수 업데이트 실패 - 엘리먼트 없음');
-            }
+                } else {
+                }
             
             if (awayScore && stripAwayScore) {
                 const newAwayScore = awayScore.value || '0';
                 stripAwayScore.textContent = newAwayScore;
-                console.log('✅ 하단 스트립 어웨이팀 점수 실시간 업데이트:', newAwayScore);
-                console.log('업데이트 후 어웨이팀 점수:', stripAwayScore.textContent);
-            } else {
-                console.log('❌ 어웨이팀 점수 업데이트 실패 - 엘리먼트 없음');
-            }
+                } else {
+                }
             
             // 경기 상태 업데이트
             if (matchState && stripMatchState) {
                 stripMatchState.textContent = matchState.value || '전반';
-                console.log('하단 스트립 경기 상태 업데이트:', matchState.value);
-            }
+                }
             
             // 팀 로고 업데이트 (약간의 지연을 두고 실행)
             setTimeout(() => {
@@ -3463,8 +3581,6 @@
         
         // 하단 스트립 점수를 스코어보드에서 실시간으로 가져오는 함수
         function updateBottomStripScoresFromScoreboard() {
-            console.log('=== 하단 스트립 점수 스코어보드에서 실시간 업데이트 ===');
-            
             // 스코어보드에서 현재 점수 가져오기
             const homeScoreInput = document.getElementById('home-score');
             const awayScoreInput = document.getElementById('away-score');
@@ -3473,252 +3589,74 @@
             const stripHomeScore = document.getElementById('strip-home-score');
             const stripAwayScore = document.getElementById('strip-away-score');
             
-            console.log('스코어보드 점수:', {
-                homeScore: homeScoreInput ? homeScoreInput.value : '없음',
-                awayScore: awayScoreInput ? awayScoreInput.value : '없음'
-            });
-            
             // 홈팀 점수 업데이트
             if (homeScoreInput && stripHomeScore) {
                 const currentHomeScore = homeScoreInput.value || '0';
                 stripHomeScore.textContent = currentHomeScore;
-                console.log('✅ 하단 스트립 홈팀 점수 스코어보드에서 업데이트:', currentHomeScore);
-            } else {
-                console.log('❌ 홈팀 점수 업데이트 실패 - 엘리먼트 없음');
-            }
+                } else {
+                }
             
             // 어웨이팀 점수 업데이트
             if (awayScoreInput && stripAwayScore) {
                 const currentAwayScore = awayScoreInput.value || '0';
                 stripAwayScore.textContent = currentAwayScore;
-                console.log('✅ 하단 스트립 어웨이팀 점수 스코어보드에서 업데이트:', currentAwayScore);
-            } else {
-                console.log('❌ 어웨이팀 점수 업데이트 실패 - 엘리먼트 없음');
-            }
+                } else {
+                }
         }
 
-        // 하단 스트립 팀 로고 업데이트 함수
+        // 하단 스트립 팀 로고 업데이트 함수 (단순화)
         function updateBottomStripLogos() {
-            console.log('=== 하단 스트립 로고 업데이트 ===');
-            console.log('홈팀 로고 상태:', logoState.home);
-            console.log('어웨이팀 로고 상태:', logoState.away);
+            console.log('=== 하단 스트립 팀 로고 업데이트 시작 ===');
+            console.log('logoState.home:', logoState.home);
+            console.log('logoState.away:', logoState.away);
             
-            // 홈팀 로고 업데이트
-            const stripHomeLogo = document.getElementById('strip-home-logo');
-            const stripHomePlaceholder = document.getElementById('strip-home-placeholder');
-            const stripHomeLogoContainer = document.querySelector('.strip-team-section.home .strip-team-logo');
-            
-            if (logoState.home && logoState.home.path) {
-                stripHomeLogo.src = logoState.home.path;
-                stripHomeLogo.style.display = 'block';
-                stripHomePlaceholder.style.display = 'none';
-                // 로고 컨테이너에 배경색 적용
-                if (stripHomeLogoContainer) {
-                    stripHomeLogoContainer.style.backgroundColor = logoState.home.bgColor || '#ffffff';
-                }
-                console.log('하단 스트립 홈팀 로고 설정 완료:', logoState.home.path, logoState.home.bgColor);
-            } else {
-                stripHomeLogo.style.display = 'none';
-                stripHomePlaceholder.style.display = 'flex';
-                stripHomePlaceholder.textContent = 'HOME';
-                // 기본 배경색
-                if (stripHomeLogoContainer) {
-                    stripHomeLogoContainer.style.backgroundColor = '#ffffff';
-                }
-                console.log('하단 스트립 홈팀 로고 플레이스홀더 표시');
+            // logoState가 없으면 DB에서 로고 정보 로드
+            if (!logoState.home || !logoState.away) {
+                console.log('logoState가 없음. DB에서 로고 정보 로드 시도');
+                loadTeamLogosForGraphic('bottom-strip');
+                return; // 로드 완료 후 다시 호출될 것임
             }
             
-            // 어웨이팀 로고 업데이트
-            const stripAwayLogo = document.getElementById('strip-away-logo');
-            const stripAwayPlaceholder = document.getElementById('strip-away-placeholder');
-            const stripAwayLogoContainer = document.querySelector('.strip-team-section.away .strip-team-logo');
-            
-            if (logoState.away && logoState.away.path) {
-                stripAwayLogo.src = logoState.away.path;
-                stripAwayLogo.style.display = 'block';
-                stripAwayPlaceholder.style.display = 'none';
-                // 로고 컨테이너에 배경색 적용
-                if (stripAwayLogoContainer) {
-                    stripAwayLogoContainer.style.backgroundColor = logoState.away.bgColor || '#ffffff';
-                }
-                console.log('하단 스트립 어웨이팀 로고 설정 완료:', logoState.away.path, logoState.away.bgColor);
-            } else {
-                stripAwayLogo.style.display = 'none';
-                stripAwayPlaceholder.style.display = 'flex';
-                stripAwayPlaceholder.textContent = 'AWAY';
-                // 기본 배경색
-                if (stripAwayLogoContainer) {
-                    stripAwayLogoContainer.style.backgroundColor = '#ffffff';
-                }
-                console.log('하단 스트립 어웨이팀 로고 플레이스홀더 표시');
-            }
+            console.log('logoState가 있음. updateTeamLogosForAllGraphics에서 처리됨');
         }
 
         // 경기상황 변경 이벤트 수신
         socket.on('matchStateChanged', function(data) {
-            console.log('=== 경기상황 변경 이벤트 수신 ===');
-            console.log('받은 데이터:', data);
-            console.log('현재 matchId:', matchId);
-            console.log('데이터 matchId:', data.matchId);
-            
             if (data.matchId === matchId) {
-                console.log('매치 ID 일치 - 경기상황 업데이트 시작');
-                
                 // 스코어보드 경기상황 업데이트
                 const matchStateRadios = document.querySelectorAll('input[name="matchState"]');
                 matchStateRadios.forEach(radio => {
                     if (radio.value === data.matchState) {
                         radio.checked = true;
-                        console.log('스코어보드 경기상황 업데이트:', data.matchState);
-                    }
+                        }
                 });
                 
                 // VS 그래픽 경기상황 업데이트
                 const vsMatchState = document.querySelector('.vs-match-state');
                 if (vsMatchState) {
                     vsMatchState.textContent = data.matchState;
-                    console.log('VS 그래픽 경기상황 업데이트:', data.matchState);
-                }
+                    }
                 
                 // 하단 스트립 경기상황 업데이트
                 const stripMatchState = document.getElementById('strip-match-state');
                 if (stripMatchState) {
                     stripMatchState.textContent = data.matchState;
-                    console.log('하단 스트립 경기상황 업데이트:', data.matchState);
-                }
-            } else {
-                console.log('매치 ID 불일치 - 이벤트 무시');
-            }
-        });
-
-        // 점수 변경 이벤트 수신
-        socket.on('scoreChanged', function(data) {
-            console.log('🔥 === 점수 변경 이벤트 수신 ===');
-            console.log('🔥 받은 데이터:', data);
-            console.log('🔥 현재 matchId:', matchId);
-            console.log('🔥 데이터 matchId:', data.matchId);
-            console.log('🔥 이벤트 타임스탬프:', new Date().toLocaleTimeString());
-            
-            if (data.matchId === matchId) {
-                console.log('매치 ID 일치 - 점수 업데이트 시작');
-                
-                // 스코어보드 점수 업데이트
-                const homeScoreInput = document.getElementById('home-score');
-                const awayScoreInput = document.getElementById('away-score');
-                
-                if (homeScoreInput) {
-                    homeScoreInput.value = data.homeScore;
-                    console.log('스코어보드 홈팀 점수 업데이트:', data.homeScore);
-                }
-                if (awayScoreInput) {
-                    awayScoreInput.value = data.awayScore;
-                    console.log('스코어보드 어웨이팀 점수 업데이트:', data.awayScore);
-                }
-                
-                // VS 그래픽 점수 업데이트
-                const vsHomeScore = document.querySelector('.vs-home-score');
-                const vsAwayScore = document.querySelector('.vs-away-score');
-                
-                if (vsHomeScore) {
-                    vsHomeScore.textContent = data.homeScore;
-                    console.log('VS 그래픽 홈팀 점수 업데이트:', data.homeScore);
-                }
-                if (vsAwayScore) {
-                    vsAwayScore.textContent = data.awayScore;
-                    console.log('VS 그래픽 어웨이팀 점수 업데이트:', data.awayScore);
-                }
-                
-                // 하단 스트립 점수 업데이트 - 강화된 실시간 업데이트
-                console.log('🔥 === 하단 스트립 점수 실시간 업데이트 강화 ===');
-                
-                // 하단 스트립이 표시 중인지 먼저 확인
-                const bottomStrip = document.getElementById('bottomStrip');
-                const isBottomStripVisible = bottomStrip && bottomStrip.style.display !== 'none';
-                
-                console.log('🔥 하단 스트립 상태:', {
-                    bottomStrip: bottomStrip ? '존재' : '없음',
-                    display: bottomStrip ? bottomStrip.style.display : '없음',
-                    isVisible: isBottomStripVisible
-                });
-                
-                if (isBottomStripVisible) {
-                    console.log('🔥 ✅ 하단 스트립이 표시 중 - 점수 업데이트 진행');
-                    
-                    const stripHomeScore = document.getElementById('strip-home-score');
-                    const stripAwayScore = document.getElementById('strip-away-score');
-                    
-                    console.log('🔥 하단 스트립 점수 엘리먼트 찾기:', { 
-                        stripHomeScore: stripHomeScore ? '존재' : '없음', 
-                        stripAwayScore: stripAwayScore ? '존재' : '없음' 
-                    });
-                    console.log('🔥 업데이트할 점수:', { homeScore: data.homeScore, awayScore: data.awayScore });
-                    
-                    // 홈팀 점수 강제 업데이트
-                    if (stripHomeScore) {
-                        const oldHomeScore = stripHomeScore.textContent;
-                        stripHomeScore.textContent = data.homeScore;
-                        stripHomeScore.innerHTML = data.homeScore; // innerHTML로도 강제 업데이트
-                        
-                        // DOM 강제 리플로우
-                        stripHomeScore.style.display = 'none';
-                        stripHomeScore.offsetHeight; // 강제 리플로우
-                        stripHomeScore.style.display = '';
-                        
-                        console.log('🔥 ✅ 하단 스트립 홈팀 점수 실시간 업데이트 성공:', { 
-                            이전: oldHomeScore, 
-                            현재: data.homeScore,
-                            업데이트후: stripHomeScore.textContent 
-                        });
-                    } else {
-                        console.log('🔥 ❌ 하단 스트립 홈팀 점수 엘리먼트를 찾을 수 없음');
                     }
-                    
-                    // 어웨이팀 점수 강제 업데이트
-                    if (stripAwayScore) {
-                        const oldAwayScore = stripAwayScore.textContent;
-                        stripAwayScore.textContent = data.awayScore;
-                        stripAwayScore.innerHTML = data.awayScore; // innerHTML로도 강제 업데이트
-                        
-                        // DOM 강제 리플로우
-                        stripAwayScore.style.display = 'none';
-                        stripAwayScore.offsetHeight; // 강제 리플로우
-                        stripAwayScore.style.display = '';
-                        
-                        console.log('🔥 ✅ 하단 스트립 어웨이팀 점수 실시간 업데이트 성공:', { 
-                            이전: oldAwayScore, 
-                            현재: data.awayScore,
-                            업데이트후: stripAwayScore.textContent 
-                        });
-                    } else {
-                        console.log('🔥 ❌ 하단 스트립 어웨이팀 점수 엘리먼트를 찾을 수 없음');
-                    }
-                    
-                    console.log('🔥 === 하단 스트립 점수 실시간 업데이트 완료 ===');
-                } else {
-                    console.log('🔥 ⚠️ 하단 스트립이 숨김 상태 - 점수 업데이트 건너뜀');
-                }
             } else {
-                console.log('매치 ID 불일치 - 이벤트 무시');
-            }
+                }
         });
 
         // 타이머 동기화 전용 함수
         function syncTimerWithMatch(matchData) {
-            console.log('=== 타이머 동기화 시작 ===');
-            console.log('동기화할 타이머 데이터:', matchData);
-            
             // 1. 기존 타이머 정리
             if (timerState.localTimer) {
                 clearInterval(timerState.localTimer);
                 timerState.localTimer = null;
-                console.log('기존 로컬 타이머 정리 완료');
-            }
+                }
             
             // 2. 새 경기의 타이머 정보 추출
             const currentSeconds = Math.max(0, matchData.currentSeconds || matchData.timer || 0);
             const isRunning = matchData.isRunning || false;
-            
-            console.log('추출된 타이머 정보:', { currentSeconds, isRunning });
             
             // 3. UI 업데이트
             timerState.currentSeconds = currentSeconds;
@@ -3727,24 +3665,16 @@
             // 4. 로컬 타이머 변수 동기화
             timerState.lastServerTime = currentSeconds;
             timerState.lastUpdateTime = Date.now();
-            console.log('로컬 타이머 변수 동기화:', { lastServerTime: timerState.lastServerTime, lastUpdateTime: timerState.lastUpdateTime });
-            
             // 5. 타이머 상태에 따라 로컬 타이머 제어
             if (isRunning) {
-                console.log('타이머가 실행 중이므로 로컬 타이머 시작');
                 startLocalTimer();
             } else {
-                console.log('타이머가 정지 상태이므로 로컬 타이머 중지');
-            }
+                }
             
-            console.log('타이머 동기화 완료:', { currentSeconds, isRunning });
-        }
+            }
         
         // 서버에서 타이머 상태 요청 함수
         function requestTimerStateFromServer(matchId) {
-            console.log('=== 서버에 타이머 상태 요청 ===');
-            console.log('요청할 matchId:', matchId);
-            
             // 서버에 타이머 상태 요청
             socket.emit('request_timer_state', { matchId: matchId });
         }
@@ -3752,18 +3682,9 @@
         // 로컬 타이머 시작 (호환성 지원)
         function startLocalTimer() {
             if (timerState.localTimer) {
-                console.log('기존 로컬 타이머 중지 후 재시작');
                 clearInterval(timerState.localTimer);
                 timerState.localTimer = null;
             }
-            
-            console.log('로컬 타이머 시작:', { 
-                lastServerTime: timerState.lastServerTime, 
-                lastUpdateTime: timerState.lastUpdateTime,
-                startTime: timerState.startTime,
-                pausedTime: timerState.pausedTime,
-                isRunning: timerState.isRunning
-            });
             
             timerState.localTimer = setInterval(() => {
                 if (timerState.isRunning) {
@@ -3788,18 +3709,15 @@
                     
                     timerState.currentSeconds = newSeconds;
                     updateTimerDisplay();
-                    
 
                 }
             }, 1000);
             
-            console.log('로컬 타이머 시작 완료');
-        }
+            }
         
                 // 로컬 타이머 중지
         function stopLocalTimer() {
             if (timerState.localTimer) {
-                console.log('로컬 타이머 중지');
                 clearInterval(timerState.localTimer);
                 timerState.localTimer = null;
             }
@@ -3817,19 +3735,14 @@
                 timerElement.textContent = formattedTime;
                 console.log('로컬 타이머 업데이트:', formattedTime, '(현재 경기:', matchId, ')');
             } else {
-                console.error('타이머 요소를 찾을 수 없습니다.');
-            }
+                }
         }
         
         // 강제 타이머 업데이트 함수 (디버깅용)
         function forceUpdateTimer(seconds) {
-            console.log('=== 강제 타이머 업데이트 ===');
-            console.log('업데이트할 시간:', seconds);
-            
             timerState.currentSeconds = seconds;
             updateTimerDisplay();
-            console.log('강제 타이머 업데이트 완료:', seconds);
-        }
+            }
 
         // 팀 색상 업데이트 함수
         function updateTeamColors(homeColor, awayColor) {
@@ -3858,12 +3771,10 @@
             
             if (homeLogoContainer && logoState.home && logoState.home.bgColor) {
                 homeLogoContainer.style.backgroundColor = logoState.home.bgColor;
-                console.log('홈팀 로고 배경색 보호:', logoState.home.bgColor);
-            }
+                }
             if (awayLogoContainer && logoState.away && logoState.away.bgColor) {
                 awayLogoContainer.style.backgroundColor = logoState.away.bgColor;
-                console.log('어웨이팀 로고 배경색 보호:', logoState.away.bgColor);
-            }
+                }
             
             // VS 오버레이 로고 배경색도 보호
             const vsHomeLogoContainer = document.querySelector('.vs-team-section.home .vs-team-logo');
@@ -3871,147 +3782,359 @@
             
             if (vsHomeLogoContainer && logoState.home && logoState.home.bgColor) {
                 vsHomeLogoContainer.style.backgroundColor = logoState.home.bgColor;
-                console.log('VS 홈팀 로고 배경색 보호:', logoState.home.bgColor);
-            }
+                }
             if (vsAwayLogoContainer && logoState.away && logoState.away.bgColor) {
                 vsAwayLogoContainer.style.backgroundColor = logoState.away.bgColor;
-                console.log('VS 어웨이팀 로고 배경색 보호:', logoState.away.bgColor);
-            }
+                }
             
-            // 라인업 헤더 색상도 업데이트
-            const homeLineupHeader = document.querySelector('.lineup-header.home');
-            const awayLineupHeader = document.querySelector('.lineup-header.away');
-            const homeLineupBorder = document.querySelector('.lineup-container.home');
-            const awayLineupBorder = document.querySelector('.lineup-container.away');
-            const homePlayerNumbers = document.querySelectorAll('.home .player-number');
-            const awayPlayerNumbers = document.querySelectorAll('.away .player-number');
-            
-            if (homeLineupHeader) {
-                homeLineupHeader.style.backgroundColor = homeColor;
-            }
-            if (awayLineupHeader) {
-                awayLineupHeader.style.backgroundColor = awayColor;
-            }
-            if (homeLineupBorder) {
-                homeLineupBorder.style.borderLeftColor = homeColor;
-            }
-            if (awayLineupBorder) {
-                awayLineupBorder.style.borderLeftColor = awayColor;
-            }
-            
-            homePlayerNumbers.forEach(num => {
-                num.style.backgroundColor = homeColor;
-            });
-            
-            awayPlayerNumbers.forEach(num => {
-                num.style.backgroundColor = awayColor;
-            });
         }
-        
-        // 라인업 데이터 로드 함수
-        async function loadLineupData() {
-            try {
-                const response = await fetch(`/api/load-lineup/${matchId}`);
-                const data = await response.json();
+
+        // 하단 스트립 초기 스코어 설정 (DOMContentLoaded 이벤트는 위에서 처리)
+        function initializeBottomStripScore() {
+            const initialHomeScore = document.querySelector('#home-score')?.textContent || '0';
+            const initialAwayScore = document.querySelector('#away-score')?.textContent || '0';
+            updateBottomStripScore(initialHomeScore, initialAwayScore);
+        }
+
+        // 하단 스트립 스코어 업데이트 함수 (상단 스코어보드와 동일한 방식)
+        function updateBottomStripScore(homeScore, awayScore) {
+            // 하단 스트립 스코어 요소 찾기
+            const homeScoreElement = document.querySelector('#strip-home-score');
+            const awayScoreElement = document.querySelector('#strip-away-score');
+            
+            if (homeScoreElement && awayScoreElement) {
+                // 스코어 업데이트
+                homeScoreElement.textContent = homeScore || '0';
+                awayScoreElement.textContent = awayScore || '0';
                 
-                if (data.success && data.lineup) {
-                    // 홈팀 라인업 표시
-                    const homeLineupList = document.getElementById('home-lineup-list');
-                    homeLineupList.innerHTML = ''; // 기존 목록 초기화
-                    
-                    if (data.lineup.home) {
-                        // 골키퍼 표시
-                        if (data.lineup.home.goalkeeper) {
-                            const gk = data.lineup.home.goalkeeper;
-                            const playerElement = createPlayerElement(gk, 'home', true);
-                            homeLineupList.appendChild(playerElement);
-                        }
-                        
-                        // 필드 선수 표시
-                        if (data.lineup.home.players && data.lineup.home.players.length > 0) {
-                            data.lineup.home.players.forEach(player => {
-                                const playerElement = createPlayerElement(player, 'home', false);
-                                homeLineupList.appendChild(playerElement);
-                            });
-                        }
-                    }
-                    
-                    // 어웨이팀 라인업 표시
-                    const awayLineupList = document.getElementById('away-lineup-list');
-                    awayLineupList.innerHTML = ''; // 기존 목록 초기화
-                    
-                    if (data.lineup.away) {
-                        // 골키퍼 표시
-                        if (data.lineup.away.goalkeeper) {
-                            const gk = data.lineup.away.goalkeeper;
-                            const playerElement = createPlayerElement(gk, 'away', true);
-                            awayLineupList.appendChild(playerElement);
-                        }
-                        
-                        // 필드 선수 표시
-                        if (data.lineup.away.players && data.lineup.away.players.length > 0) {
-                            data.lineup.away.players.forEach(player => {
-                                const playerElement = createPlayerElement(player, 'away', false);
-                                awayLineupList.appendChild(playerElement);
-                            });
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('라인업 데이터 로드 중 오류 발생:', error);
-            }
-        }
-        
-        // 선수 요소 생성 함수
-        function createPlayerElement(player, team, isGoalkeeper) {
-            const playerElement = document.createElement('div');
-            playerElement.className = `lineup-player ${team}`;
-            
-            const numberElement = document.createElement('div');
-            numberElement.className = 'player-number';
-            numberElement.textContent = player.number;
-            numberElement.style.fontSize = '14px'; // 인라인 스타일로 폰트 크기 강제 지정
-            
-            const nameElement = document.createElement('span');
-            nameElement.className = 'player-name';
-            nameElement.textContent = player.name;
-            
-            const positionElement = document.createElement('span');
-            positionElement.className = 'player-position';
-            positionElement.textContent = player.position;
-            
-            // 골키퍼인 경우 라벨 추가
-            let gkLabel = null;
-            
-            // 모든 요소를 한 줄로 배치
-            playerElement.appendChild(numberElement);
-            playerElement.appendChild(nameElement);
-            playerElement.appendChild(positionElement);
-            if (gkLabel) playerElement.appendChild(gkLabel);
-            
-            return playerElement;
-        }
-        
-        // 라인업 표시/숨김 토글 함수
-        function toggleLineupVisibility(team) {
-            const lineupContainer = document.querySelector(`.lineup-container.${team}`);
-            if (lineupContainer) {
-                if (lineupContainer.classList.contains('visible')) {
-                    lineupContainer.classList.remove('visible');
+                // 강제로 innerHTML도 업데이트
+                homeScoreElement.innerHTML = homeScore || '0';
+                awayScoreElement.innerHTML = awayScore || '0';
+                
+                // DOM 강제 리플로우
+                homeScoreElement.style.display = 'none';
+                homeScoreElement.offsetHeight;
+                homeScoreElement.style.display = '';
+                
+                awayScoreElement.style.display = 'none';
+                awayScoreElement.offsetHeight;
+                awayScoreElement.style.display = '';
+                
                 } else {
-                    lineupContainer.classList.add('visible');
+                // 대안 방법으로 요소 찾기
+                const allStripScores = document.querySelectorAll('.strip-team-score');
+                allStripScores.forEach((element, index) => {
+                    });
+            }
+        }
+
+        // 하단 스트립 데이터 업데이트 함수
+        function updateBottomStripData() {
+            // 스코어 정보 업데이트
+            const homeScoreElement = document.querySelector('#strip-home-score');
+            const awayScoreElement = document.querySelector('#strip-away-score');
+            
+            if (homeScoreElement && awayScoreElement) {
+                // 현재 스코어 정보 가져오기 (상단 스코어보드에서)
+                const topHomeScore = document.querySelector('#home-score')?.textContent || '0';
+                const topAwayScore = document.querySelector('#away-score')?.textContent || '0';
+                
+                // 업데이트 전 현재 값 확인
+                homeScoreElement.textContent = topHomeScore;
+                awayScoreElement.textContent = topAwayScore;
+                
+                // 강제로 innerHTML도 업데이트
+                homeScoreElement.innerHTML = topHomeScore;
+                awayScoreElement.innerHTML = topAwayScore;
+                
+                // 업데이트 후 확인
+                } else {
+                }
+            
+            // 득점 정보 업데이트는 toggleGraphic 이벤트에서 처리됨
+            }
+
+        // 그래픽 요소 토글 함수
+        async function toggleGraphicElement(graphicType, visible, data = null) {
+            let element = null;
+            
+            // 그래픽 타입에 따라 해당 요소 찾기
+            switch (graphicType) {
+                case 'top-scoreboard':
+                    // 상단 스코어보드 그래픽 (기본적으로 표시됨)
+                    element = document.getElementById('topScoreboard');
+                    if (!element) {
+                        element = document.querySelector('.scoreboard-row');
+                    }
+                    if (!element) {
+                        element = document.querySelector('.scoreboard');
+                    }
+                    break;
+                case 'vs':
+                    // VS 그래픽 (기본적으로 숨김)
+                    element = document.getElementById('vsOverlay');
+                    if (!element) {
+                        element = document.querySelector('.vs-overlay');
+                    }
+                    break;
+                case 'bottom-strip':
+                    // 하단 스트립 그래픽 (기본적으로 숨김)
+                    element = document.getElementById('bottomStrip');
+                    if (!element) {
+                        element = document.querySelector('.bottom-strip');
+                    }
+                    break;
+                default:
+                    return;
+            }
+            
+            if (element) {
+                if (visible) {
+                    // 표시
+                    if (graphicType === 'bottom-strip') {
+                        // 하단 스트립은 flex로 표시
+                        element.style.display = 'flex';
+                        element.style.visibility = 'visible';
+                        element.style.opacity = '1';
+                        
+                        // 하단 스트립의 경우 스코어와 득점 정보 업데이트
+                        // 하단 스트립 스코어 업데이트 함수 호출
+                        if (data && data.score) {
+                            updateBottomStripScore(data.score.home, data.score.away);
+                        }
+                    } else {
+                        element.style.display = 'block';
+                        element.style.visibility = 'visible';
+                        element.style.opacity = '1';
+                    }
+                    // 그래픽이 표시될 때 팀로고와 배경색 최신 정보 로드
+                    await loadTeamLogosForGraphic(graphicType);
+                    
+                    // 상단 스코어보드의 경우 팀로고도 함께 표시
+                    if (graphicType === 'top-scoreboard') {
+                        toggleScoreboardTeamLogos(true);
+                        // 사이즈 고정 적용
+                        setTimeout(() => fixScoreboardSize(), 100);
+                    }
+                } else {
+                    // 숨김
+                    element.style.display = 'none';
+                    element.style.visibility = 'hidden';
+                    element.style.opacity = '0';
+                    // 상단 스코어보드의 경우 팀로고도 함께 숨김
+                    if (graphicType === 'top-scoreboard') {
+                        toggleScoreboardTeamLogos(false);
+                    }
+                }
+                
+                } else {
+                console.log('- #topScoreboard:', document.getElementById('topScoreboard'));
+                console.log('- .scoreboard-row:', document.querySelector('.scoreboard-row'));
+                console.log('- .scoreboard:', document.querySelector('.scoreboard'));
+                console.log('- #vsOverlay:', document.getElementById('vsOverlay'));
+                console.log('- .vs-overlay:', document.querySelector('.vs-overlay'));
+                console.log('- #bottomStrip:', document.getElementById('bottomStrip'));
+                console.log('- .bottom-strip:', document.querySelector('.bottom-strip'));
+                
+                // 하단 스트립의 경우 강제로 표시 시도
+                if (graphicType === 'bottom-strip' && visible) {
+                    const bottomStrip = document.querySelector('.bottom-strip');
+                    const bottomStripById = document.getElementById('bottomStrip');
+                    
+                    if (bottomStrip || bottomStripById) {
+                        const element = bottomStrip || bottomStripById;
+                        element.style.display = 'flex';
+                        element.style.visibility = 'visible';
+                        element.style.opacity = '1';
+                        element.style.position = 'fixed';
+                        element.style.bottom = '10px';
+                        element.style.left = '50%';
+                        element.style.transform = 'translateX(-50%)';
+                        element.style.zIndex = '1000';
+                        
+                        updateBottomStripData();
+                    } else {
+                        }
                 }
             }
         }
         
-        // 페이지 로드 시 초기화
-        document.addEventListener('DOMContentLoaded', function() {
-            // 오버레이 이미지 로드
-            loadOverlayImage();
+        // 그래픽별 팀로고 로드 함수
+        async function loadTeamLogosForGraphic(graphicType) {
+            try {
+                // DB에서 최신 팀로고 정보 로드
+                const response = await fetch(`/api/matches/${matchId}/team-logos`, {
+                    method: 'GET',
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.teamLogos) {
+                        // 모든 그래픽에서 동일한 방식으로 팀로고 업데이트
+                        updateTeamLogosForAllGraphics(data.teamLogos, graphicType);
+                        
+                        // 하단 스트립의 경우 updateTeamLogosForAllGraphics에서 이미 처리됨
+                        if (graphicType === 'bottom-strip') {
+                            console.log('하단 스트립 로고 업데이트 완료');
+                        }
+                        }
+                } else {
+                    }
+            } catch (error) {
+                }
+        }
+        
+        // 로고 경로 수정 함수 (VS 그래픽과 하단 스트립용)
+        function fixLogoPath(logoPath, graphicType) {
+            if (!logoPath) return logoPath;
             
-            // 기타 초기화 작업들...
-            console.log('축구 오버레이 페이지 로드 완료');
-        });
+            // 올바른 경로로 수정 (앞에 / 추가하고 경로 정리)
+            let correctPath = logoPath.startsWith('/') ? logoPath : `/${logoPath}`;
+            
+            // 경로에서 불필요한 부분 제거 (soccer/1002SC9485/ 제거)
+            if (correctPath.includes('/soccer/') && correctPath.includes('/TEAMLOGO/')) {
+                const teamLogoIndex = correctPath.indexOf('/TEAMLOGO/');
+                correctPath = correctPath.substring(teamLogoIndex);
+            }
+            
+            return correctPath;
+        }
+        
+        // 모든 그래픽에서 동일한 방식으로 팀로고 업데이트
+        function updateTeamLogosForAllGraphics(teamLogos, graphicType) {
+            teamLogos.forEach(team => {
+                const teamType = team.team_type; // 'home' 또는 'away'
+                let logoPath = team.logo_path;
+                const bgColor = team.logo_bg_color;
+                
+                // VS 그래픽과 하단 스트립의 경우 로고 경로 수정
+                logoPath = fixLogoPath(logoPath, graphicType);
+                
+                let logoContainer = null;
+                let imgElement = null;
+                
+                // 그래픽 타입에 따라 다른 선택자 사용
+                if (graphicType === 'top-scoreboard') {
+                    // 상단 스코어보드: 기존 방식
+                    logoContainer = document.querySelector(`.team-section.${teamType} .team-logo`);
+                    if (logoContainer) {
+                        imgElement = logoContainer.querySelector('img');
+                    }
+                } else if (graphicType === 'vs') {
+                    // VS 그래픽: 직접 img 태그 찾기
+                    imgElement = document.querySelector(`#vs-${teamType}-logo`);
+                } else if (graphicType === 'bottom-strip') {
+                    // 하단 스트립: 직접 img 태그 찾기
+                    imgElement = document.querySelector(`#strip-${teamType}-logo`);
+                }
+                
+                if (imgElement) {
+                    console.log(`하단 스트립 ${teamType}팀 로고 업데이트:`, { logoPath, bgColor });
+                    
+                    // 로고 이미지 업데이트
+                    if (logoPath) {
+                        imgElement.src = logoPath;
+                        imgElement.style.display = 'block';
+                        console.log(`하단 스트립 ${teamType}팀 로고 이미지 설정:`, logoPath);
+                        
+                        // 플레이스홀더 숨기기 (하단 스트립의 경우)
+                        if (graphicType === 'bottom-strip') {
+                            const placeholder = document.querySelector(`#strip-${teamType}-placeholder`);
+                            if (placeholder) {
+                                placeholder.style.display = 'none';
+                                console.log(`하단 스트립 ${teamType}팀 플레이스홀더 숨김`);
+                            }
+                            
+                            // 하단 스트립의 경우 로고 컨테이너 배경색 설정
+                            const logoContainer = document.querySelector(`.strip-team-section.${teamType} .strip-team-logo`);
+                            if (logoContainer) {
+                                logoContainer.style.backgroundColor = bgColor || '#ffffff';
+                                console.log(`하단 스트립 ${teamType}팀 로고 컨테이너 배경색 설정:`, bgColor);
+                            }
+                        }
+                } else {
+                        console.log(`하단 스트립 ${teamType}팀 로고 없음. 플레이스홀더 표시`);
+                        // 로고가 없으면 플레이스홀더 표시 (하단 스트립의 경우)
+                        imgElement.style.display = 'none';
+                        if (graphicType === 'bottom-strip') {
+                            const placeholder = document.querySelector(`#strip-${teamType}-placeholder`);
+                            if (placeholder) {
+                                placeholder.style.display = 'flex';
+                                console.log(`하단 스트립 ${teamType}팀 플레이스홀더 표시`);
+                            }
+                            
+                            // 하단 스트립의 경우 로고 컨테이너 기본 배경색 설정
+                            const logoContainer = document.querySelector(`.strip-team-section.${teamType} .strip-team-logo`);
+                            if (logoContainer) {
+                                logoContainer.style.backgroundColor = '#ffffff';
+                                console.log(`하단 스트립 ${teamType}팀 기본 배경색 설정`);
+                            }
+                        }
+                    }
+                    
+                    // 배경색 업데이트 (모든 그래픽에서 적용)
+                    if (bgColor) {
+                        if (graphicType === 'top-scoreboard' && logoContainer) {
+                            // 상단 스코어보드: 컨테이너에 배경색 적용
+                            logoContainer.style.backgroundColor = bgColor;
+                            } else if (graphicType === 'vs') {
+                            // VS 그래픽: img 태그의 부모 컨테이너에 배경색 적용
+                            const vsContainer = imgElement.parentElement;
+                            if (vsContainer) {
+                                vsContainer.style.backgroundColor = bgColor;
+                                } else {
+                                }
+                        } else if (graphicType === 'bottom-strip') {
+                            // 하단 스트립: img 태그의 부모 컨테이너에 배경색 적용
+                            const stripContainer = imgElement.parentElement;
+                            if (stripContainer) {
+                                stripContainer.style.backgroundColor = bgColor;
+                                } else {
+                                }
+                        }
+                    } else {
+                        }
+                    
+                    } else {
+                    }
+            });
+        }
+        
+        // 상단 스코어보드 팀로고 토글 함수
+        function toggleScoreboardTeamLogos(visible) {
+            // 홈팀과 어웨이팀 로고 섹션 찾기
+            const homeLogoSection = document.querySelector('.team-logo-section.home-logo');
+            const awayLogoSection = document.querySelector('.team-logo-section.away-logo');
+            
+            if (homeLogoSection) {
+                homeLogoSection.style.display = visible ? 'block' : 'none';
+                }
+            
+            if (awayLogoSection) {
+                awayLogoSection.style.display = visible ? 'block' : 'none';
+                }
+        }
+        
+        // 상단 스코어보드 그래픽 사이즈 고정 함수
+        function fixScoreboardSize() {
+            const scoreboardElement = document.getElementById('topScoreboard') || 
+                                    document.querySelector('.scoreboard-row') || 
+                                    document.querySelector('.scoreboard');
+            
+            if (scoreboardElement) {
+                // 고정 사이즈 설정 (550px 유지)
+                scoreboardElement.style.width = '550px';
+                scoreboardElement.style.maxWidth = '550px';
+                scoreboardElement.style.minWidth = '550px';
+                scoreboardElement.style.height = 'auto';
+                
+                } else {
+                }
+        }
         
     </script>
 </body>

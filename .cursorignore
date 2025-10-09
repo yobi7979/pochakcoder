@@ -1,11 +1,45 @@
-# EJS 템플릿 파일들 - 구문 오류 무시 (주석 처리)
-# views/*.ejs
-# *.ejs
+# Cursor AI가 무시할 파일들
+# 하지만 참고 문서들은 항상 읽어야 함
 
-# 기타 무시할 파일들
-node_modules/
+# 로그 파일
 logs/
-temp/
-backups/
 *.log
-*.zip
+
+# 백업 파일
+backups/
+backup/
+
+# 임시 파일
+temp_unused_files/
+*.tmp
+
+# 의존성
+node_modules/
+
+# Git
+.git/
+
+# 환경 설정
+.env
+.env.local
+.env.production
+
+# 빌드 결과물
+dist/
+build/
+
+# IDE 설정
+.vscode/
+.idea/
+
+# OS 생성 파일
+.DS_Store
+Thumbs.db
+
+# 하지만 다음 파일들은 항상 참고해야 함:
+# JAVASCRIPT_FILES_REFERENCE.md
+# API_REFERENCE.md  
+# REFACTORING_PLAN.md
+# PROJECT_STRUCTURE.md
+# README.md
+# .cursorrules

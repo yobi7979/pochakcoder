@@ -2108,6 +2108,29 @@
                 this.innerHTML = '<i class="bi bi-arrow-repeat"></i> 저장 중...';
                 
                 try {
+                    // 1. API 호출로 DB 업데이트
+                    const response = await fetch(`/api/matches/<%= match.id %>/team-color`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            team: teamType,
+                            teamColor: teamColor,
+                            headerText: teamName
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        console.log(`${teamType}팀 컬러 API 업데이트 성공: ${teamColor}`);
+                    } else {
+                        console.error(`${teamType}팀 컬러 API 업데이트 실패: ${response.status}`);
+                    }
+                } catch (error) {
+                    console.error(`${teamType}팀 컬러 API 업데이트 오류:`, error);
+                }
+                
+                try {
                     // 1. 기존 JSON 파일 읽기
                     const logoMapResponse = await fetch('/api/team-logo-map/BASEBALL');
                     let teamLogoMap = {};
@@ -2250,7 +2273,7 @@
                 console.log(`=== 점수 증가 시작: ${team}팀 +${change} ===`);
                 
                 // 1. 서버에서 최신 경기 데이터 가져오기
-                const response = await fetch(`/api/match/${matchId}`);
+                const response = await fetch(`/api/matches/${matchId}`);
                 if (!response.ok) {
                     throw new Error('서버에서 경기 데이터를 가져올 수 없습니다.');
                 }
@@ -2316,7 +2339,7 @@
                 console.log(`=== 점수 감소 시작: ${team}팀 -${amount} (역순 삭제) ===`);
                 
                 // 1. 서버에서 최신 경기 데이터 가져오기
-                const response = await fetch(`/api/match/${matchId}`);
+                const response = await fetch(`/api/matches/${matchId}`);
                 if (!response.ok) {
                     throw new Error('서버에서 경기 데이터를 가져올 수 없습니다.');
                 }
@@ -2443,7 +2466,7 @@
                 console.log('=== 모든 점수 초기화 시작 ===');
                 
                 // 1. 서버에서 최신 경기 데이터 가져오기
-                const response = await fetch(`/api/match/${matchId}`);
+                const response = await fetch(`/api/matches/${matchId}`);
                 if (!response.ok) {
                     throw new Error('서버에서 경기 데이터를 가져올 수 없습니다.');
                 }
@@ -3001,8 +3024,8 @@
                 const updatedMatch = await response.json();
                 console.log('서버 응답:', updatedMatch);
                 
-                // 소켓으로 직접 업데이트 이벤트 발송
-                socket.emit('match_update', {
+                // 소켓으로 직접 업데이트 이벤트 발송 (match_updated로 통일)
+                socket.emit('match_updated', {
                     matchId: matchId,
                     home_score: formData.home_score,
                     away_score: formData.away_score,
@@ -3078,7 +3101,7 @@
                     const currentLogoBgColor = document.querySelector(`.${team}-team-colorbg`)?.value || '#ffffff';
                     const currentTeamColor = document.querySelector(`.${team}-team-color`)?.value || '#1e40af';
                     
-                    const response = await fetch(`/api/match/${baseballMatchId}/team-name`, {
+                    const response = await fetch(`/api/matches/${baseballMatchId}/team-name`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -4316,7 +4339,7 @@
         async function loadCurrentMatchData() {
             try {
                 console.log('=== 서버에서 최신 경기 데이터 로딩 시작 (메인 컨트롤) ===');
-                const response = await fetch(`/api/match/${matchId}`);
+                const response = await fetch(`/api/matches/${matchId}`);
                 
                 if (response.ok) {
                     const matchData = await response.json();

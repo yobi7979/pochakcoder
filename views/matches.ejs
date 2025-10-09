@@ -313,7 +313,7 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="input-group">
-                            <input type="number" id="direct-delete-id" class="form-control" placeholder="삭제할 경기 ID">
+                            <input type="text" id="direct-delete-id" class="form-control" placeholder="삭제할 경기 ID (예: 1001SC5395)">
                             <button class="btn btn-danger" onclick="deleteMatchById(document.getElementById('direct-delete-id').value)">삭제</button>
                         </div>
                     </div>
@@ -658,68 +658,14 @@
         </div>
     </div>
 
-    <!-- 삭제 확인 모달 -->
-    <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content modal-confirm">
-                <div class="modal-header">
-                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body text-center">
-                    <div class="icon-box">
-                        <i class="fa fa-trash"></i>
-                    </div>
-                    <h4 id="deleteModalLabel">경기 삭제</h4>
-                    <p id="deleteModalText">정말로 이 경기를 삭제하시겠습니까?</p>
-                    <p id="deleteMatchInfo" class="text-danger"></p>
-                </div>
-                <div class="modal-footer justify-content-center">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">삭제</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- 삭제 확인 모달 제거됨 - confirm() 팝업 사용 -->
 
-    <!-- 일괄 삭제 확인 모달 -->
-    <div class="modal fade" id="bulkDeleteModal" tabindex="-1" role="dialog" aria-labelledby="bulkDeleteModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content modal-confirm">
-                <div class="modal-header">
-                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body text-center">
-                    <div class="icon-box">
-                        <i class="fa fa-exclamation-triangle" style="color: #dc3545;"></i>
-                    </div>
-                    <h4 id="bulkDeleteModalLabel">일괄 삭제</h4>
-                    <p id="bulkDeleteModalText">정말로 이 종목의 모든 경기를 삭제하시겠습니까?</p>
-                    <p id="bulkDeleteInfo" class="text-danger"></p>
-                    <div class="alert alert-warning">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        <strong>주의:</strong> 이 작업은 되돌릴 수 없습니다!
-                    </div>
-                </div>
-                <div class="modal-footer justify-content-center">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-                    <button type="button" class="btn btn-danger" id="confirmBulkDeleteBtn">일괄 삭제</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- 일괄 삭제 모달 제거됨 - confirm() 팝업 사용 -->
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        let matchIdToDelete = null;
-        let bulkDeleteType = null;
-        let bulkDeleteName = null;
-        const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-        const bulkDeleteModal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+        // 모달 제거됨 - 팝업 사용으로 변수 정리
         
         // 페이지 로드 시 초기화
         document.addEventListener('DOMContentLoaded', function() {
@@ -822,16 +768,12 @@
         }
         
         function confirmDelete(matchId, matchInfo) {
-            matchIdToDelete = matchId;
-            document.getElementById('deleteMatchInfo').textContent = matchInfo;
-            deleteModal.show();
+            if (confirm(`정말로 이 경기를 삭제하시겠습니까?\n\n${matchInfo}`)) {
+                deleteMatch(matchId);
+            }
         }
         
-        document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
-            if (matchIdToDelete) {
-                deleteMatch(matchIdToDelete);
-            }
-        });
+        // 모달 관련 코드 제거됨 - confirm() 팝업 사용
         
         // 탭 변경 시 필터링 다시 적용 및 일괄 삭제 버튼 업데이트
         document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(tab => {
@@ -844,7 +786,7 @@
         async function deleteMatch(matchId) {
             try {
                 console.log(`경기 삭제 시도: ${matchId}`);
-                const response = await fetch(`/api/match/${matchId}`, {
+                const response = await fetch(`/api/matches/${matchId}`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json'
@@ -854,9 +796,6 @@
                 console.log(`삭제 응답 상태: ${response.status}`);
                 
                 if (response.ok) {
-                    // 모달 닫기
-                    deleteModal.hide();
-                    
                     // 성공 메시지 표시
                     alert('경기가 성공적으로 삭제되었습니다.');
                     
@@ -884,7 +823,7 @@
                 console.log(`직접 삭제 시도: ID=${matchId}`);
                 
                 // 직접 API 호출
-                fetch(`/api/match/${matchId}`, {
+                fetch(`/api/matches/${matchId}`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1043,29 +982,21 @@
             }
         }
 
-        // 일괄 삭제 확인
+        // 일괄 삭제 확인 (팝업으로 변경)
         function confirmBulkDelete(type, name) {
-            bulkDeleteType = type;
-            bulkDeleteName = name;
-            
             // 해당 탭의 경기 수 확인
             const activeTab = document.querySelector('.tab-pane.active');
             const matches = activeTab.querySelectorAll('.match-cell:not([style*="font-weight: bold"]):not([style*="display: none"])');
             const matchCount = matches.length;
             
-            document.getElementById('bulkDeleteModalLabel').textContent = `${name} 일괄 삭제`;
-            document.getElementById('bulkDeleteModalText').textContent = `정말로 ${name}의 모든 경기를 삭제하시겠습니까?`;
-            document.getElementById('bulkDeleteInfo').textContent = `삭제될 경기 수: ${matchCount}개`;
+            const message = `정말로 ${name}의 모든 경기를 삭제하시겠습니까?\n\n삭제될 경기 수: ${matchCount}개\n\n주의: 이 작업은 되돌릴 수 없습니다!`;
             
-            bulkDeleteModal.show();
+            if (confirm(message)) {
+                performBulkDelete(type, name);
+            }
         }
 
-        // 일괄 삭제 실행
-        document.getElementById('confirmBulkDeleteBtn').addEventListener('click', function() {
-            if (bulkDeleteType && bulkDeleteName) {
-                performBulkDelete(bulkDeleteType, bulkDeleteName);
-            }
-        });
+        // 일괄 삭제 실행 (모달 제거로 인해 이벤트 리스너 제거)
 
         // 실제 일괄 삭제 수행
         async function performBulkDelete(type, name) {
@@ -1090,7 +1021,23 @@
                     return;
                 }
                 
+                // 스포츠 타입 결정
+                let sportType = 'all';
+                if (type === 'soccer') {
+                    sportType = 'soccer';
+                } else if (type === 'baseball') {
+                    sportType = 'baseball';
+                } else if (type.startsWith('user-')) {
+                    // 사용자별 삭제의 경우 현재 탭의 경기들에서 스포츠 타입 추출
+                    const firstMatch = visibleMatches[0];
+                    if (firstMatch) {
+                        const matchData = firstMatch.getAttribute('data-sport-type');
+                        sportType = matchData || 'all';
+                    }
+                }
+                
                 const requestBody = {
+                    sport_type: sportType,
                     matchIds: matchIds,
                     tabType: type,
                     tabName: name
@@ -1112,8 +1059,7 @@
                 if (response.ok) {
                     const data = await response.json();
                     
-                    // 모달 닫기
-                    bulkDeleteModal.hide();
+                    // 모달 제거됨 - 팝업 사용
                     
                     // 성공 메시지 표시
                     alert(data.message || `${name}의 모든 경기가 성공적으로 삭제되었습니다.`);

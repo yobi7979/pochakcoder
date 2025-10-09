@@ -974,6 +974,22 @@ class BackupRestoreManager {
     }
   }
 
+  // 백업 파일 경로 조회
+  async getBackupPath(fileName) {
+    try {
+      if (this.useMemoryBackup) {
+        // Railway 환경에서는 임시 디렉토리에서 파일 조회
+        const tempDir = path.join(require('os').tmpdir(), 'sportscoder-backups');
+        return path.join(tempDir, fileName);
+      }
+      
+      return path.join(this.backupDir, fileName);
+    } catch (error) {
+      console.error('백업 파일 경로 조회 오류:', error);
+      throw new Error(`백업 파일 경로 조회 실패: ${error.message}`);
+    }
+  }
+
   // 백업 파일 삭제
   async deleteBackup(fileName) {
     try {

@@ -1,0 +1,261 @@
+# SportsCoder 프로젝트 Cursor AI 규칙
+
+## 🚨 필수 참고 문서 (작업 전 반드시 확인)
+프로젝트 작업 시 다음 문서들을 **반드시 참고**하여 일관성과 정확성을 보장하세요:
+
+### 📋 핵심 참고 문서
+1. **JAVASCRIPT_FILES_REFERENCE.md** - 모든 JavaScript 파일의 역할과 의존성
+2. **API_REFERENCE.md** - 122개 API 엔드포인트의 상세 정보 및 라인 번호
+3. **REFACTORING_PLAN.md** - server.js 리팩토링 계획 및 마이그레이션 전략
+4. **PROJECT_STRUCTURE.md** - 전체 프로젝트 구조 및 파일 분류
+5. **README.md** - 프로젝트 개요 및 빠른 시작 가이드
+
+## 📊 작업 진행상황 표시 규칙
+모든 작업 시 다음 정보를 **화면에 표시**하세요:
+
+### 작업 시작 시 표시할 정보
+```
+🔍 작업 시작 - 참고 문서 확인
+📋 JAVASCRIPT_FILES_REFERENCE.md ✓
+📋 API_REFERENCE.md ✓  
+📋 REFACTORING_PLAN.md ✓
+📋 PROJECT_STRUCTURE.md ✓
+📋 README.md ✓
+```
+
+### 작업 진행 중 표시할 정보
+```
+⚡ 작업 진행상황
+📁 현재 작업 파일: [파일명]
+🎯 작업 유형: [API수정/파일생성/리팩토링/구조변경]
+📝 참고 중인 문서: [해당 문서명]
+```
+
+### 작업 완료 시 표시할 정보
+```
+✅ 작업 완료
+📁 수정된 파일: [파일명]
+🔗 관련 API: [API 엔드포인트]
+📋 적용된 규칙: [참고한 문서명]
+```
+
+## 🔍 서버 실행 및 터미널 출력 확인 규칙
+
+### 서버 실행 시 필수 확인사항
+1. **서버 시작 로그 확인**
+   - 데이터베이스 연결 상태
+   - 포트 번호 및 실행 상태
+   - 에러 메시지 여부
+
+2. **요청 처리 로그 확인**
+   - HTTP 요청 로그 (GET, POST, PUT, DELETE)
+   - 응답 상태 코드 (200, 404, 500 등)
+   - 에러 스택 트레이스
+
+3. **데이터베이스 쿼리 로그 확인**
+   - SQL 쿼리 실행 상태
+   - 데이터베이스 연결 오류
+   - 쿼리 성능 이슈
+
+### 터미널 출력 분석 규칙
+```
+🔍 터미널 출력 분석
+📊 서버 상태: [정상/오류]
+⚠️ 발견된 오류: [오류 메시지]
+🔧 해결 방법: [수정 방안]
+```
+
+### 오류 발생 시 대응 규칙
+1. **500 에러**: 서버 내부 오류 - 코드 수정 필요
+2. **404 에러**: 라우트/파일 없음 - 경로 확인 필요
+3. **데이터베이스 오류**: 모델/쿼리 문제 - DB 연결 확인
+4. **템플릿 오류**: 변수 미정의 - 데이터 전달 확인
+
+## 프로젝트 개요
+SportsCoder는 스포츠 경기 관리 시스템으로, Express.js 기반의 웹 애플리케이션입니다.
+
+## 핵심 파일 구조
+- **server.js**: 메인 서버 애플리케이션 (Express + Socket.IO, 8,119줄)
+- **models/**: 데이터베이스 모델 (Sequelize ORM)
+- **public/js/**: 프론트엔드 JavaScript
+- **backup-restore.js**: 백업/복원 관리
+
+## 코딩 규칙
+
+### 1. 파일 수정 시 주의사항
+- **server.js**: 메인 서버 파일, 신중하게 수정
+- **models/index.js**: 데이터베이스 연결, 의존성 확인 필수
+- **backup-restore.js**: 백업 기능, 삭제 금지
+- **public/js/*.js**: 프론트엔드 기능, 클라이언트 측 로직
+
+### 2. 의존성 관리
+- 새로운 기능 추가 시 기존 의존성 구조 유지
+- models/ 폴더의 파일들은 models/index.js를 통해 연결
+- 관리 스크립트들은 models/index.js에 의존
+
+### 3. 파일 분류
+- **핵심 파일**: server.js, models/index.js, backup-restore.js
+- **관리 스크립트**: setup.js, seed.js, migrate-*.js
+- **유틸리티**: generate-matches.js, start-all-matches.js 등
+- **프론트엔드**: public/js/ 폴더 내 파일들
+
+### 4. 데이터베이스 관련
+- Sequelize ORM 사용
+- SQLite (개발) / PostgreSQL (프로덕션)
+- 모델 정의는 models/ 폴더에서 관리
+
+### 5. 백업 및 복원
+- backup-restore.js는 핵심 기능
+- 백업 파일은 backups/ 폴더에 저장
+- Railway 환경에서는 메모리 기반 백업 사용
+
+## 🔧 개발 시 필수 참고사항
+
+### 작업 전 체크리스트
+1. **🚨 라우터 우선 확인 (최우선)** - 새롭게 추가되거나 수정해야 하는 부분은 항상 해당 라우터를 먼저 확인
+   - **API 추가/수정 시: 반드시 해당 기능의 라우터 파일 먼저 확인**
+   - **server_refactored_new.js에 API 직접 작성 절대 금지**
+   - **기능별 라우터: routes/sports.js, routes/templates.js, routes/matches.js, routes/match-lists.js, routes/users.js, routes/auth.js, routes/overlays.js, routes/backup.js, routes/logs.js**
+   - **라우터에 추가 후 server_refactored_new.js에서 연결만 허용**
+   - **규칙 위반 시 즉시 수정 요구**
+2. **🚨 WebSocket 우선 확인 (최우선)** - WebSocket 관련 코드 작성/수정 시 websocket/ 폴더 우선 확인
+   - WebSocket 이벤트 추가/수정 시: websocket/events/ 폴더의 해당 파일 먼저 확인
+   - WebSocket 연결 처리: websocket/connection.js
+   - WebSocket 이벤트 설정: websocket/events/index.js
+   - WebSocket 유틸리티: websocket/utils/
+   - WebSocket 미들웨어: websocket/middleware/
+   - server_refactored_new.js에 WebSocket 코드 직접 작성 금지 - websocket/ 폴더에 추가 후 연결만 허용
+2. **JAVASCRIPT_FILES_REFERENCE.md** 확인 - 파일 역할과 의존성 파악
+3. **API_REFERENCE.md** 확인 - API 구조 및 라인 번호 파악
+4. **REFACTORING_PLAN.md** 확인 - 리팩토링 계획 및 주의사항 파악
+5. **PROJECT_STRUCTURE.md** 확인 - 전체 구조 및 파일 분류 파악
+6. 파일 간 의존성 구조 이해
+7. 프로덕션 환경과 개발 환경 구분
+8. 사용자 관리, 경기 관리, 백업 기능의 중요성 인지
+
+### 코드 작성 시 규칙
+- **🚨 라우터 우선 확인 (최우선)**: API 추가/수정 시 해당 라우터 파일 먼저 확인
+- **API 수정 시**: API_REFERENCE.md의 라인 번호 참고
+- **파일 생성 시**: JAVASCRIPT_FILES_REFERENCE.md의 분류 체계 준수
+- **리팩토링 시**: REFACTORING_PLAN.md의 단계별 전략 준수
+- **구조 변경 시**: PROJECT_STRUCTURE.md의 분류 체계 준수
+
+## 📋 작업 단계별 표시 규칙
+
+### 1단계: 작업 시작
+```
+🚀 SportsCoder 프로젝트 작업 시작
+📚 참고 문서 로딩 중...
+🚨 라우터 우선 확인 (최우선) - 해당 기능의 라우터 파일 먼저 확인
+✅ JAVASCRIPT_FILES_REFERENCE.md 확인 완료
+✅ API_REFERENCE.md 확인 완료  
+✅ REFACTORING_PLAN.md 확인 완료
+✅ PROJECT_STRUCTURE.md 확인 완료
+✅ README.md 확인 완료
+```
+
+### 2단계: 작업 분석
+```
+🔍 작업 분석 중...
+🚨 라우터 우선 확인: [해당 라우터 파일명] 먼저 확인
+📁 대상 파일: [파일명]
+🎯 작업 유형: [API수정/파일생성/리팩토링/구조변경]
+📋 주요 참고 문서: [해당 문서명]
+⚠️ 주의사항: [관련 주의사항]
+```
+
+### 3단계: 작업 실행
+```
+⚡ 작업 실행 중...
+🚨 라우터 우선 확인: [해당 라우터 파일명]에서 작업 수행
+📝 현재 작업: [구체적인 작업 내용]
+🔗 관련 API: [API 엔드포인트]
+📋 적용 규칙: [참고한 문서의 규칙]
+```
+
+### 4단계: 작업 완료
+```
+✅ 작업 완료
+🚨 라우터 우선 확인: [해당 라우터 파일명]에서 작업 완료
+📁 수정된 파일: [파일명]
+🔗 관련 API: [API 엔드포인트]
+📋 적용된 규칙: [참고한 문서명]
+🎯 다음 단계: [후속 작업이 있다면]
+```
+
+## 🚫 금지사항
+
+### 절대 금지
+- **🚨 라우터 우선 확인 무시 금지** - server_refactored_new.js에 직접 API 추가/수정 절대 금지
+- **🚨 API 작성 위치 규칙 위반 금지** - 모든 API는 해당 라우터에만 작성
+- **🚨 규칙 위반 시 즉시 수정 요구** - 규칙을 무시하고 server.js에 API 작성 시 즉시 수정
+- 핵심 파일 (server.js, models/index.js, backup-restore.js) 삭제 금지
+- 의존성 구조 무시한 수정 금지
+- 백업 기능 손상 금지
+- API 엔드포인트 URL 변경 금지 (리팩토링 시)
+- 요청/응답 형식 변경 금지 (리팩토링 시)
+
+### 참고 문서 무시 금지
+- **🚨 라우터 우선 확인 무시 금지** - 새롭게 추가되거나 수정해야 하는 부분은 항상 해당 라우터를 먼저 확인
+- JAVASCRIPT_FILES_REFERENCE.md 무시한 파일 수정 금지
+- API_REFERENCE.md 무시한 API 수정 금지
+- REFACTORING_PLAN.md 무시한 리팩토링 금지
+- PROJECT_STRUCTURE.md 무시한 구조 변경 금지
+
+## 📚 문서 참고 우선순위
+1. **🚨 라우터 우선 확인 (최우선)** - 새롭게 추가되거나 수정해야 하는 부분은 항상 해당 라우터를 먼저 확인
+   - **API 추가/수정 시: 반드시 해당 라우터 파일 먼저 확인**
+   - **server_refactored_new.js에 API 직접 작성 절대 금지**
+   - **규칙 위반 시 즉시 수정 요구**
+2. **JAVASCRIPT_FILES_REFERENCE.md** - 파일 작업 시 최우선
+3. **API_REFERENCE.md** - API 관련 작업 시 최우선
+4. **REFACTORING_PLAN.md** - 리팩토링 작업 시 최우선
+5. **PROJECT_STRUCTURE.md** - 구조 변경 시 최우선
+6. **README.md** - 프로젝트 이해 시 참고
+
+## 🔧 리팩토링 후 API 구조 규칙
+
+### 라우터별 API 분리 원칙
+- **🚨 라우터 우선 확인 (최우선)**: 새롭게 추가되거나 수정해야 하는 부분은 항상 해당 라우터를 먼저 확인
+- **🚨 API 작성 위치 규칙**: 모든 API는 해당 라우터에만 작성
+- **🚨 server_refactored_new.js API 작성 절대 금지**: 라우터 연결 및 공통 API만 작성
+- **🚨 규칙 위반 시 즉시 수정 요구**: 규칙을 무시하고 server.js에 API 작성 시 즉시 수정
+
+### 라우터별 담당 API
+1. **routes/matches.js**: 경기 관련 API (GET, POST, PUT, DELETE /api/matches/*)
+2. **routes/match-lists.js**: 경기 목록 관련 API (GET, POST, PUT, DELETE /api/match-lists/*)
+3. **routes/sports.js**: 스포츠 관련 API (GET, POST, PUT, DELETE /api/sport/*)
+4. **routes/templates.js**: 템플릿 관련 API (GET, POST, PUT, DELETE /api/templates/*)
+5. **routes/users.js**: 사용자 관련 API (GET, POST, PUT, DELETE /api/users/*)
+6. **routes/auth.js**: 인증 관련 API (POST /login, POST /logout)
+7. **routes/overlays.js**: 오버레이 관련 API (GET, POST, PUT, DELETE /api/overlay-images/*)
+8. **routes/backup.js**: 백업 관련 API (GET, POST, DELETE /api/backup/*)
+9. **routes/logs.js**: 로그 관련 API (GET, POST, DELETE /api/logs/*)
+
+### API 작성 금지사항
+- **🚨 라우터 우선 확인 무시 금지** - server_refactored_new.js에 직접 API 작성 절대 금지 (라우터 연결만 허용)
+- **🚨 API 작성 위치 규칙 위반 금지** - 모든 API는 해당 라우터에만 작성
+- **🚨 규칙 위반 시 즉시 수정 요구** - 규칙을 무시하고 server.js에 API 작성 시 즉시 수정
+- **중복 API 정의 금지** (라우터와 server_refactored_new.js에 동시 작성 금지)
+- **라우터 없이 server_refactored_new.js에만 API 작성 금지**
+
+### 라우터 연결 규칙
+```javascript
+// 올바른 연결 방식 - server_refactored_new.js에서 라우터 연결만 허용
+app.use('/api/matches', matchesRouter);
+app.use('/api/match-lists', matchListsRouter);
+app.use('/api/sport', sportsRouter);
+app.use('/api/templates', templatesRouter);
+app.use('/api/users', usersRouter);
+app.use('/', authRouter);
+app.use('/api/overlay-images', overlaysRouter);
+app.use('/api/backup', backupRouter);
+app.use('/api/logs', logsRouter);
+```
+
+### 🚨 강화된 API 작성 규칙
+- **모든 API는 해당 라우터에만 작성**
+- **server_refactored_new.js에 API 직접 작성 절대 금지**
+- **규칙 위반 시 즉시 수정 요구**
+- **라우터 우선 확인 필수**
+- **API 작성 위치 규칙 준수 필수**

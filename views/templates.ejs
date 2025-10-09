@@ -103,6 +103,43 @@
         </div>
     </div>
 
+    <!-- 템플릿 수정 모달 -->
+    <div class="modal fade" id="editTemplateModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">템플릿 수정</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editTemplateForm">
+                        <input type="hidden" id="editTemplateId">
+                        <div class="mb-3">
+                            <label for="editTemplateName" class="form-label">템플릿 이름</label>
+                            <input type="text" class="form-control" id="editTemplateName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editSportType" class="form-label">스포츠 타입</label>
+                            <input type="text" class="form-control" id="editSportType" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editTemplateType" class="form-label">템플릿 타입</label>
+                            <input type="text" class="form-control" id="editTemplateType" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editDescription" class="form-label">설명</label>
+                            <textarea class="form-control" id="editDescription" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" id="updateTemplateBtn">수정</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 삭제 확인 모달 -->
     <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
         <div class="modal-dialog">
@@ -185,12 +222,12 @@
                 tbody.innerHTML = templates.map(template => `
                     <tr>
                         <td>${template.name}</td>
-                        <td>${template.templateFile}</td>
-                        <td>${template.controlFile}</td>
-                        <td>${template.controlMobileFile}</td>
+                        <td>${template.name}-template.ejs</td>
+                        <td>${template.name}-control.ejs</td>
+                        <td>${template.name}-control-mobile.ejs</td>
                         <td>
-                            <span class="badge ${template.isDefault ? 'bg-primary' : 'bg-success'}">
-                                ${template.isDefault ? '기본' : '사용자 정의'}
+                            <span class="badge ${template.is_default ? 'bg-primary' : 'bg-success'}">
+                                ${template.is_default ? '기본' : '사용자 정의'}
                             </span>
                         </td>
                         <td>
@@ -199,11 +236,16 @@
                             </button>
                         </td>
                         <td>
-                            ${!template.isDefault ? `
-                                <button class="btn btn-sm btn-danger" onclick="confirmDelete(${template.id})">
-                                    <i class="bi bi-trash"></i>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-outline-primary" onclick="editTemplate(${template.id}, '${template.name}', '${template.sport_type}', '${template.template_type}', '${template.description || ''}')" title="수정">
+                                    <i class="bi bi-pencil"></i>
                                 </button>
-                            ` : ''}
+                                ${!template.is_default ? `
+                                    <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete(${template.id})" title="삭제">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
                         </td>
                     </tr>
                 `).join('');
@@ -216,7 +258,7 @@
         // 기본 템플릿 목록 로드
         async function loadBaseTemplates() {
             try {
-                const response = await fetch('/api/base-templates');
+                const response = await fetch('/api/templates/base-templates');
                 const result = await response.json();
                 
                 if (result.success) {
@@ -406,7 +448,13 @@
             currentTemplateName = templateName;
             
             try {
-                const response = await fetch(`/api/templates/${templateId}/files`);
+                const response = await fetch(`/api/templates/${templateId}/files?t=${Date.now()}`, {
+                    method: 'GET',
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
                 const data = await response.json();
                 
                 if (!response.ok) {
@@ -414,7 +462,7 @@
                 }
                 
                 const content = document.getElementById('fileManagementContent');
-                const isDefaultTemplate = data.template.is_default;
+                const isDefaultTemplate = data.template && data.template.is_default;
                 
                 content.innerHTML = `
                     <h6>템플릿: ${templateName} ${isDefaultTemplate ? '<span class="badge bg-primary">기본 템플릿</span>' : ''}</h6>
@@ -424,9 +472,9 @@
                             <div class="col-md-4 mb-3">
                                 <div class="card">
                                     <div class="card-body">
-                                        <h6 class="card-title">${file.displayName}</h6>
+                                        <h6 class="card-title">${file.type}</h6>
                                         <p class="card-text">
-                                            <small class="text-muted">파일명: ${file.fileName}</small><br>
+                                            <small class="text-muted">파일명: ${file.name}</small><br>
                                             <small class="text-muted">크기: ${formatFileSize(file.size)}</small><br>
                                             <span class="badge ${file.exists ? 'bg-success' : 'bg-danger'}">
                                                 ${file.exists ? '존재' : '없음'}
@@ -569,6 +617,62 @@
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
+
+        // 템플릿 수정 함수
+        function editTemplate(id, name, sportType, templateType, description) {
+            document.getElementById('editTemplateId').value = id;
+            document.getElementById('editTemplateName').value = name;
+            document.getElementById('editSportType').value = sportType;
+            document.getElementById('editTemplateType').value = templateType;
+            document.getElementById('editDescription').value = description || '';
+            
+            const modal = new bootstrap.Modal(document.getElementById('editTemplateModal'));
+            modal.show();
+        }
+
+        // 템플릿 수정 버튼 이벤트
+        document.getElementById('updateTemplateBtn').addEventListener('click', async () => {
+            const id = document.getElementById('editTemplateId').value;
+            const name = document.getElementById('editTemplateName').value.trim();
+            const sportType = document.getElementById('editSportType').value.trim();
+            const templateType = document.getElementById('editTemplateType').value.trim();
+            const description = document.getElementById('editDescription').value.trim();
+            
+            if (!name || !sportType || !templateType) {
+                alert('필수 항목을 모두 입력해주세요.');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/templates/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name,
+                        sport_type: sportType,
+                        template_type: templateType,
+                        description
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error);
+                }
+                
+                // 모달 닫기
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editTemplateModal'));
+                modal.hide();
+                
+                // 페이지 새로고침
+                location.reload();
+            } catch (error) {
+                console.error('템플릿 수정 중 오류:', error);
+                alert(error.message || '템플릿 수정에 실패했습니다.');
+            }
+        });
 
         // 페이지 로드 시 템플릿 목록과 기본 템플릿 목록 로드
         document.addEventListener('DOMContentLoaded', () => {

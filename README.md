@@ -1,54 +1,43 @@
-# SportsCoder - 스포츠 경기 실시간 오버레이 시스템
+# SportsCoder 프로젝트
 
-## 로컬 개발 환경 설정
+## 📋 프로젝트 개요
+SportsCoder는 스포츠 경기 관리 시스템으로, Express.js 기반의 웹 애플리케이션입니다.
 
-### 1. 로컬 개발 모드로 서버 실행
+## 🚀 빠른 시작
 
-로컬에서 DB 수정으로 인한 서버 초기화 실패를 방지하기 위해 다음 방법 중 하나를 사용하세요:
-
-#### 방법 1: 배치 파일 사용 (Windows)
+### 1. 서버 실행
 ```bash
-start-local.bat
+node server.js
 ```
 
-#### 방법 2: 환경 변수 설정
-```bash
-# Windows
-set LOCAL_DEV=true && npm run dev
+### 2. 웹 접속
+http://localhost:3000
 
-# Linux/Mac
-LOCAL_DEV=true npm run dev
-```
+## 📚 문서
+- `JAVASCRIPT_FILES_REFERENCE.md` - JavaScript 파일 역할 및 의존성
+- `PROJECT_STRUCTURE.md` - 프로젝트 구조 상세
+- `REFACTORING_PLAN.md` - 리팩토링 계획 및 개발 표준
+- `REALTIME_UPDATE_RULES.md` - 실시간 업데이트 개발 룰
+- `.cursorrules` - Cursor AI 개발 규칙
 
-#### 방법 3: package.json 스크립트 사용
-```bash
-npm run dev:local
-```
+## 🎯 핵심 기능
+- 경기 관리 및 실시간 업데이트
+- 사용자 인증 및 권한 관리
+- 백업 및 복원 시스템
+- 오버레이 템플릿 관리
+- Socket.IO 실시간 통신
 
-### 2. 로컬 개발 모드의 특징
+## ⚠️ 중요 파일
+- `server.js` - 메인 서버
+- `models/index.js` - 데이터베이스 연결
+- `backup-restore.js` - 백업 관리
+- `public/js/*.js` - 프론트엔드 기능
 
-- **DB 동기화**: `alter: false`로 설정하여 기존 DB 구조를 최대한 보존
-- **오류 처리**: DB 동기화 실패 시에도 서버가 계속 실행됨
-- **안전한 모드**: Railway 배포와 달리 로컬에서는 기존 데이터를 보호
+## 🔧 개발 도구
+- `setup.js` - 초기 설정
+- `seed.js` - 데이터 시드
+- `create-admin.js` - 관리자 생성
+- `generate-matches.js` - 테스트 데이터 생성
 
-### 3. 일반 개발 모드
-
-Railway 배포와 동일한 환경으로 테스트하려면:
-```bash
-npm run dev
-```
-
-### 4. 프로덕션 배포
-
-Railway에서 자동으로 배포되며, 프로덕션 환경에서는 `alter: true`로 설정되어 스키마 업데이트가 허용됩니다.
-
-## 문제 해결
-
-### DB 초기화 실패 시
-1. 로컬 개발 모드로 실행: `start-local.bat` 또는 `npm run dev:local`
-2. 기존 DB 파일 백업 후 삭제
-3. 서버 재시작
-
-### Railway 배포는 정상 작동하는 경우
-- 로컬 DB와 Railway DB의 스키마 차이로 인한 문제
-- 로컬 개발 모드 사용 권장
+---
+*자세한 내용은 각 문서 파일을 참고하세요.*

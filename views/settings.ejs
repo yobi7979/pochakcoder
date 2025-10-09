@@ -47,6 +47,24 @@
         .settings-body {
             padding: 2rem;
         }
+        
+        .db-management-section {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 1.5rem;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .db-management-section .btn {
+            padding: 0.75rem 2rem;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .db-management-section .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
         .setting-item {
             margin-bottom: 2rem;
             padding: 1.5rem;
@@ -113,6 +131,25 @@
         }
         .toast.error {
             border-left-color: #ef4444;
+        }
+
+        /* 오버레이 이미지 목록 테이블 스타일 */
+        .table-hover tbody tr:hover {
+            background-color: rgba(0, 123, 255, 0.1);
+        }
+        
+        .table-primary {
+            background-color: rgba(0, 123, 255, 0.2) !important;
+        }
+        
+        .btn-group-sm .btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+        
+        .form-check-input:checked {
+            background-color: #198754;
+            border-color: #198754;
         }
 
         /* 축구 오버레이 디자인 설정 스타일 */
@@ -232,6 +269,21 @@
                 <a href="/matches" class="btn btn-outline-light">
                     <i class="bi bi-arrow-left"></i> 경기 목록으로 돌아가기
                 </a>
+            </div>
+        </div>
+        
+        <!-- DB 관리 버튼 섹션 -->
+        <div class="db-management-section">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-start">
+                            <button class="btn" onclick="openDBManagement()" style="background-color: #ffeb3b; color: #000; border: none; border-radius: 10px; padding: 8px 20px; text-shadow: none; box-shadow: none;">
+                                <i class="bi bi-database-gear"></i> DB 관리
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -450,23 +502,6 @@
                 
                 <!-- 선택된 종목의 이미지 관리 -->
                 <div id="sportImageManagement" style="display: none;">
-                    <!-- 현재 사용 중인 이미지 표시 -->
-                    <div class="row mb-3">
-                        <div class="col-md-12">
-                            <div class="card border-info">
-                                <div class="card-header bg-info text-white">
-                                    <h6 class="mb-0"><i class="bi bi-star-fill"></i> <span id="selectedSportName"></span> 현재 사용 중인 이미지</h6>
-                                </div>
-                                <div class="card-body">
-                                    <div id="currentActiveImage" class="text-center">
-                                        <div class="text-muted">
-                                            <i class="bi bi-hourglass-split"></i> 현재 사용 중인 이미지를 불러오는 중...
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
                     <!-- 이미지 업로드 -->
                     <div class="row mb-3">
@@ -652,7 +687,7 @@
                     </div>
                     <div class="setting-description">
                         <span id="overlayDesignDescription">축구 오버레이 페이지의 각 요소들의 위치를 조정할 수 있습니다. 
-                        실시간 미리보기로 변경사항을 확인할 수 있습니다.</span>
+                        설정 후 오버레이 페이지에서 변경사항을 확인할 수 있습니다.</span>
                     </div>
                 
                 <!-- 경기 상태 표시 설정 -->
@@ -683,9 +718,6 @@
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h6 class="mb-0">위치 조정</h6>
-                                <button class="btn btn-info btn-sm" onclick="openPreviewModal()">
-                                    <i class="bi bi-eye"></i> 미리보기 보기
-                                </button>
                             </div>
                             <div class="card-body">
                                 <div class="row">
@@ -707,14 +739,6 @@
 
                                     </div>
                                     
-                                    <div class="col-md-8">
-                                        <div class="small-preview-container">
-                                            <h6 class="text-muted mb-2">작은 미리보기 (클릭하여 확대)</h6>
-                                            <div class="soccer-overlay-preview-small" id="soccerOverlayPreviewSmall" onclick="openPreviewModal()">
-                                                <!-- 작은 미리보기 요소들이 여기에 동적으로 생성됩니다 -->
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
                                 
                                 <div class="d-grid gap-2 mt-3">
@@ -734,24 +758,20 @@
                 <% } %>
     </div>
 
-    <!-- 축구 오버레이 미리보기 모달 -->
-            <div class="modal fade" id="soccerOverlayPreviewModal" tabindex="-1">
-                <div class="modal-dialog modal-xl">
+
+            <!-- 이미지 미리보기 모달 -->
+            <div class="modal fade" id="imagePreviewModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title">축구 오버레이 미리보기</h5>
+                            <h5 class="modal-title" id="imagePreviewTitle">이미지 미리보기</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
-                        <div class="modal-body">
-                            <div class="soccer-overlay-preview-full" id="soccerOverlayPreviewFull">
-                                <!-- 큰 미리보기 요소들이 여기에 동적으로 생성됩니다 -->
-                            </div>
+                        <div class="modal-body text-center">
+                            <img id="imagePreviewImg" src="" alt="이미지 미리보기" class="img-fluid" style="max-height: 70vh; object-fit: contain;">
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
-                            <button type="button" class="btn btn-primary" onclick="refreshPreview()">
-                                <i class="bi bi-arrow-clockwise"></i> 새로고침
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -1268,7 +1288,6 @@
                 if (result.success) {
                     currentDesign = result.design;
                     defaultDesign = result.default;
-                    renderSmallPreview();
                     selectElement();
                     updateOverlayDesignTitle(sportCode);
                 }
@@ -1293,97 +1312,11 @@
             }
             
             if (descriptionElement) {
-                descriptionElement.textContent = `${sportCode} 오버레이 페이지의 각 요소들의 위치를 조정할 수 있습니다. 실시간 미리보기로 변경사항을 확인할 수 있습니다.`;
+                descriptionElement.textContent = `${sportCode} 오버레이 페이지의 각 요소들의 위치를 조정할 수 있습니다. 설정 후 오버레이 페이지에서 변경사항을 확인할 수 있습니다.`;
             }
         }
 
-        // 축구 오버레이 미리보기 렌더링 (공통 함수)
-        function renderSoccerOverlayPreview(containerId) {
-            const preview = document.getElementById(containerId);
-            if (!preview) return;
-            
-            preview.innerHTML = '';
-            
-            // 경기 상태 표시 설정 확인
-            const showMatchStateElement = document.getElementById('showMatchState');
-            const showMatchState = showMatchStateElement ? showMatchStateElement.checked : false;
-            
-            // 각 요소들을 미리보기에 추가
-            const elements = [
-                { id: 'scoreboard', class: 'preview-scoreboard', text: '스코어보드' },
-                { id: 'homeLogo', class: 'preview-home-logo', text: '홈로고' },
-                { id: 'awayLogo', class: 'preview-away-logo', text: '어웨이로고' },
-                { id: 'matchState', class: 'preview-match-state', text: '경기상태', visible: showMatchState },
-                { id: 'homeLineup', class: 'preview-lineup', text: '홈라인업' },
-                { id: 'awayLineup', class: 'preview-lineup', text: '어웨이라인업' },
-                { id: 'overlayImage', class: 'preview-overlay-image', text: '이미지' },
-                { id: 'timer', class: 'preview-timer', text: '타이머' }
-            ];
-            
-            // 비율 계산 (1920x1080 -> 미리보기 크기)
-            const scaleX = containerId === 'soccerOverlayPreviewSmall' ? 320 / 1920 : 640 / 1920;
-            const scaleY = containerId === 'soccerOverlayPreviewSmall' ? 180 / 1080 : 360 / 1080;
-            
-            elements.forEach(element => {
-                const div = document.createElement('div');
-                div.className = `preview-element ${element.class}`;
-                div.id = `${containerId}-${element.id}`;
-                div.textContent = element.text;
-                
-                // 경기 상태 요소의 경우 표시 설정에 따라 숨김 처리
-                if (element.id === 'matchState' && element.visible === false) {
-                    div.style.display = 'none';
-                }
-                
-                const pos = currentDesign[element.id];
-                if (pos) {
-                    // 타이머는 특별한 위치 처리 (스코어보드 내부)
-                    if (element.id === 'timer') {
-                        div.style.top = `${(20 + 25) * scaleY}px`; // 스코어보드 아래쪽
-                        div.style.left = `${(80 + 420 + (pos.marginLeft || 8)) * scaleX}px`; // 스코어보드 오른쪽
-                    } else {
-                        // 위치를 비율에 맞게 조정
-                        div.style.top = `${pos.top * scaleY}px`;
-                        if (pos.left !== undefined) {
-                            div.style.left = `${pos.left * scaleX}px`;
-                        }
-                        if (pos.right !== undefined) {
-                            div.style.right = `${pos.right * scaleX}px`;
-                        }
-                        if (pos.width !== undefined) {
-                            div.style.width = `${pos.width * scaleX}px`;
-                        }
-                        if (pos.height !== undefined) {
-                            div.style.height = `${pos.height * scaleY}px`;
-                        }
-                    }
-                }
-                
-                // 작은 미리보기에서만 클릭 이벤트 추가
-                if (containerId === 'soccerOverlayPreviewSmall') {
-                    div.onclick = (e) => {
-                        e.stopPropagation();
-                        const elementSelect = document.getElementById('elementSelect');
-                        if (elementSelect) {
-                            elementSelect.value = element.id;
-                            selectElement();
-                        }
-                    };
-                }
-                
-                preview.appendChild(div);
-            });
-        }
 
-        // 작은 미리보기 렌더링
-        function renderSmallPreview() {
-            renderSoccerOverlayPreview('soccerOverlayPreviewSmall');
-        }
-
-        // 큰 미리보기 렌더링
-        function renderFullPreview() {
-            renderSoccerOverlayPreview('soccerOverlayPreviewFull');
-        }
 
         // 요소 선택
         function selectElement() {
@@ -1439,17 +1372,18 @@
             }
         }
 
-        // 미리보기 모달 열기
-        function openPreviewModal() {
-            renderFullPreview();
-            const modal = new bootstrap.Modal(document.getElementById('soccerOverlayPreviewModal'));
-            modal.show();
-        }
 
-        // 미리보기 새로고침
-        function refreshPreview() {
-            renderFullPreview();
-            renderSmallPreview();
+        // 이미지 미리보기 함수
+        function previewImage(imagePath, filename) {
+            const modal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
+            const titleElement = document.getElementById('imagePreviewTitle');
+            const imgElement = document.getElementById('imagePreviewImg');
+            
+            titleElement.textContent = `이미지 미리보기 - ${filename}`;
+            imgElement.src = imagePath;
+            imgElement.alt = filename;
+            
+            modal.show();
         }
 
         // 디자인 설정 초기화
@@ -1550,32 +1484,37 @@
             }
         }
 
-        // 종목별 오버레이 이미지 목록과 현재 사용 중인 이미지 함께 로드
+        // 종목별 오버레이 이미지 목록 로드
         async function loadSportOverlayImagesWithActive() {
             const sportSelect = document.getElementById('sportSelect');
             const sportCode = sportSelect.value;
             
+            console.log('🔍 종목 선택됨:', sportCode);
+            
             if (!sportCode) {
+                console.log('❌ 종목이 선택되지 않음');
                 document.getElementById('sportImageManagement').style.display = 'none';
                 return;
             }
             
             try {
-                const response = await fetch(`/api/sport-overlay-images-with-active/${sportCode}`);
+                // 캐시 우회를 위해 타임스탬프 추가
+                const timestamp = new Date().getTime();
+                const response = await fetch(`/api/overlay-images/list/${sportCode}?t=${timestamp}`);
                 const result = await response.json();
                 
                 if (result.success) {
+                    console.log('✅ API 응답 성공:', result);
+                    
                     // 종목 이름 업데이트
-                    document.getElementById('selectedSportName').textContent = result.sportName;
                     document.getElementById('selectedSportName2').textContent = result.sportName;
                     document.getElementById('selectedSportName3').textContent = result.sportName;
                     document.getElementById('selectedSportCode').value = sportCode;
                     
                     // 이미지 관리 섹션 표시
+                    console.log('🔧 이미지 관리 섹션 표시');
                     document.getElementById('sportImageManagement').style.display = 'block';
                     
-                    // 현재 사용 중인 이미지 표시
-                    loadCurrentActiveImage(sportCode);
                     
                     // 이미지 목록 렌더링
                     const imagesList = document.getElementById('sportOverlayImagesList');
@@ -1587,103 +1526,70 @@
                             </div>
                         `;
                     } else {
-                        imagesList.innerHTML = result.images.map(image => `
-                            <div class="col-md-4 mb-3">
-                                <div class="card h-100 ${image.id == result.activeImageId ? 'border-primary' : ''}">
-                                    ${image.id == result.activeImageId ? '<div class="card-header bg-primary text-white text-center"><i class="bi bi-star-fill"></i> 현재 사용 중</div>' : ''}
-                                    <img src="${image.file_path}" class="card-img-top" alt="오버레이 이미지" style="height: 150px; object-fit: cover;">
-                                    <div class="card-body">
-                                        <h6 class="card-title">${image.filename}</h6>
-                                        <p class="card-text">
-                                            <small class="text-muted">
-                                                업로드: ${new Date(image.upload_time).toLocaleString()}
-                                            </small>
-                                        </p>
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" 
-                                                       ${image.is_active ? 'checked' : ''} 
-                                                       onchange="toggleImageStatus('${sportCode}', '${image.filename}', this.checked)">
-                                                <label class="form-check-label">활성</label>
-                                            </div>
-                                            <div>
-                                                ${image.id != result.activeImageId ? 
-                                                    `<button class="btn btn-primary btn-sm me-1" onclick="setActiveImage('${sportCode}', ${image.id})">
-                                                        <i class="bi bi-star"></i> 사용
-                                                    </button>` : 
-                                                    `<span class="badge bg-success">사용 중</span>`
-                                                }
-                                                <button class="btn btn-danger btn-sm" onclick="deleteSportOverlayImage('${sportCode}', '${image.filename}')">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                        imagesList.innerHTML = `
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>파일명</th>
+                                            <th>상태</th>
+                                            <th>업로드 시간</th>
+                                            <th>활성화</th>
+                                            <th>액션</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${result.images.map(image => `
+                                            <tr class="${image.id == result.activeImageId ? 'table-primary' : ''}">
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="bi bi-file-image me-2 text-muted"></i>
+                                                        <span class="fw-medium">${decodeKoreanFilename(image.filename)}</span>
+                                                        ${image.id == result.activeImageId ? '<span class="badge bg-primary ms-2">현재 사용 중</span>' : ''}
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span class="badge ${image.is_active ? 'bg-success' : 'bg-secondary'}">
+                                                        ${image.is_active ? '활성화' : '비활성화'}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <small class="text-muted">${new Date(image.upload_time).toLocaleString()}</small>
+                                                </td>
+                                                <td>
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input" type="checkbox" 
+                                                               ${image.is_active ? 'checked' : ''} 
+                                                               onchange="toggleImageStatus('${sportCode}', '${image.filename}', this.checked)">
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="btn-group btn-group-sm" role="group">
+                                                        <button class="btn btn-outline-info" onclick="previewImage('${image.file_path}', '${image.filename}')" title="미리보기">
+                                                            <i class="bi bi-eye"></i>
+                                                        </button>
+                                                        <button class="btn btn-outline-danger" onclick="deleteSportOverlayImage('${sportCode}', '${image.filename}')" title="삭제">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
                             </div>
-                        `).join('');
+                        `;
                     }
                 } else {
+                    console.log('❌ API 응답 실패:', result);
                     showToast(result.message || '이미지 목록을 불러오는데 실패했습니다.', 'error');
                 }
             } catch (error) {
-                console.error('종목별 오버레이 이미지 목록 로드 오류:', error);
+                console.error('💥 종목별 오버레이 이미지 목록 로드 오류:', error);
                 showToast('이미지 목록을 불러오는데 실패했습니다.', 'error');
             }
         }
 
-        // 현재 사용 중인 이미지 로드
-        async function loadCurrentActiveImage(sportCode) {
-            try {
-                const response = await fetch(`/api/sport-active-overlay-image/${sportCode}`);
-                const result = await response.json();
-                
-                const currentActiveImageDiv = document.getElementById('currentActiveImage');
-                
-                if (result.success) {
-                    if (result.activeImage) {
-                        currentActiveImageDiv.innerHTML = `
-                            <div class="row">
-                                <div class="col-md-6 offset-md-3">
-                                    <div class="card border-primary">
-                                        <div class="card-header bg-primary text-white text-center">
-                                            <i class="bi bi-star-fill"></i> 현재 사용 중인 이미지
-                                        </div>
-                                        <div class="card-body text-center">
-                                            <img src="${result.activeImage.path}" class="img-fluid mb-2" alt="현재 사용 중인 이미지" style="max-height: 200px; object-fit: contain;">
-                                            <h6 class="card-title">${result.activeImage.filename}</h6>
-                                            <button class="btn btn-outline-secondary btn-sm" onclick="clearActiveImage('${sportCode}')">
-                                                <i class="bi bi-x-circle"></i> 사용 중지
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    } else {
-                        currentActiveImageDiv.innerHTML = `
-                            <div class="text-center text-muted">
-                                <i class="bi bi-image"></i> 현재 사용 중인 이미지가 없습니다.
-                                <br><small>아래 이미지 목록에서 사용할 이미지를 선택해주세요.</small>
-                            </div>
-                        `;
-                    }
-                } else {
-                    currentActiveImageDiv.innerHTML = `
-                        <div class="text-center text-danger">
-                            <i class="bi bi-exclamation-triangle"></i> 현재 사용 중인 이미지 정보를 불러올 수 없습니다.
-                        </div>
-                    `;
-                }
-            } catch (error) {
-                console.error('현재 사용 중인 이미지 로드 오류:', error);
-                document.getElementById('currentActiveImage').innerHTML = `
-                    <div class="text-center text-danger">
-                        <i class="bi bi-exclamation-triangle"></i> 현재 사용 중인 이미지 정보를 불러올 수 없습니다.
-                    </div>
-                `;
-            }
-        }
 
         // 종목별 오버레이 이미지 목록 로드 (기존 함수 유지)
         async function loadSportOverlayImages() {
@@ -1697,20 +1603,116 @@
             }
         }
 
+        // 한글 파일명 디코딩 함수 (브라우저 호환 버전)
+        function decodeKoreanFilename(filename) {
+            try {
+                // 깨진 파일명인지 확인
+                if (filename.includes('ì') || filename.includes('ë') || filename.includes('í') || 
+                    filename.includes('â') || filename.includes('ê') || filename.includes('ô')) {
+                    
+                    // 브라우저 환경에서 한글 파일명 디코딩
+                    let decoded = filename;
+                    try {
+                        // URL 디코딩 시도
+                        decoded = decodeURIComponent(filename);
+                    } catch (e) {
+                        // URL 디코딩 실패 시 원본 반환
+                        console.log(`🔧 URL 디코딩 실패, 원본 사용: ${filename}`);
+                        return filename;
+                    }
+                    
+                    console.log(`🔧 클라이언트 파일명 디코딩: ${filename} -> ${decoded}`);
+                    return decoded;
+                }
+                return filename;
+            } catch (error) {
+                console.error('🔧 클라이언트 파일명 디코딩 실패:', error);
+                return filename;
+            }
+        }
+
+        // 중복 파일명 확인 함수
+        async function checkDuplicateFile(sportCode, filename) {
+            try {
+                const response = await fetch(`/api/overlay-images/status/${sportCode}/${filename}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    return {
+                        exists: result.exists || false,
+                        isActive: result.isActive || false,
+                        filename: filename
+                    };
+                } else {
+                    return { exists: false };
+                }
+            } catch (error) {
+                console.error('중복 파일명 확인 오류:', error);
+                return { exists: false };
+            }
+        }
+
         // 종목별 오버레이 이미지 업로드
         document.getElementById('sportOverlayImageForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const formData = new FormData(this);
             const sportCode = formData.get('sportCode');
+            const fileInput = document.getElementById('sportOverlayImage');
+            const file = fileInput.files[0];
             
-            if (!sportCode) {
+            console.log('🔧 FormData에서 추출된 sportCode:', sportCode);
+            console.log('🔧 selectedSportCode input 값:', document.getElementById('selectedSportCode').value);
+            
+            // selectedSportCode input에서 직접 가져오기
+            const directSportCode = document.getElementById('selectedSportCode').value;
+            
+            if (!sportCode && !directSportCode) {
                 showToast('종목을 선택해주세요.', 'error');
                 return;
             }
             
+            // sportCode가 없으면 직접 가져온 값 사용
+            const finalSportCode = sportCode || directSportCode;
+            
+            if (!file) {
+                showToast('파일을 선택해주세요.', 'error');
+                return;
+            }
+            
+            // 언더바가 포함된 파일명 체크
+            if (file.name.includes('_')) {
+                alert('❌ 파일 업로드 불가\n\n파일명에 언더바(_)가 포함된 파일은 업로드할 수 없습니다.\n\n파일명을 변경한 후 다시 시도해주세요.\n\n예시:\n❌ 잘못된 파일명: 충청북도생활체육_bg.png\n✅ 올바른 파일명: 충청북도생활체육bg.png');
+                return;
+            }
+            
+            // FormData에 sportCode 명시적으로 추가
+            formData.set('sportCode', finalSportCode);
+            
+            // 중복 파일명 확인
+            const duplicateCheck = await checkDuplicateFile(finalSportCode, file.name);
+            
+            if (duplicateCheck.exists) {
+                // 중복 파일이 있는 경우 덮어쓰기 확인
+                const isActive = duplicateCheck.isActive;
+                const message = isActive 
+                    ? `"${file.name}" 파일이 이미 존재하고 현재 사용 중입니다.\n기존 파일을 삭제하고 새 파일로 덮어쓰시겠습니까?`
+                    : `"${file.name}" 파일이 이미 존재합니다.\n기존 파일을 삭제하고 새 파일로 덮어쓰시겠습니까?`;
+                
+                if (!confirm(message)) {
+                    showToast('업로드가 취소되었습니다.', 'info');
+                    return;
+                }
+            }
+            
             try {
-                const response = await fetch('/api/sport-overlay-image', {
+                console.log('🔧 업로드 요청 데이터:', {
+                    sportCode: finalSportCode,
+                    fileName: file.name,
+                    fileSize: file.size
+                });
+                
+                const response = await fetch(`/api/overlay-images/upload/${finalSportCode}`, {
                     method: 'POST',
                     body: formData
                 });
@@ -1720,7 +1722,7 @@
                 if (result.success) {
                     showToast(result.message, 'success');
                     this.reset();
-                    loadSportOverlayImages(); // 목록 새로고침
+                    loadSportOverlayImagesWithActive(); // 목록 새로고침
                 } else {
                     showToast(result.message || '업로드에 실패했습니다.', 'error');
                 }
@@ -1737,7 +1739,9 @@
             }
             
             try {
-                const response = await fetch(`/api/sport-overlay-image/${sportCode}/${filename}`, {
+                // 파일명을 URL 인코딩하여 전달
+                const encodedFilename = encodeURIComponent(filename);
+                const response = await fetch(`/api/overlay-images/delete/${sportCode}/${encodedFilename}`, {
                     method: 'DELETE'
                 });
                 
@@ -1745,7 +1749,7 @@
                 
                 if (result.success) {
                     showToast(result.message, 'success');
-                    loadSportOverlayImages(); // 목록 새로고침
+                    loadSportOverlayImagesWithActive(); // 목록 새로고침 (활성 이미지 포함)
                 } else {
                     showToast(result.message || '삭제에 실패했습니다.', 'error');
                 }
@@ -1755,83 +1759,51 @@
             }
         }
 
-        // 종목별 오버레이 이미지 활성화/비활성화
+        // 종목별 오버레이 이미지 활성화/비활성화 (디바운싱 적용)
+        let toggleTimeout = null;
         async function toggleImageStatus(sportCode, filename, isActive) {
-            try {
-                const response = await fetch(`/api/sport-overlay-image/${sportCode}/${filename}/status`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ isActive: isActive })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showToast(result.message, 'success');
-                } else {
-                    showToast(result.message || '상태 변경에 실패했습니다.', 'error');
-                }
-            } catch (error) {
-                console.error('종목별 오버레이 이미지 상태 변경 오류:', error);
-                showToast('상태 변경 중 오류가 발생했습니다.', 'error');
-            }
-        }
-
-        // 이미지를 현재 사용 중인 이미지로 설정
-        async function setActiveImage(sportCode, imageId) {
-            try {
-                const response = await fetch(`/api/sport-active-overlay-image/${sportCode}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ imageId: imageId })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showToast(result.message, 'success');
-                    loadSportOverlayImagesWithActive(); // 목록 새로고침
-                } else {
-                    showToast(result.message || '이미지 설정에 실패했습니다.', 'error');
-                }
-            } catch (error) {
-                console.error('현재 사용 중인 이미지 설정 오류:', error);
-                showToast('이미지 설정 중 오류가 발생했습니다.', 'error');
-            }
-        }
-
-        // 현재 사용 중인 이미지 사용 중지
-        async function clearActiveImage(sportCode) {
-            if (!confirm('정말로 현재 사용 중인 이미지를 사용 중지하시겠습니까?')) {
-                return;
+            console.log('🔧 슬라이드 버튼 클릭됨:', { sportCode, filename, isActive });
+            
+            // 이전 타이머가 있으면 취소
+            if (toggleTimeout) {
+                clearTimeout(toggleTimeout);
+                console.log('⏰ 이전 타이머 취소됨');
             }
             
-            try {
-                const response = await fetch(`/api/sport-active-overlay-image/${sportCode}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ imageId: null })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showToast('현재 사용 중인 이미지가 사용 중지되었습니다.', 'success');
-                    loadSportOverlayImagesWithActive(); // 목록 새로고침
-                } else {
-                    showToast(result.message || '이미지 사용 중지에 실패했습니다.', 'error');
+            // 500ms 후에 API 호출 (디바운싱)
+            toggleTimeout = setTimeout(async () => {
+                console.log('🚀 API 호출 시작:', `/api/overlay-images/status/${sportCode}/${filename}`);
+                try {
+                    const response = await fetch(`/api/overlay-images/status/${sportCode}/${filename}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ isActive: isActive })
+                    });
+                    
+                    console.log('📡 API 응답 상태:', response.status);
+                    const result = await response.json();
+                    console.log('📄 API 응답 데이터:', result);
+                    
+                    if (result.success) {
+                        console.log('✅ 상태 변경 성공:', result.message);
+                        showToast(result.message, 'success');
+                        // 목록 새로고침
+                        console.log('🔄 목록 새로고침 시작');
+                        loadSportOverlayImagesWithActive();
+                    } else {
+                        console.log('❌ 상태 변경 실패:', result.message);
+                        showToast(result.message || '상태 변경에 실패했습니다.', 'error');
+                    }
+                } catch (error) {
+                    console.error('💥 종목별 오버레이 이미지 상태 변경 오류:', error);
+                    showToast('상태 변경 중 오류가 발생했습니다.', 'error');
                 }
-            } catch (error) {
-                console.error('현재 사용 중인 이미지 사용 중지 오류:', error);
-                showToast('이미지 사용 중지 중 오류가 발생했습니다.', 'error');
-            }
+            }, 500);
         }
+
+
 
         // 전역 변수 정의
         const isAdmin = <% if (typeof userRole !== 'undefined' && userRole === 'admin') { %>true<% } else { %>false<% } %>;
@@ -1870,8 +1842,6 @@
             if (showMatchStateInput) {
                 showMatchStateInput.addEventListener('change', function() {
                 saveMatchStateSettings();
-                // 미리보기 업데이트
-                renderSmallPreview();
             });
             }
             
@@ -2190,6 +2160,11 @@
             const sizes = ['Bytes', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // DB 관리 페이지 열기
+        function openDBManagement() {
+            window.open('/db-management', '_blank');
         }
     </script>
 </body>

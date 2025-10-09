@@ -1,0 +1,69 @@
+# SportsCoder 프로젝트 컨텍스트
+
+## 필수 참고 문서
+이 프로젝트에서 작업할 때는 다음 문서들을 반드시 참고하세요:
+
+1. **JAVASCRIPT_FILES_REFERENCE.md** - 모든 JavaScript 파일의 역할과 의존성
+2. **API_REFERENCE.md** - 122개 API 엔드포인트의 상세 정보 및 라인 번호  
+3. **REFACTORING_PLAN.md** - server.js 리팩토링 계획 및 마이그레이션 전략
+4. **PROJECT_STRUCTURE.md** - 전체 프로젝트 구조 및 파일 분류
+5. **README.md** - 프로젝트 개요 및 빠른 시작 가이드
+
+## 📊 작업 진행상황 표시 규칙
+모든 작업 시 다음 형식으로 진행상황을 표시하세요:
+
+### 작업 시작 시
+```
+🚀 SportsCoder 프로젝트 작업 시작
+📚 참고 문서 로딩 중...
+✅ JAVASCRIPT_FILES_REFERENCE.md 확인 완료
+✅ API_REFERENCE.md 확인 완료  
+✅ REFACTORING_PLAN.md 확인 완료
+✅ PROJECT_STRUCTURE.md 확인 완료
+✅ README.md 확인 완료
+```
+
+### 작업 분석 시
+```
+🔍 작업 분석 중...
+📁 대상 파일: [파일명]
+🎯 작업 유형: [API수정/파일생성/리팩토링/구조변경]
+📋 주요 참고 문서: [해당 문서명]
+⚠️ 주의사항: [관련 주의사항]
+```
+
+### 작업 실행 시
+```
+⚡ 작업 실행 중...
+📝 현재 작업: [구체적인 작업 내용]
+🔗 관련 API: [API 엔드포인트]
+📋 적용 규칙: [참고한 문서의 규칙]
+```
+
+### 작업 완료 시
+```
+✅ 작업 완료
+📁 수정된 파일: [파일명]
+🔗 관련 API: [API 엔드포인트]
+📋 적용된 규칙: [참고한 문서명]
+🎯 다음 단계: [후속 작업이 있다면]
+```
+
+## 프로젝트 핵심 정보
+- **메인 서버**: server.js (8,119줄, 122개 API)
+- **데이터베이스**: Sequelize ORM (SQLite/PostgreSQL)
+- **실시간 통신**: Socket.IO
+- **인증**: 세션 기반 (requireAuth, requireAdmin)
+- **백업**: backup-restore.js
+
+## 작업 시 주의사항
+- API 엔드포인트 URL 변경 금지
+- 요청/응답 형식 변경 금지  
+- 핵심 파일 삭제 금지
+- 의존성 구조 무시한 수정 금지
+- 참고 문서 무시한 작업 금지
+
+## 리팩토링 상태
+- **현재**: 단일 파일 구조 (server.js)
+- **계획**: 모듈화된 구조 (routes/, controllers/, services/)
+- **전략**: 점진적 마이그레이션 (5단계)

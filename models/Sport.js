@@ -31,9 +31,17 @@ const Sport = sequelize.define('Sport', {
   is_default: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
+  },
+  created_by: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
   }
 }, {
-  timestamps: false,
+  timestamps: true,
   tableName: 'Sports'
 });
 

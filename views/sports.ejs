@@ -89,7 +89,9 @@
                                     <td><%= sport.id %></td>
                                     <td><%= sport.name %></td>
                                     <td><%= sport.code %></td>
-                                    <td><%= sport.template %></td>
+                                    <td>
+                                        <span class="badge bg-primary"><%= sport.template %></span>
+                                    </td>
                                     <td><%= sport.description || '' %></td>
                                     <td>
                                         <% if (sport.creator) { %>
@@ -144,7 +146,7 @@
                             <input type="text" class="form-control" id="sportName" required>
                         </div>
                         <div class="mb-3">
-                            <label for="sportCode" class="form-label">코드</label>
+                            <label for="sportCode" class="form-label">종목 코드</label>
                             <input type="text" class="form-control" id="sportCode" required
                                    pattern="[A-Z]+" title="대문자 영문자만 사용 가능합니다">
                             <div class="form-text">대문자 영문자만 사용 가능합니다</div>
@@ -283,21 +285,47 @@
         // 템플릿 목록 로드
         async function loadTemplates() {
             try {
-                const response = await fetch('/api/templates');
-                const templates = await response.json();
+                // 기본 템플릿 목록 조회 (축구, 야구 등)
+                const baseResponse = await fetch('/api/templates/base-templates');
+                const baseData = await baseResponse.json();
+                
+                // 데이터베이스 템플릿 목록 조회
+                const dbResponse = await fetch('/api/templates');
+                const dbTemplates = await dbResponse.json();
+                
+                // 기본 템플릿과 DB 템플릿을 합쳐서 옵션 생성
+                const allTemplates = [];
+                
+                // 기본 템플릿 추가
+                if (baseData.success && baseData.templates) {
+                    baseData.templates.forEach(template => {
+                        allTemplates.push({
+                            name: template.name,
+                            displayName: template.displayName
+                        });
+                    });
+                }
+                
+                // DB 템플릿 추가
+                dbTemplates.forEach(template => {
+                    allTemplates.push({
+                        name: template.name,
+                        displayName: template.name
+                    });
+                });
                 
                 // 새 종목 모달의 템플릿 선택 옵션 업데이트
                 const templateSelect = document.getElementById('sportTemplate');
                 templateSelect.innerHTML = '<option value="">템플릿 선택</option>' +
-                    templates.map(template => `
-                        <option value="${template.name}">${template.name}</option>
+                    allTemplates.map(template => `
+                        <option value="${template.name}">${template.displayName}</option>
                     `).join('');
                 
                 // 수정 모달의 템플릿 선택 옵션 업데이트
                 const editTemplateSelect = document.getElementById('editSportTemplate');
                 editTemplateSelect.innerHTML = '<option value="">템플릿 선택</option>' +
-                    templates.map(template => `
-                        <option value="${template.name}">${template.name}</option>
+                    allTemplates.map(template => `
+                        <option value="${template.name}">${template.displayName}</option>
                     `).join('');
             } catch (error) {
                 console.error('템플릿 목록 로드 중 오류:', error);
@@ -317,37 +345,6 @@
             modal.show();
         }
 
-        // 템플릿 변경 이벤트 처리
-        document.querySelectorAll('.template-select').forEach(select => {
-            select.addEventListener('change', async (e) => {
-                const sportId = e.target.dataset.sportId;
-                const template = e.target.value;
-                const originalValue = e.target.dataset.currentTemplate;
-                
-                try {
-                    const response = await fetch(`/api/sport/${sportId}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ template })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('템플릿 업데이트에 실패했습니다.');
-                    }
-
-                    // 성공 시 현재 템플릿 값 업데이트
-                    e.target.dataset.currentTemplate = template;
-                    alert('템플릿이 성공적으로 변경되었습니다.');
-                } catch (error) {
-                    console.error('템플릿 변경 중 오류:', error);
-                    // 실패 시 이전 값으로 복원
-                    e.target.value = originalValue;
-                    alert('템플릿 변경에 실패했습니다: ' + error.message);
-                }
-            });
-        });
 
         // 종목 수정
         document.getElementById('updateSportBtn').addEventListener('click', async () => {
@@ -401,7 +398,7 @@
             const description = document.getElementById('sportDescription').value.trim();
             
             if (!name || !code || !template) {
-                alert('필수 항목을 모두 입력해주세요.');
+                alert('종목명, 종목 코드, 템플릿을 모두 입력해주세요.');
                 return;
             }
             
@@ -584,8 +581,8 @@
             modal.show();
 
             // 삭제 확인 버튼 이벤트 설정
-            document.getElementById('confirmDeleteBtn').onclick = () => {
-                performDelete(sport.code);
+            document.getElementById('confirmDeleteBtn').onclick = async () => {
+                await performDelete(sport.code);
                 modal.hide();
             };
         }
