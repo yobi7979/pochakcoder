@@ -322,7 +322,42 @@ async function addExistingMatchToList(matchId) {
     }
 }
 
+// 종목 목록 동적 로드
+async function loadSports() {
+    try {
+        const response = await fetch('/api/sport');
+        if (!response.ok) throw new Error('종목 목록 로드 실패');
+        
+        const sports = await response.json();
+        console.log('동적으로 로드된 종목들:', sports);
+        
+        const sportSelect = document.getElementById('sport_type');
+        sportSelect.innerHTML = ''; // 기존 옵션 제거
+        
+        sports.forEach(sport => {
+            const option = document.createElement('option');
+            option.value = sport.code;
+            option.textContent = sport.name;
+            if (sport.code === 'SOCCER') {
+                option.selected = true;
+            }
+            sportSelect.appendChild(option);
+        });
+        
+        console.log('종목 드롭박스 업데이트 완료');
+    } catch (error) {
+        console.error('종목 목록 로드 오류:', error);
+        // 오류 시 기본 종목만 표시
+        const sportSelect = document.getElementById('sport_type');
+        sportSelect.innerHTML = `
+            <option value="SOCCER" selected>축구</option>
+            <option value="BASEBALL">야구</option>
+        `;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    loadSports(); // 종목 목록 동적 로드
     loadListOptions();
     loadExistingMatches(); // 기존 경기 목록 로드
     document.getElementById('sideListSelect').addEventListener('change', renderSideListContent);
