@@ -85,8 +85,34 @@ const logsRouter = require('./routes/logs');
 const settingsRouter = require('./routes/settings');
 const dbManagementRouter = require('./routes/db-management');
 
-// 모델들
-const { sequelize, Match, Settings, MatchList, SportOverlayImage, SportActiveOverlayImage, User, UserSportPermission } = require('./models');
+// 모델들 - Railway 환경에서 안전한 로딩
+let sequelize, Match, Settings, MatchList, SportOverlayImage, SportActiveOverlayImage, User, UserSportPermission;
+
+try {
+  console.log('🔍 모델 로딩 시작...');
+  const models = require('./models');
+  sequelize = models.sequelize;
+  Match = models.Match;
+  Settings = models.Settings;
+  MatchList = models.MatchList;
+  SportOverlayImage = models.SportOverlayImage;
+  SportActiveOverlayImage = models.SportActiveOverlayImage;
+  User = models.User;
+  UserSportPermission = models.UserSportPermission;
+  console.log('✅ 모델 로딩 완료');
+} catch (error) {
+  console.error('❌ 모델 로딩 실패:', error);
+  console.error('❌ 오류 상세:', {
+    message: error.message,
+    stack: error.stack
+  });
+  
+  // Railway 환경에서 모델 로딩 실패 시 서버 종료
+  if (process.env.DATABASE_URL) {
+    console.error('❌ Railway 환경에서 모델 로딩 실패 - 서버 시작 불가');
+    process.exit(1);
+  }
+}
 const { Op } = require('sequelize');
 
 // Multer 설정 (CSV 파일 업로드용)
@@ -360,11 +386,35 @@ function validateRouterConnections() {
   console.log(`📊 총 ${connectedPaths.length}개 라우터 연결됨`);
 }
 
-// 라우터 연결 실행
-connectRouters();
-
-// 라우터 연결 검증
-validateRouterConnections();
+// Railway 환경에서 안전한 라우터 연결
+try {
+  console.log('🔧 라우터 연결 시작...');
+  connectRouters();
+  console.log('✅ 라우터 연결 완료');
+  
+  console.log('🔍 라우터 연결 검증 시작...');
+  validateRouterConnections();
+  console.log('✅ 라우터 연결 검증 완료');
+} catch (error) {
+  console.error('❌ 라우터 연결 실패:', error);
+  console.error('❌ 오류 상세:', {
+    message: error.message,
+    stack: error.stack
+  });
+  
+  // Railway 환경에서 라우터 연결 실패 시 재시도
+  if (process.env.DATABASE_URL) {
+    console.log('🔄 Railway 환경에서 라우터 재연결 시도...');
+    setTimeout(() => {
+      try {
+        connectRouters();
+        console.log('✅ 라우터 재연결 성공');
+      } catch (retryError) {
+        console.error('❌ 라우터 재연결 실패:', retryError);
+      }
+    }, 2000);
+  }
+}
 
 // 누락된 API 엔드포인트들 추가
 
@@ -3313,18 +3363,63 @@ app.post('/api/preview-template', requireAuth, async (req, res) => {
 // 서버 시작
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, async () => {
-  console.log(`서버가 포트 ${PORT}에서 실행 중입니다.`);
-  console.log(`리팩토링된 서버 구조로 실행 중입니다.`);
+  console.log(`🚀 서버가 포트 ${PORT}에서 실행 중입니다.`);
+  console.log(`🔧 리팩토링된 서버 구조로 실행 중입니다.`);
+  
+  // Railway 환경 확인
+  console.log(`🌍 환경 정보:`, {
+    NODE_ENV: process.env.NODE_ENV,
+    DATABASE_URL: process.env.DATABASE_URL ? '설정됨' : '설정되지 않음',
+    PORT: PORT
+  });
+  
+  // 데이터베이스 연결 상태 확인
+  try {
+    await sequelize.authenticate();
+    console.log('✅ 데이터베이스 연결 성공');
+  } catch (error) {
+    console.error('❌ 데이터베이스 연결 실패:', error);
+  }
+  
+  // 모델 동기화 상태 확인
+  try {
+    console.log('🔍 모델 동기화 상태 확인 중...');
+    await sequelize.sync({ alter: true });
+    console.log('✅ 모델 동기화 완료');
+  } catch (error) {
+    console.error('❌ 모델 동기화 실패:', error);
+  }
   
   // 푸시 정보 복원
-  await restorePushedMatches();
+  try {
+    await restorePushedMatches();
+    console.log('✅ 푸시 정보 복원 완료');
+  } catch (error) {
+    console.error('❌ 푸시 정보 복원 실패:', error);
+  }
   
   // 등록된 라우트 확인
-  console.log('\n=== 등록된 DELETE 라우트 ===');
+  console.log('\n=== 등록된 라우트 확인 ===');
+  
+  // API 라우트 확인
+  console.log('\n=== API 라우트 확인 ===');
   app._router.stack.forEach((middleware) => {
-    if (middleware.route && middleware.route.methods.delete) {
-      console.log(`DELETE ${middleware.route.path}`);
+    if (middleware.route) {
+      const methods = Object.keys(middleware.route.methods).join(', ').toUpperCase();
+      console.log(`${methods} ${middleware.route.path}`);
+    } else if (middleware.name === 'router') {
+      console.log(`라우터: ${middleware.regexp}`);
     }
+  });
+  
+  // match-lists 라우트 특별 확인
+  console.log('\n=== match-lists 라우트 특별 확인 ===');
+  const matchListsRoutes = app._router.stack.filter(middleware => 
+    middleware.regexp && middleware.regexp.toString().includes('match-lists')
+  );
+  console.log('match-lists 관련 라우터 개수:', matchListsRoutes.length);
+  matchListsRoutes.forEach((route, index) => {
+    console.log(`라우터 ${index + 1}:`, route.regexp.toString());
   });
 });
 
