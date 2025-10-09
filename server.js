@@ -3550,13 +3550,17 @@ server.listen(PORT, async () => {
     }
   }
   
-  // 모델 동기화 상태 확인
-  try {
-    console.log('🔍 모델 동기화 상태 확인 중...');
-    await sequelize.sync({ alter: true });
-    console.log('✅ 모델 동기화 완료');
-  } catch (error) {
-    console.error('❌ 모델 동기화 실패:', error);
+  // 모델 동기화 상태 확인 (PostgreSQL 환경에서는 건너뛰기)
+  if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
+    console.log('🔍 PostgreSQL 환경 감지: 모델 동기화 건너뛰기 (railway-complete-reset.js에서 이미 처리됨)');
+  } else {
+    try {
+      console.log('🔍 모델 동기화 상태 확인 중...');
+      await sequelize.sync({ alter: true });
+      console.log('✅ 모델 동기화 완료');
+    } catch (error) {
+      console.error('❌ 모델 동기화 실패:', error);
+    }
   }
   
   // 푸시 정보 복원

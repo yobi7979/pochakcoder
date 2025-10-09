@@ -55,8 +55,14 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
 // Match 모델 정의
 const Match = sequelize.define('Match', {
   id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  match_id: {
     type: DataTypes.STRING,
-    primaryKey: true
+    allowNull: false,
+    unique: true
   },
   sport_type: {
     type: DataTypes.STRING,
@@ -96,7 +102,11 @@ const Match = sequelize.define('Match', {
   },
   status: {
     type: DataTypes.STRING,
-    defaultValue: 'pending'
+    defaultValue: 'scheduled'
+  },
+  use_team_logos: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   },
   match_data: {
     type: DataTypes.JSON,
@@ -129,25 +139,13 @@ const Template = sequelize.define('Template', {
     type: DataTypes.STRING,
     allowNull: false
   },
-  sport_type: {
+  sport_code: {
     type: DataTypes.STRING,
     allowNull: false
   },
-  template_type: {
-    type: DataTypes.ENUM('control', 'overlay'),
-    allowNull: false
-  },
-  content: {
+  template_data: {
     type: DataTypes.TEXT,
-    allowNull: false
-  },
-  file_name: {
-    type: DataTypes.STRING,
     allowNull: true
-  },
-  is_default: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false
   },
   created_by: {
     type: DataTypes.INTEGER,
@@ -162,8 +160,7 @@ const Template = sequelize.define('Template', {
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
-  tableName: 'templates',
-  underscored: true
+  tableName: 'Templates'
 });
 
 // Sport 모델 정의
@@ -225,21 +222,17 @@ const SportOverlayImage = sequelize.define('SportOverlayImage', {
     type: DataTypes.STRING,
     allowNull: false
   },
-  filename: {
+  image_name: {
     type: DataTypes.STRING,
     allowNull: false
   },
-  file_path: {
+  image_path: {
     type: DataTypes.STRING,
     allowNull: false
   },
   is_active: {
     type: DataTypes.BOOLEAN,
-    defaultValue: true
-  },
-  upload_time: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW
+    defaultValue: false
   },
   created_by: {
     type: DataTypes.INTEGER,
@@ -273,13 +266,9 @@ const SportActiveOverlayImage = sequelize.define('SportActiveOverlayImage', {
     allowNull: false,
     unique: false
   },
-  active_image_id: {
-    type: DataTypes.INTEGER,
-    allowNull: true
-  },
-  active_image_path: {
+  image_path: {
     type: DataTypes.STRING,
-    allowNull: true
+    allowNull: false
   },
   created_by: {
     type: DataTypes.INTEGER,
@@ -298,7 +287,7 @@ const SportActiveOverlayImage = sequelize.define('SportActiveOverlayImage', {
   indexes: [
     {
       unique: true,
-      fields: ['sport_code', 'active_image_id']
+      fields: ['sport_code', 'image_path']
     }
   ]
 });
@@ -318,17 +307,16 @@ const Settings = sequelize.define('Settings', {
     primaryKey: true,
     autoIncrement: true
   },
-  key: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true
-  },
-  value: {
+  match_id: {
     type: DataTypes.STRING,
     allowNull: false
   },
-  description: {
+  setting_key: {
     type: DataTypes.STRING,
+    allowNull: false
+  },
+  setting_value: {
+    type: DataTypes.TEXT,
     allowNull: true
   }
 }, {
@@ -391,7 +379,7 @@ const User = sequelize.define('User', {
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
-  tableName: 'users',
+  tableName: 'Users',
   indexes: [
     {
       unique: true,
@@ -416,6 +404,10 @@ const MatchList = sequelize.define('MatchList', {
   name: {
     type: DataTypes.STRING,
     allowNull: false
+  },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true
   },
   matches: {
     type: DataTypes.JSON,
@@ -471,14 +463,13 @@ const UserSportPermission = sequelize.define('UserSportPermission', {
     //   key: 'id'
     // }
   },
-  sport_id: {
-    type: DataTypes.INTEGER,
+  sport_code: {
+    type: DataTypes.STRING,
     allowNull: false
-    // Railway PostgreSQL 환경에서 외래 키 제약 조건 제거
-    // references: {
-    //   model: 'Sports',
-    //   key: 'id'
-    // }
+  },
+  permission: {
+    type: DataTypes.STRING,
+    defaultValue: 'read'
   }
 }, {
   timestamps: true,
@@ -488,7 +479,7 @@ const UserSportPermission = sequelize.define('UserSportPermission', {
   indexes: [
     {
       unique: true,
-      fields: ['user_id', 'sport_id']
+      fields: ['user_id', 'sport_code']
     }
   ]
 });
@@ -513,8 +504,8 @@ Match.beforeCreate((match) => {
   const timestamp = Date.now();
   const sequence = String(timestamp % 10000).padStart(4, '0');  // 4자리 숫자로 확장
   
-  // 새 ID 설정: 날짜 + 종목코드 + 순번
-  match.id = `${dateCode}${sportCode}${sequence}`;
+  // 새 match_id 설정: 날짜 + 종목코드 + 순번
+  match.match_id = `${dateCode}${sportCode}${sequence}`;
   
   // 기본 경기 데이터 설정
   if (match.sport_type === 'soccer') {
@@ -596,9 +587,9 @@ User.hasMany(MatchList, { foreignKey: 'created_by' });
 
 // UserSportPermission과 User, Sport 간의 관계 설정
 UserSportPermission.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
-UserSportPermission.belongsTo(Sport, { foreignKey: 'sport_id', as: 'sport' });
+UserSportPermission.belongsTo(Sport, { foreignKey: 'sport_code', targetKey: 'code', as: 'sport' });
 User.hasMany(UserSportPermission, { foreignKey: 'user_id', as: 'sportPermissions' });
-Sport.hasMany(UserSportPermission, { foreignKey: 'sport_id', as: 'userPermissions' });
+Sport.hasMany(UserSportPermission, { foreignKey: 'sport_code', sourceKey: 'code', as: 'userPermissions' });
 
 // TeamInfo 모델 정의
 const TeamInfo = sequelize.define('TeamInfo', {
@@ -640,11 +631,11 @@ const TeamInfo = sequelize.define('TeamInfo', {
   team_header: {
     type: DataTypes.STRING
   },
-  logo_path: {
+  team_logo_path: {
     type: DataTypes.STRING(500),
     defaultValue: null
   },
-  logo_bg_color: {
+  team_logo_bg_color: {
     type: DataTypes.STRING(7),
     defaultValue: '#FFFFFF'
   }
@@ -656,17 +647,21 @@ const TeamInfo = sequelize.define('TeamInfo', {
 });
 
 // TeamInfo와 Match 간의 관계 설정
-TeamInfo.belongsTo(Match, { foreignKey: 'match_id', as: 'match' });
-Match.hasMany(TeamInfo, { foreignKey: 'match_id', as: 'teamInfo' });
+TeamInfo.belongsTo(Match, { foreignKey: 'match_id', targetKey: 'match_id', as: 'match' });
+Match.hasMany(TeamInfo, { foreignKey: 'match_id', sourceKey: 'match_id', as: 'teamInfo' });
 
-// 데이터베이스 연결 및 테이블 생성
-sequelize.sync()
-  .then(() => {
-    // 연결 성공 로그 제거
-  })
-  .catch(err => {
-    console.error('데이터베이스 연결 실패:', err);
-  });
+// 데이터베이스 연결 및 테이블 생성 (PostgreSQL 환경에서는 건너뛰기)
+if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
+  console.log('PostgreSQL 환경 감지: 모델 동기화 건너뛰기 (railway-complete-reset.js에서 이미 처리됨)');
+} else {
+  sequelize.sync()
+    .then(() => {
+      // 연결 성공 로그 제거
+    })
+    .catch(err => {
+      console.error('데이터베이스 연결 실패:', err);
+    });
+}
 
 module.exports = {
   sequelize,
