@@ -40,42 +40,66 @@ router.get('/api', async (req, res) => {
     
     console.log('등록된 모든 종목:', allSports.map(s => ({ name: s.name, code: s.code, is_default: s.is_default })));
     
-    // 2. 각 종목별 통계 조회 (경기가 있는 종목만)
+    // 2. 각 종목별 통계 조회 (Sequelize 모델 사용)
     let sportStats = [];
     for (const sport of allSports) {
       let stats;
-      if (isPostgres) {
-        // PostgreSQL 쿼리
-        const [results] = await sequelize.query(`
-          SELECT 
-            $1 as sport_type,
-            COUNT(DISTINCT m.id) as match_count,
-            COUNT(t.id) as team_info_count,
-            COUNT(t.logo_path) as logo_count,
-            STRING_AGG(DISTINCT t.team_color, ',') as used_colors,
-            MIN(m.created_at) as first_created,
-            MAX(m.updated_at) as last_updated
-          FROM matches m
-          LEFT JOIN teaminfo t ON m.id = t.match_id
-          WHERE m.sport_type = $1
-        `, [sport.code]);
-        stats = results[0];
-      } else {
-        // SQLite 쿼리
-        const [results] = await sequelize.query(`
-          SELECT 
-            ? as sport_type,
-            COUNT(DISTINCT m.id) as match_count,
-            COUNT(t.id) as team_info_count,
-            COUNT(t.logo_path) as logo_count,
-            GROUP_CONCAT(DISTINCT t.team_color) as used_colors,
-            MIN(m.created_at) as first_created,
-            MAX(m.updated_at) as last_updated
-          FROM Matches m
-          LEFT JOIN TeamInfo t ON m.id = t.match_id
-          WHERE m.sport_type = ?
-        `, [sport.code, sport.code]);
-        stats = results[0];
+      
+      try {
+        // Sequelize 모델을 직접 사용하여 통계 조회
+        const { Match, TeamInfo } = require('../models');
+        
+        const matchCount = await Match.count({ where: { sport_type: sport.code } });
+        const teamInfoCount = await TeamInfo.count({ where: { sport_type: sport.code } });
+        
+        // 팀 색상 정보 조회
+        const teamColors = await TeamInfo.findAll({
+          where: { sport_type: sport.code },
+          attributes: ['team_color'],
+          group: ['team_color']
+        });
+        
+        // 경기 생성/수정 시간 조회
+        const matchDates = await Match.findAll({
+          where: { sport_type: sport.code },
+          attributes: ['created_at', 'updated_at'],
+          order: [['created_at', 'ASC']]
+        });
+        
+        const firstCreated = matchDates.length > 0 ? matchDates[0].created_at : null;
+        const lastUpdated = matchDates.length > 0 ? 
+          matchDates.reduce((latest, match) => 
+            new Date(match.updated_at) > new Date(latest) ? match.updated_at : latest, 
+            matchDates[0].updated_at
+          ) : null;
+        
+        stats = {
+          sport_type: sport.code,
+          match_count: matchCount,
+          team_info_count: teamInfoCount,
+          logo_count: await TeamInfo.count({ 
+            where: { 
+              sport_type: sport.code,
+              logo_path: { [require('sequelize').Op.ne]: null }
+            } 
+          }),
+          used_colors: teamColors.map(tc => tc.team_color).filter(c => c).join(','),
+          first_created: firstCreated,
+          last_updated: lastUpdated
+        };
+        
+        console.log(`종목 ${sport.code} 통계:`, stats);
+      } catch (error) {
+        console.error(`종목 ${sport.code} 통계 조회 실패:`, error);
+        stats = {
+          sport_type: sport.code,
+          match_count: 0,
+          team_info_count: 0,
+          logo_count: 0,
+          used_colors: null,
+          first_created: null,
+          last_updated: null
+        };
       }
       
       // 경기가 없는 종목의 경우 기본값 설정
@@ -111,50 +135,17 @@ router.get('/api', async (req, res) => {
       console.log(`종목 ${stat.sport_type}의 팀 상세 정보 조회 중...`);
       
       let teamDetails;
-      if (isPostgres) {
-        // PostgreSQL 쿼리
-        const [results] = await sequelize.query(`
-          SELECT 
-            id,
-            match_id,
-            team_name,
-            team_type,
-            team_color,
-            team_header,
-            logo_path,
-            logo_bg_color,
-            created_at,
-            updated_at
-          FROM teaminfo 
-          WHERE sport_type = $1
-          ORDER BY match_id, team_type
-        `, { 
-          replacements: [stat.sport_type], 
-          type: sequelize.QueryTypes.SELECT 
+      try {
+        // Sequelize 모델을 직접 사용하여 팀 정보 조회
+        const { TeamInfo } = require('../models');
+        teamDetails = await TeamInfo.findAll({
+          where: { sport_type: stat.sport_type },
+          order: [['match_id', 'ASC'], ['team_type', 'ASC']]
         });
-        teamDetails = results;
-      } else {
-        // SQLite 쿼리
-        const [results] = await sequelize.query(`
-          SELECT 
-            id,
-            match_id,
-            team_name,
-            team_type,
-            team_color,
-            team_header,
-            logo_path,
-            logo_bg_color,
-            created_at,
-            updated_at
-          FROM TeamInfo 
-          WHERE sport_type = ?
-          ORDER BY match_id, team_type
-        `, { 
-          replacements: [stat.sport_type], 
-          type: sequelize.QueryTypes.SELECT 
-        });
-        teamDetails = results;
+        console.log(`종목 ${stat.sport_type}의 팀 상세 정보:`, teamDetails.length, '개');
+      } catch (error) {
+        console.error(`종목 ${stat.sport_type}의 팀 정보 조회 실패:`, error);
+        teamDetails = [];
       }
       
       console.log(`종목 ${stat.sport_type}의 팀 상세 정보:`, teamDetails);
@@ -181,37 +172,18 @@ router.get('/api', async (req, res) => {
       });
     }
     
-    // 3. Settings 테이블 데이터 조회
+    // 3. Settings 테이블 데이터 조회 (Sequelize 모델 사용)
     console.log('Settings 테이블 데이터 조회 중...');
     let settingsData;
-    if (isPostgres) {
-      // PostgreSQL 쿼리
-      const [results] = await sequelize.query(`
-        SELECT 
-          id,
-          key,
-          value,
-          description,
-          created_at,
-          updated_at
-        FROM settings 
-        ORDER BY created_at DESC
-      `);
-      settingsData = results;
-    } else {
-      // SQLite 쿼리
-      const [results] = await sequelize.query(`
-        SELECT 
-          id,
-          key,
-          value,
-          description,
-          created_at,
-          updated_at
-        FROM Settings 
-        ORDER BY created_at DESC
-      `);
-      settingsData = results;
+    try {
+      const { Settings } = require('../models');
+      settingsData = await Settings.findAll({
+        order: [['created_at', 'DESC']]
+      });
+      console.log('Settings 테이블 데이터:', settingsData.length, '개');
+    } catch (error) {
+      console.error('Settings 테이블 조회 실패:', error);
+      settingsData = [];
     }
     
     console.log('Settings 테이블 데이터:', settingsData);
