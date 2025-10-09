@@ -45,6 +45,11 @@
             border-left: none;
             border-right: none;
             border-radius: 0;
+            white-space: nowrap;
+            overflow: visible;
+            text-overflow: unset;
+            padding: 12px 16px;
+            line-height: 1.4;
         }
         
         .list-group-item:first-child {
@@ -297,7 +302,8 @@ async function createList() {
             return;
         }
         
-        const newList = await response.json();
+        const result = await response.json();
+        const newList = result.matchList || result;
         allLists.unshift(newList);
         document.getElementById('newListName').value = '';
         selectedListId = newList.id;

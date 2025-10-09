@@ -50,7 +50,7 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
     const matchList = await MatchList.create(matchListData);
     
     console.log(`[DEBUG] 경기 목록 생성 성공: ${matchList.id} (사용자: ${req.session.username})`);
-    res.json({ success: true, matchList });
+    res.json({ success: true, matchList: matchList });
   } catch (error) {
     console.error('[DEBUG] 경기 목록 생성 실패:', error);
     console.error('[DEBUG] 오류 상세:', {
