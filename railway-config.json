@@ -1,0 +1,10 @@
+{
+  "railway": {
+    "startCommand": "npm run railway-start",
+    "buildCommand": "npm install",
+    "environment": {
+      "NODE_ENV": "production",
+      "RAILWAY_ENVIRONMENT": "true"
+    }
+  }
+}
