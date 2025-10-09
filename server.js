@@ -759,19 +759,91 @@ app.put('/api/sport/:code', requireAuth, async (req, res) => {
 app.delete('/api/sport/:code', requireAuth, async (req, res) => {
   try {
     const { code } = req.params;
+    console.log(`🔍 스포츠 삭제 요청: ${code}`);
     
-    const sport = await Sport.findOne({ where: { code } });
+    const sport = await Sport.findOne({ where: { code: code.toUpperCase() } });
     if (!sport) {
+      console.log(`❌ 스포츠를 찾을 수 없음: ${code}`);
       return res.status(404).json({ error: '종목을 찾을 수 없습니다.' });
     }
     
+    // 기본 종목은 삭제 불가
+    if (sport.is_default) {
+      console.log(`❌ 기본 종목은 삭제할 수 없음: ${sport.name}`);
+      return res.status(400).json({ error: '기본 종목은 삭제할 수 없습니다.' });
+    }
+    
+    console.log(`✅ 스포츠 찾음: ${sport.name} (${sport.code})`);
+    
+    // 관련 데이터 삭제
+    const { Match, SportOverlayImage, SportActiveOverlayImage, TeamInfo } = require('./models');
+    
+    // 1. 관련 경기 삭제
+    const matchCount = await Match.count({ where: { sport_type: sport.code } });
+    if (matchCount > 0) {
+      await Match.destroy({ where: { sport_type: sport.code } });
+      console.log(`✅ 관련 경기 삭제: ${matchCount}개`);
+    }
+    
+    // 2. 오버레이 이미지 삭제
+    try {
+      const overlayImageCount = await SportOverlayImage.count({ where: { sport_code: sport.code } });
+      if (overlayImageCount > 0) {
+        await SportOverlayImage.destroy({ where: { sport_code: sport.code } });
+        console.log(`✅ 오버레이 이미지 삭제: ${overlayImageCount}개`);
+      }
+    } catch (error) {
+      console.warn('⚠️ 오버레이 이미지 삭제 실패:', error.message);
+    }
+    
+    // 3. 활성 오버레이 이미지 삭제
+    try {
+      const activeOverlayImageCount = await SportActiveOverlayImage.count({ where: { sport_code: sport.code } });
+      if (activeOverlayImageCount > 0) {
+        await SportActiveOverlayImage.destroy({ where: { sport_code: sport.code } });
+        console.log(`✅ 활성 오버레이 이미지 삭제: ${activeOverlayImageCount}개`);
+      }
+    } catch (error) {
+      console.warn('⚠️ 활성 오버레이 이미지 삭제 실패:', error.message);
+    }
+    
+    // 4. 팀 정보 삭제
+    try {
+      const teamInfoCount = await TeamInfo.count({ where: { sport_type: sport.code } });
+      if (teamInfoCount > 0) {
+        await TeamInfo.destroy({ where: { sport_type: sport.code } });
+        console.log(`✅ 팀 정보 삭제: ${teamInfoCount}개`);
+      }
+    } catch (error) {
+      console.warn('⚠️ 팀 정보 삭제 실패:', error.message);
+    }
+    
+    // 5. 폴더 삭제
+    const fs = require('fs');
+    const path = require('path');
+    
+    // 오버레이 이미지 폴더 삭제
+    const overlayFolderPath = path.join(__dirname, 'public', 'overlay-images', sport.code.toUpperCase());
+    if (fs.existsSync(overlayFolderPath)) {
+      fs.rmSync(overlayFolderPath, { recursive: true, force: true });
+      console.log(`✅ 오버레이 폴더 삭제: ${overlayFolderPath}`);
+    }
+    
+    // 팀로고 폴더 삭제
+    const teamLogoFolderPath = path.join(__dirname, 'public', 'TEAMLOGO', sport.code.toUpperCase());
+    if (fs.existsSync(teamLogoFolderPath)) {
+      fs.rmSync(teamLogoFolderPath, { recursive: true, force: true });
+      console.log(`✅ 팀로고 폴더 삭제: ${teamLogoFolderPath}`);
+    }
+    
+    // 6. 스포츠 삭제
     await sport.destroy();
     
-    console.log(`종목 삭제: ${sport.name} (${code})`);
-    res.json({ success: true });
+    console.log(`✅ 종목 삭제 완료: ${sport.name} (${sport.code})`);
+    res.json({ success: true, message: '종목이 성공적으로 삭제되었습니다.' });
   } catch (error) {
-    console.error('종목 삭제 실패:', error);
-    res.status(500).json({ error: '종목 삭제에 실패했습니다.' });
+    console.error('❌ 종목 삭제 실패:', error);
+    res.status(500).json({ error: '종목 삭제에 실패했습니다.', details: error.message });
   }
 });
 
