@@ -40,8 +40,8 @@ router.get('/api', async (req, res) => {
             STRING_AGG(DISTINCT t.team_color, ',') as used_colors,
             MIN(m.created_at) as first_created,
             MAX(m.updated_at) as last_updated
-          FROM matches m
-          LEFT JOIN teaminfo t ON m.id = t.match_id
+          FROM "Matches" m
+          LEFT JOIN "TeamInfo" t ON m.id = t.match_id
           WHERE m.sport_type = $1
         `, [sport.code]);
         stats = results[0];
@@ -110,7 +110,7 @@ router.get('/api', async (req, res) => {
             logo_bg_color,
             created_at,
             updated_at
-          FROM teaminfo 
+          FROM "TeamInfo" 
           WHERE sport_type = $1
           ORDER BY match_id, team_type
         `, { 
@@ -179,7 +179,7 @@ router.get('/api', async (req, res) => {
           description,
           created_at,
           updated_at
-        FROM settings 
+        FROM "Settings" 
         ORDER BY created_at DESC
       `);
       settingsData = results;
@@ -244,7 +244,7 @@ router.get('/api/:sportType', async (req, res) => {
           m.status,
           m.created_at,
           m.updated_at
-        FROM matches m
+        FROM "Matches" m
         WHERE m.sport_type = $1
         ORDER BY m.created_at DESC
       `, [sportType]);
@@ -261,7 +261,7 @@ router.get('/api/:sportType', async (req, res) => {
           logo_bg_color,
           created_at,
           updated_at
-        FROM teaminfo 
+        FROM "TeamInfo" 
         WHERE sport_type = $1
         ORDER BY match_id, team_type
       `, [sportType]);
@@ -273,7 +273,7 @@ router.get('/api/:sportType', async (req, res) => {
           COUNT(t.id) as team_info_count,
           COUNT(t.logo_path) as logo_count,
           STRING_AGG(DISTINCT t.team_color, ',') as used_colors
-        FROM matches m
+        FROM "Matches" m
         LEFT JOIN teaminfo t ON m.id = t.match_id
         WHERE m.sport_type = $1
       `, [sportType]);
