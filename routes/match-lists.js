@@ -57,8 +57,31 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
     console.error('[DEBUG] 오류 상세:', {
       message: error.message,
       name: error.name,
-      stack: error.stack
+      stack: error.stack,
+      code: error.code,
+      errno: error.errno,
+      sqlState: error.sqlState
     });
+    
+    // Railway PostgreSQL 환경에서 발생할 수 있는 특정 오류들 처리
+    if (error.name === 'SequelizeDatabaseError') {
+      console.error('[DEBUG] 데이터베이스 오류:', error.original);
+      return res.status(500).json({ 
+        error: '데이터베이스 연결 오류가 발생했습니다.',
+        details: 'Railway PostgreSQL 환경에서 테이블 구조 문제가 발생했습니다.',
+        suggestion: '데이터베이스를 초기화해주세요.'
+      });
+    }
+    
+    if (error.name === 'SequelizeConnectionError') {
+      console.error('[DEBUG] 데이터베이스 연결 오류:', error.original);
+      return res.status(500).json({ 
+        error: '데이터베이스 연결에 실패했습니다.',
+        details: 'Railway PostgreSQL 서버에 연결할 수 없습니다.',
+        suggestion: '잠시 후 다시 시도해주세요.'
+      });
+    }
+    
     res.status(500).json({ 
       error: '경기 목록 생성 중 오류가 발생했습니다.',
       details: error.message 

@@ -10,13 +10,24 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
   try {
     sequelize = new Sequelize(process.env.DATABASE_URL, {
       dialect: 'postgres',
-      logging: console.log,
+      logging: false, // Railway 환경에서 로깅 비활성화
       benchmark: false,
+      pool: {
+        max: 5,
+        min: 0,
+        acquire: 30000,
+        idle: 10000
+      },
       dialectOptions: {
         ssl: {
           require: true,
           rejectUnauthorized: false
         }
+      },
+      define: {
+        timestamps: true,
+        underscored: true,
+        freezeTableName: true
       }
     });
     console.log('PostgreSQL 연결 설정 완료');
@@ -26,7 +37,7 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
     sequelize = new Sequelize({
       dialect: 'sqlite',
       storage: path.join(__dirname, '../sports.db'),
-      logging: console.log,
+      logging: false,
       benchmark: false
     });
   }
@@ -93,11 +104,12 @@ const Match = sequelize.define('Match', {
   },
   created_by: {
     type: DataTypes.INTEGER,
-    allowNull: true,
-    references: {
-      model: 'users',
-      key: 'id'
-    }
+    allowNull: true
+    // Railway PostgreSQL 환경에서 외래 키 제약 조건 제거
+    // references: {
+    //   model: 'users',
+    //   key: 'id'
+    // }
   }
 }, {
   timestamps: true,
@@ -139,11 +151,12 @@ const Template = sequelize.define('Template', {
   },
   created_by: {
     type: DataTypes.INTEGER,
-    allowNull: true,
-    references: {
-      model: 'users',
-      key: 'id'
-    }
+    allowNull: true
+    // Railway PostgreSQL 환경에서 외래 키 제약 조건 제거
+    // references: {
+    //   model: 'users',
+    //   key: 'id'
+    // }
   }
 }, {
   timestamps: true,
@@ -187,11 +200,12 @@ const Sport = sequelize.define('Sport', {
   },
   created_by: {
     type: DataTypes.INTEGER,
-    allowNull: true,
-    references: {
-      model: 'users',
-      key: 'id'
-    }
+    allowNull: true
+    // Railway PostgreSQL 환경에서 외래 키 제약 조건 제거
+    // references: {
+    //   model: 'users',
+    //   key: 'id'
+    // }
   }
 }, {
   timestamps: true,
@@ -409,11 +423,12 @@ const MatchList = sequelize.define('MatchList', {
   },
   created_by: {
     type: DataTypes.INTEGER,
-    allowNull: true,
-    references: {
-      model: 'users',
-      key: 'id'
-    }
+    allowNull: true
+    // Railway PostgreSQL 환경에서 외래 키 제약 조건 제거
+    // references: {
+    //   model: 'users',
+    //   key: 'id'
+    // }
   }
 }, {
   timestamps: true,
@@ -431,19 +446,21 @@ const UserSportPermission = sequelize.define('UserSportPermission', {
   },
   user_id: {
     type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: 'users',
-      key: 'id'
-    }
+    allowNull: false
+    // Railway PostgreSQL 환경에서 외래 키 제약 조건 제거
+    // references: {
+    //   model: 'users',
+    //   key: 'id'
+    // }
   },
   sport_id: {
     type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: 'Sports',
-      key: 'id'
-    }
+    allowNull: false
+    // Railway PostgreSQL 환경에서 외래 키 제약 조건 제거
+    // references: {
+    //   model: 'Sports',
+    //   key: 'id'
+    // }
   }
 }, {
   timestamps: true,
@@ -574,12 +591,13 @@ const TeamInfo = sequelize.define('TeamInfo', {
   },
   match_id: {
     type: DataTypes.STRING,
-    allowNull: false,
-    references: {
-      model: 'Matches',
-      key: 'id'
-    },
-    onDelete: 'CASCADE'
+    allowNull: false
+    // Railway PostgreSQL 환경에서 외래 키 제약 조건 제거
+    // references: {
+    //   model: 'Matches',
+    //   key: 'id'
+    // },
+    // onDelete: 'CASCADE'
   },
   sport_type: {
     type: DataTypes.STRING(50),
