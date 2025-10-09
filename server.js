@@ -1896,14 +1896,15 @@ app.get('/api/sport/:code/delete-info', requireAuth, async (req, res) => {
     console.log('🔍 관련 데이터 조회 시작...');
     const { Match } = require('./models');
     
+    let matchCount = 0;
     try {
-      const matchCount = await Match.count({
+      matchCount = await Match.count({
         where: { sport_type: sport.code }
       });
       console.log(`✅ 경기 수 조회 완료: ${matchCount}개`);
     } catch (error) {
       console.error('❌ 경기 수 조회 실패:', error);
-      throw error;
+      matchCount = 0;
     }
     
     // 오버레이 이미지 관련 데이터 조회
