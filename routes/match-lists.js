@@ -38,11 +38,12 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
       return res.status(400).json({ error: '목록 이름이 필요합니다.' });
     }
     
-    // PostgreSQL 호환성을 위한 필드 제한
+    // PostgreSQL 호환성을 위한 필드 제한 (created_by 제외)
     const matchListData = {
       name,
       custom_url: custom_url || null,
       matches: []
+      // created_by 필드 제거 - PostgreSQL 외래 키 제약 조건 문제 방지
     };
     
     console.log(`[DEBUG] 생성할 데이터:`, matchListData);
@@ -77,8 +78,8 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
       return res.status(404).json({ error: '경기 목록을 찾을 수 없습니다.' });
     }
     
-    // 권한 확인: 일반 사용자는 자신이 만든 목록만 조회 가능
-    if (req.session.userRole !== 'admin' && matchList.created_by !== req.session.userId) {
+    // 권한 확인: 일반 사용자는 자신이 만든 목록만 조회 가능 (created_by가 없는 경우 모든 사용자 허용)
+    if (req.session.userRole !== 'admin' && matchList.created_by && matchList.created_by !== req.session.userId) {
       return res.status(403).json({ error: '권한이 없습니다.' });
     }
     
@@ -138,8 +139,8 @@ router.delete('/:id', requireAuth, asyncHandler(async (req, res) => {
       return res.status(404).json({ error: '경기 목록을 찾을 수 없습니다.' });
     }
     
-    // 권한 확인: 일반 사용자는 자신이 만든 목록만 삭제 가능
-    if (req.session.userRole !== 'admin' && matchList.created_by !== req.session.userId) {
+    // 권한 확인: 일반 사용자는 자신이 만든 목록만 삭제 가능 (created_by가 없는 경우 모든 사용자 허용)
+    if (req.session.userRole !== 'admin' && matchList.created_by && matchList.created_by !== req.session.userId) {
       return res.status(403).json({ error: '권한이 없습니다.' });
     }
     
