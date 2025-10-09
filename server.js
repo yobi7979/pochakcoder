@@ -1910,25 +1910,68 @@ app.get('/api/sport/:code/delete-info', requireAuth, async (req, res) => {
     console.log('🔍 오버레이 이미지 데이터 조회 시작...');
     const { SportOverlayImage, SportActiveOverlayImage } = require('./models');
     
+    // 기본값 설정
+    let overlayImageCount = 0;
+    let activeOverlayImageCount = 0;
+    let overlayImages = [];
+    
     try {
-      const overlayImageCount = await SportOverlayImage.count({
-        where: { sport_code: sport.code }
-      });
-      console.log(`✅ 오버레이 이미지 수 조회 완료: ${overlayImageCount}개`);
+      // 테이블 존재 여부 확인
+      console.log('🔍 테이블 존재 여부 확인 중...');
       
-      const activeOverlayImageCount = await SportActiveOverlayImage.count({
-        where: { sport_code: sport.code }
-      });
-      console.log(`✅ 활성 오버레이 이미지 수 조회 완료: ${activeOverlayImageCount}개`);
+      // SportOverlayImage 테이블 확인
+      try {
+        await SportOverlayImage.findOne({ limit: 1 });
+        console.log('✅ SportOverlayImage 테이블 존재 확인');
+        
+        // 테이블이 존재하면 데이터 조회
+        overlayImageCount = await SportOverlayImage.count({
+          where: { sport_code: sport.code }
+        });
+        console.log(`✅ 오버레이 이미지 수 조회 완료: ${overlayImageCount}개`);
+        
+        overlayImages = await SportOverlayImage.findAll({
+          where: { sport_code: sport.code },
+          attributes: ['id', 'filename', 'file_path', 'is_active']
+        });
+        console.log(`✅ 오버레이 이미지 목록 조회 완료: ${overlayImages.length}개`);
+      } catch (tableError) {
+        console.warn('⚠️ SportOverlayImage 테이블이 존재하지 않거나 접근 불가:', tableError.message);
+        overlayImageCount = 0;
+        overlayImages = [];
+      }
       
-      const overlayImages = await SportOverlayImage.findAll({
-        where: { sport_code: sport.code },
-        attributes: ['id', 'filename', 'file_path', 'is_active']
+      // SportActiveOverlayImage 테이블 확인
+      try {
+        await SportActiveOverlayImage.findOne({ limit: 1 });
+        console.log('✅ SportActiveOverlayImage 테이블 존재 확인');
+        
+        // 테이블이 존재하면 데이터 조회
+        activeOverlayImageCount = await SportActiveOverlayImage.count({
+          where: { sport_code: sport.code }
+        });
+        console.log(`✅ 활성 오버레이 이미지 수 조회 완료: ${activeOverlayImageCount}개`);
+      } catch (tableError) {
+        console.warn('⚠️ SportActiveOverlayImage 테이블이 존재하지 않거나 접근 불가:', tableError.message);
+        activeOverlayImageCount = 0;
+      }
+      
+      console.log('📊 최종 오버레이 이미지 데이터:', { 
+        overlayImageCount, 
+        activeOverlayImageCount, 
+        overlayImagesCount: overlayImages.length 
       });
-      console.log(`✅ 오버레이 이미지 목록 조회 완료: ${overlayImages.length}개`);
     } catch (error) {
       console.error('❌ 오버레이 이미지 데이터 조회 실패:', error);
-      throw error;
+      // 오류가 발생해도 기본값으로 계속 진행
+      overlayImageCount = 0;
+      activeOverlayImageCount = 0;
+      overlayImages = [];
+      console.log('📊 오버레이 이미지 데이터 (오류 시 기본값):', { 
+        overlayImageCount, 
+        activeOverlayImageCount, 
+        overlayImagesCount: overlayImages.length 
+      });
     }
     
     // 오버레이 이미지 폴더 정보
