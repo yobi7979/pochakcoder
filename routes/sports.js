@@ -68,7 +68,8 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
       template,
       description,
       is_active: true,
-      is_default: false
+      is_default: false,
+      created_by: req.session.userId
     });
 
     // 종목별 오버레이 이미지 폴더 생성 (종목코드 대문자로)
@@ -90,7 +91,15 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
     res.json(sport);
   } catch (error) {
     console.error('종목 생성 실패:', error);
-    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+    console.error('종목 생성 오류 상세:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    res.status(500).json({ 
+      error: '서버 오류가 발생했습니다.',
+      details: error.message 
+    });
   }
 }));
 

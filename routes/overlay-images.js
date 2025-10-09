@@ -170,7 +170,8 @@ router.post('/upload/:sportCode', requireAuth, overlayImageUpload.single('image'
       filename: file.originalname,
       file_path: `/overlay-images/${sportFolderName}/${file.originalname}`,
       is_active: true,
-      upload_time: new Date()
+      upload_time: new Date(),
+      created_by: req.session.userId
     });
     
     // 활성 이미지로 설정
@@ -179,7 +180,8 @@ router.post('/upload/:sportCode', requireAuth, overlayImageUpload.single('image'
       image_id: imageRecord.id,
       filename: file.originalname,
       file_path: `/overlay-images/${sportFolderName}/${file.originalname}`,
-      activated_at: new Date()
+      activated_at: new Date(),
+      created_by: req.session.userId
     });
     
     console.log(`✅ 오버레이 이미지 업로드 완료: ${file.originalname}`);
