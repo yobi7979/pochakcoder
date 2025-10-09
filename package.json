@@ -5,12 +5,14 @@
   "main": "server.js",
   "scripts": {
     "start": "node railway-startup-schema-fix.js && node server.js",
+    "start:emergency": "node railway-emergency-schema-fix.js && node server.js",
     "start:original": "node server.js",
     "dev": "nodemon server.js",
     "dev:local": "LOCAL_DEV=true nodemon server.js",
     "migrate": "node migrate-to-postgres.js",
     "build": "npm install --production",
-    "fix-schema": "node railway-startup-schema-fix.js"
+    "fix-schema": "node railway-startup-schema-fix.js",
+    "emergency-fix": "node railway-emergency-schema-fix.js"
   },
   "dependencies": {
     "archiver": "^6.0.2",
