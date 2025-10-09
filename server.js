@@ -3404,6 +3404,39 @@ server.listen(PORT, async () => {
         }
       }
       
+      // 1-1. SportOverlayImage 테이블 강제 수정
+      console.log('🔧 SportOverlayImage 테이블 강제 수정 중...');
+      const sportOverlayImageQueries = [
+        `ALTER TABLE "SportOverlayImages" ADD COLUMN IF NOT EXISTS "created_by" INTEGER;`,
+        `ALTER TABLE "SportOverlayImages" ADD COLUMN IF NOT EXISTS "is_active" BOOLEAN DEFAULT false;`
+      ];
+      
+      for (const query of sportOverlayImageQueries) {
+        try {
+          await sequelize.query(query);
+          const columnName = query.match(/ADD COLUMN IF NOT EXISTS "([^"]+)"/)?.[1] || 'unknown';
+          console.log(`✅ SportOverlayImages 컬럼 확인/추가: ${columnName}`);
+        } catch (error) {
+          console.warn(`⚠️ SportOverlayImages 컬럼 처리 실패: ${error.message}`);
+        }
+      }
+      
+      // 1-2. SportActiveOverlayImage 테이블 강제 수정
+      console.log('🔧 SportActiveOverlayImage 테이블 강제 수정 중...');
+      const sportActiveOverlayImageQueries = [
+        `ALTER TABLE "SportActiveOverlayImages" ADD COLUMN IF NOT EXISTS "created_by" INTEGER;`
+      ];
+      
+      for (const query of sportActiveOverlayImageQueries) {
+        try {
+          await sequelize.query(query);
+          const columnName = query.match(/ADD COLUMN IF NOT EXISTS "([^"]+)"/)?.[1] || 'unknown';
+          console.log(`✅ SportActiveOverlayImages 컬럼 확인/추가: ${columnName}`);
+        } catch (error) {
+          console.warn(`⚠️ SportActiveOverlayImages 컬럼 처리 실패: ${error.message}`);
+        }
+      }
+      
       // 2. Templates 테이블 강제 수정
       console.log('🔧 Templates 테이블 강제 수정 중...');
       const templatesQueries = [
