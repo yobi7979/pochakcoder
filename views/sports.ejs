@@ -285,18 +285,13 @@
         // 템플릿 목록 로드
         async function loadTemplates() {
             try {
-                // 기본 템플릿 목록 조회 (축구, 야구 등)
+                // 기본 템플릿 목록만 조회 (축구, 야구 등)
                 const baseResponse = await fetch('/api/templates/base-templates');
                 const baseData = await baseResponse.json();
                 
-                // 데이터베이스 템플릿 목록 조회
-                const dbResponse = await fetch('/api/templates');
-                const dbTemplates = await dbResponse.json();
-                
-                // 기본 템플릿과 DB 템플릿을 합쳐서 옵션 생성
+                // 기본 템플릿만 사용
                 const allTemplates = [];
                 
-                // 기본 템플릿 추가
                 if (baseData.success && baseData.templates) {
                     baseData.templates.forEach(template => {
                         allTemplates.push({
@@ -306,13 +301,7 @@
                     });
                 }
                 
-                // DB 템플릿 추가
-                dbTemplates.forEach(template => {
-                    allTemplates.push({
-                        name: template.name,
-                        displayName: template.name
-                    });
-                });
+                console.log('로드된 템플릿 목록:', allTemplates);
                 
                 // 새 종목 모달의 템플릿 선택 옵션 업데이트
                 const templateSelect = document.getElementById('sportTemplate');
