@@ -1878,7 +1878,7 @@ app.get('/api/sport/:code/delete-info', requireAuth, async (req, res) => {
     // 해당 스포츠가 존재하는지 확인
     const sport = await Sport.findOne({
       where: { code: code.toUpperCase() },
-      attributes: ['id', 'name', 'code', 'template', 'description', 'is_active', 'is_default', 'created_by']
+      attributes: ['id', 'name', 'code', 'template', 'description', 'is_active', 'is_default']
     });
     
     if (!sport) {
@@ -2252,7 +2252,7 @@ app.get('/matches', requireAuth, async (req, res) => {
     
     // sportTemplateMap 생성
     const sports = await Sport.findAll({
-      attributes: ['id', 'name', 'code', 'template', 'description', 'is_active', 'is_default', 'created_by']
+      attributes: ['id', 'name', 'code', 'template', 'description', 'is_active', 'is_default']
     });
     const templates = await Template.findAll();
     
