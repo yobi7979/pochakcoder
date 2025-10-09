@@ -277,9 +277,12 @@
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-12">
-                        <div class="d-flex justify-content-start">
+                        <div class="d-flex justify-content-start gap-2">
                             <button class="btn" onclick="openDBManagement()" style="background-color: #ffeb3b; color: #000; border: none; border-radius: 10px; padding: 8px 20px; text-shadow: none; box-shadow: none;">
                                 <i class="bi bi-database-gear"></i> DB 관리
+                            </button>
+                            <button class="btn" onclick="openDBResetModal()" style="background-color: #dc3545; color: #fff; border: none; border-radius: 10px; padding: 8px 20px; text-shadow: none; box-shadow: none;">
+                                <i class="bi bi-trash3"></i> DB 초기화
                             </button>
                         </div>
                     </div>
@@ -677,66 +680,6 @@
                                 </div>
                             </div>
 
-                            <!-- DB 초기화 -->
-                            <div class="row mb-3">
-                                <div class="col-md-12">
-                                    <div class="card border-danger">
-                                        <div class="card-header bg-danger text-white">
-                                            <h6 class="mb-0"><i class="bi bi-trash3"></i> 데이터베이스 초기화</h6>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="alert alert-danger">
-                                                <i class="bi bi-exclamation-triangle-fill"></i>
-                                                <strong>경고:</strong> 이 작업은 모든 데이터를 삭제합니다 (기본 종목 구조만 유지). 
-                                                <br><strong>삭제되는 데이터:</strong>
-                                                <ul class="mb-0 mt-2">
-                                                    <li>모든 경기 정보 (축구, 야구 포함)</li>
-                                                    <li>모든 팀 정보 (축구, 야구 포함)</li>
-                                                    <li>모든 오버레이 이미지 (축구, 야구 포함)</li>
-                                                    <li>모든 팀 로고 (축구, 야구 포함)</li>
-                                                    <li>사용자 정의 종목</li>
-                                                    <li>사용자 정의 템플릿</li>
-                                                    <li>경기 목록</li>
-                                                    <li>기타 설정</li>
-                                                </ul>
-                                            </div>
-                                            
-                                            <div class="mb-3">
-                                                <label class="form-label">초기화 확인</label>
-                                                <div class="form-check">
-                                                    <input type="checkbox" id="reset-confirm-1" class="form-check-input">
-                                                    <label class="form-check-label" for="reset-confirm-1">
-                                                        모든 경기, 팀, 이미지 데이터가 삭제됩니다
-                                                    </label>
-                                                </div>
-                                                <div class="form-check">
-                                                    <input type="checkbox" id="reset-confirm-2" class="form-check-input">
-                                                    <label class="form-check-label" for="reset-confirm-2">
-                                                        사용자 정의 종목과 템플릿이 삭제됩니다
-                                                    </label>
-                                                </div>
-                                                <div class="form-check">
-                                                    <input type="checkbox" id="reset-confirm-3" class="form-check-input">
-                                                    <label class="form-check-label" for="reset-confirm-3">
-                                                        이 작업은 되돌릴 수 없습니다
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            
-                                            <button id="reset-database-btn" class="btn btn-danger" disabled>
-                                                <i class="bi bi-trash3"></i> 데이터베이스 초기화
-                                            </button>
-                                            <div id="reset-progress" class="mt-3" style="display: none;">
-                                                <div class="progress">
-                                                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-danger" 
-                                                         role="progressbar" style="width: 0%"></div>
-                                                </div>
-                                                <small class="text-muted">데이터베이스 초기화 중...</small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                         <% } %>
 
@@ -756,6 +699,73 @@
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DB 초기화 모달 -->
+            <div class="modal fade" id="dbResetModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title">
+                                <i class="bi bi-trash3"></i> 데이터베이스 초기화
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-danger">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                <strong>경고:</strong> 이 작업은 모든 데이터를 삭제합니다 (기본 종목 구조만 유지). 
+                                <br><strong>삭제되는 데이터:</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li>모든 경기 정보 (축구, 야구 포함)</li>
+                                    <li>모든 팀 정보 (축구, 야구 포함)</li>
+                                    <li>모든 오버레이 이미지 (축구, 야구 포함)</li>
+                                    <li>모든 팀 로고 (축구, 야구 포함)</li>
+                                    <li>사용자 정의 종목</li>
+                                    <li>사용자 정의 템플릿</li>
+                                    <li>경기 목록</li>
+                                    <li>기타 설정</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">초기화 확인</label>
+                                <div class="form-check">
+                                    <input type="checkbox" id="modal-reset-confirm-1" class="form-check-input">
+                                    <label class="form-check-label" for="modal-reset-confirm-1">
+                                        모든 경기, 팀, 이미지 데이터가 삭제됩니다
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" id="modal-reset-confirm-2" class="form-check-input">
+                                    <label class="form-check-label" for="modal-reset-confirm-2">
+                                        사용자 정의 종목과 템플릿이 삭제됩니다
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" id="modal-reset-confirm-3" class="form-check-input">
+                                    <label class="form-check-label" for="modal-reset-confirm-3">
+                                        이 작업은 되돌릴 수 없습니다
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div id="modal-reset-progress" class="mt-3" style="display: none;">
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-danger" 
+                                         role="progressbar" style="width: 0%"></div>
+                                </div>
+                                <small class="text-muted">데이터베이스 초기화 중...</small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                            <button id="modal-reset-database-btn" class="btn btn-danger" disabled>
+                                <i class="bi bi-trash3"></i> 데이터베이스 초기화
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1792,22 +1802,22 @@
                     refreshBackupListBtn.addEventListener('click', loadBackupList);
                 }
 
-                // DB 초기화 관련 이벤트 리스너
-                const resetConfirmCheckboxes = document.querySelectorAll('#reset-confirm-1, #reset-confirm-2, #reset-confirm-3');
-                const resetDatabaseBtn = document.getElementById('reset-database-btn');
+                // DB 초기화 모달 관련 이벤트 리스너
+                const modalResetConfirmCheckboxes = document.querySelectorAll('#modal-reset-confirm-1, #modal-reset-confirm-2, #modal-reset-confirm-3');
+                const modalResetDatabaseBtn = document.getElementById('modal-reset-database-btn');
                 
-                if (resetConfirmCheckboxes.length === 3 && resetDatabaseBtn) {
+                if (modalResetConfirmCheckboxes.length === 3 && modalResetDatabaseBtn) {
                     // 체크박스 상태 확인
-                    function checkResetConfirmation() {
-                        const allChecked = Array.from(resetConfirmCheckboxes).every(cb => cb.checked);
-                        resetDatabaseBtn.disabled = !allChecked;
+                    function checkModalResetConfirmation() {
+                        const allChecked = Array.from(modalResetConfirmCheckboxes).every(cb => cb.checked);
+                        modalResetDatabaseBtn.disabled = !allChecked;
                     }
                     
-                    resetConfirmCheckboxes.forEach(checkbox => {
-                        checkbox.addEventListener('change', checkResetConfirmation);
+                    modalResetConfirmCheckboxes.forEach(checkbox => {
+                        checkbox.addEventListener('change', checkModalResetConfirmation);
                     });
                     
-                    resetDatabaseBtn.addEventListener('click', resetDatabase);
+                    modalResetDatabaseBtn.addEventListener('click', resetDatabase);
                 }
                 
                 // 파일 업로드 이벤트
@@ -2109,14 +2119,20 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
+        // DB 초기화 모달 열기
+        function openDBResetModal() {
+            const modal = new bootstrap.Modal(document.getElementById('dbResetModal'));
+            modal.show();
+        }
+
         // DB 초기화 함수
         async function resetDatabase() {
             if (!confirm('정말로 데이터베이스를 초기화하시겠습니까?\n\n이 작업은 되돌릴 수 없으며, 기본 종목(축구, 야구)을 제외한 모든 사용자 데이터가 삭제됩니다.')) {
                 return;
             }
             
-            const btn = document.getElementById('reset-database-btn');
-            const progress = document.getElementById('reset-progress');
+            const btn = document.getElementById('modal-reset-database-btn');
+            const progress = document.getElementById('modal-reset-progress');
             const progressBar = progress.querySelector('.progress-bar');
             const progressText = progress.querySelector('small');
             
@@ -2152,6 +2168,9 @@
                 
                 if (result.success) {
                     showToast(`데이터베이스가 성공적으로 초기화되었습니다. (삭제된 종목: ${result.deletedSports}개)`, 'success');
+                    // 모달 닫기
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('dbResetModal'));
+                    modal.hide();
                     setTimeout(() => {
                         window.location.reload();
                     }, 2000);
