@@ -15,6 +15,7 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
     console.log('[DEBUG] 경기 목록 조회 요청 받음');
     
     const matchLists = await MatchList.findAll({
+      attributes: ['id', 'name', 'matches', 'custom_url', 'created_at', 'updated_at'],
       order: [['created_at', 'DESC']]
     });
     
@@ -40,8 +41,7 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
     const matchList = await MatchList.create({
       name,
       custom_url: custom_url || null,
-      matches: [],
-      created_by: req.session.userId
+      matches: []
     });
     
     console.log(`[DEBUG] 경기 목록 생성 성공: ${matchList.id} (사용자: ${req.session.username})`);

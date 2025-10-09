@@ -393,14 +393,6 @@ const MatchList = sequelize.define('MatchList', {
     type: DataTypes.STRING,
     allowNull: true
   },
-  created_by: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    references: {
-      model: 'users',
-      key: 'id'
-    }
-  },
   pushed_match_id: {
     type: DataTypes.STRING,
     allowNull: true,
