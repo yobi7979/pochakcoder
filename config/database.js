@@ -10,6 +10,9 @@ const databaseConfig = {
     define: {
       timestamps: true,
       underscored: true
+    },
+    dialectOptions: {
+      charset: 'utf8mb4'
     }
   },
   

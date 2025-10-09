@@ -42,50 +42,63 @@ router.post('/login', asyncHandler(async (req, res) => {
     
     console.log(`사용자 조회 결과: ${user ? '존재' : '없음'}`);
     
-    if (user && user.password === password) {
-      // 로그인 성공
-      req.session.authenticated = true;
-      req.session.username = username;
-      req.session.userId = user.id;
-      req.session.userRole = user.role;
+    if (user) {
+      // bcrypt로 비밀번호 비교
+      const bcrypt = require('bcrypt');
+      const isPasswordValid = await bcrypt.compare(password, user.password);
       
-      // 세션 저장 확인
-      req.session.save((err) => {
-        if (err) {
-          console.error('세션 저장 실패:', err);
-          return res.render('login', { 
-            error: '세션 저장에 실패했습니다.',
-            username: username 
+      if (isPasswordValid) {
+        // 로그인 성공
+        req.session.authenticated = true;
+        req.session.username = username;
+        req.session.userId = user.id;
+        req.session.userRole = user.role;
+        
+        // 세션 저장 확인
+        req.session.save((err) => {
+          if (err) {
+            console.error('세션 저장 실패:', err);
+            return res.render('login', { 
+              error: '세션 저장에 실패했습니다.',
+              username: username 
+            });
+          }
+          
+          console.log(`사용자 로그인 성공: ${username} (${user.role})`);
+          
+          // 마지막 로그인 시간 업데이트
+          user.update({ last_login: new Date() }).catch(err => {
+            console.error('로그인 시간 업데이트 실패:', err);
           });
-        }
-        
-        console.log(`사용자 로그인 성공: ${username} (${user.role})`);
-        
-        // 마지막 로그인 시간 업데이트
-        user.update({ last_login: new Date() }).catch(err => {
-          console.error('로그인 시간 업데이트 실패:', err);
+          
+          // Railway 환경에서 절대 URL로 리다이렉트
+          let redirectUrl = '/matches';
+          
+          // Railway 환경에서 절대 URL 사용
+          if (process.env.RAILWAY_PUBLIC_DOMAIN) {
+            redirectUrl = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}/matches`;
+          } else if (process.env.RAILWAY_STATIC_URL) {
+            redirectUrl = `${process.env.RAILWAY_STATIC_URL}/matches`;
+          } else if (req.get('host')) {
+            const protocol = req.secure ? 'https' : 'http';
+            redirectUrl = `${protocol}://${req.get('host')}/matches`;
+          }
+          
+          console.log(`리다이렉트 URL: ${redirectUrl}`);
+          return res.redirect(302, redirectUrl);
         });
-        
-        // Railway 환경에서 절대 URL로 리다이렉트
-        let redirectUrl = '/matches';
-        
-        // Railway 환경에서 절대 URL 사용
-        if (process.env.RAILWAY_PUBLIC_DOMAIN) {
-          redirectUrl = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}/matches`;
-        } else if (process.env.RAILWAY_STATIC_URL) {
-          redirectUrl = `${process.env.RAILWAY_STATIC_URL}/matches`;
-        } else if (req.get('host')) {
-          const protocol = req.secure ? 'https' : 'http';
-          redirectUrl = `${protocol}://${req.get('host')}/matches`;
-        }
-        
-        console.log(`리다이렉트 URL: ${redirectUrl}`);
-        res.redirect(302, redirectUrl);
-      });
+      } else {
+        // 비밀번호 불일치
+        console.warn(`로그인 실패: 비밀번호 불일치 - ${username}`);
+        return res.render('login', { 
+          error: '사용자명 또는 비밀번호가 올바르지 않습니다.',
+          username: username 
+        });
+      }
     } else {
-      // 로그인 실패
-      console.warn(`로그인 실패 시도: ${username}`);
-      res.render('login', { 
+      // 사용자 없음
+      console.warn(`로그인 실패: 사용자 없음 - ${username}`);
+      return res.render('login', { 
         error: '사용자명 또는 비밀번호가 올바르지 않습니다.',
         username: username 
       });

@@ -37,7 +37,14 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
     dialect: 'sqlite',
     storage: path.join(__dirname, '../sports.db'),
     logging: console.log,
-    benchmark: false
+    benchmark: false,
+    define: {
+      timestamps: true,
+      underscored: false
+    },
+    dialectOptions: {
+      charset: 'utf8mb4'
+    }
   });
 }
 
