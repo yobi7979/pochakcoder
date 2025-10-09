@@ -2421,8 +2421,11 @@ app.get('/matches/new', requireAuth, async (req, res) => {
     // 스포츠 목록 조회 (새 경기 생성 시 필요)
     const sports = await Sport.findAll({
       attributes: ['id', 'name', 'code', 'template', 'description', 'is_active', 'is_default'],
+      where: { is_active: true }, // 활성화된 종목만 조회
       order: [['id', 'ASC']]
     });
+    
+    console.log('새 경기 생성 페이지 - 조회된 종목들:', sports.map(s => ({ name: s.name, code: s.code, is_active: s.is_active, is_default: s.is_default })));
     
     res.render('match-form', { title: '새 경기 생성', matchLists, sports });
   } catch (error) {
