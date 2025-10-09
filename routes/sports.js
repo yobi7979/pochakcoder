@@ -13,13 +13,31 @@ const { Sport, UserSportPermission, User, Match, SportOverlayImage, SportActiveO
 // GET /api/sport - 모든 스포츠 조회
 router.get('/', asyncHandler(async (req, res) => {
   try {
+    console.log('🔍 종목 목록 조회 요청 받음');
+    
     const sports = await Sport.findAll({
       attributes: ['id', 'name', 'code', 'template', 'description', 'is_active', 'is_default'],
       order: [['id', 'ASC']]
     });
+    
+    console.log(`📊 조회된 종목 수: ${sports.length}`);
+    console.log('📋 종목 목록:', sports.map(sport => ({
+      id: sport.id,
+      name: sport.name,
+      code: sport.code,
+      template: sport.template,
+      is_active: sport.is_active,
+      is_default: sport.is_default
+    })));
+    
     res.json(sports);
   } catch (error) {
     console.error('스포츠 조회 실패:', error);
+    console.error('스포츠 조회 오류 상세:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     res.status(500).json({ error: '스포츠 조회에 실패했습니다.' });
   }
 }));

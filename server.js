@@ -3438,8 +3438,11 @@ server.listen(PORT, async () => {
       try {
         const { Sport } = require('./models');
         const existingSports = await Sport.count();
+        console.log(`🔍 기존 스포츠 수: ${existingSports}`);
+        
         if (existingSports === 0) {
-          await Sport.bulkCreate([
+          console.log('🔧 기본 스포츠 데이터 생성 중...');
+          const defaultSports = [
             {
               name: '축구',
               code: 'SOCCER',
@@ -3458,11 +3461,36 @@ server.listen(PORT, async () => {
               is_default: true,
               created_by: 1
             }
-          ]);
+          ];
+          
+          await Sport.bulkCreate(defaultSports);
           console.log('✅ 기본 스포츠 데이터 생성 완료');
+          console.log('📋 생성된 기본 스포츠:', defaultSports.map(sport => ({
+            name: sport.name,
+            code: sport.code,
+            template: sport.template
+          })));
+        } else {
+          console.log('📋 기존 스포츠 데이터 확인 중...');
+          const existingSportsList = await Sport.findAll({
+            attributes: ['id', 'name', 'code', 'template', 'is_active', 'is_default']
+          });
+          console.log('📋 기존 스포츠 목록:', existingSportsList.map(sport => ({
+            id: sport.id,
+            name: sport.name,
+            code: sport.code,
+            template: sport.template,
+            is_active: sport.is_active,
+            is_default: sport.is_default
+          })));
         }
       } catch (error) {
-        console.warn(`⚠️ 기본 스포츠 데이터 생성 실패: ${error.message}`);
+        console.error(`❌ 기본 스포츠 데이터 생성 실패: ${error.message}`);
+        console.error('❌ 기본 스포츠 데이터 생성 오류 상세:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
       }
       
       console.log('✅ Railway PostgreSQL 데이터베이스 완전 초기화 및 재생성 완료');
