@@ -59,9 +59,19 @@ router.post('/login', asyncHandler(async (req, res) => {
     console.log(`사용자 조회 결과: ${user ? '존재' : '없음'}`);
     
     if (user) {
-      // bcrypt로 비밀번호 비교
-      const bcrypt = require('bcrypt');
-      const isPasswordValid = await bcrypt.compare(password, user.password);
+      // Railway 환경에서는 평문 비밀번호 비교, 로컬에서는 bcrypt 사용
+      let isPasswordValid = false;
+      
+      try {
+        // bcrypt 시도 (로컬 환경)
+        const bcrypt = require('bcrypt');
+        isPasswordValid = await bcrypt.compare(password, user.password);
+        console.log('✅ bcrypt 비밀번호 검증 성공');
+      } catch (error) {
+        // bcrypt 실패 시 평문 비교 (Railway 환경)
+        console.log('⚠️ bcrypt 실패, 평문 비밀번호 비교 시도');
+        isPasswordValid = (password === user.password);
+      }
       
       if (isPasswordValid) {
         // 로그인 성공

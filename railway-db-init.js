@@ -19,8 +19,24 @@ async function initializeRailwayDatabase() {
     
     // 데이터베이스 연결
     console.log('🔗 PostgreSQL 데이터베이스 연결 중...');
-    await sequelize.authenticate();
-    console.log('✅ 데이터베이스 연결 성공');
+    try {
+      await sequelize.authenticate();
+      console.log('✅ 데이터베이스 연결 성공');
+    } catch (error) {
+      console.error('❌ 데이터베이스 연결 실패:', error.message);
+      console.log('🔄 연결 재시도 중...');
+      
+      // 잠시 대기 후 재시도
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      try {
+        await sequelize.authenticate();
+        console.log('✅ 데이터베이스 재연결 성공');
+      } catch (retryError) {
+        console.error('❌ 데이터베이스 재연결 실패:', retryError.message);
+        throw retryError;
+      }
+    }
 
     // Sequelize를 사용하여 DB 초기화 (필요한 테이블만)
     console.log('🗑️ Sequelize를 사용하여 DB 초기화 중...');
@@ -36,32 +52,14 @@ async function initializeRailwayDatabase() {
     // 6. 기본 데이터 생성
     console.log('🌱 기본 데이터 생성 중...');
 
-    // 관리자 계정 생성
-    let bcrypt;
-    try {
-      bcrypt = require('bcrypt');
-      console.log('✅ bcrypt 모듈 로드 성공');
-    } catch (error) {
-      console.error('❌ bcrypt 모듈 로드 실패:', error.message);
-      console.log('⚠️ bcrypt 없이 계속 진행...');
-      bcrypt = null;
-    }
-
+    // 관리자 계정 생성 (Railway 환경에서는 평문 비밀번호 사용)
+    console.log('🔐 관리자 계정 생성 중...');
     const adminUsername = 'admin';
     const adminPassword = 'admin123';
-    let hashedPassword = adminPassword;
-
-    if (bcrypt) {
-      try {
-        hashedPassword = await bcrypt.hash(adminPassword, 10);
-        console.log('✅ bcrypt 해시 생성 성공');
-      } catch (error) {
-        console.error('❌ bcrypt 해시 생성 실패:', error.message);
-        console.log('⚠️ 평문 비밀번호로 계속 진행...');
-      }
-    } else {
-      console.log('⚠️ bcrypt 없음 - 평문 비밀번호 사용');
-    }
+    
+    // Railway 환경에서는 bcrypt 없이 평문 비밀번호 사용
+    console.log('⚠️ Railway 환경 - 평문 비밀번호 사용 (보안상 개발용)');
+    const hashedPassword = adminPassword;
 
     try {
       const existingAdmin = await User.findOne({ where: { username: adminUsername } });
