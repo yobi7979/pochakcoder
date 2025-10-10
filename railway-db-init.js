@@ -145,13 +145,36 @@ async function initializeRailwayDatabase() {
     console.log('🌱 기본 데이터 생성 중...');
     
     // 관리자 계정 생성
-    const bcrypt = require('bcrypt');
+    let bcrypt;
+    try {
+      bcrypt = require('bcrypt');
+      console.log('✅ bcrypt 모듈 로드 성공');
+    } catch (error) {
+      console.error('❌ bcrypt 모듈 로드 실패:', error.message);
+      console.log('⚠️ bcrypt 없이 계속 진행...');
+      bcrypt = null;
+    }
+    
     const { User } = require('./models');
     
     const existingAdmin = await User.findOne({ where: { username: 'admin' } });
     if (!existingAdmin) {
       console.log('👤 관리자 계정 생성 중...');
-      const hash = await bcrypt.hash('admin123', 10);
+      let hash;
+      if (bcrypt) {
+        try {
+          hash = await bcrypt.hash('admin123', 10);
+          console.log('✅ bcrypt 해시 생성 성공');
+        } catch (error) {
+          console.error('❌ bcrypt 해시 생성 실패:', error.message);
+          console.log('⚠️ 평문 비밀번호로 계속 진행...');
+          hash = 'admin123'; // 임시로 평문 사용
+        }
+      } else {
+        console.log('⚠️ bcrypt 없음 - 평문 비밀번호 사용');
+        hash = 'admin123'; // 임시로 평문 사용
+      }
+      
       await User.create({
         username: 'admin',
         password: hash,
