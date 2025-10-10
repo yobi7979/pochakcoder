@@ -14,7 +14,7 @@ async function initializeRailwayDatabase() {
   try {
     // Sequelize 모델 로딩
     console.log('🔧 Sequelize 모델 로딩 중...');
-    const { sequelize, User, Sport, Template, Settings, Match, Template, SportOverlayImage, SportActiveOverlayImage, MatchList, UserSportPermission, TeamInfo } = require('./models');
+    const { sequelize, User, Sport, Template, Settings, Match, SportOverlayImage, SportActiveOverlayImage, MatchList, UserSportPermission, TeamInfo } = require('./models');
     console.log('✅ Sequelize 모델 로딩 성공');
     
     // 데이터베이스 연결
