@@ -14,12 +14,15 @@ async function safeDeleteTables() {
     await client.connect();
     console.log('✅ 데이터베이스 연결 성공');
 
-    // 삭제할 테이블 목록 (의존성 순서대로) - 실제 테이블명 사용
+    // 삭제할 테이블 목록 (의존성 순서대로) - 사용하지 않는 테이블들
     const tablesToDelete = [
-      'SportActiveOverlayImages',    // 가장 의존성이 높음
-      'SportOverlayImages',          // 오버레이 이미지
-      'TeamInfo',                    // 팀 정보
-      'MatchLists'                   // 경기 목록
+      'sport_active_overlay_images',  // 사용하지 않는 테이블
+      'sport_overlay_images',        // 사용하지 않는 테이블
+      'team_infos',                  // 사용하지 않는 테이블
+      'match_lists',                 // 사용하지 않는 테이블
+      'matches',                     // 사용하지 않는 테이블
+      'settings',                    // 사용하지 않는 테이블
+      'sports'                       // 사용하지 않는 테이블
     ];
 
     // 각 테이블 삭제
@@ -98,17 +101,24 @@ async function safeDeleteTables() {
     }
 
     console.log('\n🎉 안전한 테이블 삭제 완료!');
-    console.log('\n📋 삭제된 테이블:');
-    console.log('  - SportActiveOverlayImages (활성 오버레이 이미지)');
-    console.log('  - SportOverlayImages (오버레이 이미지)');
-    console.log('  - TeamInfo (팀 정보)');
-    console.log('  - MatchLists (경기 목록)');
-    console.log('\n🔒 보존된 핵심 테이블:');
-    console.log('  - Sports (종목 정보)');
-    console.log('  - Settings (시스템 설정)');
-    console.log('  - Matches (경기 데이터)');
-    console.log('  - users (사용자 정보)');
-    console.log('  - templates (템플릿)');
+    console.log('\n📋 삭제된 테이블 (사용하지 않는 테이블들):');
+    console.log('  - sport_active_overlay_images (사용하지 않는 테이블)');
+    console.log('  - sport_overlay_images (사용하지 않는 테이블)');
+    console.log('  - team_infos (사용하지 않는 테이블)');
+    console.log('  - match_lists (사용하지 않는 테이블)');
+    console.log('  - matches (사용하지 않는 테이블)');
+    console.log('  - settings (사용하지 않는 테이블)');
+    console.log('  - sports (사용하지 않는 테이블)');
+    console.log('\n🔒 보존된 실제 사용 중인 테이블:');
+    console.log('  - Matches (실제 경기 데이터)');
+    console.log('  - Sports (실제 종목 정보)');
+    console.log('  - SportOverlayImages (실제 오버레이 이미지)');
+    console.log('  - SportActiveOverlayImages (실제 활성 오버레이)');
+    console.log('  - Settings (실제 시스템 설정)');
+    console.log('  - MatchLists (실제 경기 목록)');
+    console.log('  - TeamInfo (실제 팀 정보)');
+    console.log('  - users (실제 사용자 정보)');
+    console.log('  - templates (실제 템플릿)');
 
   } catch (error) {
     console.error('❌ 테이블 삭제 중 치명적인 오류 발생:', error.message);
