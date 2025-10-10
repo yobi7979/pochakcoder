@@ -2941,6 +2941,78 @@ app.get('/overlay-images/:sportCode/:filename(*)', async (req, res) => {
   }
 });
 
+// 팀 로고 이미지 파일 서빙 (한글 파일명 지원)
+app.get('/TEAMLOGO/:sportType/:filename(*)', async (req, res) => {
+  try {
+    const { sportType, filename } = req.params;
+    
+    console.log(`🔧 팀 로고 이미지 파일 요청: sportType=${sportType}, filename=${filename}`);
+    
+    // 한글 파일명 디코딩
+    let decodedFilename = filename;
+    if (filename.includes('%')) {
+      decodedFilename = decodeURIComponent(filename);
+      console.log(`🔧 팀 로고 파일명 디코딩: ${filename} -> ${decodedFilename}`);
+    }
+    
+    // sportType을 대문자로 변환
+    const sportTypeUpper = sportType.toUpperCase();
+    
+    // 파일 경로 생성
+    const filePath = path.join(__dirname, 'public', 'TEAMLOGO', sportTypeUpper, decodedFilename);
+    console.log(`🔧 팀 로고 파일 경로: ${filePath}`);
+    
+    // 폴더 존재 확인
+    const folderPath = path.join(__dirname, 'public', 'TEAMLOGO', sportTypeUpper);
+    console.log(`🔧 팀 로고 폴더 존재 여부: ${fsSync.existsSync(folderPath)}`);
+    
+    if (fsSync.existsSync(folderPath)) {
+      const files = fsSync.readdirSync(folderPath);
+      console.log(`🔧 팀 로고 폴더 내 파일들: ${files.join(', ')}`);
+    }
+    
+    // 파일 존재 확인
+    if (!fsSync.existsSync(filePath)) {
+      console.log(`🔧 팀 로고 파일이 존재하지 않음: ${filePath}`);
+      return res.status(404).json({ success: false, message: '팀 로고 파일을 찾을 수 없습니다.' });
+    }
+    
+    console.log(`🔧 팀 로고 파일 존재 확인됨: ${filePath}`);
+    
+    // 파일 확장자에 따른 Content-Type 설정
+    const ext = path.extname(decodedFilename).toLowerCase();
+    let contentType = 'application/octet-stream';
+    
+    switch (ext) {
+      case '.png':
+        contentType = 'image/png';
+        break;
+      case '.jpg':
+      case '.jpeg':
+        contentType = 'image/jpeg';
+        break;
+      case '.gif':
+        contentType = 'image/gif';
+        break;
+      case '.webp':
+        contentType = 'image/webp';
+        break;
+    }
+    
+    // 한글 파일명을 위한 헤더 설정
+    res.setHeader('Content-Type', contentType + '; charset=utf-8');
+    res.setHeader('Content-Disposition', 'inline; filename*=UTF-8\'\'' + encodeURIComponent(decodedFilename));
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    
+    console.log(`🔧 팀 로고 파일 전송 시작: ${filePath}`);
+    // 파일 전송
+    res.sendFile(filePath);
+  } catch (error) {
+    console.error('팀 로고 이미지 파일 서빙 실패:', error);
+    res.status(500).json({ success: false, message: '서버 오류' });
+  }
+});
+
 // 팀 로고 관련 API (라우터로 이동됨)
 
 // 스포츠 오버레이 이미지 관련 API
