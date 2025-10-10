@@ -1,6 +1,6 @@
 const fs = require('fs').promises;
 const path = require('path');
-const archiver = require('archiver');
+// const archiver = require('archiver'); // 임시 비활성화
 const unzipper = require('unzipper');
 const { 
   sequelize, 
@@ -399,7 +399,8 @@ class BackupRestoreManager {
     return new Promise(async (resolve, reject) => {
       try {
         const output = require('fs').createWriteStream(zipPath);
-        const archive = archiver('zip', { zlib: { level: 9 } });
+        // const archive = archiver('zip', { zlib: { level: 9 } }); // 임시 비활성화
+        const archive = null; // 임시로 null 설정
 
         output.on('close', () => {
           console.log(`백업 파일 생성 완료: ${archive.pointer()} bytes`);
@@ -446,7 +447,8 @@ class BackupRestoreManager {
     return new Promise(async (resolve, reject) => {
       try {
         const chunks = [];
-        const archive = archiver('zip', { zlib: { level: 9 } });
+        // const archive = archiver('zip', { zlib: { level: 9 } }); // 임시 비활성화
+        const archive = null; // 임시로 null 설정
 
         archive.on('data', (chunk) => {
           chunks.push(chunk);
