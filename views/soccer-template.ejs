@@ -1729,12 +1729,20 @@
             try {
                 // 1. DB에서 팀로고 정보 로드 (최우선순위)
                 try {
+                    console.log(`🔍 팀로고 정보 조회 시작: /api/matches/${matchId}/team-logos`);
                     const teamLogosResponse = await fetch(`/api/matches/${matchId}/team-logos`);
+                    console.log(`📡 팀로고 API 응답 상태: ${teamLogosResponse.status}`);
+                    
                     if (teamLogosResponse.ok) {
                         const teamLogosData = await teamLogosResponse.json();
+                        console.log('📄 팀로고 API 응답 데이터:', teamLogosData);
+                        
                         if (teamLogosData && teamLogosData.teamLogos) {
+                            console.log(`📊 팀로고 개수: ${teamLogosData.teamLogos.length}`);
                             teamLogosData.teamLogos.forEach((teamInfo, index) => {
                                 const teamType = teamInfo.team_type;
+                                console.log(`🔍 ${teamType}팀 정보:`, teamInfo);
+                                
                                 if (teamInfo.logo_path || teamInfo.logo_bg_color) {
                                     logoState[teamType] = {
                                         path: teamInfo.logo_path || '',
@@ -1744,14 +1752,18 @@
                                     console.log(`✅ ${teamType}팀 로고 정보 로드 (DB):`, logoState[teamType]);
                                     updateTeamLogo(teamType, logoState[teamType]);
                                 } else {
-                                    }
+                                    console.log(`⚠️ ${teamType}팀 로고 정보 없음`);
+                                }
                             });
                         } else {
-                            }
-                    } else {
+                            console.log('⚠️ 팀로고 데이터가 없습니다.');
                         }
-                } catch (dbError) {
+                    } else {
+                        console.error(`❌ 팀로고 API 오류: ${teamLogosResponse.status}`);
                     }
+                } catch (dbError) {
+                    console.error('❌ 팀로고 DB 조회 오류:', dbError);
+                }
                 
                 // 2. 경기별 팀 로고 정보 로드 (백업)
                 try {

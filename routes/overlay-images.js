@@ -734,7 +734,8 @@ router.post('/TEAMLOGO/:sportType', teamLogoUpload.single('logo'), async (req, r
         }
       } catch (dbError) {
         console.error('TeamInfo 테이블 업데이트 오류:', dbError);
-        // DB 오류는 무시하고 계속 진행
+        // DB 오류 시에도 응답은 성공으로 처리하되, 로그는 남김
+        console.log('⚠️ 팀로고 DB 저장 실패했지만 파일 업로드는 성공');
       }
     }
     

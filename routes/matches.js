@@ -596,6 +596,13 @@ router.get('/:matchId/team-logos', async (req, res) => {
     });
     
     console.log(`팀로고 정보 조회 완료: ${matchId}, 팀 수: ${teamLogos.length}`);
+    console.log('팀로고 상세 정보:', teamLogos.map(team => ({
+      team_type: team.team_type,
+      logo_path: team.logo_path,
+      logo_bg_color: team.logo_bg_color,
+      team_name: team.team_name
+    })));
+    
     res.json({ success: true, teamLogos });
   } catch (error) {
     console.error('팀로고 정보 조회 실패:', error);
