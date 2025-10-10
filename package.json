@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "railway-deploy": "node railway-deploy.js && node server.js"
+    "railway-deploy": "node railway-deploy.js && node server.js",
+    "delete-table": "node delete-table.js",
+    "safe-delete-tables": "node safe-delete-tables.js"
   },
   "keywords": [
     "sports",
