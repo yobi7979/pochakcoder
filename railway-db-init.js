@@ -275,144 +275,85 @@ async function initializeRailwayDatabase() {
 
     console.log('✅ 모든 테이블 생성 완료');
 
-    // 6. 기본 데이터 생성
+    // 6. 기본 데이터 생성 (직접 SQL 사용)
     console.log('🌱 기본 데이터 생성 중...');
     
-    // 관리자 계정 생성
-    let bcrypt;
-    try {
-      bcrypt = require('bcrypt');
-      console.log('✅ bcrypt 모듈 로드 성공');
-    } catch (error) {
-      console.error('❌ bcrypt 모듈 로드 실패:', error.message);
-      console.log('⚠️ bcrypt 없이 계속 진행...');
-      bcrypt = null;
-    }
+    // 관리자 계정 생성 (직접 SQL)
+    console.log('👤 관리자 계정 생성 중...');
+    const existingAdminResult = await client.query('SELECT id FROM users WHERE username = $1', ['admin']);
     
-    const { User } = require('./models');
-    
-    const existingAdmin = await User.findOne({ where: { username: 'admin' } });
-    if (!existingAdmin) {
-      console.log('👤 관리자 계정 생성 중...');
-      let hash;
-      if (bcrypt) {
-        try {
-          hash = await bcrypt.hash('admin123', 10);
-          console.log('✅ bcrypt 해시 생성 성공');
-        } catch (error) {
-          console.error('❌ bcrypt 해시 생성 실패:', error.message);
-          console.log('⚠️ 평문 비밀번호로 계속 진행...');
-          hash = 'admin123'; // 임시로 평문 사용
-        }
-      } else {
-        console.log('⚠️ bcrypt 없음 - 평문 비밀번호 사용');
-        hash = 'admin123'; // 임시로 평문 사용
-      }
-      
-      await User.create({
-        username: 'admin',
-        password: hash,
-        email: 'admin@sportscoder.com',
-        full_name: 'Administrator',
-        role: 'admin',
-        is_active: true
-      });
+    if (existingAdminResult.rows.length === 0) {
+      await client.query(`
+        INSERT INTO users (username, password, email, full_name, role, is_active, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+      `, ['admin', 'admin123', 'admin@sportscoder.com', 'Administrator', 'admin', true]);
       console.log('✅ 관리자 계정 생성 완료 (admin/admin123)');
     } else {
       console.log('✅ 관리자 계정 이미 존재');
     }
 
-    // 기본 종목 생성
-    const { Sport } = require('./models');
+    // 기본 종목 생성 (직접 SQL)
     const defaultSports = [
-      {
-        name: 'Soccer',
-        code: 'SOCCER',
-        template: 'soccer',
-        description: 'Football/Soccer sport',
-        is_active: true,
-        is_default: true
-      },
-      {
-        name: 'Baseball',
-        code: 'BASEBALL',
-        template: 'baseball',
-        description: 'Baseball sport',
-        is_active: true,
-        is_default: true
-      }
+      ['Soccer', 'SOCCER', 'soccer', 'Football/Soccer sport', true, true],
+      ['Baseball', 'BASEBALL', 'baseball', 'Baseball sport', true, true]
     ];
 
-    for (const sportData of defaultSports) {
-      const existingSport = await Sport.findOne({ where: { code: sportData.code } });
-      if (!existingSport) {
-        console.log(`🏆 기본 종목 생성 중: ${sportData.name} (${sportData.code})`);
-        await Sport.create(sportData);
-        console.log(`✅ 기본 종목 생성 완료: ${sportData.name}`);
+    for (const [name, code, template, description, is_active, is_default] of defaultSports) {
+      const existingSportResult = await client.query('SELECT id FROM sports WHERE code = $1', [code]);
+      
+      if (existingSportResult.rows.length === 0) {
+        console.log(`🏆 기본 종목 생성 중: ${name} (${code})`);
+        await client.query(`
+          INSERT INTO sports (name, code, template, description, is_active, is_default, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+        `, [name, code, template, description, is_active, is_default]);
+        console.log(`✅ 기본 종목 생성 완료: ${name}`);
       } else {
-        console.log(`✅ 기본 종목 이미 존재: ${sportData.name}`);
+        console.log(`✅ 기본 종목 이미 존재: ${name}`);
       }
     }
 
-    // 7. 기본 템플릿 생성
+    // 기본 템플릿 생성 (직접 SQL)
     console.log('📄 기본 템플릿 생성 중...');
-    const { Template } = require('./models');
-    
     const defaultTemplates = [
-      {
-        name: 'soccer',
-        sport_type: 'SOCCER',
-        template_type: 'overlay',
-        content: 'Default soccer template',
-        file_name: 'soccer-template.ejs',
-        is_default: true
-      },
-      {
-        name: 'baseball',
-        sport_type: 'BASEBALL',
-        template_type: 'overlay',
-        content: 'Default baseball template',
-        file_name: 'baseball-template.ejs',
-        is_default: true
-      }
+      ['soccer', 'SOCCER', 'overlay', 'Default soccer template', 'soccer-template.ejs', true],
+      ['baseball', 'BASEBALL', 'overlay', 'Default baseball template', 'baseball-template.ejs', true]
     ];
 
-    for (const templateData of defaultTemplates) {
-      const existingTemplate = await Template.findOne({ where: { name: templateData.name } });
-      if (!existingTemplate) {
-        console.log(`📄 기본 템플릿 생성 중: ${templateData.name}`);
-        await Template.create(templateData);
-        console.log(`✅ 기본 템플릿 생성 완료: ${templateData.name}`);
+    for (const [name, sport_type, template_type, content, file_name, is_default] of defaultTemplates) {
+      const existingTemplateResult = await client.query('SELECT id FROM templates WHERE name = $1', [name]);
+      
+      if (existingTemplateResult.rows.length === 0) {
+        console.log(`📄 기본 템플릿 생성 중: ${name}`);
+        await client.query(`
+          INSERT INTO templates (name, sport_type, template_type, content, file_name, is_default, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+        `, [name, sport_type, template_type, content, file_name, is_default]);
+        console.log(`✅ 기본 템플릿 생성 완료: ${name}`);
       } else {
-        console.log(`✅ 기본 템플릿 이미 존재: ${templateData.name}`);
+        console.log(`✅ 기본 템플릿 이미 존재: ${name}`);
       }
     }
 
-    // 8. 기본 설정 생성
+    // 기본 설정 생성 (직접 SQL)
     console.log('⚙️ 기본 설정 생성 중...');
-    const { Settings } = require('./models');
-    
     const defaultSettings = [
-      {
-        key: 'default_home_color',
-        value: '#FF0000',
-        description: '홈팀 기본 컬러'
-      },
-      {
-        key: 'default_away_color',
-        value: '#0000FF',
-        description: '원정팀 기본 컬러'
-      }
+      ['default_home_color', '#FF0000', '홈팀 기본 컬러'],
+      ['default_away_color', '#0000FF', '원정팀 기본 컬러']
     ];
 
-    for (const settingData of defaultSettings) {
-      const existingSetting = await Settings.findOne({ where: { key: settingData.key } });
-      if (!existingSetting) {
-        console.log(`⚙️ 기본 설정 생성 중: ${settingData.key}`);
-        await Settings.create(settingData);
-        console.log(`✅ 기본 설정 생성 완료: ${settingData.key}`);
+    for (const [key, value, description] of defaultSettings) {
+      const existingSettingResult = await client.query('SELECT id FROM settings WHERE key = $1', [key]);
+      
+      if (existingSettingResult.rows.length === 0) {
+        console.log(`⚙️ 기본 설정 생성 중: ${key}`);
+        await client.query(`
+          INSERT INTO settings (key, value, description, created_at, updated_at)
+          VALUES ($1, $2, $3, NOW(), NOW())
+        `, [key, value, description]);
+        console.log(`✅ 기본 설정 생성 완료: ${key}`);
       } else {
-        console.log(`✅ 기본 설정 이미 존재: ${settingData.key}`);
+        console.log(`✅ 기본 설정 이미 존재: ${key}`);
       }
     }
 
