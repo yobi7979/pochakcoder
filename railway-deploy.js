@@ -1,9 +1,14 @@
 const { Client } = require('pg');
 
-// Railway 배포용 단순한 DB 초기화 스크립트
+// Railway 배포용 단순한 DB 초기화 스크립트 (주석 처리됨)
 async function initializeDatabase() {
   console.log('🚀 Railway DB 초기화 시작...');
   
+  // DB 초기화 코드 주석 처리 - 배포 시 기존 데이터 보존
+  console.log('⚠️ DB 초기화가 주석 처리되어 있습니다. 기존 데이터가 보존됩니다.');
+  return;
+  
+  /*
   const client = new Client({
     connectionString: process.env.DATABASE_URL
   });
@@ -244,7 +249,8 @@ async function initializeDatabase() {
   }
 }
 
-// Railway 환경에서만 실행
+// Railway 환경에서만 실행 (주석 처리됨)
+/*
 if (process.env.RAILWAY_ENVIRONMENT || process.env.DATABASE_URL) {
   console.log('🚀 Railway 환경 감지 - DB 초기화 시작');
   initializeDatabase()
@@ -259,5 +265,9 @@ if (process.env.RAILWAY_ENVIRONMENT || process.env.DATABASE_URL) {
 } else {
   console.log('ℹ️ 로컬 환경 - DB 초기화 건너뜀');
 }
+*/
+
+// DB 초기화 비활성화 - 기존 데이터 보존
+console.log('ℹ️ DB 초기화가 비활성화되어 있습니다. 기존 데이터가 보존됩니다.');
 
 module.exports = { initializeDatabase };
