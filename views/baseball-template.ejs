@@ -821,7 +821,10 @@
                     if (awayScoreElement && data.away_score !== undefined) {
                         awayScoreElement.textContent = data.away_score;
                     }
-                    
+                }
+                
+                // 야구 특화 데이터 업데이트 (match_data가 있는 경우에만)
+                if (data.match_data) {
                     // 이닝 정보 업데이트
                     const inningElement = document.querySelector('.current-inning');
                     if (inningElement && data.match_data.current_inning) {
