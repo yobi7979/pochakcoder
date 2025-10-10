@@ -496,7 +496,7 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
-            padding: 20px;
+            padding: 10px;
             box-sizing: border-box;
         }
         
@@ -1369,6 +1369,8 @@
                 teamHeader.style.backgroundColor = color;
             }
             
+            // VS 오버레이도 업데이트
+            updateVSOverlayLogos();
         }
 
         // 오버레이 이미지 로드 함수 (활성화된 모든 이미지 표시)
@@ -3380,6 +3382,8 @@
 
         // VS 오버레이 팀 로고 업데이트 함수
         function updateVSOverlayLogos() {
+            console.log('🔧 VS 오버레이 팀로고 업데이트 시작');
+            console.log('현재 로고 상태:', logoState);
             
             // 홈팀 로고 업데이트
             const homeLogoContainer = document.querySelector('.vs-team-section.home .vs-team-logo');
@@ -3387,6 +3391,7 @@
             const homePlaceholder = document.getElementById('vs-home-placeholder');
             
             if (logoState.home && logoState.home.path) {
+                console.log('홈팀 로고 설정:', logoState.home.path);
                 // 로고 이미지 설정
                 homeLogoImg.src = logoState.home.path;
                 homeLogoImg.style.display = 'block';
@@ -3395,7 +3400,9 @@
                 if (homeLogoContainer) {
                     homeLogoContainer.style.backgroundColor = logoState.home.bgColor || '#ffffff';
                 }
+                console.log('✅ 홈팀 로고 표시 완료');
             } else {
+                console.log('홈팀 로고 없음 - 플레이스홀더 표시');
                 homeLogoImg.style.display = 'none';
                 homePlaceholder.style.display = 'flex';
                 homePlaceholder.textContent = 'HOME';
@@ -3411,6 +3418,7 @@
             const awayPlaceholder = document.getElementById('vs-away-placeholder');
             
             if (logoState.away && logoState.away.path) {
+                console.log('어웨이팀 로고 설정:', logoState.away.path);
                 // 로고 이미지 설정
                 awayLogoImg.src = logoState.away.path;
                 awayLogoImg.style.display = 'block';
@@ -3419,7 +3427,9 @@
                 if (awayLogoContainer) {
                     awayLogoContainer.style.backgroundColor = logoState.away.bgColor || '#ffffff';
                 }
+                console.log('✅ 어웨이팀 로고 표시 완료');
             } else {
+                console.log('어웨이팀 로고 없음 - 플레이스홀더 표시');
                 awayLogoImg.style.display = 'none';
                 awayPlaceholder.style.display = 'flex';
                 awayPlaceholder.textContent = 'AWAY';
@@ -3428,6 +3438,8 @@
                     awayLogoContainer.style.backgroundColor = '#ffffff';
                 }
             }
+            
+            console.log('🔧 VS 오버레이 팀로고 업데이트 완료');
         }
         
         // 토너먼트 텍스트 업데이트 이벤트 수신
