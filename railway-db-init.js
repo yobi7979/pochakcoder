@@ -14,7 +14,7 @@ async function initializeRailwayDatabase() {
   try {
     // Sequelize 모델 로딩
     console.log('🔧 Sequelize 모델 로딩 중...');
-    const { sequelize, User, Sport, Template, Settings } = require('./models');
+    const { sequelize, User, Sport, Template, Settings, Match, Template, SportOverlayImage, SportActiveOverlayImage, MatchList, UserSportPermission, TeamInfo } = require('./models');
     console.log('✅ Sequelize 모델 로딩 성공');
     
     // 데이터베이스 연결
@@ -22,13 +22,13 @@ async function initializeRailwayDatabase() {
     await sequelize.authenticate();
     console.log('✅ 데이터베이스 연결 성공');
 
-    // Sequelize를 사용하여 DB 초기화
+    // Sequelize를 사용하여 DB 초기화 (필요한 테이블만)
     console.log('🗑️ Sequelize를 사용하여 DB 초기화 중...');
     try {
-      // Sequelize sync로 테이블 생성/업데이트
+      // Sequelize sync로 테이블 생성/업데이트 (force: true로 기존 테이블 삭제 후 재생성)
       console.log('📋 Sequelize sync 실행 중...');
       await sequelize.sync({ force: true });
-      console.log('✅ Sequelize sync 완료');
+      console.log('✅ Sequelize sync 완료 - 필요한 테이블만 생성됨');
     } catch (error) {
       console.log('ℹ️ Sequelize sync 중 오류:', error.message);
     }
@@ -190,6 +190,17 @@ async function initializeRailwayDatabase() {
     console.log('  - 기본 종목: Soccer, Baseball');
     console.log('  - 기본 템플릿: soccer, baseball');
     console.log('  - 기본 설정: 홈팀/원정팀 컬러');
+    console.log('📋 생성된 테이블:');
+    console.log('  - users (사용자)');
+    console.log('  - Sports (종목)');
+    console.log('  - templates (템플릿)');
+    console.log('  - Settings (설정)');
+    console.log('  - Matches (경기)');
+    console.log('  - SportOverlayImages (오버레이 이미지)');
+    console.log('  - SportActiveOverlayImages (활성 오버레이)');
+    console.log('  - MatchLists (경기 목록)');
+    console.log('  - UserSportPermissions (사용자 권한)');
+    console.log('  - TeamInfo (팀 정보)');
 
   } catch (error) {
     console.error('❌ 데이터베이스 초기화 실패:', error);
