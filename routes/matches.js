@@ -615,38 +615,58 @@ router.post('/:matchId/team-logo-bg', async (req, res) => {
 
     console.log(`팀 로고 배경색 수정 요청: ${matchId}, ${team}팀, 배경색: ${logoBgColor}`);
 
-    // TeamInfo 테이블 업데이트
-    const { sequelize } = require('../models');
-    const result = await sequelize.query(`
-      UPDATE TeamInfo 
-      SET logo_bg_color = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE match_id = ? AND team_type = ?
-    `, {
-      replacements: [logoBgColor, matchId, team],
-      type: sequelize.QueryTypes.UPDATE
+    // Sequelize 모델 사용으로 변경
+    const { TeamInfo } = require('../models');
+    
+    // TeamInfo 모델이 존재하는지 확인
+    if (!TeamInfo) {
+      console.error('TeamInfo 모델이 로드되지 않았습니다.');
+      return res.status(500).json({ 
+        success: false, 
+        error: 'TeamInfo 모델을 찾을 수 없습니다.' 
+      });
+    }
+
+    // TeamInfo 테이블에서 해당 팀 정보 찾기
+    const teamInfo = await TeamInfo.findOne({
+      where: { 
+        match_id: matchId, 
+        team_type: team 
+      }
     });
 
-    const updatedRows = result[1]; // Sequelize UPDATE 결과에서 영향받은 행 수
-    console.log(`업데이트된 행 수: ${updatedRows}`);
-
-    if (updatedRows > 0) {
-      console.log(`TeamInfo 테이블 로고 배경색 동기화 완료: matchId=${matchId}, teamType=${team}, logoBgColor=${logoBgColor}`);
-
-      // WebSocket을 통한 실시간 업데이트 이벤트 전송
-      const io = req.app.get('io');
-      if (io) {
-        const roomName = `match_${matchId}`;
-        io.to(roomName).emit('teamLogoUpdated', {
-          matchId: matchId,
-          teamType: team,
-          logoBgColor: logoBgColor
-        });
-        console.log(`WebSocket 팀 로고 배경색 업데이트 이벤트 전송: room=${roomName}`);
-      }
-      res.json({ success: true, message: '로고 배경색이 성공적으로 저장되었습니다.', logoBgColor: logoBgColor });
-    } else {
-      res.status(404).json({ success: false, message: '팀 정보를 찾을 수 없습니다.' });
+    if (!teamInfo) {
+      console.log(`팀 정보를 찾을 수 없음: matchId=${matchId}, teamType=${team}`);
+      return res.status(404).json({ 
+        success: false, 
+        message: '팀 정보를 찾을 수 없습니다.' 
+      });
     }
+
+    // 로고 배경색 업데이트
+    await teamInfo.update({
+      logo_bg_color: logoBgColor
+    });
+
+    console.log(`TeamInfo 테이블 로고 배경색 동기화 완료: matchId=${matchId}, teamType=${team}, logoBgColor=${logoBgColor}`);
+
+    // WebSocket을 통한 실시간 업데이트 이벤트 전송
+    const io = req.app.get('io');
+    if (io) {
+      const roomName = `match_${matchId}`;
+      io.to(roomName).emit('teamLogoUpdated', {
+        matchId: matchId,
+        teamType: team,
+        logoBgColor: logoBgColor
+      });
+      console.log(`WebSocket 팀 로고 배경색 업데이트 이벤트 전송: room=${roomName}`);
+    }
+    
+    res.json({ 
+      success: true, 
+      message: '로고 배경색이 성공적으로 저장되었습니다.', 
+      logoBgColor: logoBgColor 
+    });
   } catch (error) {
     console.error('팀 로고 배경색 업데이트 실패:', error);
     res.status(500).json({

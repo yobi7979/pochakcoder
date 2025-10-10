@@ -690,17 +690,32 @@ router.post('/TEAMLOGO/:sportType', teamLogoUpload.single('logo'), async (req, r
     
     if (req.body.matchId && req.body.teamType) {
       try {
-        const { sequelize } = require('../models');
+        const { TeamInfo } = require('../models');
         const bgColor = req.body.bgColor || '#ffffff';
         
-        // TeamInfo 테이블 업데이트
-        await sequelize.query(`
-          UPDATE TeamInfo 
-          SET logo_path = ?, logo_bg_color = ?, updated_at = CURRENT_TIMESTAMP
-          WHERE match_id = ? AND team_type = ?
-        `, {
-          replacements: [logoPath, bgColor, req.body.matchId, req.body.teamType],
-          type: sequelize.QueryTypes.UPDATE
+        // TeamInfo 모델이 존재하는지 확인
+        if (!TeamInfo) {
+          console.error('TeamInfo 모델이 로드되지 않았습니다.');
+          throw new Error('TeamInfo 모델을 찾을 수 없습니다.');
+        }
+        
+        // TeamInfo 테이블에서 해당 팀 정보 찾기
+        const teamInfo = await TeamInfo.findOne({
+          where: { 
+            match_id: req.body.matchId, 
+            team_type: req.body.teamType 
+          }
+        });
+
+        if (!teamInfo) {
+          console.log(`팀 정보를 찾을 수 없음: matchId=${req.body.matchId}, teamType=${req.body.teamType}`);
+          throw new Error('팀 정보를 찾을 수 없습니다.');
+        }
+
+        // 로고 정보 업데이트
+        await teamInfo.update({
+          logo_path: logoPath,
+          logo_bg_color: bgColor
         });
         
         console.log(`TeamInfo 테이블 로고 정보 업데이트 완료: matchId=${req.body.matchId}, teamType=${req.body.teamType}`);
