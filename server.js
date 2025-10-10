@@ -17,12 +17,7 @@ const fs = require('fs').promises;
 const fsSync = require('fs');
 const multer = require('multer');
 
-// CORS 설정
-const corsConfig = {
-  origin: "*",
-  methods: ["GET", "POST"],
-  credentials: true
-};
+// CORS 설정은 config/app.js에서 가져옴
 
 // 현재 푸시된 경기 정보를 저장하는 객체 (메모리 기반)
 const pushedMatches = new Map(); // listId -> { matchId, matchIndex, timestamp }
