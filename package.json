@@ -19,6 +19,7 @@
   "author": "SportsCoder Team",
   "license": "MIT",
   "dependencies": {
+    "archiver": "^6.0.1",
     "bcrypt": "^5.1.0",
     "connect-pg-simple": "^9.0.1",
     "ejs": "^3.1.9",
