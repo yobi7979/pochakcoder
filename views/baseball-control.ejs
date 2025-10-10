@@ -2170,7 +2170,7 @@
                     }
                     
                     // 3. JSON 파일 업데이트
-                    const updateResponse = await fetch('/api/update-team-logo-map', {
+                    const updateResponse = await fetch('/api/overlay-images/update-team-logo-map', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -3244,7 +3244,7 @@
                             try {
                                 // 7. team_logo_map.json 업데이트
                                 console.log('team_logo_map.json 업데이트 시작');
-                                const updateLogoMapResponse = await fetch('/api/update-team-logo-map', {
+                                const updateLogoMapResponse = await fetch('/api/overlay-images/update-team-logo-map', {
                                     method: 'POST',
                                     headers: {
                                         'Content-Type': 'application/json'
@@ -3615,7 +3615,7 @@
                     delete teamLogoMap[teamName];
                     
                     // JSON 파일 업데이트
-                    const updateResponse = await fetch('/api/update-team-logo-map', {
+                    const updateResponse = await fetch('/api/overlay-images/update-team-logo-map', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -3703,7 +3703,7 @@
                     }
                     
                     // 3. JSON 파일 업데이트
-                    const updateResponse = await fetch('/api/update-team-logo-map', {
+                    const updateResponse = await fetch('/api/overlay-images/update-team-logo-map', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -3974,7 +3974,7 @@
                     delete teamLogoMap[teamName];
                     
                     // JSON 파일 업데이트
-                    const updateResponse = await fetch('/api/update-team-logo-map', {
+                    const updateResponse = await fetch('/api/overlay-images/update-team-logo-map', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -4192,7 +4192,7 @@
                 const teamName = teamType === 'home' ? '<%= match.home_team %>' : '<%= match.away_team %>';
                 
                 // 1. team_logo_map.json 업데이트
-                const updateResponse = await fetch('/api/update-team-logo-map', {
+                    const updateResponse = await fetch('/api/overlay-images/update-team-logo-map', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

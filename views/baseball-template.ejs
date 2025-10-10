@@ -783,17 +783,6 @@
                     console.log('종목 변경됨:', currentSportType);
                 }
                 
-                // 점수 업데이트
-                const homeScoreElement = document.querySelector('.home-team .team-score');
-                const awayScoreElement = document.querySelector('.away-team .team-score');
-                
-                if (homeScoreElement && data.home_score !== undefined) {
-                    homeScoreElement.textContent = data.home_score;
-                }
-                if (awayScoreElement && data.away_score !== undefined) {
-                    awayScoreElement.textContent = data.away_score;
-                }
-                
                 // 야구 특화 데이터 업데이트 (match_data가 있는 경우)
                 if (data.match_data) {
                     console.log('🔥 야구 match_updated 이벤트 수신:', data.match_data);
@@ -821,6 +810,17 @@
                     if (homeScoreEl) homeScoreEl.textContent = homeTotalScore;
                     const awayScoreEl = document.querySelector('.away-team .team-score');
                     if (awayScoreEl) awayScoreEl.textContent = awayTotalScore;
+                } else {
+                    // match_data가 없는 경우 서버 점수 사용
+                    const homeScoreElement = document.querySelector('.home-team .team-score');
+                    const awayScoreElement = document.querySelector('.away-team .team-score');
+                    
+                    if (homeScoreElement && data.home_score !== undefined) {
+                        homeScoreElement.textContent = data.home_score;
+                    }
+                    if (awayScoreElement && data.away_score !== undefined) {
+                        awayScoreElement.textContent = data.away_score;
+                    }
                     
                     // 이닝 정보 업데이트
                     const inningElement = document.querySelector('.current-inning');
