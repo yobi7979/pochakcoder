@@ -656,34 +656,27 @@ router.post('/TEAMLOGO/:sportType', teamLogoUpload.single('logo'), async (req, r
     // 원본 파일명을 안전하게 처리
     const originalName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
     
-    // 최종 저장 경로 설정
-    const targetDir = path.join(__dirname, '../public', 'TEAMLOGO', sportTypeUpper);
-    const targetPath = path.join(targetDir, originalName);
+    console.log(`🔧 팀로고 업로드 처리 시작: ${originalName}`);
+    console.log(`🔧 Multer 저장 경로: ${req.file.path}`);
+    console.log(`🔧 Multer 저장 파일명: ${req.file.filename}`);
     
-    // 대상 디렉토리 생성
-    if (!fsSync.existsSync(targetDir)) {
-      fsSync.mkdirSync(targetDir, { recursive: true });
-      console.log(`디렉토리 생성됨: ${targetDir}`);
-    }
-    
-    // Multer diskStorage에서 이미 파일이 저장되었으므로 복사만 수행
-    if (req.file.path !== targetPath) {
-      await fs.copyFile(req.file.path, targetPath);
-      // 임시 파일 삭제
-      await fs.unlink(req.file.path);
-    }
+    // Multer가 이미 파일을 저장했으므로 해당 경로 사용
+    const savedFilePath = req.file.path;
+    const savedFileName = req.file.filename;
     
     // 파일이 올바르게 저장되었는지 확인
-    if (!fsSync.existsSync(targetPath)) {
-      console.error(`파일 저장 실패: ${targetPath}`);
+    if (!fsSync.existsSync(savedFilePath)) {
+      console.error(`파일 저장 실패: ${savedFilePath}`);
       return res.status(500).json({ 
         success: false, 
         message: '파일 저장에 실패했습니다.' 
       });
     }
     
-    // 로고 파일 경로 생성 (public 폴더 기준 상대 경로) - DB에는 한글 파일명 그대로 저장
-    const logoPath = `TEAMLOGO/${sportTypeUpper}/${originalName}`;
+    console.log(`✅ 팀로고 파일 저장 성공: ${savedFilePath}`);
+    
+    // 로고 파일 경로 생성 (public 폴더 기준 상대 경로)
+    const logoPath = `TEAMLOGO/${sportTypeUpper}/${savedFileName}`;
     
     // TeamInfo 테이블에 팀로고 정보 저장
     console.log(`팀로고 업로드 요청 데이터: matchId=${req.body.matchId}, teamType=${req.body.teamType}, sportType=${sportTypeUpper}`);
@@ -888,6 +881,68 @@ router.get('/overlay-status/:listId', async (req, res) => {
     res.status(500).json({
       success: false,
       message: '오버레이 상태 조회 중 서버 오류가 발생했습니다.',
+      details: error.message
+    });
+  }
+});
+
+// GET /api/overlay-images/TEAMLOGO/:sportType - 팀로고 목록 조회 (팀 정보 수정용)
+router.get('/TEAMLOGO/:sportType', async (req, res) => {
+  try {
+    const { sportType } = req.params;
+    const sportTypeUpper = sportType.toUpperCase();
+    
+    console.log(`팀로고 목록 조회: ${sportTypeUpper}`);
+    
+    // 팀로고 폴더 경로
+    const teamLogoDir = path.join(__dirname, '../public', 'TEAMLOGO', sportTypeUpper);
+    
+    // 폴더 존재 여부 확인
+    if (!fsSync.existsSync(teamLogoDir)) {
+      console.log(`팀로고 폴더가 존재하지 않음: ${teamLogoDir}`);
+      return res.json({
+        success: true,
+        sportType: sportTypeUpper,
+        teamLogos: [],
+        message: '팀로고 폴더가 존재하지 않습니다.'
+      });
+    }
+    
+    // 폴더 내 파일 목록 조회
+    const files = fsSync.readdirSync(teamLogoDir);
+    const imageFiles = files.filter(file => {
+      const ext = path.extname(file).toLowerCase();
+      return ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext);
+    });
+    
+    console.log(`팀로고 파일 개수: ${imageFiles.length}`);
+    console.log(`팀로고 파일 목록:`, imageFiles);
+    
+    // 팀로고 정보 생성
+    const teamLogos = imageFiles.map(file => {
+      const filePath = path.join(teamLogoDir, file);
+      const stats = fsSync.statSync(filePath);
+      
+      return {
+        filename: file,
+        path: `TEAMLOGO/${sportTypeUpper}/${file}`,
+        size: stats.size,
+        modified: stats.mtime
+      };
+    });
+    
+    res.json({
+      success: true,
+      sportType: sportTypeUpper,
+      teamLogos: teamLogos,
+      count: teamLogos.length
+    });
+    
+  } catch (error) {
+    console.error('팀로고 목록 조회 실패:', error);
+    res.status(500).json({
+      success: false,
+      message: '팀로고 목록 조회 중 서버 오류가 발생했습니다.',
       details: error.message
     });
   }
