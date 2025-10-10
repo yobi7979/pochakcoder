@@ -2067,6 +2067,10 @@
         socket.on('connect', () => {
             updateConnectionStatus(true);
             socket.emit('join', matchId);
+            
+            // 야구 종목별 Room 참여
+            socket.emit('join_sport_room', 'BASEBALL');
+            console.log('🔧 야구 종목별 Room 참여 요청: sport_BASEBALL');
         });
 
         socket.on('disconnect', () => {

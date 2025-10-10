@@ -12,19 +12,24 @@ const matchEvents = (socket, io) => {
   // 경기 업데이트 이벤트 처리
   socket.on('match_updated', async (data) => {
     try {
-      const { matchId, home_score, away_score, state } = data;
+      const { matchId, home_score, away_score, state, match_data, home_team, away_team } = data;
       const roomName = `match_${matchId}`;
       
       console.log(`경기 업데이트 요청: matchId=${matchId}, score=${home_score}-${away_score}, state=${state}`);
+      console.log(`야구 데이터:`, match_data);
       
       // DB 업데이트
       const match = await Match.findByPk(matchId);
       if (match) {
-        await match.update({
-          home_score: home_score,
-          away_score: away_score,
-          status: state
-        });
+        const updateData = {};
+        if (home_score !== undefined) updateData.home_score = home_score;
+        if (away_score !== undefined) updateData.away_score = away_score;
+        if (state !== undefined) updateData.status = state;
+        if (home_team !== undefined) updateData.home_team = home_team;
+        if (away_team !== undefined) updateData.away_team = away_team;
+        if (match_data !== undefined) updateData.match_data = match_data;
+        
+        await match.update(updateData);
         console.log(`경기 업데이트 완료: matchId=${matchId}`);
       }
       
@@ -33,6 +38,9 @@ const matchEvents = (socket, io) => {
         matchId: matchId,
         home_score: home_score,
         away_score: away_score,
+        home_team: home_team,
+        away_team: away_team,
+        match_data: match_data,
         state: state
       });
       
@@ -41,6 +49,9 @@ const matchEvents = (socket, io) => {
         matchId: matchId,
         home_score: home_score,
         away_score: away_score,
+        home_team: home_team,
+        away_team: away_team,
+        match_data: match_data,
         state: state
       });
       
