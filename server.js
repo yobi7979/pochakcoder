@@ -2,8 +2,20 @@
 // 기존 server.js (8,119줄)를 모듈화된 구조로 리팩토링
 
 // Railway 환경에서만 Sequelize 모델 로딩 차단
-if (process.env.RAILWAY_ENVIRONMENT || (process.env.DATABASE_URL && process.env.NODE_ENV === 'production')) {
+const isRailwayEnvironment = process.env.RAILWAY_ENVIRONMENT || 
+                            process.env.RAILWAY_STATIC_URL || 
+                            process.env.RAILWAY_PUBLIC_DOMAIN ||
+                            (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('railway'));
+
+if (isRailwayEnvironment) {
   console.log('🚫 Railway 환경 감지 - Sequelize 모델 로딩 차단');
+  console.log('🔍 Railway 환경 변수:', {
+    RAILWAY_ENVIRONMENT: process.env.RAILWAY_ENVIRONMENT,
+    RAILWAY_STATIC_URL: process.env.RAILWAY_STATIC_URL,
+    RAILWAY_PUBLIC_DOMAIN: process.env.RAILWAY_PUBLIC_DOMAIN,
+    DATABASE_URL: process.env.DATABASE_URL ? '설정됨' : '없음'
+  });
+  
   // Sequelize 모델 require 차단
   const originalRequire = require;
   require = function(id) {
@@ -15,6 +27,10 @@ if (process.env.RAILWAY_ENVIRONMENT || (process.env.DATABASE_URL && process.env.
   };
 } else {
   console.log('🔧 로컬 개발환경 - Sequelize 모델 로딩 허용');
+  console.log('🔍 환경 변수:', {
+    NODE_ENV: process.env.NODE_ENV,
+    DATABASE_URL: process.env.DATABASE_URL ? '설정됨' : '없음'
+  });
 }
 
 const express = require('express');
