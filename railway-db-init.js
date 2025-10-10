@@ -133,13 +133,147 @@ async function initializeRailwayDatabase() {
     await client.query('GRANT ALL ON SCHEMA public TO public');
     console.log('✅ 권한 설정 완료');
 
-    // 5. Sequelize 모델 동기화 (테이블 생성)
-    console.log('📊 Sequelize 모델 동기화 중...');
-    const { sequelize } = require('./models');
+    // 5. 직접 SQL로 테이블 생성 (Sequelize sync 대신)
+    console.log('📊 테이블 직접 생성 중...');
     
-    // 강제 동기화 (기존 테이블 무시하고 새로 생성)
-    await sequelize.sync({ force: true });
-    console.log('✅ Sequelize 모델 동기화 완료');
+    // Users 테이블 생성
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS "users" (
+        "id" SERIAL PRIMARY KEY,
+        "username" VARCHAR(255) UNIQUE NOT NULL,
+        "password" VARCHAR(255) NOT NULL,
+        "email" VARCHAR(255),
+        "full_name" VARCHAR(255),
+        "role" VARCHAR(50) DEFAULT 'user',
+        "is_active" BOOLEAN DEFAULT true,
+        "created_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )
+    `);
+    console.log('✅ Users 테이블 생성 완료');
+
+    // Sports 테이블 생성
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS "sports" (
+        "id" SERIAL PRIMARY KEY,
+        "name" VARCHAR(255) NOT NULL,
+        "code" VARCHAR(50) UNIQUE NOT NULL,
+        "template" VARCHAR(255),
+        "description" TEXT,
+        "is_active" BOOLEAN DEFAULT true,
+        "is_default" BOOLEAN DEFAULT false,
+        "created_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )
+    `);
+    console.log('✅ Sports 테이블 생성 완료');
+
+    // Templates 테이블 생성
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS "templates" (
+        "id" SERIAL PRIMARY KEY,
+        "name" VARCHAR(255) NOT NULL,
+        "sport_type" VARCHAR(50),
+        "template_type" VARCHAR(50),
+        "content" TEXT,
+        "file_name" VARCHAR(255),
+        "is_default" BOOLEAN DEFAULT false,
+        "created_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )
+    `);
+    console.log('✅ Templates 테이블 생성 완료');
+
+    // Settings 테이블 생성
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS "settings" (
+        "id" SERIAL PRIMARY KEY,
+        "key" VARCHAR(255) UNIQUE NOT NULL,
+        "value" TEXT,
+        "description" TEXT,
+        "created_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )
+    `);
+    console.log('✅ Settings 테이블 생성 완료');
+
+    // Matches 테이블 생성
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS "matches" (
+        "id" SERIAL PRIMARY KEY,
+        "sport_type" VARCHAR(50) NOT NULL,
+        "home_team" VARCHAR(255) NOT NULL,
+        "away_team" VARCHAR(255) NOT NULL,
+        "home_score" INTEGER DEFAULT 0,
+        "away_score" INTEGER DEFAULT 0,
+        "home_color" VARCHAR(7),
+        "away_color" VARCHAR(7),
+        "status" VARCHAR(50) DEFAULT 'scheduled',
+        "match_date" TIMESTAMP WITH TIME ZONE,
+        "created_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )
+    `);
+    console.log('✅ Matches 테이블 생성 완료');
+
+    // TeamInfo 테이블 생성
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS "team_infos" (
+        "id" SERIAL PRIMARY KEY,
+        "match_id" INTEGER,
+        "team_name" VARCHAR(255) NOT NULL,
+        "team_color" VARCHAR(7),
+        "team_logo" VARCHAR(255),
+        "is_home" BOOLEAN DEFAULT false,
+        "created_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )
+    `);
+    console.log('✅ TeamInfo 테이블 생성 완료');
+
+    // MatchLists 테이블 생성
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS "match_lists" (
+        "id" SERIAL PRIMARY KEY,
+        "name" VARCHAR(255) NOT NULL,
+        "description" TEXT,
+        "is_active" BOOLEAN DEFAULT true,
+        "created_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )
+    `);
+    console.log('✅ MatchLists 테이블 생성 완료');
+
+    // SportOverlayImages 테이블 생성
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS "sport_overlay_images" (
+        "id" SERIAL PRIMARY KEY,
+        "sport_code" VARCHAR(50) NOT NULL,
+        "filename" VARCHAR(255) NOT NULL,
+        "file_path" VARCHAR(500),
+        "file_size" INTEGER,
+        "mime_type" VARCHAR(100),
+        "is_active" BOOLEAN DEFAULT false,
+        "created_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )
+    `);
+    console.log('✅ SportOverlayImages 테이블 생성 완료');
+
+    // SportActiveOverlayImages 테이블 생성
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS "sport_active_overlay_images" (
+        "id" SERIAL PRIMARY KEY,
+        "sport_code" VARCHAR(50) NOT NULL,
+        "overlay_image_id" INTEGER,
+        "is_active" BOOLEAN DEFAULT true,
+        "created_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )
+    `);
+    console.log('✅ SportActiveOverlayImages 테이블 생성 완료');
+
+    console.log('✅ 모든 테이블 생성 완료');
 
     // 6. 기본 데이터 생성
     console.log('🌱 기본 데이터 생성 중...');
