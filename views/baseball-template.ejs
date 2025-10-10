@@ -829,12 +829,12 @@
                     const inningElement = document.querySelector('.current-inning');
                     if (inningElement && data.match_data.current_inning) {
                         console.log('🔥 이닝 요소 찾음, 업데이트:', data.match_data.current_inning);
-                        inningElement.textContent = data.match_data.current_inning;
-                        const indicator = inningElement.querySelector('.inning-indicator');
-                        if (indicator) {
-                            indicator.className = `inning-indicator ${data.match_data.inning_type === 'bottom' ? 'bottom' : 'top'}`;
-                            console.log('🔥 이닝 인디케이터 업데이트:', indicator.className);
-                        }
+                        // 이닝 번호와 초/말 표시를 함께 업데이트
+                        inningElement.innerHTML = `
+                            ${data.match_data.current_inning}
+                            <div class="inning-indicator ${data.match_data.inning_type === 'bottom' ? 'bottom' : 'top'}"></div>
+                        `;
+                        console.log('🔥 이닝 인디케이터 업데이트:', data.match_data.inning_type);
                     } else {
                         console.log('❌ 이닝 요소를 찾을 수 없음');
                     }
@@ -2067,9 +2067,9 @@
                     }
                 }
                 
-                // 서버에서 계산된 총 점수 사용
-                const homeTotal = home_score || 0;
-                const awayTotal = away_score || 0;
+                // 서버에서 계산된 총 점수 사용 (undefined일 때는 기존 값 유지)
+                const homeTotal = home_score !== undefined ? home_score : (document.querySelector('.home-team .team-score')?.textContent || '0');
+                const awayTotal = away_score !== undefined ? away_score : (document.querySelector('.away-team .team-score')?.textContent || '0');
                 
                 // 총 점수 표시 업데이트
                 const homeScoreElement = document.querySelector('.home-team .team-score');
