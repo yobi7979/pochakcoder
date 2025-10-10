@@ -1,7 +1,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 // const archiver = require('archiver'); // 임시 비활성화
-const unzipper = require('unzipper');
+// const unzipper = require('unzipper'); // 임시 비활성화
 const { 
   sequelize, 
   Match, 
@@ -635,7 +635,8 @@ class BackupRestoreManager {
   async extractZipFile(zipPath, extractPath) {
     return new Promise((resolve, reject) => {
       require('fs').createReadStream(zipPath)
-        .pipe(unzipper.Extract({ path: extractPath }))
+        // .pipe(unzipper.Extract({ path: extractPath })) // 임시 비활성화
+        .pipe(require('fs').createWriteStream(extractPath)) // 임시 대체
         .on('close', resolve)
         .on('error', reject);
     });
