@@ -2,6 +2,20 @@ const { Client } = require('pg');
 const fs = require('fs');
 const path = require('path');
 
+// Sequelize 모델 로딩 완전 차단
+process.env.NODE_ENV = 'railway-init';
+process.env.RAILWAY_DB_INIT = 'true';
+
+// Sequelize 모델 require 차단
+const originalRequire = require;
+require = function(id) {
+  if (id.includes('models') || id.includes('sequelize')) {
+    console.log(`🚫 Sequelize 모델 로딩 차단: ${id}`);
+    return {};
+  }
+  return originalRequire.apply(this, arguments);
+};
+
 async function initializeRailwayDatabase() {
   console.log('🚀 Railway PostgreSQL 데이터베이스 초기화 시작...');
   
