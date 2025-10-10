@@ -3009,7 +3009,7 @@
 
             try {
                 console.log('서버로 전송할 경기 정보:', formData);
-                const response = await fetch(`/api/match/${matchId}`, {
+                const response = await fetch(`/api/matches/${matchId}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

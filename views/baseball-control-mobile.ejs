@@ -1149,7 +1149,7 @@
                 console.log('모든 이닝 점수를 0으로 초기화:', formData.match_data.innings);
             }
             try {
-                await fetch(`/api/match/${matchId}`, {
+                await fetch(`/api/matches/${matchId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
