@@ -6,10 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "railway-init": "node railway-db-init.js && node server.js",
-    "railway-start": "npm run railway-init",
-    "migrate": "node add-column-migration.js",
-    "reset-db": "node reset-railway-db.js"
+    "railway-deploy": "node railway-deploy.js && node server.js"
   },
   "keywords": [
     "sports",
