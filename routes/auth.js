@@ -4,12 +4,15 @@ const { asyncHandler } = require('../middleware/errorHandler');
 
 // 모델들 (Railway 환경에서는 직접 SQL 사용)
 let User = null;
-if (!process.env.RAILWAY_ENVIRONMENT && !process.env.DATABASE_URL) {
+if (!process.env.RAILWAY_ENVIRONMENT && !(process.env.DATABASE_URL && process.env.NODE_ENV === 'production')) {
   try {
     User = require('../models').User;
+    console.log('🔧 로컬 환경 - Sequelize User 모델 로딩 성공');
   } catch (error) {
     console.log('Sequelize 모델 로딩 실패, 직접 SQL 사용');
   }
+} else {
+  console.log('🚫 Railway 환경 - 직접 SQL 사용');
 }
 
 // 인증 관련 라우터
@@ -42,7 +45,7 @@ router.post('/login', asyncHandler(async (req, res) => {
     // Railway 환경에서는 직접 SQL 사용
     let user = null;
     
-    if (process.env.RAILWAY_ENVIRONMENT || process.env.DATABASE_URL) {
+    if (process.env.RAILWAY_ENVIRONMENT || (process.env.DATABASE_URL && process.env.NODE_ENV === 'production')) {
       // Railway 환경: 직접 SQL로 사용자 조회
       const { Client } = require('pg');
       const client = new Client({
