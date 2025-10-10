@@ -1,6 +1,20 @@
 // SportsCoder 리팩토링된 서버 파일
 // 기존 server.js (8,119줄)를 모듈화된 구조로 리팩토링
 
+// Railway 환경에서 Sequelize 모델 로딩 차단
+if (process.env.RAILWAY_ENVIRONMENT || process.env.DATABASE_URL) {
+  console.log('🚫 Railway 환경 감지 - Sequelize 모델 로딩 차단');
+  // Sequelize 모델 require 차단
+  const originalRequire = require;
+  require = function(id) {
+    if (id.includes('models') || id.includes('sequelize')) {
+      console.log(`🚫 Sequelize 모델 로딩 차단: ${id}`);
+      return {};
+    }
+    return originalRequire.apply(this, arguments);
+  };
+}
+
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
