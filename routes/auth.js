@@ -2,24 +2,13 @@ const express = require('express');
 const router = express.Router();
 const { asyncHandler } = require('../middleware/errorHandler');
 
-// 모델들 (Railway 환경에서는 직접 SQL 사용)
-const isRailwayEnvironment = process.env.RAILWAY_ENVIRONMENT || 
-                            process.env.RAILWAY_STATIC_URL || 
-                            process.env.RAILWAY_PUBLIC_DOMAIN ||
-                            (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('railway'));
-
+// 모델들 (모든 환경에서 Sequelize 사용)
 let User = null;
-if (!isRailwayEnvironment) {
-  try {
-    User = require('../models').User;
-    console.log('🔧 로컬 환경 - Sequelize User 모델 로딩 성공');
-  } catch (error) {
-    console.log('Sequelize 모델 로딩 실패, 직접 SQL 사용');
-  }
-} else {
-  console.log('🚫 Railway 환경 - Sequelize 모델 완전 차단, 직접 SQL만 사용');
-  // Railway 환경에서는 User 모델을 null로 설정하여 직접 SQL만 사용
-  User = null;
+try {
+  User = require('../models').User;
+  console.log('🔧 Sequelize User 모델 로딩 성공');
+} catch (error) {
+  console.log('Sequelize 모델 로딩 실패:', error.message);
 }
 
 // 인증 관련 라우터
@@ -49,44 +38,22 @@ router.post('/login', asyncHandler(async (req, res) => {
       });
     }
     
-    // Railway 환경에서는 직접 SQL 사용
+    // 모든 환경에서 Sequelize 사용
     let user = null;
     
-    if (isRailwayEnvironment) {
-      // Railway 환경: 직접 SQL로 사용자 조회
-      const { Client } = require('pg');
-      const client = new Client({
-        connectionString: process.env.DATABASE_URL
+    if (User) {
+      user = await User.findOne({ 
+        where: { 
+          username: username,
+          is_active: true 
+        } 
       });
-      
-      try {
-        await client.connect();
-        const result = await client.query(
-          'SELECT id, username, password, role FROM users WHERE username = $1 AND is_active = true',
-          [username]
-        );
-        await client.end();
-        
-        if (result.rows.length > 0) {
-          user = result.rows[0];
-        }
-      } catch (error) {
-        console.error('Railway DB 연결 실패:', error);
-        return res.render('login', { 
-          error: '데이터베이스 연결 오류가 발생했습니다.',
-          username: username 
-        });
-      }
     } else {
-      // 로컬 환경: Sequelize 사용
-      if (User) {
-        user = await User.findOne({ 
-          where: { 
-            username: username,
-            is_active: true 
-          } 
-        });
-      }
+      console.error('User 모델이 로딩되지 않음');
+      return res.render('login', { 
+        error: '데이터베이스 모델 로딩 오류가 발생했습니다.',
+        username: username 
+      });
     }
     
     console.log(`사용자 조회 결과: ${user ? '존재' : '없음'}`);
