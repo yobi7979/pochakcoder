@@ -577,32 +577,33 @@ router.get('/:matchId/team-logos', async (req, res) => {
     const { matchId } = req.params;
     console.log(`팀로고 정보 조회: ${matchId}`);
     
-    const { sequelize } = require('../models');
-    const teamLogos = await sequelize.query(`
-      SELECT 
-        id,
-        match_id,
-        team_name,
-        team_type,
-        team_color,
-        team_header,
-        logo_path,
-        logo_bg_color,
-        created_at,
-        updated_at
-      FROM TeamInfo 
-      WHERE match_id = ?
-      ORDER BY team_type
-    `, {
-      replacements: [matchId],
-      type: sequelize.QueryTypes.SELECT
+    // Sequelize 모델 사용으로 변경
+    const { TeamInfo } = require('../models');
+    
+    // TeamInfo 모델이 존재하는지 확인
+    if (!TeamInfo) {
+      console.error('TeamInfo 모델이 로드되지 않았습니다.');
+      return res.status(500).json({ 
+        success: false, 
+        error: 'TeamInfo 모델을 찾을 수 없습니다.' 
+      });
+    }
+    
+    // TeamInfo 테이블에서 팀로고 정보 조회
+    const teamLogos = await TeamInfo.findAll({
+      where: { match_id: matchId },
+      order: [['team_type', 'ASC']]
     });
     
     console.log(`팀로고 정보 조회 완료: ${matchId}, 팀 수: ${teamLogos.length}`);
     res.json({ success: true, teamLogos });
   } catch (error) {
     console.error('팀로고 정보 조회 실패:', error);
-    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+    res.status(500).json({ 
+      success: false, 
+      error: '서버 오류가 발생했습니다.',
+      details: error.message 
+    });
   }
 });
 
