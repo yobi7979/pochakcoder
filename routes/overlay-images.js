@@ -837,4 +837,59 @@ router.delete('/TEAMLOGO/:sportType/:filename', async (req, res) => {
   }
 });
 
+// ========================================
+// 오버레이 상태 관리 API
+// ========================================
+
+// GET /api/overlay-status/:listId - 리스트 오버레이 상태 조회
+router.get('/overlay-status/:listId', async (req, res) => {
+  try {
+    const { listId } = req.params;
+    console.log(`리스트 오버레이 상태 조회: ${listId}`);
+
+    // MatchList 모델 사용
+    const { MatchList } = require('../models');
+    
+    // MatchList 모델이 존재하는지 확인
+    if (!MatchList) {
+      console.error('MatchList 모델이 로드되지 않았습니다.');
+      return res.status(500).json({ 
+        success: false, 
+        error: 'MatchList 모델을 찾을 수 없습니다.' 
+      });
+    }
+
+    // 리스트 정보 조회
+    const matchList = await MatchList.findByPk(listId);
+    
+    if (!matchList) {
+      console.log(`리스트를 찾을 수 없음: ${listId}`);
+      return res.status(404).json({ 
+        success: false, 
+        message: '리스트를 찾을 수 없습니다.' 
+      });
+    }
+
+    // 리스트가 활성화되어 있고 경기가 있는지 확인
+    const isActive = matchList.is_active && matchList.matches && matchList.matches.length > 0;
+    
+    console.log(`리스트 오버레이 상태: ${listId}, 활성: ${isActive}, 경기 수: ${matchList.matches ? matchList.matches.length : 0}`);
+    
+    res.json({
+      success: true,
+      listId: listId,
+      isActive: isActive,
+      matchCount: matchList.matches ? matchList.matches.length : 0,
+      message: isActive ? '오버레이가 활성화되어 있습니다.' : '오버레이가 비활성화되어 있습니다.'
+    });
+  } catch (error) {
+    console.error('리스트 오버레이 상태 조회 실패:', error);
+    res.status(500).json({
+      success: false,
+      message: '오버레이 상태 조회 중 서버 오류가 발생했습니다.',
+      details: error.message
+    });
+  }
+});
+
 module.exports = router;

@@ -125,7 +125,7 @@ const pushEvents = (socket, io) => {
       console.log(`푸시 정보 저장:`, pushInfo);
       
       // 데이터베이스에 푸시 정보 저장
-      const { savePushedMatchToDatabase } = require('../../server_refactored_new');
+      const { savePushedMatchToDatabase } = require('../../server');
       if (savePushedMatchToDatabase) {
         await savePushedMatchToDatabase(listId, actualMatch.id, matchIndex);
       }
