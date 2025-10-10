@@ -1135,14 +1135,38 @@
         socket.on('connect', function() {
             console.log('✅ 컨트롤 페이지 소켓 연결됨');
             console.log('소켓 ID:', socket.id);
+            updateConnectionStatus(true);
         });
 
         socket.on('disconnect', function() {
             console.log('❌ 컨트롤 페이지 소켓 연결 끊어짐');
+            updateConnectionStatus(false);
         });
 
         socket.on('connect_error', function(error) {
             console.error('❌ 컨트롤 페이지 소켓 연결 오류:', error);
+            updateConnectionStatus(false);
+        });
+
+        // 재연결 시도 로직
+        socket.on('reconnect', function(attemptNumber) {
+            console.log(`🔄 소켓 재연결 성공 (시도 ${attemptNumber}번째)`);
+            updateConnectionStatus(true);
+        });
+
+        socket.on('reconnect_attempt', function(attemptNumber) {
+            console.log(`🔄 소켓 재연결 시도 중... (${attemptNumber}번째)`);
+            updateConnectionStatus(false);
+        });
+
+        socket.on('reconnect_error', function(error) {
+            console.error('❌ 소켓 재연결 실패:', error);
+            updateConnectionStatus(false);
+        });
+
+        socket.on('reconnect_failed', function() {
+            console.error('❌ 소켓 재연결 완전 실패');
+            updateConnectionStatus(false);
         });
         
         // 소켓 초기화 직후 상태 확인
@@ -2324,8 +2348,18 @@
                 });
                 
                 if (response.ok) {
-                    const result = await response.json();
-                    console.log(`${team}팀 로고 업로드 성공:`, result);
+                    let result;
+                    try {
+                        const responseText = await response.text();
+                        console.log(`${team}팀 로고 업로드 응답 텍스트:`, responseText);
+                        result = JSON.parse(responseText);
+                        console.log(`${team}팀 로고 업로드 성공:`, result);
+                    } catch (jsonError) {
+                        console.error(`${team}팀 로고 업로드 JSON 파싱 오류:`, jsonError);
+                        console.error('응답 텍스트:', await response.text());
+                        alert(`${team}팀 로고 업로드 응답 처리 중 오류가 발생했습니다.`);
+                        return;
+                    }
                     
                     // 미리보기 업데이트 - 한글 파일명 URL 인코딩 적용
                     const previewImg = document.getElementById(`${team}-preview-logo`);

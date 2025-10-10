@@ -17,6 +17,13 @@ const fs = require('fs').promises;
 const fsSync = require('fs');
 const multer = require('multer');
 
+// CORS 설정
+const corsConfig = {
+  origin: "*",
+  methods: ["GET", "POST"],
+  credentials: true
+};
+
 // 현재 푸시된 경기 정보를 저장하는 객체 (메모리 기반)
 const pushedMatches = new Map(); // listId -> { matchId, matchIndex, timestamp }
 global.pushedMatches = pushedMatches; // 라우터에서 접근할 수 있도록 전역 변수로 설정

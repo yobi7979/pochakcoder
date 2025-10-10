@@ -740,7 +740,7 @@ router.post('/TEAMLOGO/:sportType', teamLogoUpload.single('logo'), async (req, r
     });
     
     console.log(`팀 로고 업로드 성공: ${logoPath}, 팀: ${req.body.teamName}, 타입: ${req.body.teamType}, 종목: ${sportTypeUpper}`);
-    console.log(`실제 저장 경로: ${targetPath}`);
+    console.log(`실제 저장 경로: ${savedFilePath}`);
   } catch (error) {
     console.error('로고 업로드 오류:', error);
     res.status(500).json({ 
