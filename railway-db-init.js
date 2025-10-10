@@ -30,9 +30,9 @@ async function initializeRailwayDatabase() {
     console.log('✅ 데이터베이스 연결 성공');
 
     // 2. 기존 스키마 완전 삭제 (의존성 순서 고려)
-    console.log('🗑️ 기존 스키마 삭제 중...');
+    console.log('🗑️ 기존 스키마 완전 삭제 중...');
     try {
-      // 먼저 모든 테이블 삭제
+      // 먼저 모든 테이블 삭제 (대소문자 구분 없이)
       console.log('📋 테이블 삭제 중...');
       const tablesResult = await client.query(`
         SELECT tablename FROM pg_tables WHERE schemaname = 'public'
@@ -40,7 +40,10 @@ async function initializeRailwayDatabase() {
       
       for (const table of tablesResult.rows) {
         try {
+          // 대소문자 구분 없이 테이블 삭제
           await client.query(`DROP TABLE IF EXISTS public."${table.tablename}" CASCADE`);
+          await client.query(`DROP TABLE IF EXISTS public."${table.tablename.toLowerCase()}" CASCADE`);
+          await client.query(`DROP TABLE IF EXISTS public."${table.tablename.toUpperCase()}" CASCADE`);
           console.log(`  ✅ 테이블 삭제: ${table.tablename}`);
         } catch (error) {
           console.log(`  ⚠️ 테이블 삭제 실패: ${table.tablename} - ${error.message}`);

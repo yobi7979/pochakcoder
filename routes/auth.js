@@ -17,7 +17,9 @@ if (!isRailwayEnvironment) {
     console.log('Sequelize 모델 로딩 실패, 직접 SQL 사용');
   }
 } else {
-  console.log('🚫 Railway 환경 - 직접 SQL 사용');
+  console.log('🚫 Railway 환경 - Sequelize 모델 완전 차단, 직접 SQL만 사용');
+  // Railway 환경에서는 User 모델을 null로 설정하여 직접 SQL만 사용
+  User = null;
 }
 
 // 인증 관련 라우터

@@ -8,7 +8,7 @@ const isRailwayEnvironment = process.env.RAILWAY_ENVIRONMENT ||
                             (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('railway'));
 
 if (isRailwayEnvironment) {
-  console.log('🚫 Railway 환경 감지 - Sequelize 모델 로딩 차단');
+  console.log('🚫 Railway 환경 감지 - Sequelize 모델 로딩 완전 차단');
   console.log('🔍 Railway 환경 변수:', {
     RAILWAY_ENVIRONMENT: process.env.RAILWAY_ENVIRONMENT,
     RAILWAY_STATIC_URL: process.env.RAILWAY_STATIC_URL,
@@ -16,15 +16,32 @@ if (isRailwayEnvironment) {
     DATABASE_URL: process.env.DATABASE_URL ? '설정됨' : '없음'
   });
   
-  // Sequelize 모델 require 차단
+  // Railway 환경에서는 Sequelize 모델을 완전히 차단하고 직접 SQL만 사용
   const originalRequire = require;
   require = function(id) {
-    if (id.includes('models') || id.includes('sequelize')) {
+    if (id.includes('models') || id.includes('sequelize') || id.includes('sequelize-cli')) {
       console.log(`🚫 Sequelize 모델 로딩 차단: ${id}`);
-      return {};
+      // 빈 객체 반환으로 모델 접근 차단
+      return {
+        sequelize: null,
+        Sequelize: null,
+        User: null,
+        Match: null,
+        Sport: null,
+        Template: null,
+        Settings: null,
+        TeamInfo: null,
+        MatchList: null,
+        SportOverlayImage: null,
+        SportActiveOverlayImage: null,
+        UserSportPermission: null
+      };
     }
     return originalRequire.apply(this, arguments);
   };
+  
+  // Railway 환경에서는 DB 초기화를 건너뛰고 직접 SQL만 사용
+  console.log('🚫 Railway 환경 - DB 초기화는 railway-db-init.js에서만 처리');
 } else {
   console.log('🔧 로컬 개발환경 - Sequelize 모델 로딩 허용');
   console.log('🔍 환경 변수:', {
