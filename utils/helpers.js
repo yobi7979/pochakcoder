@@ -24,9 +24,37 @@ function generateId() {
   return uuidv4();
 }
 
-// 현재 시간을 ISO 형식으로 반환
+// 현재 시간을 한국시간 기준 ISO 형식으로 반환
 function getCurrentTimestamp() {
-  return new Date().toISOString();
+  const now = new Date();
+  // 한국시간 (UTC+9)으로 변환
+  const koreanTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+  return koreanTime.toISOString();
+}
+
+// 한국시간 기준으로 포맷된 시간 문자열 반환
+function getKoreanTimeString() {
+  const now = new Date();
+  return now.toLocaleString('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+}
+
+// 한국시간 기준으로 날짜만 반환
+function getKoreanDateString() {
+  const now = new Date();
+  return now.toLocaleDateString('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
 }
 
 // 파일 크기를 읽기 쉬운 형식으로 변환
@@ -57,6 +85,8 @@ module.exports = {
   sanitizeFilename,
   generateId,
   getCurrentTimestamp,
+  getKoreanTimeString,
+  getKoreanDateString,
   formatFileSize,
   hashPassword,
   verifyPassword

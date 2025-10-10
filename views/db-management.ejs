@@ -938,11 +938,12 @@
             }
         }
 
-        // 날짜 포맷팅
+        // 날짜 포맷팅 (한국시간 기준)
         function formatDate(dateString) {
             if (!dateString) return 'N/A';
             const date = new Date(dateString);
-            return date.toLocaleDateString('ko-KR') + ' ' + date.toLocaleTimeString('ko-KR', { 
+            return date.toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' }) + ' ' + date.toLocaleTimeString('ko-KR', { 
+                timeZone: 'Asia/Seoul',
                 hour: '2-digit', 
                 minute: '2-digit' 
             });

@@ -3375,15 +3375,15 @@
             const homePlaceholder = document.getElementById('vs-home-placeholder');
             
             if (logoState.home && logoState.home.path) {
-                // 잘못된 경로 호출 방지를 위해 주석 처리
-                // homeLogoImg.src = logoState.home.path;
+                // 로고 이미지 설정
+                homeLogoImg.src = logoState.home.path;
                 homeLogoImg.style.display = 'block';
                 homePlaceholder.style.display = 'none';
                 // 로고 컨테이너에 배경색 적용
                 if (homeLogoContainer) {
                     homeLogoContainer.style.backgroundColor = logoState.home.bgColor || '#ffffff';
                 }
-                } else {
+            } else {
                 homeLogoImg.style.display = 'none';
                 homePlaceholder.style.display = 'flex';
                 homePlaceholder.textContent = 'HOME';
@@ -3399,15 +3399,15 @@
             const awayPlaceholder = document.getElementById('vs-away-placeholder');
             
             if (logoState.away && logoState.away.path) {
-                // 잘못된 경로 호출 방지를 위해 주석 처리
-                // awayLogoImg.src = logoState.away.path;
+                // 로고 이미지 설정
+                awayLogoImg.src = logoState.away.path;
                 awayLogoImg.style.display = 'block';
                 awayPlaceholder.style.display = 'none';
                 // 로고 컨테이너에 배경색 적용
                 if (awayLogoContainer) {
                     awayLogoContainer.style.backgroundColor = logoState.away.bgColor || '#ffffff';
                 }
-                } else {
+            } else {
                 awayLogoImg.style.display = 'none';
                 awayPlaceholder.style.display = 'flex';
                 awayPlaceholder.textContent = 'AWAY';

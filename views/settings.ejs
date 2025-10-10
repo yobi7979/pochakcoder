@@ -1044,8 +1044,8 @@
             
             document.getElementById('totalLogFiles').textContent = logs.length;
             document.getElementById('totalLogSize').textContent = `${totalSizeMB} MB`;
-            document.getElementById('oldestLog').textContent = dates[0].toLocaleDateString();
-            document.getElementById('newestLog').textContent = dates[dates.length - 1].toLocaleDateString();
+            document.getElementById('oldestLog').textContent = dates[0].toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' });
+            document.getElementById('newestLog').textContent = dates[dates.length - 1].toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' });
         }
 
         // 로그 파일 선택 옵션 업데이트
