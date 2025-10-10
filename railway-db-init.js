@@ -15,10 +15,108 @@ async function initializeRailwayDatabase() {
     await client.connect();
     console.log('✅ 데이터베이스 연결 성공');
 
-    // 2. 기존 스키마 완전 삭제
+    // 2. 기존 스키마 완전 삭제 (의존성 순서 고려)
     console.log('🗑️ 기존 스키마 삭제 중...');
     try {
-      await client.query('DROP SCHEMA public CASCADE');
+      // 먼저 모든 테이블 삭제
+      console.log('📋 테이블 삭제 중...');
+      const tablesResult = await client.query(`
+        SELECT tablename FROM pg_tables WHERE schemaname = 'public'
+      `);
+      
+      for (const table of tablesResult.rows) {
+        try {
+          await client.query(`DROP TABLE IF EXISTS public."${table.tablename}" CASCADE`);
+          console.log(`  ✅ 테이블 삭제: ${table.tablename}`);
+        } catch (error) {
+          console.log(`  ⚠️ 테이블 삭제 실패: ${table.tablename} - ${error.message}`);
+        }
+      }
+      
+      // 모든 시퀀스 삭제
+      console.log('🔢 시퀀스 삭제 중...');
+      const sequencesResult = await client.query(`
+        SELECT sequencename FROM pg_sequences WHERE schemaname = 'public'
+      `);
+      
+      for (const sequence of sequencesResult.rows) {
+        try {
+          await client.query(`DROP SEQUENCE IF EXISTS public."${sequence.sequencename}" CASCADE`);
+          console.log(`  ✅ 시퀀스 삭제: ${sequence.sequencename}`);
+        } catch (error) {
+          console.log(`  ⚠️ 시퀀스 삭제 실패: ${sequence.sequencename} - ${error.message}`);
+        }
+      }
+      
+      // 모든 뷰 삭제
+      console.log('👁️ 뷰 삭제 중...');
+      const viewsResult = await client.query(`
+        SELECT viewname FROM pg_views WHERE schemaname = 'public'
+      `);
+      
+      for (const view of viewsResult.rows) {
+        try {
+          await client.query(`DROP VIEW IF EXISTS public."${view.viewname}" CASCADE`);
+          console.log(`  ✅ 뷰 삭제: ${view.viewname}`);
+        } catch (error) {
+          console.log(`  ⚠️ 뷰 삭제 실패: ${view.viewname} - ${error.message}`);
+        }
+      }
+      
+      // 모든 함수 삭제
+      console.log('🔧 함수 삭제 중...');
+      const functionsResult = await client.query(`
+        SELECT proname, oidvectortypes(proargtypes) as argtypes 
+        FROM pg_proc 
+        WHERE pronamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
+      `);
+      
+      for (const func of functionsResult.rows) {
+        try {
+          await client.query(`DROP FUNCTION IF EXISTS public."${func.proname}"(${func.argtypes}) CASCADE`);
+          console.log(`  ✅ 함수 삭제: ${func.proname}`);
+        } catch (error) {
+          console.log(`  ⚠️ 함수 삭제 실패: ${func.proname} - ${error.message}`);
+        }
+      }
+      
+      // 모든 도메인 삭제
+      console.log('🏷️ 도메인 삭제 중...');
+      const domainsResult = await client.query(`
+        SELECT typname FROM pg_type 
+        WHERE typnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public') 
+        AND typtype = 'd'
+      `);
+      
+      for (const domain of domainsResult.rows) {
+        try {
+          await client.query(`DROP DOMAIN IF EXISTS public."${domain.typname}" CASCADE`);
+          console.log(`  ✅ 도메인 삭제: ${domain.typname}`);
+        } catch (error) {
+          console.log(`  ⚠️ 도메인 삭제 실패: ${domain.typname} - ${error.message}`);
+        }
+      }
+      
+      // 모든 enum 타입 삭제 (마지막에)
+      console.log('📝 enum 타입 삭제 중...');
+      const enumsResult = await client.query(`
+        SELECT typname FROM pg_type 
+        WHERE typnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public') 
+        AND typtype = 'e'
+      `);
+      
+      for (const enumType of enumsResult.rows) {
+        try {
+          await client.query(`DROP TYPE IF EXISTS public."${enumType.typname}" CASCADE`);
+          console.log(`  ✅ enum 타입 삭제: ${enumType.typname}`);
+        } catch (error) {
+          console.log(`  ⚠️ enum 타입 삭제 실패: ${enumType.typname} - ${error.message}`);
+        }
+      }
+      
+      // 마지막으로 스키마 삭제
+      console.log('🗑️ 스키마 삭제 중...');
+      await client.query('DROP SCHEMA IF EXISTS public CASCADE');
       console.log('✅ 기존 스키마 삭제 완료');
     } catch (error) {
       console.log('ℹ️ 기존 스키마가 없거나 이미 삭제됨');
