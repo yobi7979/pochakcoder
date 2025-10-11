@@ -528,6 +528,16 @@ router.put('/team-info/:id', async (req, res) => {
     console.log('요청 데이터:', { team_name, team_color, team_header, logo_path, logo_bg_color });
     console.log('요청 본문 전체:', req.body);
     
+    // logo_path가 상대 경로인 경우 API 경로로 변환
+    let processedLogoPath = logo_path;
+    if (logo_path && !logo_path.startsWith('/api/')) {
+      // TEAMLOGO/SOCCER/파일명.png -> /api/overlay-images/TEAMLOGO/SOCCER/파일명.png
+      if (logo_path.startsWith('TEAMLOGO/')) {
+        processedLogoPath = `/api/overlay-images/${logo_path}`;
+        console.log(`로고 경로 변환: ${logo_path} -> ${processedLogoPath}`);
+      }
+    }
+    
     // 1. TeamInfo 테이블에서 팀 정보 조회 (match_id와 team_type 확인용)
     console.log('TeamInfo 테이블 조회 시작...');
     let teamInfo;
@@ -562,7 +572,7 @@ router.put('/team-info/:id', async (req, res) => {
         matchData[teamKey] = team_name;
         matchData[colorKey] = team_color;
         matchData[headerKey] = team_header;
-        matchData[logoKey] = logo_path;
+        matchData[logoKey] = processedLogoPath;
         matchData[logoBgKey] = logo_bg_color;
         
         await match.update({ match_data: matchData });
@@ -594,7 +604,7 @@ router.put('/team-info/:id', async (req, res) => {
       SET team_name = ?, team_color = ?, team_header = ?, logo_path = ?, logo_bg_color = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `, {
-      replacements: [team_name, team_color, team_header, logo_path, logo_bg_color, id],
+      replacements: [team_name, team_color, team_header, processedLogoPath, logo_bg_color, id],
       type: sequelize.QueryTypes.UPDATE
     });
     
@@ -653,7 +663,7 @@ router.put('/team-info/:id', async (req, res) => {
         io.to(roomName).emit('teamLogoUpdated', {
           matchId: match_id,
           teamType: team_type,
-          logoPath: logo_path,
+          logoPath: processedLogoPath,
           logoBgColor: logo_bg_color
         });
         
