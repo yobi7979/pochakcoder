@@ -702,17 +702,41 @@ router.post('/TEAMLOGO/:sportType', teamLogoUpload.single('logo'), async (req, r
             const { TeamInfo } = require('../models');
             const bgColor = req.body.logoBgColor || req.body.bgColor || '#ffffff';
             
-            // TeamInfo 테이블 업데이트
-            await TeamInfo.update({
-              logo_path: logoPath,
-              logo_bg_color: bgColor
-            }, {
+            // TeamInfo 레코드 존재 여부 확인
+            let teamInfo = await TeamInfo.findOne({
               where: {
                 match_id: req.body.matchId,
                 team_type: req.body.teamType,
                 sport_type: sportTypeUpper
               }
             });
+            
+            if (teamInfo) {
+              // 기존 레코드 업데이트
+              await TeamInfo.update({
+                logo_path: logoPath,
+                logo_bg_color: bgColor
+              }, {
+                where: {
+                  match_id: req.body.matchId,
+                  team_type: req.body.teamType,
+                  sport_type: sportTypeUpper
+                }
+              });
+              console.log(`✅ 기존 팀로고 정보 업데이트: ${req.body.teamType}팀`);
+            } else {
+              // 새 레코드 생성
+              await TeamInfo.create({
+                match_id: req.body.matchId,
+                team_type: req.body.teamType,
+                sport_type: sportTypeUpper,
+                team_name: req.body.teamType === 'home' ? '홈팀' : '원정팀',
+                logo_path: logoPath,
+                logo_bg_color: bgColor,
+                team_color: '#000000'
+              });
+              console.log(`✅ 새 팀로고 정보 생성: ${req.body.teamType}팀`);
+            }
             
             console.log(`✅ 팀로고 정보 저장 완료: ${req.body.teamType}팀, 경로: ${logoPath}, 배경색: ${bgColor}`);
             
@@ -744,10 +768,22 @@ router.post('/TEAMLOGO/:sportType', teamLogoUpload.single('logo'), async (req, r
             
           } catch (error) {
             console.error('팀로고 정보 저장 실패:', error);
+            console.error('오류 상세:', {
+              message: error.message,
+              stack: error.stack,
+              matchId: req.body.matchId,
+              teamType: req.body.teamType,
+              sportType: sportTypeUpper
+            });
             return res.status(500).json({ 
               success: false, 
               message: '팀로고 정보 저장에 실패했습니다.',
-              error: error.message 
+              error: error.message,
+              details: {
+                matchId: req.body.matchId,
+                teamType: req.body.teamType,
+                sportType: sportTypeUpper
+              }
             });
           }
         } else {
