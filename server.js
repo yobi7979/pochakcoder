@@ -3396,11 +3396,24 @@ app.post('/api/preview-template', requireAuth, async (req, res) => {
 });
 
 
+// 헬스체크 엔드포인트 추가
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    timezone: process.env.TZ || 'Asia/Seoul',
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
 // 서버 시작
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, async () => {
   console.log(`서버가 포트 ${PORT}에서 실행 중입니다.`);
   console.log(`리팩토링된 서버 구조로 실행 중입니다.`);
+  console.log(`🇰🇷 한국시간대: ${new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}`);
   
   // 푸시 정보 복원
   await restorePushedMatches();

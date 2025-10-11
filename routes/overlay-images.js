@@ -845,21 +845,14 @@ router.get('/TEAMLOGO/:sportType', async (req, res) => {
       
     } catch (teamInfoError) {
       console.log('TeamInfo 테이블 조회 실패:', teamInfoError.message);
-      return res.json({
+      res.json({
         success: true,
         sportType: sportTypeUpper,
         teamLogos: [],
         message: 'TeamInfo 테이블을 조회할 수 없습니다.'
       });
+      return; // 함수 종료
     }
-    
-    res.json({
-      success: true,
-      sportType: sportTypeUpper,
-      teamLogos: teamLogos
-    });
-    
-    console.log(`팀로고 목록 조회 완료: ${sportTypeUpper}, 개수: ${teamLogos.length}`);
   } catch (error) {
     console.error('팀로고 목록 조회 오류:', error);
     res.status(500).json({
