@@ -741,10 +741,10 @@ router.post('/TEAMLOGO/:sportType', teamLogoUpload.single('logo'), async (req, r
           throw new Error('팀 정보를 찾을 수 없습니다.');
         }
 
-        // 로고 정보 업데이트
+        // 로고 정보 업데이트 (기존 배경색 유지)
         await teamInfo.update({
           logo_path: logoPath,
-          logo_bg_color: bgColor
+          logo_bg_color: req.body.logoBgColor || bgColor
         });
         
         console.log(`TeamInfo 테이블 로고 정보 업데이트 완료: matchId=${req.body.matchId}, teamType=${req.body.teamType}`);
@@ -757,7 +757,14 @@ router.post('/TEAMLOGO/:sportType', teamLogoUpload.single('logo'), async (req, r
             matchId: req.body.matchId,
             teamType: req.body.teamType,
             logoPath: logoPath,
-            logoBgColor: bgColor
+            logoBgColor: req.body.logoBgColor || bgColor
+          });
+          
+          // teamLogoBgUpdated 이벤트도 전송
+          io.to(roomName).emit('teamLogoBgUpdated', {
+            matchId: req.body.matchId,
+            teamType: req.body.teamType,
+            logoBgColor: req.body.logoBgColor || bgColor
           });
           console.log(`WebSocket 팀 로고 업데이트 이벤트 전송: room=${roomName}`);
         }
@@ -771,7 +778,7 @@ router.post('/TEAMLOGO/:sportType', teamLogoUpload.single('logo'), async (req, r
     res.json({ 
       success: true, 
       logoPath: logoPath,
-      bgColor: '#ffffff', // 기본 배경색
+      bgColor: req.body.logoBgColor || '#ffffff', // 전달받은 배경색 사용
       message: '로고가 성공적으로 업로드되었습니다.'
     });
     

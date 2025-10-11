@@ -665,11 +665,21 @@ router.post('/:matchId/team-logo-bg', async (req, res) => {
     const io = req.app.get('io');
     if (io) {
       const roomName = `match_${matchId}`;
+      
+      // teamLogoUpdated 이벤트 전송 (기존)
       io.to(roomName).emit('teamLogoUpdated', {
         matchId: matchId,
         teamType: team,
         logoBgColor: logoBgColor
       });
+      
+      // teamLogoBgUpdated 이벤트 전송 (추가)
+      io.to(roomName).emit('teamLogoBgUpdated', {
+        matchId: matchId,
+        teamType: team,
+        logoBgColor: logoBgColor
+      });
+      
       console.log(`WebSocket 팀 로고 배경색 업데이트 이벤트 전송: room=${roomName}`);
     }
     

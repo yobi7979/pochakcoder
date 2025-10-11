@@ -3641,6 +3641,7 @@
                     
                     // WebSocket 이벤트로 실시간 업데이트 전송
                     if (socket.connected) {
+                        console.log(`팀로고 배경색 WebSocket 이벤트 전송: ${team}팀, 색상: ${bgColor}`);
                         socket.emit('teamLogoBgUpdated', {
                             matchId: '<%= match.id %>',
                             teamType: team,
@@ -4159,13 +4160,23 @@
                     // match_data 업데이트
                     updateMatchInfo();
                     
+                    // 현재 설정된 배경색 값 가져오기
+                    const currentBgColor = document.querySelector(`.${teamType}-team-colorbg`)?.value || '#ffffff';
+                    
                     // Socket.IO를 통해 오버레이에 실시간 업데이트 전송 (축구와 동일한 방식)
                     baseballSocket.emit('teamLogoUpdated', {
                         matchId: '<%= match.id %>',
                         teamType: teamType,
                         path: logoPath,
-                        bgColor: '#ffffff', // 기본 배경색
+                        bgColor: currentBgColor, // 현재 설정된 배경색 사용
                         teamColor: null
+                    });
+                    
+                    // 팀로고 배경색도 함께 전송
+                    baseballSocket.emit('teamLogoBgUpdated', {
+                        matchId: '<%= match.id %>',
+                        teamType: teamType,
+                        logoBgColor: currentBgColor
                     });
                 } else {
                     console.error('서버 업데이트 실패:', matchResponse.status);
