@@ -98,6 +98,7 @@ const backupRouter = require('./routes/backup');
 const logsRouter = require('./routes/logs');
 const settingsRouter = require('./routes/settings');
 const dbManagementRouter = require('./routes/db-management');
+const tableManagementRouter = require('./routes/table-management');
 
 // 모델들
 const { sequelize, Match, Settings, MatchList, SportOverlayImage, SportActiveOverlayImage, User, UserSportPermission } = require('./models');
@@ -298,6 +299,7 @@ function connectRouters() {
   // 1. API 라우터들 (구체적인 경로부터)
   const apiRouters = [
     { path: '/api/sport-management', router: dbManagementRouter, name: 'DB 관리 API' },
+    { path: '/api/db-management', router: tableManagementRouter, name: '테이블 관리 API' },
     { path: '/api/users', router: usersRouter, name: '사용자 API' },
     { path: '/api/templates', router: templatesRouter, name: '템플릿 API' },
     { path: '/api/sport', router: sportsRouter, name: '종목 API' },
