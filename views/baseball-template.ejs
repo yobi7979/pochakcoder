@@ -2282,42 +2282,45 @@
             }
         });
 
-        socket.on('baseballTeamLogoUpdated', function(data) {
+        // 팀로고 업데이트 이벤트 처리 (축구와 동일한 방식)
+        socket.on('teamLogoUpdated', function(data) {
             if (data.matchId !== matchId) return;
             
-            console.log('야구 팀로고 업데이트 수신:', data);
-            const { teamType, path, bgColor, teamColor } = data;
+            console.log('팀로고 업데이트 수신:', data);
             
-            // 팀로고와 배경색 업데이트
-            const teamSelector = teamType === 'home' ? '.home-team' : '.away-team';
-            const logoContainer = document.querySelector(`${teamSelector} .team-logo-container`);
-            
-            if (logoContainer) {
-                if (path && path !== '') {
-                    // 로고가 있는 경우
-                    logoContainer.innerHTML = `<img src="${path}" alt="${teamType}팀 로고" class="team-logo">`;
-                } else {
-                    // 로고가 없는 경우 플레이스홀더 표시
-                    const teamName = teamType === 'home' ? '<%= match.home_team %>' : '<%= match.away_team %>';
-                    logoContainer.innerHTML = `<div class="team-logo-placeholder">${teamName.charAt(0)}</div>`;
-                }
-                
-                // 배경색 적용
-                logoContainer.style.backgroundColor = bgColor || '#ffffff';
-            }
-            
-            // 팀 섹션 컬러 반영 (teamColor가 null이 아니고 유효한 값일 때만)
-            if (teamColor && teamColor !== null && teamColor !== 'null') {
-                const teamSection = document.getElementById(`${teamType}-team-section`);
-                if (teamSection) {
-                    teamSection.style.backgroundColor = teamColor;
-                    console.log(`${teamType}팀 섹션 색상 업데이트:`, teamColor);
-                    
-                    // 타자/투수 패널의 색상도 업데이트
-                    const inningType = document.querySelector('.inning-indicator')?.classList.contains('bottom') ? 'bottom' : 'top';
-                    updatePanelTitles(inningType);
-                }
-            }
+            // DB에서 최신 팀로고 정보 가져오기 (축구와 동일한 방식)
+            fetch(`/api/matches/${matchId}/team-logos`)
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success && result.teamLogos) {
+                        // 홈팀 로고 업데이트
+                        const homeTeamInfo = result.teamLogos.find(team => team.team_type === 'home');
+                        if (homeTeamInfo && homeTeamInfo.logo_path) {
+                            const homeLogoContainer = document.querySelector('.team-info.home-team .team-logo-container');
+                            if (homeLogoContainer) {
+                                homeLogoContainer.style.backgroundColor = homeTeamInfo.logo_bg_color || '#ffffff';
+                                homeLogoContainer.innerHTML = `
+                                    <img src="${homeTeamInfo.logo_path}" alt="홈팀 로고" style="width: 100%; height: 100%; object-fit: contain;">
+                                `;
+                            }
+                        }
+                        
+                        // 원정팀 로고 업데이트
+                        const awayTeamInfo = result.teamLogos.find(team => team.team_type === 'away');
+                        if (awayTeamInfo && awayTeamInfo.logo_path) {
+                            const awayLogoContainer = document.querySelector('.team-info.away-team .team-logo-container');
+                            if (awayLogoContainer) {
+                                awayLogoContainer.style.backgroundColor = awayTeamInfo.logo_bg_color || '#ffffff';
+                                awayLogoContainer.innerHTML = `
+                                    <img src="${awayTeamInfo.logo_path}" alt="원정팀 로고" style="width: 100%; height: 100%; object-fit: contain;">
+                                `;
+                            }
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('팀로고 업데이트 중 오류 발생:', error);
+                });
         });
 
         // 리스트 기능 관련 변수

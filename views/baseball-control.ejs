@@ -3316,8 +3316,8 @@
                             
                             showToast('로고가 성공적으로 업로드되었습니다', 'success');
                             
-                            // Socket.IO를 통해 오버레이에 실시간 업데이트 전송
-                            socket.emit('baseballTeamLogoUpdated', {
+                            // Socket.IO를 통해 오버레이에 실시간 업데이트 전송 (축구와 동일한 방식)
+                            socket.emit('teamLogoUpdated', {
                                 matchId: '<%= match.id %>',
                                 teamType: 'home',
                                 path: data.logoPath,
@@ -3385,8 +3385,8 @@
                             
                             showToast('로고가 성공적으로 업로드되었습니다', 'success');
                             
-                            // Socket.IO를 통해 오버레이에 실시간 업데이트 전송
-                            socket.emit('baseballTeamLogoUpdated', {
+                            // Socket.IO를 통해 오버레이에 실시간 업데이트 전송 (축구와 동일한 방식)
+                            socket.emit('teamLogoUpdated', {
                                 matchId: '<%= match.id %>',
                                 teamType: 'away',
                                 path: data.logoPath,
@@ -4139,8 +4139,8 @@
                     // match_data 업데이트
                     updateMatchInfo();
                     
-                    // Socket.IO를 통해 오버레이에 실시간 업데이트 전송
-                    baseballSocket.emit('baseballTeamLogoUpdated', {
+                    // Socket.IO를 통해 오버레이에 실시간 업데이트 전송 (축구와 동일한 방식)
+                    baseballSocket.emit('teamLogoUpdated', {
                         matchId: '<%= match.id %>',
                         teamType: teamType,
                         path: logoPath,
