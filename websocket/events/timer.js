@@ -6,8 +6,6 @@ const matchTimerData = new Map();
 const pendingDbUpdates = new Map(); // DB 업데이트 대기열
 const DB_BATCH_INTERVAL = 5000; // 5초마다 배치 업데이트
 
-// 시간차이 보정 설정 저장
-const timeCorrectionSettings = new Map();
 
 // 타이머 관리 함수들 (기존 server.js와 동일)
 function startMatchTimer(matchId) {
@@ -369,44 +367,6 @@ const timerEvents = (socket, io) => {
     }
   });
   
-  // 시간차이 측정 요청 처리
-  socket.on('time_sync_request', function(data) {
-    const { clientTime, matchId } = data;
-    const serverTime = Date.now();
-    const timeDifference = serverTime - clientTime;
-    
-    console.log(`시간차이 측정: 클라이언트=${clientTime}, 서버=${serverTime}, 차이=${timeDifference}ms`);
-    
-    // 클라이언트에 시간차이 전송
-    socket.emit('time_sync_response', {
-      matchId: matchId,
-      clientTime: clientTime,
-      serverTime: serverTime,
-      timeDifference: timeDifference,
-      timestamp: Date.now()
-    });
-  });
-  
-  // 시간차이 보정 설정 토글
-  socket.on('time_correction_toggle', function(data) {
-    const { matchId, enabled, timeDifference } = data;
-    
-    console.log(`시간차이 보정 설정: matchId=${matchId}, enabled=${enabled}, timeDifference=${timeDifference}ms`);
-    
-    // 보정 설정 저장
-    timeCorrectionSettings.set(matchId, {
-      enabled: enabled,
-      timeDifference: timeDifference,
-      timestamp: Date.now()
-    });
-    
-    // 해당 경기의 모든 클라이언트에 보정 설정 전송
-    io.to(`match_${matchId}`).emit('time_correction_updated', {
-      matchId: matchId,
-      enabled: enabled,
-      timeDifference: timeDifference
-    });
-  });
 
   console.log('타이머 이벤트 설정 완료:', socket.id);
 };

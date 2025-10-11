@@ -1999,24 +1999,10 @@
             startLocalTimer();
         });
         
-        // 시간차이 보정 설정 업데이트
-        socket.on('time_correction_updated', function(data) {
-            if (data.matchId !== matchId) return;
-            
-            timeCorrectionEnabled = data.enabled;
-            timeDifference = data.timeDifference;
-            
-            console.log(`시간차이 보정 설정 업데이트: enabled=${timeCorrectionEnabled}, timeDifference=${timeDifference}ms`);
-        });
-        
         // 페이지 언로드 시 방에서 나가기
         window.addEventListener('beforeunload', () => {
             socket.emit('leave_all_rooms');
         });
-        
-        // 시간차이 보정 변수
-        let timeCorrectionEnabled = false;
-        let timeDifference = 0;
 
         // match_update 이벤트 처리
         socket.on('match_update', (data) => {
@@ -2386,13 +2372,6 @@
                     const elapsedTime = Math.floor((currentTime - timerState.startTime) / 1000);
                     currentSeconds = timerState.pausedTime + elapsedTime;
                     
-                    // 시간차이 보정 적용
-                    if (timeCorrectionEnabled && timeDifference !== 0) {
-                        const correctionMs = timeDifference;
-                        const correctionSeconds = Math.floor(correctionMs / 1000);
-                        currentSeconds += correctionSeconds;
-                        console.log(`시간차이 보정 적용: ${timeDifference}ms (${correctionSeconds}초)`);
-                    }
                     
                     console.log(`타이머 계산: startTime=${timerState.startTime}, pausedTime=${timerState.pausedTime}, elapsedTime=${elapsedTime}, currentSeconds=${currentSeconds}`);
                 } else {
