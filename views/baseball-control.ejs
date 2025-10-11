@@ -4061,7 +4061,7 @@
                 if (data.success && data.logos && data.logos.length > 0) {
                     // 파일 시스템 기반 로고 데이터를 모달용으로 변환
                     allLogos = data.logos.map(logo => ({
-                        path: `/api/overlay-images/TEAMLOGO/${logo.path}`,
+                        path: `/api/overlay-images/${logo.path}`, // TEAMLOGO/ 제거 (이미 logo.path에 포함됨)
                         displayName: logo.name.replace(/\.[^/.]+$/, ""), // 확장자 제거
                         name: logo.name
                     }));
