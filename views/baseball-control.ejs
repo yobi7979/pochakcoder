@@ -1664,11 +1664,9 @@
                                 <button class="btn btn-sm btn-outline-secondary upload-logo-btn" data-team-type="home">
                                     <i class="bi bi-upload"></i> 업로드
                                 </button>
-                                <% if (match.match_data?.home_team_logo) { %>
-                                    <button class="btn btn-sm btn-outline-danger remove-logo-btn" data-team-type="home">
-                                        <i class="bi bi-trash"></i> 삭제
-                                    </button>
-                                <% } %>
+                                <button class="btn btn-sm btn-outline-danger remove-logo-btn" data-team-type="home">
+                                    <i class="bi bi-trash"></i> 삭제
+                                </button>
                             </div>
                         </div>
                         
@@ -1727,11 +1725,9 @@
                                 <button class="btn btn-sm btn-outline-secondary upload-logo-btn" data-team-type="away">
                                     <i class="bi bi-upload"></i> 업로드
                                 </button>
-                                <% if (match.match_data?.away_team_logo) { %>
-                                    <button class="btn btn-sm btn-outline-danger remove-logo-btn" data-team-type="away">
-                                        <i class="bi bi-trash"></i> 삭제
-                                    </button>
-                                <% } %>
+                                <button class="btn btn-sm btn-outline-danger remove-logo-btn" data-team-type="away">
+                                    <i class="bi bi-trash"></i> 삭제
+                                </button>
                             </div>
                         </div>
                         
@@ -3527,55 +3523,38 @@
         });
 
         
-        // 로고 삭제 함수
+        // 로고 삭제 함수 (이미지 null 적용, 배경색 유지)
         async function removeTeamLogo(teamType) {
             try {
-                const teamName = teamType === 'home' ? 
-                    '<%= match.home_team %>' : 
-                    '<%= match.away_team %>';
+                const matchId = '<%= match.id %>';
                 
-                // 1. API에서 로고 정보 삭제
-                const logoMapResponse = await fetch('/api/team-logo-map/BASEBALL');
-                let teamLogoMap = {};
-                
-                if (logoMapResponse.ok) {
-                    const data = await logoMapResponse.json();
-                    teamLogoMap = data.logoMap || {};
-                    delete teamLogoMap[teamName];
-                    
-                    // JSON 파일 업데이트
-                    const updateResponse = await fetch('/api/overlay-images/update-team-logo-map', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            sportType: 'BASEBALL',
-                            teamLogoMap: teamLogoMap
-                        })
-                    });
-                    
-                    if (!updateResponse.ok) {
-                        throw new Error('로고 매핑 삭제 실패');
-                    }
-                }
-
-                // 2. UI 업데이트
+                // 1. 현재 배경색 가져오기
                 const preview = document.getElementById(`${teamType}-team-logo-preview`);
-                preview.innerHTML = '<div class="no-logo">로고 없음</div>';
-                preview.style.backgroundColor = ''; // 배경색 초기화
+                const currentBgColor = preview.style.backgroundColor || '#ffffff';
                 
-                // 3. 서버에 로고 삭제 요청
-                socket.emit('removeTeamLogo', {
-                    matchId: matchId,
-                    team: teamType,
-                    teamName: teamName
+                // 2. API로 이미지만 null로 설정 (배경색 유지)
+                const response = await fetch('/api/overlay-images/TEAMLOGO/BASEBALL', {
+                    method: 'POST',
+                    body: new FormData() // 빈 FormData로 이미지 없음을 전달
                 });
                 
-                // 4. 삭제 버튼 제거
-                const removeBtn = document.querySelector(`.remove-logo-btn[data-team-type="${teamType}"]`);
-                if (removeBtn) {
-                    removeBtn.remove();
+                if (response.ok) {
+                    // 3. UI 업데이트 (이미지만 제거, 배경색 유지)
+                    preview.innerHTML = '<div class="no-logo">로고 없음</div>';
+                    preview.style.backgroundColor = currentBgColor; // 배경색 유지
+                    
+                    // 4. WebSocket으로 실시간 업데이트
+                    socket.emit('teamLogoUpdated', {
+                        matchId: matchId,
+                        teamType: teamType,
+                        logoPath: null,
+                        logoName: null,
+                        logoBgColor: currentBgColor
+                    });
+                    
+                    showToast(`${teamType === 'home' ? '홈' : '어웨이'}팀 로고가 제거되었습니다.`, 'success');
+                } else {
+                    throw new Error('로고 제거 실패');
                 }
 
                 // 5. match_data 업데이트
@@ -3846,67 +3825,6 @@
         }
 
 
-        // 로고 삭제 함수
-        async function removeTeamLogo(teamType) {
-            try {
-                const teamName = teamType === 'home' ? 
-                    '<%= match.home_team %>' : 
-                    '<%= match.away_team %>';
-                const matchId = '<%= match.id %>';
-                
-                // 1. JSON 파일에서 로고 정보 삭제
-                const logoMapResponse = await fetch('/api/team-logo-map/BASEBALL');
-                let teamLogoMap = {};
-                
-                if (logoMapResponse.ok) {
-                    const data = await logoMapResponse.json();
-                    teamLogoMap = data.logoMap || {};
-                    delete teamLogoMap[teamName];
-                    
-                    // JSON 파일 업데이트
-                    const updateResponse = await fetch('/api/overlay-images/update-team-logo-map', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            sportType: 'BASEBALL',
-                            teamLogoMap: teamLogoMap
-                        })
-                    });
-                    
-                    if (!updateResponse.ok) {
-                        throw new Error('로고 매핑 삭제 실패');
-                    }
-                }
-
-                // 2. UI 업데이트
-                const preview = document.getElementById(`${teamType}-team-logo-preview`);
-                preview.innerHTML = '<div class="no-logo">로고 없음</div>';
-                preview.style.backgroundColor = ''; // 배경색 초기화
-                
-                // 3. 서버에 로고 삭제 요청
-                socket.emit('removeTeamLogo', {
-                    matchId: matchId,
-                    team: teamType,
-                    teamName: teamName
-                });
-                
-                // 4. 삭제 버튼 제거
-                const removeBtn = preview.closest('.d-flex').querySelector('.remove-logo-btn');
-                if (removeBtn) {
-                    removeBtn.remove();
-                }
-                
-                // 5. match_data 업데이트
-                updateMatchInfo();
-                
-                console.log('팀 로고가 성공적으로 삭제되었습니다.');
-            } catch (error) {
-                console.error('로고 삭제 오류:', error);
-                alert('로고 삭제 중 오류가 발생했습니다.');
-            }
-        }
 
         // 야구 전용 팀 로고/컬러/배경색 저장 및 실시간 반영
 

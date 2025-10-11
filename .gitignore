@@ -25,3 +25,9 @@ coverage.xml
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# Railway 이미지 삭제 방지 - 업로드된 팀로고 이미지 보호
+!public/TEAMLOGO/
+!public/TEAMLOGO/**/*
+!public/overlay-images/
+!public/overlay-images/**/*
