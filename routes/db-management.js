@@ -526,6 +526,7 @@ router.put('/team-info/:id', async (req, res) => {
     
     console.log(`팀 정보 수정 요청: ID ${id}`);
     console.log('요청 데이터:', { team_name, team_color, team_header, logo_path, logo_bg_color });
+    console.log('요청 본문 전체:', req.body);
     
     // 1. TeamInfo 테이블에서 팀 정보 조회 (match_id와 team_type 확인용)
     console.log('TeamInfo 테이블 조회 시작...');
@@ -533,7 +534,7 @@ router.put('/team-info/:id', async (req, res) => {
     try {
       teamInfo = await sequelize.query(`
         SELECT match_id, team_type, sport_type 
-        FROM TeamInfo 
+        FROM "TeamInfo" 
         WHERE id = ?
       `, {
         replacements: [id],
@@ -589,7 +590,7 @@ router.put('/team-info/:id', async (req, res) => {
     
     // 2. TeamInfo 테이블 업데이트
     const result = await sequelize.query(`
-      UPDATE TeamInfo 
+      UPDATE "TeamInfo" 
       SET team_name = ?, team_color = ?, team_header = ?, logo_path = ?, logo_bg_color = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `, {
@@ -659,6 +660,7 @@ router.put('/team-info/:id', async (req, res) => {
         console.log(`WebSocket 실시간 업데이트 이벤트 전송: room=${roomName}`);
       }
       
+      console.log(`✅ 팀 정보 수정 성공: ID ${id}, 팀명: ${team_name}, 색상: ${team_color}`);
       res.json({ success: true, message: '팀 정보가 수정되었습니다.' });
     } else {
       console.log(`팀 정보를 찾을 수 없음: ID ${id}`);
