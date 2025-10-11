@@ -1999,24 +1999,133 @@
             startLocalTimer();
         });
         
-        // 시간차이 보정 설정 업데이트
-        socket.on('time_correction_updated', function(data) {
-            if (data.matchId !== matchId) return;
+        
+        // 액션 기반 타이머 시스템
+        socket.on('timer_action', function(actionData) {
+            if (actionData.matchId !== matchId) return;
             
-            timeCorrectionEnabled = data.enabled;
-            timeDifference = data.timeDifference;
+            console.log('타이머 액션 수신:', actionData);
             
-            console.log(`시간차이 보정 설정 업데이트: enabled=${timeCorrectionEnabled}, timeDifference=${timeDifference}ms`);
+            const { action, timestamp, data } = actionData;
+            
+            switch (action) {
+                case 'start':
+                    handleStartAction(timestamp);
+                    break;
+                case 'stop':
+                    handleStopAction(timestamp);
+                    break;
+                case 'reset':
+                    handleResetAction();
+                    break;
+                case 'set_time':
+                    handleSetTimeAction(timestamp, data.time);
+                    break;
+                case 'pause':
+                    handlePauseAction(timestamp);
+                    break;
+                case 'resume':
+                    handleResumeAction(timestamp);
+                    break;
+            }
         });
+        
+        // 액션별 처리 함수
+        function handleStartAction(timestamp) {
+            console.log('타이머 시작 액션 처리:', timestamp);
+            timerState.startTime = timestamp;
+            timerState.isRunning = true;
+            timerState.pausedTime = 0;
+            startLocalTimer();
+        }
+        
+        function handleStopAction(timestamp) {
+            console.log('타이머 정지 액션 처리:', timestamp);
+            timerState.isRunning = false;
+            if (timerState.startTime) {
+                timerState.pausedTime = Math.floor((timestamp - timerState.startTime) / 1000);
+            }
+            stopLocalTimer();
+        }
+        
+        function handleResetAction() {
+            console.log('타이머 리셋 액션 처리');
+            timerState.startTime = null;
+            timerState.pausedTime = 0;
+            timerState.isRunning = false;
+            resetLocalTimer();
+        }
+        
+        function handleSetTimeAction(timestamp, targetTime) {
+            console.log('타이머 시간 설정 액션 처리:', targetTime);
+            timerState.startTime = timestamp;
+            timerState.pausedTime = targetTime;
+            timerState.isRunning = false;
+            updateTimerDisplay();
+        }
+        
+        function handlePauseAction(timestamp) {
+            console.log('타이머 일시정지 액션 처리:', timestamp);
+            timerState.isRunning = false;
+            if (timerState.startTime) {
+                timerState.pausedTime = Math.floor((timestamp - timerState.startTime) / 1000);
+            }
+            stopLocalTimer();
+        }
+        
+        function handleResumeAction(timestamp) {
+            console.log('타이머 재개 액션 처리:', timestamp);
+            timerState.startTime = timestamp;
+            timerState.isRunning = true;
+            startLocalTimer();
+        }
+        
+        // 로컬 타이머 함수들
+        function startLocalTimer() {
+            console.log('로컬 타이머 시작');
+            
+            // 기존 타이머 정리
+            if (localTimerInterval) {
+                clearInterval(localTimerInterval);
+            }
+            
+            // 로컬 타이머 시작
+            localTimerInterval = setInterval(() => {
+                if (timerState.isRunning && timerState.startTime) {
+                    const currentTime = Date.now();
+                    const elapsedTime = Math.floor((currentTime - timerState.startTime) / 1000);
+                    const currentSeconds = timerState.pausedTime + elapsedTime;
+                    
+                    timerState.currentSeconds = currentSeconds;
+                    updateTimerDisplay();
+                    
+                    console.log(`로컬 타이머 업데이트: ${currentSeconds}초`);
+                }
+            }, 1000);
+        }
+        
+        function stopLocalTimer() {
+            console.log('로컬 타이머 정지');
+            
+            if (localTimerInterval) {
+                clearInterval(localTimerInterval);
+                localTimerInterval = null;
+            }
+        }
+        
+        function resetLocalTimer() {
+            console.log('로컬 타이머 리셋');
+            
+            stopLocalTimer();
+            timerState.currentSeconds = 0;
+            updateTimerDisplay();
+        }
         
         // 페이지 언로드 시 방에서 나가기
         window.addEventListener('beforeunload', () => {
             socket.emit('leave_all_rooms');
         });
         
-        // 시간차이 보정 변수
-        let timeCorrectionEnabled = false;
-        let timeDifference = 0;
 
         // match_update 이벤트 처리
         socket.on('match_update', (data) => {
@@ -2385,14 +2494,6 @@
                     const currentTime = Date.now();
                     const elapsedTime = Math.floor((currentTime - timerState.startTime) / 1000);
                     currentSeconds = timerState.pausedTime + elapsedTime;
-                    
-                    // 시간차이 보정 적용
-                    if (timeCorrectionEnabled && timeDifference !== 0) {
-                        const correctionMs = timeDifference;
-                        const correctionSeconds = Math.floor(correctionMs / 1000);
-                        currentSeconds += correctionSeconds;
-                        console.log(`시간차이 보정 적용: ${timeDifference}ms (${correctionSeconds}초)`);
-                    }
                     
                     console.log(`타이머 계산: startTime=${timerState.startTime}, pausedTime=${timerState.pausedTime}, elapsedTime=${elapsedTime}, currentSeconds=${currentSeconds}`);
                 } else {
