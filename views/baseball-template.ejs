@@ -1564,39 +1564,41 @@
                 // 오버레이 이미지 로드
                 await loadOverlayImage();
                 
-                // 팀 로고 정보 가져오기
-                const response = await fetch('/api/team-logo-map/BASEBALL');
+                // 팀 로고 정보 가져오기 (축구와 동일한 방식)
+                const response = await fetch(`/api/matches/${matchId}/team-logos`);
                 if (!response.ok) {
-                    throw new Error(`팀 로고 맵 로드 실패: ${response.status}`);
+                    throw new Error(`팀 로고 정보 로드 실패: ${response.status}`);
                 }
-                const data = await response.json();
-                console.log('팀 로고맵 로드 성공:', data);
+                const result = await response.json();
+                console.log('팀 로고 정보 로드 성공:', result);
                 
                 // 홈팀 로고 설정
                 const homeTeamName = '<%= match.home_team %>';
-                const homeLogoInfo = data.logoMap?.[homeTeamName];
-                
-                if (homeLogoInfo) {
-                    const homeLogoContainer = document.querySelector('.team-info.home-team .team-logo-container');
-                    if (homeLogoContainer) {
-                        homeLogoContainer.style.backgroundColor = homeLogoInfo.bgColor || '#ffffff';
-                        homeLogoContainer.innerHTML = `
-                            <img src="${homeLogoInfo.path}" alt="${homeTeamName} 로고" style="width: 100%; height: 100%; object-fit: contain;">
-                        `;
+                if (result.success && result.teamLogos) {
+                    const homeTeamInfo = result.teamLogos.find(team => team.team_type === 'home');
+                    if (homeTeamInfo && homeTeamInfo.logo_path) {
+                        const homeLogoContainer = document.querySelector('.team-info.home-team .team-logo-container');
+                        if (homeLogoContainer) {
+                            homeLogoContainer.style.backgroundColor = homeTeamInfo.logo_bg_color || '#ffffff';
+                            homeLogoContainer.innerHTML = `
+                                <img src="${homeTeamInfo.logo_path}" alt="${homeTeamName} 로고" style="width: 100%; height: 100%; object-fit: contain;">
+                            `;
+                        }
                     }
                 }
                 
                 // 원정팀 로고 설정
                 const awayTeamName = '<%= match.away_team %>';
-                const awayLogoInfo = data.logoMap?.[awayTeamName];
-                
-                if (awayLogoInfo) {
-                    const awayLogoContainer = document.querySelector('.team-info.away-team .team-logo-container');
-                    if (awayLogoContainer) {
-                        awayLogoContainer.style.backgroundColor = awayLogoInfo.bgColor || '#ffffff';
-                        awayLogoContainer.innerHTML = `
-                            <img src="${awayLogoInfo.path}" alt="${awayTeamName} 로고" style="width: 100%; height: 100%; object-fit: contain;">
-                        `;
+                if (result.success && result.teamLogos) {
+                    const awayTeamInfo = result.teamLogos.find(team => team.team_type === 'away');
+                    if (awayTeamInfo && awayTeamInfo.logo_path) {
+                        const awayLogoContainer = document.querySelector('.team-info.away-team .team-logo-container');
+                        if (awayLogoContainer) {
+                            awayLogoContainer.style.backgroundColor = awayTeamInfo.logo_bg_color || '#ffffff';
+                            awayLogoContainer.innerHTML = `
+                                <img src="${awayTeamInfo.logo_path}" alt="${awayTeamName} 로고" style="width: 100%; height: 100%; object-fit: contain;">
+                            `;
+                        }
                     }
                 }
 
@@ -2167,41 +2169,43 @@
                     element.textContent = data.away_team;
                 });
                 
-                // 팀 로고 업데이트
+                // 팀 로고 업데이트 (축구와 동일한 방식)
                 try {
-                    const response = await fetch('/api/team-logo-map/BASEBALL');
+                    const response = await fetch(`/api/matches/${matchId}/team-logos`);
                     if (response.ok) {
-                        const logoData = await response.json();
+                        const result = await response.json();
                         
-                        // 홈팀 로고 업데이트
-                        const homeLogoInfo = logoData.teamLogoMap?.[data.home_team];
-                        const homeLogoContainers = document.querySelectorAll('.team-info.home-team .team-logo-container');
-                        homeLogoContainers.forEach(container => {
-                            if (homeLogoInfo) {
-                                container.style.backgroundColor = homeLogoInfo.bgColor || '#ffffff';
-                                container.innerHTML = `
-                                    <img src="${homeLogoInfo.path}" alt="${data.home_team} 로고" class="team-logo">
-                                `;
-                            } else {
-                                container.style.backgroundColor = '#f8f9fa';
-                                container.innerHTML = '<span style="font-size: 0.8rem; color: #6c757d;">로고</span>';
-                            }
-                        });
-                        
-                        // 원정팀 로고 업데이트
-                        const awayLogoInfo = logoData.teamLogoMap?.[data.away_team];
-                        const awayLogoContainers = document.querySelectorAll('.team-info.away-team .team-logo-container');
-                        awayLogoContainers.forEach(container => {
-                            if (awayLogoInfo) {
-                                container.style.backgroundColor = awayLogoInfo.bgColor || '#ffffff';
-                                container.innerHTML = `
-                                    <img src="${awayLogoInfo.path}" alt="${data.away_team} 로고" class="team-logo">
-                                `;
-                            } else {
-                                container.style.backgroundColor = '#f8f9fa';
-                                container.innerHTML = '<span style="font-size: 0.8rem; color: #6c757d;">로고</span>';
-                            }
-                        });
+                        // 홈팀 로고 업데이트 (축구와 동일한 방식)
+                        if (result.success && result.teamLogos) {
+                            const homeTeamInfo = result.teamLogos.find(team => team.team_type === 'home');
+                            const homeLogoContainers = document.querySelectorAll('.team-info.home-team .team-logo-container');
+                            homeLogoContainers.forEach(container => {
+                                if (homeTeamInfo && homeTeamInfo.logo_path) {
+                                    container.style.backgroundColor = homeTeamInfo.logo_bg_color || '#ffffff';
+                                    container.innerHTML = `
+                                        <img src="${homeTeamInfo.logo_path}" alt="${data.home_team} 로고" class="team-logo">
+                                    `;
+                                } else {
+                                    container.style.backgroundColor = '#f8f9fa';
+                                    container.innerHTML = '<span style="font-size: 0.8rem; color: #6c757d;">로고</span>';
+                                }
+                            });
+                            
+                            // 원정팀 로고 업데이트
+                            const awayTeamInfo = result.teamLogos.find(team => team.team_type === 'away');
+                            const awayLogoContainers = document.querySelectorAll('.team-info.away-team .team-logo-container');
+                            awayLogoContainers.forEach(container => {
+                                if (awayTeamInfo && awayTeamInfo.logo_path) {
+                                    container.style.backgroundColor = awayTeamInfo.logo_bg_color || '#ffffff';
+                                    container.innerHTML = `
+                                        <img src="${awayTeamInfo.logo_path}" alt="${data.away_team} 로고" class="team-logo">
+                                    `;
+                                } else {
+                                    container.style.backgroundColor = '#f8f9fa';
+                                    container.innerHTML = '<span style="font-size: 0.8rem; color: #6c757d;">로고</span>';
+                                }
+                            });
+                        }
                     }
                 } catch (error) {
                     console.error('팀 로고 업데이트 중 오류 발생:', error);

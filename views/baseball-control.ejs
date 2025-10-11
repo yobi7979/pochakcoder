@@ -3403,22 +3403,24 @@
                 }
             });
 
-            // 팀 로고 정보 가져오기
+            // 팀 로고 정보 가져오기 (축구와 동일한 방식)
             try {
-                const response = await fetch('/api/team-logo-map/BASEBALL');
-                const teamLogoMap = await response.json();
-                console.log('팀 로고맵 로드:', teamLogoMap);
+                const response = await fetch(`/api/matches/${matchId}/team-logos`);
+                const result = await response.json();
+                console.log('팀 로고 정보 로드:', result);
                 
-                // 홈팀 로고 설정
+                // 홈팀 로고 설정 (축구와 동일한 방식)
                 const homeTeamName = '<%= match.home_team %>';
                 let homeTeamLogo = '<%= match.match_data?.home_team_logo || "" %>';
                 let homeBgColor = '<%= match.match_data?.home_team_colorbg || "#ffffff" %>';
                 
-                if (teamLogoMap.logoMap && teamLogoMap.logoMap[homeTeamName]) {
-                    const homeLogoInfo = teamLogoMap.logoMap[homeTeamName];
-                    homeTeamLogo = homeLogoInfo.path;
-                    homeBgColor = homeLogoInfo.bgColor || '#ffffff';
-                    console.log('홈팀 로고 정보:', homeLogoInfo);
+                if (result.success && result.teamLogos) {
+                    const homeTeamInfo = result.teamLogos.find(team => team.team_type === 'home');
+                    if (homeTeamInfo && homeTeamInfo.logo_path) {
+                        homeTeamLogo = homeTeamInfo.logo_path;
+                        homeBgColor = homeTeamInfo.logo_bg_color || '#ffffff';
+                        console.log('홈팀 로고 정보:', homeTeamInfo);
+                    }
                 }
                 
                 const homeLogoPreview = document.getElementById('home-team-logo-preview');
@@ -3431,16 +3433,18 @@
                     }
                 }
                 
-                // 원정팀 로고 설정
+                // 원정팀 로고 설정 (축구와 동일한 방식)
                 const awayTeamName = '<%= match.away_team %>';
                 let awayTeamLogo = '<%= match.match_data?.away_team_logo || "" %>';
                 let awayBgColor = '<%= match.match_data?.away_team_colorbg || "#ffffff" %>';
                 
-                if (teamLogoMap.logoMap && teamLogoMap.logoMap[awayTeamName]) {
-                    const awayLogoInfo = teamLogoMap.logoMap[awayTeamName];
-                    awayTeamLogo = awayLogoInfo.path;
-                    awayBgColor = awayLogoInfo.bgColor || '#ffffff';
-                    console.log('원정팀 로고 정보:', awayLogoInfo);
+                if (result.success && result.teamLogos) {
+                    const awayTeamInfo = result.teamLogos.find(team => team.team_type === 'away');
+                    if (awayTeamInfo && awayTeamInfo.logo_path) {
+                        awayTeamLogo = awayTeamInfo.logo_path;
+                        awayBgColor = awayTeamInfo.logo_bg_color || '#ffffff';
+                        console.log('원정팀 로고 정보:', awayTeamInfo);
+                    }
                 }
                 
                 const awayLogoPreview = document.getElementById('away-team-logo-preview');
