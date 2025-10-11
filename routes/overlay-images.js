@@ -961,7 +961,7 @@ router.get('/TEAMLOGO/:sportType', async (req, res) => {
       
       return {
         filename: file,
-        path: `TEAMLOGO/${sportTypeUpper}/${file}`,
+        path: `/api/overlay-images/TEAMLOGO/${sportTypeUpper}/${file}`,
         size: stats.size,
         modified: stats.mtime
       };

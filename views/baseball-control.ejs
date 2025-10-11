@@ -3324,6 +3324,13 @@
                                 bgColor: data.bgColor || '#ffffff',
                                 teamColor: null
                             });
+                            
+                            // 팀로고 배경색도 함께 전송
+                            socket.emit('teamLogoBgUpdated', {
+                                matchId: '<%= match.id %>',
+                                teamType: 'home',
+                                logoBgColor: data.bgColor || '#ffffff'
+                            });
                         } else {
                             showToast(data.message || '로고 업로드에 실패했습니다', 'error');
                         }
@@ -3392,6 +3399,13 @@
                                 path: data.logoPath,
                                 bgColor: data.bgColor || '#ffffff',
                                 teamColor: null
+                            });
+                            
+                            // 팀로고 배경색도 함께 전송
+                            socket.emit('teamLogoBgUpdated', {
+                                matchId: '<%= match.id %>',
+                                teamType: 'away',
+                                logoBgColor: data.bgColor || '#ffffff'
                             });
                         } else {
                             showToast(data.message || '로고 업로드에 실패했습니다', 'error');
