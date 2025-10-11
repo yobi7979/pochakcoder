@@ -272,7 +272,8 @@
             </div>
         </div>
         
-        <!-- DB 관리 버튼 섹션 -->
+        <!-- DB 관리 버튼 섹션 (관리자 전용) -->
+        <% if (typeof userRole !== 'undefined' && userRole === 'admin') { %>
         <div class="db-management-section">
             <div class="container-fluid">
                 <div class="row">
@@ -289,6 +290,7 @@
                 </div>
             </div>
         </div>
+        <% } %>
         
         <div class="settings-body">
             <div class="row">
@@ -704,7 +706,8 @@
                 </div>
             </div>
 
-            <!-- DB 초기화 모달 -->
+            <!-- DB 초기화 모달 (관리자 전용) -->
+            <% if (typeof userRole !== 'undefined' && userRole === 'admin') { %>
             <div class="modal fade" id="dbResetModal" tabindex="-1">
                 <div class="modal-dialog modal-lg">
                     <div class="modal-content">
@@ -770,6 +773,7 @@
                     </div>
                 </div>
             </div>
+            <% } %>
 
             <!-- 로그 내용 모달 -->
             <div class="modal fade" id="logContentModal" tabindex="-1">
@@ -2126,14 +2130,22 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        // DB 초기화 모달 열기
+        // DB 초기화 모달 열기 (관리자 전용)
         function openDBResetModal() {
+            if (!isAdmin) {
+                alert('관리자 권한이 필요합니다.');
+                return;
+            }
             const modal = new bootstrap.Modal(document.getElementById('dbResetModal'));
             modal.show();
         }
 
-        // DB 초기화 함수
+        // DB 초기화 함수 (관리자 전용)
         async function resetDatabase() {
+            if (!isAdmin) {
+                alert('관리자 권한이 필요합니다.');
+                return;
+            }
             if (!confirm('정말로 데이터베이스를 초기화하시겠습니까?\n\n이 작업은 되돌릴 수 없으며, 기본 종목(축구, 야구)을 제외한 모든 사용자 데이터가 삭제됩니다.')) {
                 return;
             }
@@ -2197,8 +2209,12 @@
             }
         }
 
-        // DB 관리 페이지 열기
+        // DB 관리 페이지 열기 (관리자 전용)
         function openDBManagement() {
+            if (!isAdmin) {
+                alert('관리자 권한이 필요합니다.');
+                return;
+            }
             window.open('/db-management', '_blank');
         }
     </script>
