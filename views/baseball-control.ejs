@@ -4152,14 +4152,7 @@
                         logoPreview.style.backgroundColor = currentBgColor;
                     }
                     
-                    // WebSocket으로 실시간 업데이트
-                    baseballSocket.emit('teamLogoUpdated', {
-                        matchId: '<%= match.id %>',
-                        teamType: teamType,
-                        logoPath: logoPath,
-                        logoName: logoName,
-                        logoBgColor: currentBgColor
-                    });
+                    // WebSocket 이벤트는 서버에서 자동으로 전송됨 (중복 제거)
                     
                     showToast(`${teamType === 'home' ? '홈' : '어웨이'}팀 로고가 적용되었습니다.`, 'success');
                 } else {
