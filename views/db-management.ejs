@@ -505,6 +505,9 @@
             border-radius: 8px;
             overflow: hidden;
             margin-top: 20px;
+            /* CSS 격리 강화 */
+            isolation: isolate;
+            contain: layout style;
         }
 
         .table-viewer-header {
@@ -553,6 +556,9 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0,0,0,0.5);
+            /* CSS 격리 강화 */
+            isolation: isolate;
+            contain: layout style;
         }
 
         .modal-content {
@@ -1828,21 +1834,31 @@
             const info = document.getElementById('tableDataInfo');
             const content = document.getElementById('tableDataContent');
             
-            title.textContent = `${tableName} 테이블 데이터`;
+            // 테이블명 안전성 검사
+            if (!tableName || typeof tableName !== 'string') {
+                console.error('잘못된 테이블명:', tableName);
+                return;
+            }
+            
+            // HTML 이스케이프된 테이블명 사용
+            const safeTableName = escapeHtml(tableName);
+            title.textContent = `${safeTableName} 테이블 데이터`;
             info.textContent = '데이터 로딩 중...';
             content.innerHTML = '<div class="loading"><i class="bi bi-hourglass-split"></i> 데이터를 불러오는 중...</div>';
             
             modal.style.display = 'block';
             
             try {
-                const response = await fetch(`/api/db-management/tables/${tableName}/data`);
+                // URL 인코딩된 테이블명 사용
+                const encodedTableName = encodeURIComponent(tableName);
+                const response = await fetch(`/api/db-management/tables/${encodedTableName}/data`);
                 const data = await response.json();
                 
                 if (data.success) {
                     info.textContent = `총 ${data.rows.length}개 행`;
                     displayTableData(data.rows, data.columns);
                 } else {
-                    content.innerHTML = `<div class="alert alert-danger">데이터를 불러오는데 실패했습니다: ${data.message}</div>`;
+                    content.innerHTML = `<div class="alert alert-danger">데이터를 불러오는데 실패했습니다: ${escapeHtml(data.message)}</div>`;
                 }
             } catch (error) {
                 console.error('테이블 데이터 로드 오류:', error);
@@ -1850,7 +1866,20 @@
             }
         }
 
-        // 테이블 데이터 표시
+        // HTML 이스케이프 함수
+        function escapeHtml(text) {
+            if (text === null || text === undefined) return '';
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.toString().replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+
+        // 테이블 데이터 표시 (안전한 방식)
         function displayTableData(rows, columns) {
             const content = document.getElementById('tableDataContent');
             
@@ -1861,14 +1890,32 @@
             
             let tableHTML = '<table class="table-viewer"><thead><tr>';
             columns.forEach(col => {
-                tableHTML += `<th>${col}</th>`;
+                tableHTML += `<th>${escapeHtml(col)}</th>`;
             });
             tableHTML += '</tr></thead><tbody>';
             
             rows.forEach(row => {
                 tableHTML += '<tr>';
                 columns.forEach(col => {
-                    const value = row[col] !== null ? row[col] : '<em>NULL</em>';
+                    const rawValue = row[col];
+                    let value;
+                    if (rawValue === null || rawValue === undefined) {
+                        value = '<em>NULL</em>';
+                    } else {
+                        // HTML 이스케이프 처리
+                        value = escapeHtml(rawValue.toString());
+                        
+                        // JSON 데이터인 경우 포맷팅
+                        if (typeof rawValue === 'object' && rawValue !== null) {
+                            value = '<pre>' + escapeHtml(JSON.stringify(rawValue, null, 2)) + '</pre>';
+                        }
+                        
+                        // URL인 경우 링크로 변환 (안전한 URL만)
+                        if (typeof rawValue === 'string' && 
+                            (rawValue.startsWith('http://') || rawValue.startsWith('https://') || rawValue.startsWith('/api/'))) {
+                            value = `<a href="${escapeHtml(rawValue)}" target="_blank" rel="noopener noreferrer">${escapeHtml(rawValue)}</a>`;
+                        }
+                    }
                     tableHTML += `<td>${value}</td>`;
                 });
                 tableHTML += '</tr>';
@@ -1956,7 +2003,15 @@
 
         // 모달 닫기 함수들
         function closeTableDataModal() {
-            document.getElementById('tableDataModal').style.display = 'none';
+            const modal = document.getElementById('tableDataModal');
+            const content = document.getElementById('tableDataContent');
+            
+            // DOM 정리
+            if (content) {
+                content.innerHTML = '<div class="loading"><i class="bi bi-hourglass-split"></i> 데이터를 불러오는 중...</div>';
+            }
+            
+            modal.style.display = 'none';
         }
 
         function closeCreateTableModal() {
