@@ -1152,6 +1152,10 @@
         socket.on('reconnect', function(attemptNumber) {
             console.log(`🔄 소켓 재연결 성공 (시도 ${attemptNumber}번째)`);
             updateConnectionStatus(true);
+            
+            // 재연결 시 현재 타이머 상태 요청 (서버와 동기화)
+            console.log('=== 재연결 후 타이머 상태 요청 ===');
+            socket.emit('request_timer_state', { matchId: matchId });
         });
 
         socket.on('reconnect_attempt', function(attemptNumber) {
@@ -2037,12 +2041,13 @@
             }
         }
 
-        // 타이머 업데이트 루프
+        // 타이머 업데이트 루프 (서버 시작 시간 기준으로 정확한 계산)
         setInterval(() => {
                 if (timerState.isRunning) {
-                            const currentTime = Date.now();
-                            const elapsedTime = Math.floor((currentTime - timerState.startTime) / 1000);
-                timerState.currentSeconds = timerState.pausedTime + elapsedTime;
+                    // 서버에서 받은 시작 시간을 기준으로 정확한 계산 (오버레이 페이지와 동일한 방식)
+                    const currentTime = Date.now();
+                    const elapsedTime = Math.floor((currentTime - timerState.startTime) / 1000);
+                    timerState.currentSeconds = timerState.pausedTime + elapsedTime;
                     updateTimerDisplay();
                 }
             }, 1000);
@@ -2911,10 +2916,10 @@
                 // 타이머 디스플레이 업데이트
                 updateTimerDisplay();
                 
-                // 타이머가 실행 중이면 로컬 타이머 시작
+                // 타이머가 실행 중이면 서버 시작 시간을 기준으로 로컬 타이머 시작
                 if (timerState.isRunning && timerState.startTime) {
-                    timerState.startTime = Date.now() - (timerState.currentSeconds * 1000);
-                    console.log('로컬 타이머 재시작');
+                    // 서버에서 받은 시작 시간을 그대로 사용 (오버레이 페이지와 동일한 방식)
+                    console.log('로컬 타이머 재시작 - 서버 시작 시간 사용:', timerState.startTime);
                 }
             }
         });
