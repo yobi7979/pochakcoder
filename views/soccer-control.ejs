@@ -2935,8 +2935,8 @@
             }
         }
         
-        // 시간차이 보정 토글
-        function toggleTimeCorrection() {
+        // 시간차이 보정 토글 (전역 함수로 정의)
+        window.toggleTimeCorrection = function() {
             const checkbox = document.getElementById('time-correction-enabled');
             timeCorrectionEnabled = checkbox.checked;
             
@@ -2967,6 +2967,7 @@
         
         // 초기 시간차이 측정
         measureTimeDifference();
+        
         
         // 팀로고 관련 이벤트 리스너
         document.querySelectorAll('input[type="file"]').forEach(input => {
