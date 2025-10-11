@@ -1149,7 +1149,9 @@
                 team_color: document.getElementById('editTeamColor').value,
                 team_header: document.getElementById('editTeamHeader').value,
                 logo_path: document.getElementById('editTeamLogo').value,
-                logo_bg_color: document.getElementById('editLogoBgColor').value
+                logo_bg_color: document.getElementById('editLogoBgColor').value,
+                match_id: matchId,
+                team_type: this.dataset.teamType || (teamId.includes('home') ? 'home' : 'away')
             };
             
             try {

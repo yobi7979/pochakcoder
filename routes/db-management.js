@@ -529,15 +529,56 @@ router.put('/team-info/:id', async (req, res) => {
     
     // 1. TeamInfo 테이블에서 팀 정보 조회 (match_id와 team_type 확인용)
     console.log('TeamInfo 테이블 조회 시작...');
-    const teamInfo = await sequelize.query(`
-      SELECT match_id, team_type, sport_type 
-      FROM TeamInfo 
-      WHERE id = ?
-    `, {
-      replacements: [id],
-      type: sequelize.QueryTypes.SELECT
-    });
-    console.log('TeamInfo 조회 결과:', teamInfo);
+    let teamInfo;
+    try {
+      teamInfo = await sequelize.query(`
+        SELECT match_id, team_type, sport_type 
+        FROM TeamInfo 
+        WHERE id = ?
+      `, {
+        replacements: [id],
+        type: sequelize.QueryTypes.SELECT
+      });
+      console.log('TeamInfo 조회 결과:', teamInfo);
+    } catch (dbError) {
+      console.error('TeamInfo 테이블 조회 실패:', dbError);
+      console.log('TeamInfo 테이블이 존재하지 않거나 접근할 수 없습니다.');
+      
+      // TeamInfo 테이블이 없는 경우 Match 테이블만 업데이트
+      console.log('Match 테이블만 업데이트 시도...');
+      const { Match } = require('../models');
+      const match = await Match.findByPk(req.body.match_id || req.body.matchId);
+      
+      if (match) {
+        // Match 테이블의 match_data JSON 필드에 팀 정보 저장
+        const matchData = match.match_data || {};
+        const teamKey = req.body.team_type === 'home' ? 'home_team' : 'away_team';
+        const colorKey = req.body.team_type === 'home' ? 'home_team_color' : 'away_team_color';
+        const headerKey = req.body.team_type === 'home' ? 'home_team_header' : 'away_team_header';
+        const logoKey = req.body.team_type === 'home' ? 'home_team_logo' : 'away_team_logo';
+        const logoBgKey = req.body.team_type === 'home' ? 'home_team_logo_bg' : 'away_team_logo_bg';
+        
+        matchData[teamKey] = team_name;
+        matchData[colorKey] = team_color;
+        matchData[headerKey] = team_header;
+        matchData[logoKey] = logo_path;
+        matchData[logoBgKey] = logo_bg_color;
+        
+        await match.update({ match_data: matchData });
+        console.log('Match 테이블 업데이트 완료 (TeamInfo 테이블 없음)');
+        
+        return res.json({ 
+          success: true, 
+          message: '팀 정보가 수정되었습니다. (Match 테이블만 업데이트)',
+          warning: 'TeamInfo 테이블을 사용할 수 없어 Match 테이블에만 저장되었습니다.'
+        });
+      } else {
+        return res.status(404).json({ 
+          success: false, 
+          message: '경기 정보를 찾을 수 없습니다.' 
+        });
+      }
+    }
     
     if (teamInfo.length === 0) {
       console.log(`팀 정보를 찾을 수 없음: ID ${id}`);
