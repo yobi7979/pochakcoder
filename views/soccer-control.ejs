@@ -1310,66 +1310,8 @@
             alert('득점 정보 저장에 실패했습니다: ' + data.error);
         });
 
-        // 타이머 시작
-        function startTimer() {
-            console.log('=== 타이머 시작 버튼 클릭 ===');
-            console.log('matchId:', matchId);
-            console.log('현재 타이머 상태:', timerState);
-            
-            if (!timerState.isRunning) {
-                timerState.isRunning = true;
-                timerState.startTime = Date.now();
-                
-                // 클라이언트 시작 시간을 서버에 전송하여 정확한 동기화
-                socket.emit('timer_control', {
-                    matchId: matchId,
-                    action: 'start',
-                    clientStartTime: timerState.startTime // 클라이언트 시작 시간 전송
-                });
-                
-                console.log('타이머 시작 이벤트 전송 완료 (클라이언트 시작 시간:', timerState.startTime, ')');
-            }
-        }
 
-        // 타이머 정지
-        function stopTimer() {
-            console.log('=== 타이머 정지 버튼 클릭 ===');
-            console.log('matchId:', matchId, 'currentTime:', timerState.currentSeconds);
-                
-                if (timerState.isRunning) {
-                timerState.isRunning = false;
-                timerState.pausedTime = timerState.currentSeconds;
-                
-                // 기존 코드와 동일한 이벤트 사용
-            socket.emit('timer_control', {
-                matchId: matchId,
-                action: 'stop',
-                    currentTime: timerState.currentSeconds
-                });
-                
-                console.log('타이머 정지 이벤트 전송 완료');
-            }
-        }
 
-        // 타이머 리셋
-        function resetTimer() {
-            console.log('=== 타이머 리셋 버튼 클릭 ===');
-            console.log('matchId:', matchId);
-            
-            timerState.isRunning = false;
-            timerState.currentSeconds = 0;
-            timerState.startTime = null;
-            timerState.pausedTime = 0;
-            
-            // 기존 코드와 동일한 이벤트 사용
-            socket.emit('timer_control', {
-                matchId: matchId,
-                action: 'reset'
-            });
-            
-            updateTimerDisplay();
-            console.log('타이머 리셋 이벤트 전송 완료');
-        }
 
         // 시간 수정 토글 (기존 방식)
         function toggleTimeEdit() {
@@ -2808,22 +2750,22 @@
                     return;
                 }
                 
-                // 서버에 시간 설정 요청
-                socket.emit('timer_control', {
-                        matchId: matchId,
-                    action: 'set',
-                    minutes: minutes,
-                    seconds: seconds
-                });
+                // 액션 기반 시간 설정
+                const actionData = {
+                    action: 'set_time',
+                    matchId: matchId,
+                    timestamp: Date.now(),
+                    data: { 
+                        time: totalSeconds,
+                        reason: 'user_edit' 
+                    }
+                };
                 
-                // 로컬 타이머 상태 업데이트
-                timerState.currentSeconds = minutes * 60 + seconds;
-                timerState.isRunning = false;
-                timerState.startTime = null;
-                timerState.pausedTime = timerState.currentSeconds;
+                socket.emit('timer_action_request', actionData);
+                console.log('타이머 시간 설정 액션 전송:', actionData);
                 
-                // 디스플레이 업데이트
-                updateTimerDisplay();
+                // setTimerTime 함수 호출
+                setTimerTime(totalSeconds);
                 
                 // 입력 필드 숨기기
                 document.getElementById('time-edit-container').style.display = 'none';
