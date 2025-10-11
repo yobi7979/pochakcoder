@@ -3619,16 +3619,16 @@
                         preview.style.backgroundColor = bgColor;
                     }
                     
-                    // WebSocket 이벤트로 DB 정보 업데이트 알림 (축구와 동일)
+                    // WebSocket 이벤트로 실시간 업데이트 전송
                     if (socket.connected) {
-                        socket.emit('dataChanged', {
+                        socket.emit('teamLogoBgUpdated', {
                             matchId: '<%= match.id %>',
-                            type: 'teamLogo',
-                            teamType: team
+                            teamType: team,
+                            logoBgColor: bgColor
                         });
-                        console.log('✅ dataChanged 이벤트 전송 완료');
+                        console.log('✅ teamLogoBgUpdated 이벤트 전송 완료');
                     } else {
-                        console.error('❌ 소켓 연결되지 않음 - dataChanged 이벤트 전송 실패');
+                        console.error('❌ 소켓 연결되지 않음 - teamLogoBgUpdated 이벤트 전송 실패');
                     }
                     
                     console.log(`${team}팀 로고 배경색이 저장되었습니다.`);

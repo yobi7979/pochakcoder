@@ -1941,6 +1941,24 @@
             }
         });
 
+        // 팀로고 배경색 업데이트 이벤트 처리
+        socket.on('teamLogoBgUpdated', function(data) {
+            console.log('팀로고 배경색 업데이트 이벤트 수신:', data);
+            
+            if (data.matchId === matchId) {
+                const teamType = data.teamType;
+                const logoBgColor = data.logoBgColor;
+                
+                // 팀로고 배경색 업데이트
+                const logoContainers = document.querySelectorAll(`.team-info.${teamType}-team .team-logo-container`);
+                logoContainers.forEach(container => {
+                    container.style.backgroundColor = logoBgColor || '#ffffff';
+                });
+                
+                console.log(`${teamType}팀로고 배경색 업데이트 완료: ${logoBgColor}`);
+            }
+        });
+
         // 팀 로고 업데이트 이벤트 처리
         socket.on('teamLogoUpdated', function(data) {
             console.log('팀 로고 업데이트 이벤트 수신:', data);
