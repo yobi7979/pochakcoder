@@ -679,6 +679,16 @@ router.post('/:matchId/team-logo-bg', async (req, res) => {
       const matchRoom = `match_${matchId}`;
       const sportRoom = `sport_BASEBALL`;  // 야구 종목 Room
       
+      // Room 참여자 수 확인
+      const matchRoomClients = io.sockets.adapter.rooms.get(matchRoom);
+      const sportRoomClients = io.sockets.adapter.rooms.get(sportRoom);
+      const matchRoomCount = matchRoomClients ? matchRoomClients.size : 0;
+      const sportRoomCount = sportRoomClients ? sportRoomClients.size : 0;
+      
+      console.log(`🔧 WebSocket Room 상태 확인:`);
+      console.log(`🔧 matchRoom=${matchRoom}, 참여자 수: ${matchRoomCount}`);
+      console.log(`🔧 sportRoom=${sportRoom}, 참여자 수: ${sportRoomCount}`);
+      
       // match Room으로 이벤트 전송
       io.to(matchRoom).emit('teamLogoUpdated', {
         matchId: matchId,
@@ -717,9 +727,11 @@ router.post('/:matchId/team-logo-bg', async (req, res) => {
         logoBgColor: logoBgColor
       });
       
-      console.log(`WebSocket 팀 로고 배경색 업데이트 이벤트 전송: matchRoom=${matchRoom}, sportRoom=${sportRoom}`);
-      console.log(`WebSocket teamLogoUpdate 이벤트 전송: matchRoom=${matchRoom}, sportRoom=${sportRoom}, teamType=${team}, logoBgColor=${logoBgColor}`);
-      console.log(`WebSocket teamLogoBgUpdated 이벤트 전송: matchRoom=${matchRoom}, sportRoom=${sportRoom}, teamType=${team}, logoBgColor=${logoBgColor}`);
+      console.log(`🔧 WebSocket 팀 로고 배경색 업데이트 이벤트 전송 완료:`);
+      console.log(`🔧 matchRoom=${matchRoom} (참여자: ${matchRoomCount}), sportRoom=${sportRoom} (참여자: ${sportRoomCount})`);
+      console.log(`🔧 teamType=${team}, logoBgColor=${logoBgColor}`);
+    } else {
+      console.log('🔧 WebSocket io 인스턴스를 찾을 수 없음');
     }
     
     res.json({ 

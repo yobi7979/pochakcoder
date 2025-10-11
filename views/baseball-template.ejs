@@ -1943,6 +1943,11 @@
 
         // 팀로고 배경색 업데이트 이벤트 처리 (팀컬러와 동일한 방식)
         socket.on('teamLogoUpdate', function(data) {
+            console.log('🔧 teamLogoUpdate 이벤트 수신됨:', data);
+            console.log('🔧 현재 matchId:', matchId);
+            console.log('🔧 이벤트 matchId:', data.matchId);
+            console.log('🔧 matchId 일치 여부:', data.matchId === matchId);
+            
             if (data.matchId === matchId) {
                 const teamType = data.teamType;
                 const logoBgColor = data.logoBgColor;
@@ -1955,29 +1960,44 @@
                 
                 // 팀로고 배경색 업데이트
                 const logoContainers = document.querySelectorAll(`.team-info.${teamType}-team .team-logo-container`);
+                console.log(`🔧 찾은 로고 컨테이너 수: ${logoContainers.length}`);
                 logoContainers.forEach(container => {
                     container.style.backgroundColor = logoBgColor || '#ffffff';
                 });
                 
                 console.log(`${teamType}팀로고 배경색 업데이트 완료: ${logoBgColor}`);
+            } else {
+                console.log('🔧 matchId가 일치하지 않음 - 이벤트 무시');
             }
         });
 
         // 팀로고 배경색 업데이트 이벤트 처리 (팀컬러와 동일한 방식)
         socket.on('teamLogoBgUpdated', function(data) {
-            console.log('팀로고 배경색 업데이트 이벤트 수신:', data);
+            console.log('🔧 teamLogoBgUpdated 이벤트 수신됨:', data);
+            console.log('🔧 현재 matchId:', matchId);
+            console.log('🔧 이벤트 matchId:', data.matchId);
+            console.log('🔧 matchId 일치 여부:', data.matchId === matchId);
             
             if (data.matchId === matchId) {
                 const teamType = data.teamType;
                 const logoBgColor = data.logoBgColor;
                 
+                console.log('팀로고 배경색 업데이트 이벤트 수신:', {
+                    teamType,
+                    logoBgColor,
+                    matchId: data.matchId
+                });
+                
                 // 팀로고 배경색 업데이트
                 const logoContainers = document.querySelectorAll(`.team-info.${teamType}-team .team-logo-container`);
+                console.log(`🔧 찾은 로고 컨테이너 수: ${logoContainers.length}`);
                 logoContainers.forEach(container => {
                     container.style.backgroundColor = logoBgColor || '#ffffff';
                 });
                 
                 console.log(`${teamType}팀로고 배경색 업데이트 완료: ${logoBgColor}`);
+            } else {
+                console.log('🔧 matchId가 일치하지 않음 - 이벤트 무시');
             }
         });
 
