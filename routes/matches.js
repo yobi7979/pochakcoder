@@ -673,6 +673,13 @@ router.post('/:matchId/team-logo-bg', async (req, res) => {
         logoBgColor: logoBgColor
       });
       
+      // teamLogoUpdate 이벤트 전송 (팀컬러와 동일한 방식)
+      io.to(roomName).emit('teamLogoUpdate', {
+        matchId: matchId,
+        teamType: team,
+        logoBgColor: logoBgColor
+      });
+
       // teamLogoBgUpdated 이벤트 전송 (추가)
       io.to(roomName).emit('teamLogoBgUpdated', {
         matchId: matchId,
@@ -681,6 +688,7 @@ router.post('/:matchId/team-logo-bg', async (req, res) => {
       });
       
       console.log(`WebSocket 팀 로고 배경색 업데이트 이벤트 전송: room=${roomName}`);
+      console.log(`WebSocket teamLogoUpdate 이벤트 전송: room=${roomName}, teamType=${team}, logoBgColor=${logoBgColor}`);
       console.log(`WebSocket teamLogoBgUpdated 이벤트 전송: room=${roomName}, teamType=${team}, logoBgColor=${logoBgColor}`);
     }
     
