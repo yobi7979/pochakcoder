@@ -613,34 +613,159 @@
             }
         });
 
-        // 타이머 컨트롤 버튼 이벤트
-        document.getElementById('start-timer').addEventListener('click', function() {
+        // 액션 기반 타이머 시스템
+        function startTimer() {
             console.log('=== 타이머 시작 버튼 클릭 ===');
-            console.log('matchId:', matchId);
-            socket.emit('timer_control', {
+            
+            const actionData = {
+                action: 'start',
                 matchId: matchId,
-                action: 'start'
-            });
-        });
-        document.getElementById('stop-timer').addEventListener('click', function() {
+                timestamp: Date.now(),
+                data: { reason: 'user_click' }
+            };
+            
+            socket.emit('timer_action_request', actionData);
+            console.log('타이머 시작 액션 전송:', actionData);
+        }
+        
+        function stopTimer() {
             console.log('=== 타이머 정지 버튼 클릭 ===');
-            console.log('matchId:', matchId, 'currentTime:', timerState.currentSeconds);
-            // 현재 로컬 타이머의 시간을 서버로 전송
-            const currentTime = timerState.currentSeconds;
-            socket.emit('timer_control', {
-                matchId: matchId,
+            
+            const actionData = {
                 action: 'stop',
-                currentTime: currentTime
-            });
-        });
-        document.getElementById('reset-timer').addEventListener('click', function() {
-            console.log('=== 타이머 리셋 버튼 클릭 ===');
-            console.log('matchId:', matchId);
-            socket.emit('timer_control', {
                 matchId: matchId,
-                action: 'reset'
-            });
+                timestamp: Date.now(),
+                data: { reason: 'user_click' }
+            };
+            
+            socket.emit('timer_action_request', actionData);
+            console.log('타이머 정지 액션 전송:', actionData);
+        }
+        
+        function resetTimer() {
+            console.log('=== 타이머 리셋 버튼 클릭 ===');
+            
+            const actionData = {
+                action: 'reset',
+                matchId: matchId,
+                timestamp: Date.now(),
+                data: { reason: 'user_click' }
+            };
+            
+            socket.emit('timer_action_request', actionData);
+            console.log('타이머 리셋 액션 전송:', actionData);
+        }
+        
+        function setTimerTime(seconds) {
+            console.log('=== 타이머 시간 설정 ===');
+            
+            const actionData = {
+                action: 'set_time',
+                matchId: matchId,
+                timestamp: Date.now(),
+                data: { 
+                    time: seconds,
+                    reason: 'user_edit' 
+                }
+            };
+            
+            socket.emit('timer_action_request', actionData);
+            console.log('타이머 시간 설정 액션 전송:', actionData);
+        }
+        
+        // 액션 기반 타이머 이벤트 리스너
+        socket.on('timer_action', function(actionData) {
+            if (actionData.matchId !== matchId) return;
+            
+            console.log('타이머 액션 수신:', actionData);
+            
+            const { action, timestamp, data } = actionData;
+            
+            switch (action) {
+                case 'start':
+                    handleStartAction(timestamp);
+                    break;
+                case 'stop':
+                    handleStopAction(timestamp);
+                    break;
+                case 'reset':
+                    handleResetAction();
+                    break;
+                case 'set_time':
+                    handleSetTimeAction(timestamp, data.time);
+                    break;
+                case 'pause':
+                    handlePauseAction(timestamp);
+                    break;
+                case 'resume':
+                    handleResumeAction(timestamp);
+                    break;
+            }
         });
+        
+        // 액션별 처리 함수
+        function handleStartAction(timestamp) {
+            console.log('타이머 시작 액션 처리:', timestamp);
+            timerState.startTime = timestamp;
+            timerState.isRunning = true;
+            timerState.pausedTime = 0;
+            startLocalTimer();
+        }
+        
+        function handleStopAction(timestamp) {
+            console.log('타이머 정지 액션 처리:', timestamp);
+            timerState.isRunning = false;
+            if (timerState.startTime) {
+                timerState.pausedTime = Math.floor((timestamp - timerState.startTime) / 1000);
+            }
+            stopLocalTimer();
+        }
+        
+        function handleResetAction() {
+            console.log('타이머 리셋 액션 처리');
+            timerState.startTime = null;
+            timerState.pausedTime = 0;
+            timerState.isRunning = false;
+            resetLocalTimer();
+        }
+        
+        function handleSetTimeAction(timestamp, targetTime) {
+            console.log('타이머 시간 설정 액션 처리:', targetTime);
+            timerState.startTime = timestamp;
+            timerState.pausedTime = targetTime;
+            timerState.isRunning = false;
+            updateTimerDisplay();
+        }
+        
+        function handlePauseAction(timestamp) {
+            console.log('타이머 일시정지 액션 처리:', timestamp);
+            timerState.isRunning = false;
+            if (timerState.startTime) {
+                timerState.pausedTime = Math.floor((timestamp - timerState.startTime) / 1000);
+            }
+            stopLocalTimer();
+        }
+        
+        function handleResumeAction(timestamp) {
+            console.log('타이머 재개 액션 처리:', timestamp);
+            timerState.startTime = timestamp;
+            timerState.isRunning = true;
+            startLocalTimer();
+        }
+        
+        // 로컬 타이머 함수들
+        function resetLocalTimer() {
+            console.log('로컬 타이머 리셋');
+            
+            stopLocalTimer();
+            timerState.currentSeconds = 0;
+            updateTimerDisplay();
+        }
+        
+        // 타이머 컨트롤 버튼 이벤트
+        document.getElementById('start-timer').addEventListener('click', startTimer);
+        document.getElementById('stop-timer').addEventListener('click', stopTimer);
+        document.getElementById('reset-timer').addEventListener('click', resetTimer);
         
 
 
@@ -714,13 +839,22 @@
             
             if (minutes > 90) minutes = 90;
             if (seconds > 59) seconds = 59;
-            // 서버에 시간 변경 요청
-            socket.emit('timer_control', {
+            // 액션 기반 시간 설정
+            const actionData = {
+                action: 'set_time',
                 matchId: matchId,
-                action: 'set',
-                minutes: minutes,
-                seconds: seconds
-            });
+                timestamp: Date.now(),
+                data: { 
+                    time: totalSeconds,
+                    reason: 'user_edit' 
+                }
+            };
+            
+            socket.emit('timer_action_request', actionData);
+            console.log('타이머 시간 설정 액션 전송:', actionData);
+            
+            // setTimerTime 함수 호출
+            setTimerTime(totalSeconds);
         });
 
         // 로컬 타이머 (호환성 지원)
