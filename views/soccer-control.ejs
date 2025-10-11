@@ -2793,8 +2793,8 @@
         
         
         
-        // 액션 기반 타이머 시스템
-        function startTimer() {
+        // 액션 기반 타이머 시스템 (전역 함수로 정의)
+        window.startTimer = function() {
             console.log('=== 타이머 시작 버튼 클릭 ===');
             
             const actionData = {
@@ -2808,7 +2808,7 @@
             console.log('타이머 시작 액션 전송:', actionData);
         }
         
-        function stopTimer() {
+        window.stopTimer = function() {
             console.log('=== 타이머 정지 버튼 클릭 ===');
             
             const actionData = {
@@ -2822,7 +2822,7 @@
             console.log('타이머 정지 액션 전송:', actionData);
         }
         
-        function resetTimer() {
+        window.resetTimer = function() {
             console.log('=== 타이머 리셋 버튼 클릭 ===');
             
             const actionData = {
@@ -2836,7 +2836,7 @@
             console.log('타이머 리셋 액션 전송:', actionData);
         }
         
-        function setTimerTime(seconds) {
+        window.setTimerTime = function(seconds) {
             console.log('=== 타이머 시간 설정 ===');
             
             const actionData = {
