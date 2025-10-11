@@ -505,13 +505,17 @@ router.post('/:matchId/team-color', async (req, res) => {
     
     // TeamInfo 테이블도 업데이트 (DB 관리 페이지와 동기화)
     const { sequelize } = require('../models');
-    await sequelize.query(`
-      UPDATE TeamInfo 
-      SET team_color = ?, team_header = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE match_id = ? AND team_type = ?
-    `, {
-      replacements: [teamColor, headerText || (team === 'home' ? match.home_team_header : match.away_team_header), matchId, team],
-      type: sequelize.QueryTypes.UPDATE
+    const { TeamInfo } = require('../models');
+    
+    // Sequelize ORM을 사용하여 안전하게 업데이트
+    await TeamInfo.update({
+      team_color: teamColor,
+      team_header: headerText || (team === 'home' ? match.home_team_header : match.away_team_header)
+    }, {
+      where: {
+        match_id: matchId,
+        team_type: team
+      }
     });
     
     // WebSocket으로 팀 컬러 업데이트 이벤트 전송
