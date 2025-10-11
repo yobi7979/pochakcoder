@@ -3133,13 +3133,14 @@
                         let bgColor = '#ffffff';
 
                         // 2. 팀 이름으로 로고 정보 찾기
-                        if (teamLogoMap[teamName]) {
-                            console.log('팀 로고 정보 찾음:', teamLogoMap[teamName]);
-                            if (typeof teamLogoMap[teamName] === 'object') {
-                                logoPath = teamLogoMap[teamName].path;
-                                bgColor = teamLogoMap[teamName].bgColor || '#ffffff';
+                        if (teamLogoMap.logoMap && teamLogoMap.logoMap[teamName]) {
+                            console.log('팀 로고 정보 찾음:', teamLogoMap.logoMap[teamName]);
+                            const logoInfo = teamLogoMap.logoMap[teamName];
+                            if (typeof logoInfo === 'object') {
+                                logoPath = logoInfo.path;
+                                bgColor = logoInfo.bgColor || '#ffffff';
                             } else {
-                                logoPath = teamLogoMap[teamName];
+                                logoPath = logoInfo;
                             }
                         } else {
                             // 3. 팀 이름과 정확히 일치하는 .png 파일 찾기
@@ -3535,13 +3536,13 @@
                     '<%= match.home_team %>' : 
                     '<%= match.away_team %>';
                 
-                // 1. JSON 파일에서 로고 정보 삭제
-                const logoMapResponse = await fetch('/TEAMLOGO/BASEBALL/team_logo_map.json');
+                // 1. API에서 로고 정보 삭제
+                const logoMapResponse = await fetch('/api/team-logo-map/BASEBALL');
                 let teamLogoMap = {};
                 
                 if (logoMapResponse.ok) {
                     const data = await logoMapResponse.json();
-                    teamLogoMap = data.teamLogoMap || {};
+                    teamLogoMap = data.logoMap || {};
                     delete teamLogoMap[teamName];
                     
                     // JSON 파일 업데이트
@@ -3870,7 +3871,7 @@
                 
                 if (logoMapResponse.ok) {
                     const data = await logoMapResponse.json();
-                    teamLogoMap = data.teamLogoMap || {};
+                    teamLogoMap = data.logoMap || {};
                     delete teamLogoMap[teamName];
                     
                     // JSON 파일 업데이트
