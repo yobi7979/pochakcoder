@@ -532,25 +532,187 @@
     </div>
 
     <script>
-        // 데이터 로드
-        async function loadTeamData() {
-            console.log('🔍 loadTeamData 함수 시작');
-            try {
-                console.log('📡 API 요청 시작: /api/sport-management/api');
-                const response = await fetch('/api/sport-management/api');
-                console.log('📡 API 응답 상태:', response.status);
-                const data = await response.json();
-                console.log('📊 받은 데이터:', data);
-                
-                if (data.success) {
-                    console.log('✅ API 성공, displayTeamData 호출');
-                    displayTeamData(data.sports, data.settings);
-                } else {
-                    console.log('❌ API 실패');
-                    showError('데이터를 불러오는데 실패했습니다.');
+        // 새로운 클래스 기반 구조로 재작성
+        class TeamDataManager {
+            constructor() {
+                this.teamData = [];
+                this.settingsData = [];
+                this.allTeamData = [];
+            }
+            
+            // 팀 데이터 로드 (기존 API 엔드포인트 사용)
+            async loadTeamData() {
+                console.log('🔍 TeamDataManager.loadTeamData 시작');
+                try {
+                    console.log('📡 API 요청 시작: /api/sport-management/api');
+                    const response = await fetch('/api/sport-management/api');
+                    console.log('📡 API 응답 상태:', response.status);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('📊 받은 데이터:', data);
+                        
+                        if (data.success) {
+                            console.log('✅ API 성공, 데이터 처리 시작');
+                            
+                            // 기존 데이터 구조 그대로 사용
+                            this.teamData = data.sports || [];
+                            this.settingsData = data.settings || [];
+                            this.allTeamData = [];
+                            
+                            // 모든 종목의 팀 정보를 수집 (기존 로직 유지)
+                            if (data.sports) {
+                                data.sports.forEach(sport => {
+                                    if (sport.team_details && sport.team_details.length > 0) {
+                                        sport.team_details.forEach(team => {
+                                            this.allTeamData.push({
+                                                ...team,
+                                                sport_type: sport.sport_type
+                                            });
+                                        });
+                                    }
+                                });
+                            }
+                            
+                            return data;
+                        } else {
+                            throw new Error('API 응답이 성공하지 않았습니다.');
+                        }
+                    } else {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                } catch (error) {
+                    console.error('❌ 팀 데이터 로드 실패:', error);
+                    throw error;
                 }
+            }
+            
+            // 팀 정보 수정 (기존 API 엔드포인트 사용)
+            async updateTeamInfo(teamId, teamData) {
+                try {
+                    console.log('📝 팀 정보 수정 시작:', { teamId, teamData });
+                    const response = await fetch(`/api/sport-management/team-info/${teamId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(teamData)
+                    });
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`HTTP ${response.status}: ${errorText}`);
+                    }
+                    
+                    const result = await response.json();
+                    console.log('✅ 팀 정보 수정 성공:', result);
+                    return result;
+                } catch (error) {
+                    console.error('❌ 팀 정보 수정 실패:', error);
+                    throw error;
+                }
+            }
+            
+            // 팀 정보 삭제 (기존 API 엔드포인트 사용)
+            async deleteTeamInfo(teamId) {
+                try {
+                    console.log('🗑️ 팀 정보 삭제 시작:', teamId);
+                    const response = await fetch(`/api/sport-management/team-info/${teamId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const result = await response.json();
+                    console.log('✅ 팀 정보 삭제 성공:', result);
+                    return result;
+                } catch (error) {
+                    console.error('❌ 팀 정보 삭제 실패:', error);
+                    throw error;
+                }
+            }
+        }
+        
+        class TeamUIManager {
+            constructor() {
+                this.elements = {};
+                this.initializeElements();
+            }
+            
+            // DOM 요소 안전하게 초기화
+            initializeElements() {
+                const elementIds = [
+                    'editTeamName', 'editTeamColor', 'editTeamHeader', 
+                    'editTeamLogo', 'editLogoBgColor', 'editForm', 'editModal',
+                    'data-container'
+                ];
+                
+                elementIds.forEach(id => {
+                    this.elements[id] = document.getElementById(id);
+                    if (!this.elements[id]) {
+                        console.error(`요소를 찾을 수 없습니다: ${id}`);
+                    }
+                });
+            }
+            
+            // 안전한 팀 정보 편집 모달 열기
+            openEditModal(team) {
+                try {
+                    console.log('📝 편집 모달 열기:', team);
+                    
+                    // 필수 요소 존재 확인
+                    if (!this.elements.editTeamName) {
+                        throw new Error('편집 폼을 찾을 수 없습니다.');
+                    }
+                    
+                    // 기존 TeamInfo 테이블 구조 사용하여 값 설정
+                    this.elements.editTeamName.value = team.team_name || '';
+                    this.elements.editTeamColor.value = team.team_color || '#000000';
+                    this.elements.editTeamHeader.value = team.team_header || '';
+                    this.elements.editLogoBgColor.value = team.logo_bg_color || '#FFFFFF';
+                    
+                    // 기존 폼 데이터 구조 유지
+                    if (this.elements.editForm) {
+                        this.elements.editForm.dataset.teamId = team.id;
+                        this.elements.editForm.dataset.matchId = team.match_id;
+                        this.elements.editForm.dataset.sportType = team.sport_type;
+                        this.elements.editForm.dataset.teamType = team.team_type;
+                    }
+                    
+                    // 모달 표시
+                    if (this.elements.editModal) {
+                        this.elements.editModal.style.display = 'block';
+                    }
+                    
+                    console.log('✅ 편집 모달 열기 완료');
+                } catch (error) {
+                    console.error('❌ 편집 모달 열기 실패:', error);
+                    alert('편집 모달을 열 수 없습니다. 페이지를 새로고침해주세요.');
+                }
+            }
+            
+            // 모달 닫기
+            closeEditModal() {
+                if (this.elements.editModal) {
+                    this.elements.editModal.style.display = 'none';
+                }
+            }
+        }
+        
+        // 전역 매니저 인스턴스
+        let teamDataManager, teamUIManager;
+        
+        // 데이터 로드 (기존 함수명 유지)
+        async function loadTeamData() {
+            try {
+                if (!teamDataManager) {
+                    teamDataManager = new TeamDataManager();
+                }
+                
+                const data = await teamDataManager.loadTeamData();
+                displayTeamData(data.sports, data.settings);
             } catch (error) {
-                console.error('❌ Error loading team data:', error);
+                console.error('❌ 데이터 로드 실패:', error);
                 showError('데이터를 불러오는 중 오류가 발생했습니다.');
             }
         }
@@ -1019,81 +1181,35 @@
             }
         }
 
-        // 편집 모달 열기
+        // 편집 모달 열기 (새로운 클래스 기반)
         async function editTeam(team) {
-            console.log('editTeam 함수 호출:', team);
-            
-            // DOM 요소가 존재하는지 확인
-            const editTeamName = document.getElementById('editTeamName');
-            const editTeamColor = document.getElementById('editTeamColor');
-            const editTeamHeader = document.getElementById('editTeamHeader');
-            const editLogoBgColor = document.getElementById('editLogoBgColor');
-            
-            if (!editTeamName) {
-                console.error('editTeamName 요소를 찾을 수 없습니다.');
-                alert('편집 폼을 찾을 수 없습니다. 페이지를 새로고침해주세요.');
-                return;
-            }
-            
-            if (!editTeamColor) {
-                console.error('editTeamColor 요소를 찾을 수 없습니다.');
-                alert('편집 폼을 찾을 수 없습니다. 페이지를 새로고침해주세요.');
-                return;
-            }
-            
-            if (!editTeamHeader) {
-                console.error('editTeamHeader 요소를 찾을 수 없습니다.');
-                alert('편집 폼을 찾을 수 없습니다. 페이지를 새로고침해주세요.');
-                return;
-            }
-            
-            if (!editLogoBgColor) {
-                console.error('editLogoBgColor 요소를 찾을 수 없습니다.');
-                alert('편집 폼을 찾을 수 없습니다. 페이지를 새로고침해주세요.');
-                return;
-            }
-            
-            // 안전하게 값 설정
-            editTeamName.value = team.team_name;
-            editTeamColor.value = team.team_color || '#000000';
-            editTeamHeader.value = team.team_header || '';
-            editLogoBgColor.value = team.logo_bg_color || '#FFFFFF';
-            
-            // 폼에 팀 ID 저장
-            const editForm = document.getElementById('editForm');
-            if (editForm) {
-                editForm.dataset.teamId = team.id;
-                editForm.dataset.matchId = team.match_id;
-                editForm.dataset.sportType = team.sport_type;
-                editForm.dataset.teamType = team.team_type; // team_type도 저장
-            } else {
-                console.error('editForm 요소를 찾을 수 없습니다.');
-                alert('편집 폼을 찾을 수 없습니다. 페이지를 새로고침해주세요.');
-                return;
-            }
-            
-            // 팀로고 목록 로드
-            await loadTeamLogos(team.sport_type);
-            
-            // 현재 로고 선택
-            const logoSelect = document.getElementById('editTeamLogo');
-            if (logoSelect) {
-                if (team.logo_path) {
-                    logoSelect.value = team.logo_path;
-                } else {
-                    logoSelect.value = '';
+            try {
+                // UI 매니저 초기화
+                if (!teamUIManager) {
+                    teamUIManager = new TeamUIManager();
                 }
-            } else {
-                console.error('editTeamLogo 요소를 찾을 수 없습니다.');
-            }
-            
-            // 모달 표시
-            const editModal = document.getElementById('editModal');
-            if (editModal) {
-                editModal.style.display = 'block';
-            } else {
-                console.error('editModal 요소를 찾을 수 없습니다.');
-                alert('편집 모달을 찾을 수 없습니다. 페이지를 새로고침해주세요.');
+                
+                // 팀로고 목록 로드
+                await loadTeamLogos(team.sport_type);
+                
+                // 현재 로고 선택
+                const logoSelect = document.getElementById('editTeamLogo');
+                if (logoSelect) {
+                    if (team.logo_path) {
+                        logoSelect.value = team.logo_path;
+                    } else {
+                        logoSelect.value = '';
+                    }
+                } else {
+                    console.error('editTeamLogo 요소를 찾을 수 없습니다.');
+                }
+                
+                // 모달 열기
+                teamUIManager.openEditModal(team);
+                
+            } catch (error) {
+                console.error('❌ editTeam 함수 실패:', error);
+                alert('팀 정보 편집을 시작할 수 없습니다. 페이지를 새로고침해주세요.');
             }
         }
 
@@ -1126,28 +1242,37 @@
             }
         }
 
-        // 편집 모달 닫기
+        // 편집 모달 닫기 (새로운 클래스 기반)
         function closeEditModal() {
-            document.getElementById('editModal').style.display = 'none';
+            if (teamUIManager) {
+                teamUIManager.closeEditModal();
+            } else {
+                // fallback
+                const modal = document.getElementById('editModal');
+                if (modal) {
+                    modal.style.display = 'none';
+                }
+            }
         }
 
-        // 팀 정보 삭제
+        // 팀 정보 삭제 (새로운 클래스 기반)
         async function deleteTeam(team) {
             if (confirm(`'${team.team_name}' 팀 정보를 삭제하시겠습니까?`)) {
                 try {
-                    const response = await fetch(`/api/sport-management/team-info/${team.id}`, {
-                        method: 'DELETE'
-                    });
-                    
-                    if (response.ok) {
-                        alert('팀 정보가 삭제되었습니다.');
-                        loadTeamData(); // 데이터 새로고침
-                    } else {
-                        alert('삭제 중 오류가 발생했습니다.');
+                    // 데이터 매니저 초기화
+                    if (!teamDataManager) {
+                        teamDataManager = new TeamDataManager();
                     }
+                    
+                    // 팀 정보 삭제
+                    await teamDataManager.deleteTeamInfo(team.id);
+                    
+                    alert('팀 정보가 삭제되었습니다.');
+                    loadTeamData(); // 데이터 새로고침
+                    
                 } catch (error) {
-                    console.error('Error deleting team:', error);
-                    alert('삭제 중 오류가 발생했습니다.');
+                    console.error('❌ 팀 정보 삭제 실패:', error);
+                    alert('삭제 중 오류가 발생했습니다: ' + error.message);
                 }
             }
         }
@@ -1190,41 +1315,41 @@
         }
 
         // 편집 폼 제출
+        // 폼 제출 이벤트 (새로운 클래스 기반)
         document.getElementById('editForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const teamId = this.dataset.teamId;
-            const matchId = this.dataset.matchId;
-            const sportType = this.dataset.sportType;
-            const formData = {
-                team_name: document.getElementById('editTeamName').value,
-                team_color: document.getElementById('editTeamColor').value,
-                team_header: document.getElementById('editTeamHeader').value,
-                logo_path: document.getElementById('editTeamLogo').value,
-                logo_bg_color: document.getElementById('editLogoBgColor').value,
-                match_id: matchId,
-                team_type: this.dataset.teamType || (teamId.includes('home') ? 'home' : 'away')
-            };
-            
             try {
-                const response = await fetch(`/api/sport-management/team-info/${teamId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
-                });
+                const teamId = this.dataset.teamId;
+                const matchId = this.dataset.matchId;
+                const sportType = this.dataset.sportType;
                 
-                if (response.ok) {
-                    alert('팀 정보가 수정되었습니다.');
-                    closeEditModal();
-                    loadTeamData(); // 데이터 새로고침
-                } else {
-                    alert('수정 중 오류가 발생했습니다.');
+                // 폼 데이터 수집
+                const formData = {
+                    team_name: document.getElementById('editTeamName').value,
+                    team_color: document.getElementById('editTeamColor').value,
+                    team_header: document.getElementById('editTeamHeader').value,
+                    logo_path: document.getElementById('editTeamLogo').value,
+                    logo_bg_color: document.getElementById('editLogoBgColor').value,
+                    match_id: matchId,
+                    team_type: this.dataset.teamType || (teamId.includes('home') ? 'home' : 'away')
+                };
+                
+                // 데이터 매니저 초기화
+                if (!teamDataManager) {
+                    teamDataManager = new TeamDataManager();
                 }
+                
+                // 팀 정보 수정
+                await teamDataManager.updateTeamInfo(teamId, formData);
+                
+                alert('팀 정보가 수정되었습니다.');
+                closeEditModal();
+                loadTeamData(); // 데이터 새로고침
+                
             } catch (error) {
-                console.error('Error updating team:', error);
-                alert('수정 중 오류가 발생했습니다.');
+                console.error('❌ 팀 정보 수정 실패:', error);
+                alert('수정 중 오류가 발생했습니다: ' + error.message);
             }
         });
 
@@ -1240,6 +1365,12 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 DOMContentLoaded 이벤트 발생');
             console.log('📦 data-container 요소:', document.getElementById('data-container'));
+            
+            // 매니저 초기화
+            teamDataManager = new TeamDataManager();
+            teamUIManager = new TeamUIManager();
+            
+            console.log('✅ 매니저 초기화 완료');
             loadTeamData();
         });
     </script>
