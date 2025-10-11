@@ -841,7 +841,25 @@ router.post('/TEAMLOGO/:sportType', teamLogoUpload.single('logo'), async (req, r
         
         console.log(`TeamInfo 테이블 로고 정보 업데이트 완료: matchId=${req.body.matchId}, teamType=${req.body.teamType}`);
         
-        // WebSocket 이벤트는 이미 위에서 전송됨 (중복 제거)
+        // WebSocket 이벤트 전송 (실제 파일 업로드 시)
+        const io = require('../server').getIO();
+        const roomName = `match_${req.body.matchId}`;
+        
+        io.to(roomName).emit('teamLogoUpdated', {
+          matchId: req.body.matchId,
+          teamType: req.body.teamType,
+          logoPath: logoPath,
+          logoName: originalName,
+          logoBgColor: req.body.logoBgColor || bgColor
+        });
+        
+        io.to(roomName).emit('teamLogoBgUpdated', {
+          matchId: req.body.matchId,
+          teamType: req.body.teamType,
+          logoBgColor: req.body.logoBgColor || bgColor
+        });
+        
+        console.log(`WebSocket 팀로고 업데이트 이벤트 전송: room=${roomName}, logoPath=${logoPath}`);
       } catch (dbError) {
         console.error('TeamInfo 테이블 업데이트 오류:', dbError);
         // DB 오류 시에도 응답은 성공으로 처리하되, 로그는 남김
