@@ -696,47 +696,34 @@ router.post('/TEAMLOGO/:sportType', teamLogoUpload.single('logo'), async (req, r
         
         console.log(`파일 시스템 로고 선택: ${logoName}, 경로: ${logoPath}`);
         
-        // TeamInfo 테이블에 팀로고 정보 저장
+        // Match 테이블의 match_data JSON 필드에 팀로고 정보 저장
         if (req.body.matchId && req.body.teamType) {
           try {
-            const { TeamInfo } = require('../models');
+            const { Match } = require('../models');
             const bgColor = req.body.logoBgColor || req.body.bgColor || '#ffffff';
             
-            // TeamInfo 레코드 존재 여부 확인
-            let teamInfo = await TeamInfo.findOne({
+            // 현재 경기 정보 조회
+            const match = await Match.findByPk(req.body.matchId);
+            if (!match) {
+              throw new Error('경기를 찾을 수 없습니다.');
+            }
+            
+            // match_data JSON 필드 업데이트
+            const matchData = match.match_data || {};
+            const teamKey = req.body.teamType === 'home' ? 'home_team_logo' : 'away_team_logo';
+            const bgColorKey = req.body.teamType === 'home' ? 'home_team_colorbg' : 'away_team_colorbg';
+            
+            matchData[teamKey] = logoPath;
+            matchData[bgColorKey] = bgColor;
+            
+            // Match 테이블 업데이트
+            await Match.update({
+              match_data: matchData
+            }, {
               where: {
-                match_id: req.body.matchId,
-                team_type: req.body.teamType,
-                sport_type: sportTypeUpper
+                id: req.body.matchId
               }
             });
-            
-            if (teamInfo) {
-              // 기존 레코드 업데이트
-              await TeamInfo.update({
-                logo_path: logoPath,
-                logo_bg_color: bgColor
-              }, {
-                where: {
-                  match_id: req.body.matchId,
-                  team_type: req.body.teamType,
-                  sport_type: sportTypeUpper
-                }
-              });
-              console.log(`✅ 기존 팀로고 정보 업데이트: ${req.body.teamType}팀`);
-            } else {
-              // 새 레코드 생성
-              await TeamInfo.create({
-                match_id: req.body.matchId,
-                team_type: req.body.teamType,
-                sport_type: sportTypeUpper,
-                team_name: req.body.teamType === 'home' ? '홈팀' : '원정팀',
-                logo_path: logoPath,
-                logo_bg_color: bgColor,
-                team_color: '#000000'
-              });
-              console.log(`✅ 새 팀로고 정보 생성: ${req.body.teamType}팀`);
-            }
             
             console.log(`✅ 팀로고 정보 저장 완료: ${req.body.teamType}팀, 경로: ${logoPath}, 배경색: ${bgColor}`);
             
