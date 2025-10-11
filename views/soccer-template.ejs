@@ -2367,9 +2367,11 @@
                 serverIsRunning = timerState.isRunning;
                 
                 if (timerState.isRunning) {
-                    const clientTime = Date.now();
-                    const elapsedTime = Math.floor((clientTime - timerState.startTime) / 1000);
+                    // 서버에서 받은 시작 시간을 기준으로 정확한 계산
+                    const currentTime = Date.now();
+                    const elapsedTime = Math.floor((currentTime - timerState.startTime) / 1000);
                     currentSeconds = timerState.pausedTime + elapsedTime;
+                    console.log(`타이머 계산: startTime=${timerState.startTime}, pausedTime=${timerState.pausedTime}, elapsedTime=${elapsedTime}, currentSeconds=${currentSeconds}`);
                 } else {
                     currentSeconds = timerState.pausedTime;
                 }
@@ -2410,7 +2412,9 @@
             if (serverIsRunning && !timerState.localTimer) {
                 startLocalTimer();
             } else if (!serverIsRunning && timerState.localTimer) {
-                stopLocalTimer();
+                // 서버가 정지되었을 때만 로컬 타이머 정지
+                // 오프라인 상태에서는 로컬 타이머 계속 실행
+                console.log('서버 타이머 정지됨, 로컬 타이머 상태 유지');
             }
             
             }
@@ -2433,9 +2437,11 @@
                 serverIsRunning = timerState.isRunning;
                 
                 if (timerState.isRunning) {
-                    const clientTime = Date.now();
-                    const elapsedTime = Math.floor((clientTime - timerState.startTime) / 1000);
+                    // 서버에서 받은 시작 시간을 기준으로 정확한 계산
+                    const currentTime = Date.now();
+                    const elapsedTime = Math.floor((currentTime - timerState.startTime) / 1000);
                     currentSeconds = timerState.pausedTime + elapsedTime;
+                    console.log(`타이머 계산: startTime=${timerState.startTime}, pausedTime=${timerState.pausedTime}, elapsedTime=${elapsedTime}, currentSeconds=${currentSeconds}`);
                 } else {
                     currentSeconds = timerState.pausedTime;
                 }
@@ -2470,7 +2476,9 @@
             if (serverIsRunning && !timerState.localTimer) {
                 startLocalTimer();
             } else if (!serverIsRunning && timerState.localTimer) {
-                stopLocalTimer();
+                // 서버가 정지되었을 때만 로컬 타이머 정지
+                // 오프라인 상태에서는 로컬 타이머 계속 실행
+                console.log('서버 타이머 정지됨, 로컬 타이머 상태 유지');
             }
             
             }
@@ -3720,9 +3728,11 @@
                         if (timerState.startTime === 0) {
                             newSeconds = Math.max(0, timerState.pausedTime);
                         } else {
+                            // 서버에서 받은 시작 시간을 기준으로 정확한 계산
                             const currentTime = Date.now();
                             const elapsedTime = Math.floor((currentTime - timerState.startTime) / 1000);
                             newSeconds = Math.max(0, timerState.pausedTime + elapsedTime);
+                            console.log(`로컬 타이머 계산: startTime=${timerState.startTime}, pausedTime=${timerState.pausedTime}, elapsedTime=${elapsedTime}, newSeconds=${newSeconds}`);
                         }
                     } else {
                         // 기존 방식 호환성 지원

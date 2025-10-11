@@ -1315,13 +1315,14 @@
                 timerState.isRunning = true;
                 timerState.startTime = Date.now();
                 
-                // 기존 코드와 동일한 이벤트 사용
+                // 클라이언트 시작 시간을 서버에 전송하여 정확한 동기화
                 socket.emit('timer_control', {
                     matchId: matchId,
-                    action: 'start'
+                    action: 'start',
+                    clientStartTime: timerState.startTime // 클라이언트 시작 시간 전송
                 });
                 
-                console.log('타이머 시작 이벤트 전송 완료');
+                console.log('타이머 시작 이벤트 전송 완료 (클라이언트 시작 시간:', timerState.startTime, ')');
             }
         }
 
