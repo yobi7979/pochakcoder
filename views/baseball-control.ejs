@@ -3321,21 +3321,7 @@
                             // 현재 설정된 배경색 값 가져오기
                             const currentBgColor = document.querySelector('.home-team-colorbg')?.value || '#ffffff';
                             
-                            // Socket.IO를 통해 오버레이에 실시간 업데이트 전송 (축구와 동일한 방식)
-                            socket.emit('teamLogoUpdated', {
-                                matchId: '<%= match.id %>',
-                                teamType: 'home',
-                                path: data.logoPath,
-                                bgColor: currentBgColor,
-                                teamColor: null
-                            });
-                            
-                            // 팀로고 배경색도 함께 전송
-                            socket.emit('teamLogoBgUpdated', {
-                                matchId: '<%= match.id %>',
-                                teamType: 'home',
-                                logoBgColor: currentBgColor
-                            });
+                            // WebSocket 이벤트는 서버에서 자동으로 전송됨 (중복 제거)
                         } else {
                             showToast(data.message || '로고 업로드에 실패했습니다', 'error');
                         }
@@ -3400,21 +3386,7 @@
                             // 현재 설정된 배경색 값 가져오기
                             const currentBgColor = document.querySelector('.away-team-colorbg')?.value || '#ffffff';
                             
-                            // Socket.IO를 통해 오버레이에 실시간 업데이트 전송 (축구와 동일한 방식)
-                            socket.emit('teamLogoUpdated', {
-                                matchId: '<%= match.id %>',
-                                teamType: 'away',
-                                path: data.logoPath,
-                                bgColor: currentBgColor,
-                                teamColor: null
-                            });
-                            
-                            // 팀로고 배경색도 함께 전송
-                            socket.emit('teamLogoBgUpdated', {
-                                matchId: '<%= match.id %>',
-                                teamType: 'away',
-                                logoBgColor: currentBgColor
-                            });
+                            // WebSocket 이벤트는 서버에서 자동으로 전송됨 (중복 제거)
                         } else {
                             showToast(data.message || '로고 업로드에 실패했습니다', 'error');
                         }
