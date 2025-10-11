@@ -260,10 +260,10 @@ const timerEvents = (socket, io) => {
       switch (action) {
         case 'start':
           if (!timerData.isRunning) {
-            // 클라이언트에서 전송한 시작 시간을 우선 사용, 없으면 서버 시간 사용
-            timerData.startTime = data.clientStartTime || Date.now();
+            // 🎯 서버 시간을 기준으로 타이머 시작 (시간차이 문제 해결)
+            timerData.startTime = Date.now(); // 서버 시간 사용
             timerData.isRunning = true;
-            console.log(`타이머 시작: matchId=${matchId}, startTime=${timerData.startTime}, clientStartTime=${data.clientStartTime}`);
+            console.log(`타이머 시작: matchId=${matchId}, startTime=${timerData.startTime} (서버 시간 기준)`);
           }
           break;
         case 'pause':

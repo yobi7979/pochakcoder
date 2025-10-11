@@ -1374,17 +1374,14 @@
             console.log('현재 타이머 상태:', timerState);
             
             if (!timerState.isRunning) {
-                timerState.isRunning = true;
-                timerState.startTime = Date.now();
-                
-                // 클라이언트 시작 시간을 서버에 전송하여 정확한 동기화
+                // 🎯 서버에서 시작 시간을 받을 때까지 대기 (시간차이 문제 해결)
                 socket.emit('timer_control', {
                     matchId: matchId,
-                    action: 'start',
-                    clientStartTime: timerState.startTime // 클라이언트 시작 시간 전송
+                    action: 'start'
+                    // clientStartTime 제거 - 서버 시간 기준으로 시작
                 });
                 
-                console.log('타이머 시작 이벤트 전송 완료 (클라이언트 시작 시간:', timerState.startTime, ')');
+                console.log('타이머 시작 이벤트 전송 완료 (서버 시간 기준으로 시작)');
             }
         }
 
@@ -3013,6 +3010,28 @@
             console.log('=== 팀로고 배경색 토글 버튼 클릭 ===');
             toggleLogoDisplay();
         });
+        });
+
+        // 타이머 시작 이벤트 처리 (서버 시간 기준)
+        socket.on('timer_started', function(data) {
+            console.log('=== 타이머 시작 이벤트 수신 ===');
+            console.log('수신된 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                // 🎯 서버에서 받은 시작 시간으로 타이머 상태 설정
+                timerState.isRunning = true;
+                timerState.startTime = data.startTime; // 서버 시간 기준
+                timerState.pausedTime = data.pausedTime || 0;
+                
+                console.log('타이머 시작 상태 설정:', {
+                    isRunning: timerState.isRunning,
+                    startTime: timerState.startTime,
+                    pausedTime: timerState.pausedTime
+                });
+                
+                // 타이머 디스플레이 업데이트
+                updateTimerDisplay();
+            }
         });
 
         // 타이머 상태 복원 이벤트 리스너
