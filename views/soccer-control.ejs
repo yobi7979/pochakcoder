@@ -2361,10 +2361,9 @@
                         return;
                     }
                     
-                    // 미리보기 업데이트 - 한글 파일명 URL 인코딩 적용
+                    // 미리보기 업데이트 - 올바른 API 경로 사용
                     const previewImg = document.getElementById(`${team}-preview-logo`);
-                    const encodedLogoPath = result.logoPath.replace(/[^/]*$/, (match) => encodeURIComponent(match));
-                    previewImg.src = `/${encodedLogoPath}`;
+                    previewImg.src = result.logoPath; // API 경로 그대로 사용
                     previewImg.style.display = 'block';
                     
                     const previewBg = document.getElementById(`${team}-preview-bg`);
@@ -2687,9 +2686,8 @@
                         const noLogoText = previewBg.querySelector('.no-logo-text');
                         
                         if (teamInfo.logo_path) {
-                            // 로고가 있는 경우 - 한글 파일명 URL 인코딩 적용
-                            const encodedLogoPath = teamInfo.logo_path.replace(/[^/]*$/, (match) => encodeURIComponent(match));
-                            previewImg.src = `/${encodedLogoPath}`;
+                            // 로고가 있는 경우 - API 경로 그대로 사용
+                            previewImg.src = teamInfo.logo_path;
                             previewImg.style.display = 'block';
                             previewBg.style.backgroundColor = teamInfo.logo_bg_color || '#FFFFFF';
                             noLogoText.style.display = 'none';
