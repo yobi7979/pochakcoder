@@ -150,6 +150,56 @@
                 font-size: 0.9rem;
             }
             
+        /* 타이머 표시 컨테이너 */
+        .timer-display-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        /* 시간차이 표시 */
+        .time-difference-display {
+            font-size: 12px;
+            color: #666;
+            background-color: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+            min-width: 60px;
+            text-align: center;
+        }
+        
+        .time-difference-display.ahead {
+            color: #28a745;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        
+        .time-difference-display.behind {
+            color: #dc3545;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        
+        /* 시간차이 보정 채크박스 */
+        .time-correction-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 5px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .time-correction-checkbox input[type="checkbox"] {
+            margin: 0;
+        }
+        
+        .time-correction-checkbox label {
+            margin: 0;
+            cursor: pointer;
+        }
             
         .team-color-section .save-team-color {
             white-space: nowrap;
@@ -749,7 +799,10 @@
 
         <!-- 타이머 섹션 -->
                     <div class="timer-section">
-            <div class="timer-display" id="timer-display">00:00</div>
+            <div class="timer-display-container">
+                <div class="timer-display" id="timer-display">00:00</div>
+                <div class="time-difference-display" id="time-difference-display">측정 중...</div>
+            </div>
                         <div class="timer-controls">
                 <button class="btn btn-success" onclick="startTimer()">
                             <i class="bi bi-play-fill"></i> 시작
@@ -763,6 +816,10 @@
                 <button class="btn btn-primary" onclick="toggleTimeEdit()">
                             <i class="bi bi-pencil"></i> 수정
                         </button>
+                        <div class="time-correction-checkbox">
+                            <input type="checkbox" id="time-correction-enabled" onchange="toggleTimeCorrection()">
+                            <label for="time-correction-enabled">시간차이 보정</label>
+                        </div>
                         
                         <!-- 시간 수정 입력 필드 (수정 버튼 옆에 고정 표시) -->
                     <div id="time-edit-container" class="time-edit-container" style="display: none;">
@@ -1142,12 +1199,6 @@
         socket.on('disconnect', function() {
             console.log('❌ 컨트롤 페이지 소켓 연결 끊어짐');
             updateConnectionStatus(false);
-            
-            // 연결 끊어짐 시 로컬 타이머 시작
-            if (timerState.isRunning) {
-                console.log('연결 끊어짐 - 로컬 타이머 시작');
-                startLocalTimer();
-            }
         });
 
         socket.on('connect_error', function(error) {
@@ -1191,20 +1242,13 @@
             isRunning: false,
             currentSeconds: 0,
             startTime: null,
-            pausedTime: 0,
-            localTimer: null
+            pausedTime: 0
         };
         
         // 소켓 연결
         socket.on('connect', function() {
             console.log('소켓 연결됨');
             socket.emit('join_match', { matchId: matchId });
-            
-            // 연결 복원 시 로컬 타이머 정지 (서버 상태로 동기화)
-            if (timerState.localTimer) {
-                console.log('연결 복원 - 로컬 타이머 정지');
-                stopLocalTimer();
-            }
             
             // 연결 상태 업데이트
             updateConnectionStatus(true);
@@ -1217,12 +1261,6 @@
         socket.on('disconnect', function() {
             console.log('서버와의 연결이 끊어졌습니다.');
             updateConnectionStatus(false);
-            
-            // 연결 끊어짐 시 로컬 타이머 시작
-            if (timerState.isRunning) {
-                console.log('연결 끊어짐 - 로컬 타이머 시작');
-                startLocalTimer();
-            }
         });
         
         // 득점 정보 로드 응답 이벤트
@@ -1329,8 +1367,66 @@
             alert('득점 정보 저장에 실패했습니다: ' + data.error);
         });
 
+        // 타이머 시작
+        function startTimer() {
+            console.log('=== 타이머 시작 버튼 클릭 ===');
+            console.log('matchId:', matchId);
+            console.log('현재 타이머 상태:', timerState);
+            
+            if (!timerState.isRunning) {
+                timerState.isRunning = true;
+                timerState.startTime = Date.now();
+                
+                // 클라이언트 시작 시간을 서버에 전송하여 정확한 동기화
+                socket.emit('timer_control', {
+                    matchId: matchId,
+                    action: 'start',
+                    clientStartTime: timerState.startTime // 클라이언트 시작 시간 전송
+                });
+                
+                console.log('타이머 시작 이벤트 전송 완료 (클라이언트 시작 시간:', timerState.startTime, ')');
+            }
+        }
 
+        // 타이머 정지
+        function stopTimer() {
+            console.log('=== 타이머 정지 버튼 클릭 ===');
+            console.log('matchId:', matchId, 'currentTime:', timerState.currentSeconds);
+                
+                if (timerState.isRunning) {
+                timerState.isRunning = false;
+                timerState.pausedTime = timerState.currentSeconds;
+                
+                // 기존 코드와 동일한 이벤트 사용
+            socket.emit('timer_control', {
+                matchId: matchId,
+                action: 'stop',
+                    currentTime: timerState.currentSeconds
+                });
+                
+                console.log('타이머 정지 이벤트 전송 완료');
+            }
+        }
 
+        // 타이머 리셋
+        function resetTimer() {
+            console.log('=== 타이머 리셋 버튼 클릭 ===');
+            console.log('matchId:', matchId);
+            
+            timerState.isRunning = false;
+            timerState.currentSeconds = 0;
+            timerState.startTime = null;
+            timerState.pausedTime = 0;
+            
+            // 기존 코드와 동일한 이벤트 사용
+            socket.emit('timer_control', {
+                matchId: matchId,
+                action: 'reset'
+            });
+            
+            updateTimerDisplay();
+            console.log('타이머 리셋 이벤트 전송 완료');
+        }
 
         // 시간 수정 토글 (기존 방식)
         function toggleTimeEdit() {
@@ -2769,22 +2865,22 @@
                     return;
                 }
                 
-                // 액션 기반 시간 설정
-                const actionData = {
-                    action: 'set_time',
-                    matchId: matchId,
-                    timestamp: Date.now(),
-                    data: { 
-                        time: totalSeconds,
-                        reason: 'user_edit' 
-                    }
-                };
+                // 서버에 시간 설정 요청
+                socket.emit('timer_control', {
+                        matchId: matchId,
+                    action: 'set',
+                    minutes: minutes,
+                    seconds: seconds
+                });
                 
-                socket.emit('timer_action_request', actionData);
-                console.log('타이머 시간 설정 액션 전송:', actionData);
+                // 로컬 타이머 상태 업데이트
+                timerState.currentSeconds = minutes * 60 + seconds;
+                timerState.isRunning = false;
+                timerState.startTime = null;
+                timerState.pausedTime = timerState.currentSeconds;
                 
-                // setTimerTime 함수 호출
-                setTimerTime(totalSeconds);
+                // 디스플레이 업데이트
+                updateTimerDisplay();
                 
                 // 입력 필드 숨기기
                 document.getElementById('time-edit-container').style.display = 'none';
@@ -2810,100 +2906,67 @@
             });
         });
         
+        // 시간차이 측정 및 보정 기능
+        let timeDifference = 0;
+        let timeCorrectionEnabled = false;
         
-        
-        // 액션 기반 타이머 시스템 (전역 함수로 정의)
-        window.startTimer = function() {
-            console.log('=== 타이머 시작 버튼 클릭 ===');
+        // 시간차이 측정 함수
+        function measureTimeDifference() {
+            const clientTime = Date.now();
+            console.log('시간차이 측정 시작:', clientTime);
             
-            const actionData = {
-                action: 'start',
-                matchId: matchId,
-                timestamp: Date.now(),
-                data: { reason: 'user_click' }
-            };
-            
-            socket.emit('timer_action_request', actionData);
-            console.log('타이머 시작 액션 전송:', actionData);
+            socket.emit('time_sync_request', {
+                clientTime: clientTime,
+                matchId: matchId
+            });
         }
         
-        window.stopTimer = function() {
-            console.log('=== 타이머 정지 버튼 클릭 ===');
-            
-            const actionData = {
-                action: 'stop',
-                matchId: matchId,
-                timestamp: Date.now(),
-                data: { reason: 'user_click' }
-            };
-            
-            socket.emit('timer_action_request', actionData);
-            console.log('타이머 정지 액션 전송:', actionData);
-        }
-        
-        window.resetTimer = function() {
-            console.log('=== 타이머 리셋 버튼 클릭 ===');
-            
-            const actionData = {
-                action: 'reset',
-                matchId: matchId,
-                timestamp: Date.now(),
-                data: { reason: 'user_click' }
-            };
-            
-            socket.emit('timer_action_request', actionData);
-            console.log('타이머 리셋 액션 전송:', actionData);
-        }
-        
-        window.setTimerTime = function(seconds) {
-            console.log('=== 타이머 시간 설정 ===');
-            
-            const actionData = {
-                action: 'set_time',
-                matchId: matchId,
-                timestamp: Date.now(),
-                data: { 
-                    time: seconds,
-                    reason: 'user_edit' 
-                }
-            };
-            
-            socket.emit('timer_action_request', actionData);
-            console.log('타이머 시간 설정 액션 전송:', actionData);
-        }
-        
-        // 로컬 타이머 함수들
-        function startLocalTimer() {
-            console.log('로컬 타이머 시작');
-            
-            // 기존 타이머 정리
-            if (timerState.localTimer) {
-                clearInterval(timerState.localTimer);
-            }
-            
-            // 로컬 타이머 시작
-            timerState.localTimer = setInterval(() => {
-                if (timerState.isRunning && timerState.startTime) {
-                    const currentTime = Date.now();
-                    const elapsedTime = Math.floor((currentTime - timerState.startTime) / 1000);
-                    const currentSeconds = timerState.pausedTime + elapsedTime;
-                    
-                    timerState.currentSeconds = currentSeconds;
-                    updateTimerDisplay();
-                    
-                    console.log(`로컬 타이머 업데이트: ${currentSeconds}초`);
-                }
-            }, 1000);
-        }
-        
-        function stopLocalTimer() {
-            console.log('로컬 타이머 정지');
-            
-            if (timerState.localTimer) {
-                clearInterval(timerState.localTimer);
-                timerState.localTimer = null;
+        // 시간차이 표시 업데이트
+        function updateTimeDifferenceDisplay(difference) {
+            const timeDiffElement = document.getElementById('time-difference-display');
+            if (timeDiffElement) {
+                const absDifference = Math.abs(difference);
+                const sign = difference >= 0 ? '+' : '-';
+                
+                timeDiffElement.textContent = `${sign}${absDifference}ms`;
+                timeDiffElement.className = `time-difference-display ${difference >= 0 ? 'ahead' : 'behind'}`;
+                
+                console.log(`시간차이 표시: ${sign}${absDifference}ms`);
             }
         }
+        
+        // 시간차이 보정 토글
+        function toggleTimeCorrection() {
+            const checkbox = document.getElementById('time-correction-enabled');
+            timeCorrectionEnabled = checkbox.checked;
+            
+            console.log(`시간차이 보정 ${timeCorrectionEnabled ? '활성화' : '비활성화'}`);
+            
+            // 서버에 보정 설정 전송
+            socket.emit('time_correction_toggle', {
+                matchId: matchId,
+                enabled: timeCorrectionEnabled,
+                timeDifference: timeDifference
+            });
+        }
+        
+        // 시간차이 측정 응답 처리
+        socket.on('time_sync_response', function(data) {
+            if (data.matchId !== matchId) return;
+            
+            timeDifference = data.timeDifference;
+            updateTimeDifferenceDisplay(timeDifference);
+            
+            console.log(`시간차이 측정 결과: ${timeDifference}ms`);
+        });
+        
+        // 주기적 시간차이 측정 (5초마다)
+        setInterval(() => {
+            measureTimeDifference();
+        }, 5000);
+        
+        // 초기 시간차이 측정
+        measureTimeDifference();
         
         // 팀로고 관련 이벤트 리스너
         document.querySelectorAll('input[type="file"]').forEach(input => {

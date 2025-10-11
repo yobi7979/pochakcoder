@@ -6,6 +6,8 @@ const matchTimerData = new Map();
 const pendingDbUpdates = new Map(); // DB 업데이트 대기열
 const DB_BATCH_INTERVAL = 5000; // 5초마다 배치 업데이트
 
+// 시간차이 보정 설정 저장
+const timeCorrectionSettings = new Map();
 
 // 타이머 관리 함수들 (기존 server.js와 동일)
 function startMatchTimer(matchId) {
@@ -367,124 +369,48 @@ const timerEvents = (socket, io) => {
     }
   });
   
-  // 액션 기반 타이머 시스템
-  socket.on('timer_action_request', function(actionData) {
-    const { action, matchId, timestamp, data } = actionData;
+  // 시간차이 측정 요청 처리
+  socket.on('time_sync_request', function(data) {
+    const { clientTime, matchId } = data;
+    const serverTime = Date.now();
+    const timeDifference = serverTime - clientTime;
     
-    console.log(`타이머 액션 요청: ${action}, matchId=${matchId}, timestamp=${timestamp}`);
+    console.log(`시간차이 측정: 클라이언트=${clientTime}, 서버=${serverTime}, 차이=${timeDifference}ms`);
     
-    // 액션 처리
-    processTimerAction(matchId, action, timestamp, data);
+    // 클라이언트에 시간차이 전송
+    socket.emit('time_sync_response', {
+      matchId: matchId,
+      clientTime: clientTime,
+      serverTime: serverTime,
+      timeDifference: timeDifference,
+      timestamp: Date.now()
+    });
+  });
+  
+  // 시간차이 보정 설정 토글
+  socket.on('time_correction_toggle', function(data) {
+    const { matchId, enabled, timeDifference } = data;
     
-    // 모든 클라이언트에 액션 전파
-    broadcastTimerAction(matchId, actionData);
+    console.log(`시간차이 보정 설정: matchId=${matchId}, enabled=${enabled}, timeDifference=${timeDifference}ms`);
+    
+    // 보정 설정 저장
+    timeCorrectionSettings.set(matchId, {
+      enabled: enabled,
+      timeDifference: timeDifference,
+      timestamp: Date.now()
+    });
+    
+    // 해당 경기의 모든 클라이언트에 보정 설정 전송
+    io.to(`match_${matchId}`).emit('time_correction_updated', {
+      matchId: matchId,
+      enabled: enabled,
+      timeDifference: timeDifference
+    });
+  });
   });
 
   console.log('타이머 이벤트 설정 완료:', socket.id);
 };
-
-// 액션 처리 함수
-function processTimerAction(matchId, action, timestamp, data) {
-  console.log(`타이머 액션 처리: ${action}, matchId=${matchId}, timestamp=${timestamp}`);
-  
-  switch (action) {
-    case 'start':
-      handleStartAction(matchId, timestamp);
-      break;
-    case 'stop':
-      handleStopAction(matchId, timestamp);
-      break;
-    case 'reset':
-      handleResetAction(matchId, timestamp);
-      break;
-    case 'set_time':
-      handleSetTimeAction(matchId, timestamp, data.time);
-      break;
-    case 'pause':
-      handlePauseAction(matchId, timestamp);
-      break;
-    case 'resume':
-      handleResumeAction(matchId, timestamp);
-      break;
-  }
-}
-
-// 액션 전파 함수
-function broadcastTimerAction(matchId, actionData) {
-  const roomName = `match_${matchId}`;
-  io.to(roomName).emit('timer_action', actionData);
-  console.log(`타이머 액션 전파: room=${roomName}, action=${actionData.action}`);
-}
-
-// 시작 액션 처리
-function handleStartAction(matchId, timestamp) {
-  let timerData = matchTimerData.get(matchId);
-  if (!timerData) {
-    timerData = {
-      startTime: timestamp,
-      pausedTime: 0,
-      isRunning: true,
-      matchId: matchId
-    };
-    matchTimerData.set(matchId, timerData);
-  } else {
-    timerData.startTime = timestamp;
-    timerData.isRunning = true;
-  }
-  console.log(`타이머 시작: matchId=${matchId}, startTime=${timestamp}`);
-}
-
-// 정지 액션 처리
-function handleStopAction(matchId, timestamp) {
-  const timerData = matchTimerData.get(matchId);
-  if (timerData) {
-    timerData.isRunning = false;
-    timerData.pausedTime = Math.floor((timestamp - timerData.startTime) / 1000);
-    console.log(`타이머 정지: matchId=${matchId}, pausedTime=${timerData.pausedTime}`);
-  }
-}
-
-// 리셋 액션 처리
-function handleResetAction(matchId, timestamp) {
-  const timerData = matchTimerData.get(matchId);
-  if (timerData) {
-    timerData.startTime = null;
-    timerData.pausedTime = 0;
-    timerData.isRunning = false;
-    console.log(`타이머 리셋: matchId=${matchId}`);
-  }
-}
-
-// 시간 설정 액션 처리
-function handleSetTimeAction(matchId, timestamp, targetTime) {
-  const timerData = matchTimerData.get(matchId);
-  if (timerData) {
-    timerData.pausedTime = targetTime;
-    timerData.startTime = timestamp;
-    timerData.isRunning = false;
-    console.log(`타이머 시간 설정: matchId=${matchId}, time=${targetTime}`);
-  }
-}
-
-// 일시정지 액션 처리
-function handlePauseAction(matchId, timestamp) {
-  const timerData = matchTimerData.get(matchId);
-  if (timerData && timerData.isRunning) {
-    timerData.isRunning = false;
-    timerData.pausedTime = Math.floor((timestamp - timerData.startTime) / 1000);
-    console.log(`타이머 일시정지: matchId=${matchId}, pausedTime=${timerData.pausedTime}`);
-  }
-}
-
-// 재개 액션 처리
-function handleResumeAction(matchId, timestamp) {
-  const timerData = matchTimerData.get(matchId);
-  if (timerData && !timerData.isRunning) {
-    timerData.startTime = timestamp;
-    timerData.isRunning = true;
-    console.log(`타이머 재개: matchId=${matchId}, startTime=${timestamp}`);
-  }
-}
 
 module.exports = timerEvents;
 
