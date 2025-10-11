@@ -2096,132 +2096,60 @@
             }
         }
 
-        // 팀 컬러 저장 버튼 이벤트 (baseballTeamLogoUpdated 사용으로 변경)
+        // 팀 컬러 저장 (축구와 동일한 방식으로 수정)
+        async function saveTeamColor(team) {
+            console.log(`=== ${team}팀 컬러 저장 ===`);
+            const colorInput = document.querySelector(`.${team}-team-color`);
+            const teamColor = colorInput.value;
+            
+            console.log('새로운 팀 컬러:', teamColor);
+            console.log('팀 타입:', team);
+            console.log('매치 ID:', '<%= match.id %>');
+            
+            try {
+                // 1. API 호출로 DB 업데이트
+                const response = await fetch(`/api/matches/<%= match.id %>/team-color`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        team: team,
+                        teamColor: teamColor,
+                        headerText: team === 'home' ? '<%= match.home_team %>' : '<%= match.away_team %>'
+                    })
+                });
+                
+                if (response.ok) {
+                    console.log(`${team}팀 컬러 API 업데이트 성공: ${teamColor}`);
+                } else {
+                    console.error(`${team}팀 컬러 API 업데이트 실패: ${response.status}`);
+                }
+            } catch (error) {
+                console.error(`${team}팀 컬러 API 업데이트 오류:`, error);
+            }
+            
+            // 2. WebSocket 이벤트로 DB 정보 업데이트 알림 (축구와 동일)
+            if (socket.connected) {
+                socket.emit('dataChanged', {
+                    matchId: '<%= match.id %>',
+                    type: 'teamColor',
+                    teamType: team
+                });
+                console.log('✅ dataChanged 이벤트 전송 완료');
+            } else {
+                console.error('❌ 소켓 연결되지 않음 - dataChanged 이벤트 전송 실패');
+            }
+            
+            console.log(`${team}팀 컬러 저장 이벤트 전송 완료: ${teamColor}`);
+        }
+
+        // 팀 컬러 저장 버튼 이벤트 리스너 (축구와 동일한 방식)
         document.querySelectorAll('.save-team-color').forEach(button => {
-            button.addEventListener('click', async function() {
-                const teamType = this.getAttribute('data-team-type');
-                const colorInput = document.querySelector(`.${teamType}-team-color`);
-                const teamColor = colorInput.value;
-                
-                const teamName = teamType === 'home' ? 
-                    '<%= match.home_team %>' : 
-                    '<%= match.away_team %>';
-                
-                // 버튼 상태 변경
-                this.disabled = true;
-                this.innerHTML = '<i class="bi bi-arrow-repeat"></i> 저장 중...';
-                
-                try {
-                    // 1. API 호출로 DB 업데이트
-                    const response = await fetch(`/api/matches/<%= match.id %>/team-color`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            team: teamType,
-                            teamColor: teamColor,
-                            headerText: teamName
-                        })
-                    });
-                    
-                    if (response.ok) {
-                        console.log(`${teamType}팀 컬러 API 업데이트 성공: ${teamColor}`);
-                    } else {
-                        console.error(`${teamType}팀 컬러 API 업데이트 실패: ${response.status}`);
-                    }
-                } catch (error) {
-                    console.error(`${teamType}팀 컬러 API 업데이트 오류:`, error);
-                }
-                
-                try {
-                    // 1. 기존 JSON 파일 읽기
-                    const logoMapResponse = await fetch('/api/team-logo-map/BASEBALL');
-                    let teamLogoMap = {};
-                    
-                    if (!logoMapResponse.ok) {
-                        throw new Error(`팀 로고 매핑 정보 조회 실패: ${logoMapResponse.status}`);
-                    }
-                    
-                    const data = await logoMapResponse.json();
-                    teamLogoMap = data.teamLogoMap || {};
-                    
-                    // 2. 팀 이름 기반 로고 정보 업데이트 (팀 섹션 색상만 변경)
-                    if (teamLogoMap[teamName]) {
-                        if (typeof teamLogoMap[teamName] === 'object') {
-                            // 기존 로고 정보는 유지하고 팀 섹션 색상만 업데이트
-                            teamLogoMap[teamName].teamColor = teamColor;
-                        } else {
-                            // 기존 문자열을 객체로 변환 (기존 로고 경로 유지)
-                            const logoPath = teamLogoMap[teamName];
-                            teamLogoMap[teamName] = {
-                                path: logoPath,
-                                teamColor: teamColor,
-                                bgColor: teamLogoMap[teamName].bgColor || '#ffffff'  // 기존 배경색 유지
-                            };
-                        }
-                    } else {
-                        // 로고가 없는 경우에도 색상 정보 생성
-                        teamLogoMap[teamName] = {
-                            path: "",
-                            teamColor: teamColor,
-                            bgColor: '#ffffff'  // 기본 배경색
-                        };
-                    }
-                    
-                    // 3. JSON 파일 업데이트
-                    const updateResponse = await fetch('/api/overlay-images/update-team-logo-map', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            sportType: 'BASEBALL',
-                            teamLogoMap: teamLogoMap
-                        })
-                    });
-                    
-                    if (!updateResponse.ok) {
-                        throw new Error('팀 색상 업데이트 실패');
-                    }
-                    
-                    // 4. 소켓 연결 확인 후 팀 색상 업데이트
-                    if (!socket.connected) {
-                        throw new Error('소켓이 연결되지 않았습니다.');
-                    }
-                    
-                    // 기존 로고 정보 가져오기
-                    const existingLogoInfo = teamLogoMap[teamName] || {};
-                    
-                    socket.emit('baseballTeamLogoUpdated', {
-                        matchId: '<%= match.id %>',
-                        teamType: teamType,
-                        path: existingLogoInfo.path || "", // 기존 로고 경로 유지
-                        bgColor: existingLogoInfo.bgColor || '#ffffff', // 기존 로고 배경색 유지
-                        teamColor: teamColor  // 팀 섹션 색상만 변경
-                    });
-                    
-                    alert(`${teamType === 'home' ? '홈팀' : '원정팀'} 섹션 색상이 업데이트되었습니다.`);
-                } catch (error) {
-                    console.error('팀 색상 업데이트 오류:', error);
-                    
-                    // 구체적인 에러 메시지 표시
-                    if (error.message.includes('팀 로고 매핑 정보 조회 실패')) {
-                        alert('서버와의 통신에 실패했습니다. 잠시 후 다시 시도해주세요.');
-                    } else if (error.message.includes('소켓이 연결되지 않았습니다')) {
-                        alert('서버 연결이 끊어졌습니다. 페이지를 새로고침해주세요.');
-                    } else if (error.message.includes('팀 색상 업데이트 실패')) {
-                        alert('팀 색상 저장에 실패했습니다. 잠시 후 다시 시도해주세요.');
-                    } else {
-                        alert('팀 색상 업데이트 중 오류가 발생했습니다.');
-                    }
-                }
-                
-                // 3초 후 버튼 상태 복원
-                setTimeout(() => {
-                    this.disabled = false;
-                    this.innerHTML = '<i class="bi bi-check2"></i> 저장';
-                }, 3000);
+            button.addEventListener('click', function() {
+                const team = this.getAttribute('data-team-type');
+                console.log(`=== ${team}팀 컬러 저장 버튼 클릭 ===`);
+                saveTeamColor(team);
             });
         });
 
@@ -3272,7 +3200,7 @@
                                 formData.append('logoBgColor', bgColor);
                                 
                                 console.log('서버 업데이트 시도');
-                                const updateResponse = await fetch('/api/team-logo', {
+                                const updateResponse = await fetch('/api/overlay-images/TEAMLOGO/BASEBALL', {
                                     method: 'POST',
                                     body: formData
                                 });
@@ -3349,7 +3277,7 @@
                         formData.append('teamName', '<%= match.home_team %>');
                         formData.append('originalFilename', file.name);
                         
-                        const response = await fetch('/api/team-logo', {
+                        const response = await fetch('/api/overlay-images/TEAMLOGO/BASEBALL', {
                             method: 'POST',
                             body: formData
                         });
@@ -3418,7 +3346,7 @@
                         formData.append('teamName', '<%= match.away_team %>');
                         formData.append('originalFilename', file.name);
                         
-                        const response = await fetch('/api/team-logo', {
+                        const response = await fetch('/api/overlay-images/TEAMLOGO/BASEBALL', {
                             method: 'POST',
                             body: formData
                         });
@@ -3661,88 +3589,58 @@
             }
         }
 
-        // 팀 색상 저장 버튼 이벤트 처리
-        document.querySelectorAll('.save-team-colorbg').forEach(button => {
-            button.addEventListener('click', async function() {
-                const teamType = this.getAttribute('data-team-type');
-                const colorInput = document.querySelector(`.${teamType}-team-colorbg`);
-                const logoBgColor = colorInput.value;
+        // 팀 로고 배경색 저장 (축구와 동일한 방식으로 수정)
+        async function saveTeamLogoBg(team) {
+            const bgColor = document.querySelector(`.${team}-team-colorbg`).value;
+            
+            try {
+                const response = await fetch(`/api/matches/<%= match.id %>/team-logo-bg`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        team: team,
+                        logoBgColor: bgColor
+                    })
+                });
                 
-                const teamName = teamType === 'home' ? 
-                    '<%= match.home_team %>' : 
-                    '<%= match.away_team %>';
-                
-                try {
-                    // 1. 기존 JSON 파일 읽기
-                    const logoMapResponse = await fetch('/api/team-logo-map/BASEBALL');
-                    let teamLogoMap = {};
+                if (response.ok) {
+                    console.log(`${team}팀 로고 배경색 저장 성공: ${bgColor}`);
                     
-                    if (!logoMapResponse.ok) {
-                        throw new Error(`팀 로고 매핑 정보 조회 실패: ${logoMapResponse.status}`);
-                    }
-                    
-                    const data = await logoMapResponse.json();
-                    teamLogoMap = data.teamLogoMap || {};
-                    
-                    // 2. 팀 이름 기반 로고 정보 업데이트
-                    if (teamLogoMap[teamName]) {
-                        if (typeof teamLogoMap[teamName] === 'object') {
-                            teamLogoMap[teamName].bgColor = logoBgColor;
-                        } else {
-                            // 기존 문자열을 객체로 변환
-                            const logoPath = teamLogoMap[teamName];
-                            teamLogoMap[teamName] = {
-                                path: logoPath,
-                                bgColor: logoBgColor
-                            };
-                        }
-                    } else {
-                        // 로고가 없는 경우에도 배경색 정보 생성
-                        teamLogoMap[teamName] = {
-                            path: "",
-                            bgColor: logoBgColor
-                        };
-                    }
-                    
-                    // 3. JSON 파일 업데이트
-                    const updateResponse = await fetch('/api/overlay-images/update-team-logo-map', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            sportType: 'BASEBALL',
-                            teamLogoMap: teamLogoMap
-                        })
-                    });
-                    
-                    if (!updateResponse.ok) {
-                        throw new Error('로고 배경색 업데이트 실패');
-                    }
-                    
-                    // 6. 로고 미리보기 배경색 업데이트
-                    const preview = document.getElementById(`${teamType}-team-logo-preview`);
+                    // 미리보기 업데이트
+                    const preview = document.getElementById(`${team}-team-logo-preview`);
                     if (preview) {
-                        preview.style.backgroundColor = logoBgColor;
+                        preview.style.backgroundColor = bgColor;
                     }
                     
-                    // 7. 소켓으로 로고 배경색 업데이트 - 로고가 없어도 배경색은 업데이트
-                    const imgElement = preview.querySelector('img');
-                    const logoPath = imgElement ? imgElement.src : "";
+                    // WebSocket 이벤트로 DB 정보 업데이트 알림 (축구와 동일)
+                    if (socket.connected) {
+                        socket.emit('dataChanged', {
+                            matchId: '<%= match.id %>',
+                            type: 'teamLogo',
+                            teamType: team
+                        });
+                        console.log('✅ dataChanged 이벤트 전송 완료');
+                    } else {
+                        console.error('❌ 소켓 연결되지 않음 - dataChanged 이벤트 전송 실패');
+                    }
                     
-                    socket.emit('baseballTeamLogoUpdated', {
-                        matchId: '<%= match.id %>',
-                        teamType: teamType,
-                        path: logoPath,
-                        bgColor: logoBgColor,
-                        teamColor: null
-                    });
-                    
-                    alert(`${teamType === 'home' ? '홈팀' : '원정팀'} 로고 배경색이 업데이트되었습니다.`);
-                } catch (error) {
-                    console.error('로고 배경색 업데이트 오류:', error);
-                    alert('로고 배경색 업데이트 중 오류가 발생했습니다.');
+                    console.log(`${team}팀 로고 배경색이 저장되었습니다.`);
+                } else {
+                    console.error(`${team}팀 로고 배경색 저장 실패: ${response.status}`);
                 }
+            } catch (error) {
+                console.error(`${team}팀 로고 배경색 저장 오류:`, error);
+            }
+        }
+
+        // 팀 로고 배경색 저장 버튼 이벤트 리스너 (축구와 동일한 방식)
+        document.querySelectorAll('.save-team-colorbg').forEach(button => {
+            button.addEventListener('click', function() {
+                const team = this.getAttribute('data-team-type');
+                console.log(`=== ${team}팀 로고 배경색 저장 버튼 클릭 ===`);
+                saveTeamLogoBg(team);
             });
         });
 
@@ -4136,7 +4034,7 @@
             noLogosMessage.style.display = 'none';
             
             try {
-                const response = await fetch('/api/team-logos/BASEBALL');
+                const response = await fetch('/api/overlay-images/TEAMLOGO/BASEBALL');
                 const data = await response.json();
                 
                 allLogos = data.logos || [];
