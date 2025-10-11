@@ -4126,7 +4126,7 @@
                 console.log(`팀 로고 업데이트: ${teamType}팀, 로고: ${logoName}`);
                 
                 // 현재 팀의 배경색 가져오기
-                const currentBgColor = document.querySelector(`.team-info.${teamType}-team .team-logo-container`).style.backgroundColor || '#ffffff';
+                const currentBgColor = document.getElementById(`${teamType}-team-logo-preview`).style.backgroundColor || '#ffffff';
                 
                 // 팀로고 업로드 API 호출 (파일 시스템 기반)
                 const formData = new FormData();
@@ -4148,10 +4148,10 @@
                     console.log('팀 로고 업데이트 성공:', result);
                     
                     // UI 업데이트
-                    const logoElement = document.querySelector(`.team-info.${teamType}-team .team-logo`);
-                    if (logoElement) {
-                        logoElement.src = logoPath;
-                        logoElement.alt = logoName;
+                    const logoPreview = document.getElementById(`${teamType}-team-logo-preview`);
+                    if (logoPreview) {
+                        logoPreview.innerHTML = `<img src="${logoPath}" alt="${teamType === 'home' ? '홈' : '원정'}팀 로고" class="img-fluid">`;
+                        logoPreview.style.backgroundColor = currentBgColor;
                     }
                     
                     // WebSocket으로 실시간 업데이트
