@@ -1574,7 +1574,7 @@
                 
                 // 홈팀 로고 설정
                 const homeTeamName = '<%= match.home_team %>';
-                const homeLogoInfo = data.teamLogoMap?.[homeTeamName];
+                const homeLogoInfo = data.logoMap?.[homeTeamName];
                 
                 if (homeLogoInfo) {
                     const homeLogoContainer = document.querySelector('.team-info.home-team .team-logo-container');
@@ -1588,7 +1588,7 @@
                 
                 // 원정팀 로고 설정
                 const awayTeamName = '<%= match.away_team %>';
-                const awayLogoInfo = data.teamLogoMap?.[awayTeamName];
+                const awayLogoInfo = data.logoMap?.[awayTeamName];
                 
                 if (awayLogoInfo) {
                     const awayLogoContainer = document.querySelector('.team-info.away-team .team-logo-container');

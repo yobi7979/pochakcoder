@@ -3404,7 +3404,7 @@
 
             // 팀 로고 정보 가져오기
             try {
-                const response = await fetch('/TEAMLOGO/BASEBALL/team_logo_map.json');
+                const response = await fetch('/api/team-logo-map/BASEBALL');
                 const teamLogoMap = await response.json();
                 console.log('팀 로고맵 로드:', teamLogoMap);
                 
@@ -3413,8 +3413,8 @@
                 let homeTeamLogo = '<%= match.match_data?.home_team_logo || "" %>';
                 let homeBgColor = '<%= match.match_data?.home_team_colorbg || "#ffffff" %>';
                 
-                if (teamLogoMap.teamLogoMap && teamLogoMap.teamLogoMap[homeTeamName]) {
-                    const homeLogoInfo = teamLogoMap.teamLogoMap[homeTeamName];
+                if (teamLogoMap.logoMap && teamLogoMap.logoMap[homeTeamName]) {
+                    const homeLogoInfo = teamLogoMap.logoMap[homeTeamName];
                     homeTeamLogo = homeLogoInfo.path;
                     homeBgColor = homeLogoInfo.bgColor || '#ffffff';
                     console.log('홈팀 로고 정보:', homeLogoInfo);
@@ -3435,8 +3435,8 @@
                 let awayTeamLogo = '<%= match.match_data?.away_team_logo || "" %>';
                 let awayBgColor = '<%= match.match_data?.away_team_colorbg || "#ffffff" %>';
                 
-                if (teamLogoMap.teamLogoMap && teamLogoMap.teamLogoMap[awayTeamName]) {
-                    const awayLogoInfo = teamLogoMap.teamLogoMap[awayTeamName];
+                if (teamLogoMap.logoMap && teamLogoMap.logoMap[awayTeamName]) {
+                    const awayLogoInfo = teamLogoMap.logoMap[awayTeamName];
                     awayTeamLogo = awayLogoInfo.path;
                     awayBgColor = awayLogoInfo.bgColor || '#ffffff';
                     console.log('원정팀 로고 정보:', awayLogoInfo);

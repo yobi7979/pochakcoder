@@ -88,10 +88,29 @@ router.get('/team-logo-map/:sportType', asyncHandler(async (req, res) => {
     
     console.log(`팀 로고 맵 조회 (데이터베이스 전용): ${sportType}`);
     
-    // 데이터베이스 전용 접근 방식 - JSON 파일 의존성 제거
-    console.log('데이터베이스 전용 팀 로고 관리 시스템 사용');
+    // TeamInfo 모델에서 실제 데이터 조회
+    const { TeamInfo } = require('../models');
+    const teamInfos = await TeamInfo.findAll({
+      where: { sport_type: sportType }
+    });
     
-    res.json({ success: true, logoMap: {} });
+    console.log(`조회된 팀 정보 수: ${teamInfos.length}`);
+    
+    // 팀 로고 맵 생성
+    const logoMap = {};
+    teamInfos.forEach(team => {
+      if (team.team_name && team.logo_path) {
+        logoMap[team.team_name] = {
+          path: team.logo_path,
+          bgColor: team.logo_bg_color || '#ffffff',
+          teamColor: team.team_color || '#000000'
+        };
+      }
+    });
+    
+    console.log(`팀로고 맵:`, Object.keys(logoMap));
+    
+    res.json({ success: true, logoMap });
   } catch (error) {
     console.error('팀 로고 맵 조회 실패:', error);
     res.status(500).json({ error: '서버 오류가 발생했습니다.' });
