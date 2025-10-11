@@ -1021,28 +1021,80 @@
 
         // 편집 모달 열기
         async function editTeam(team) {
-            document.getElementById('editTeamName').value = team.team_name;
-            document.getElementById('editTeamColor').value = team.team_color || '#000000';
-            document.getElementById('editTeamHeader').value = team.team_header || '';
-            document.getElementById('editLogoBgColor').value = team.logo_bg_color || '#FFFFFF';
+            console.log('editTeam 함수 호출:', team);
+            
+            // DOM 요소가 존재하는지 확인
+            const editTeamName = document.getElementById('editTeamName');
+            const editTeamColor = document.getElementById('editTeamColor');
+            const editTeamHeader = document.getElementById('editTeamHeader');
+            const editLogoBgColor = document.getElementById('editLogoBgColor');
+            
+            if (!editTeamName) {
+                console.error('editTeamName 요소를 찾을 수 없습니다.');
+                alert('편집 폼을 찾을 수 없습니다. 페이지를 새로고침해주세요.');
+                return;
+            }
+            
+            if (!editTeamColor) {
+                console.error('editTeamColor 요소를 찾을 수 없습니다.');
+                alert('편집 폼을 찾을 수 없습니다. 페이지를 새로고침해주세요.');
+                return;
+            }
+            
+            if (!editTeamHeader) {
+                console.error('editTeamHeader 요소를 찾을 수 없습니다.');
+                alert('편집 폼을 찾을 수 없습니다. 페이지를 새로고침해주세요.');
+                return;
+            }
+            
+            if (!editLogoBgColor) {
+                console.error('editLogoBgColor 요소를 찾을 수 없습니다.');
+                alert('편집 폼을 찾을 수 없습니다. 페이지를 새로고침해주세요.');
+                return;
+            }
+            
+            // 안전하게 값 설정
+            editTeamName.value = team.team_name;
+            editTeamColor.value = team.team_color || '#000000';
+            editTeamHeader.value = team.team_header || '';
+            editLogoBgColor.value = team.logo_bg_color || '#FFFFFF';
             
             // 폼에 팀 ID 저장
-            document.getElementById('editForm').dataset.teamId = team.id;
-            document.getElementById('editForm').dataset.matchId = team.match_id;
-            document.getElementById('editForm').dataset.sportType = team.sport_type;
+            const editForm = document.getElementById('editForm');
+            if (editForm) {
+                editForm.dataset.teamId = team.id;
+                editForm.dataset.matchId = team.match_id;
+                editForm.dataset.sportType = team.sport_type;
+                editForm.dataset.teamType = team.team_type; // team_type도 저장
+            } else {
+                console.error('editForm 요소를 찾을 수 없습니다.');
+                alert('편집 폼을 찾을 수 없습니다. 페이지를 새로고침해주세요.');
+                return;
+            }
             
             // 팀로고 목록 로드
             await loadTeamLogos(team.sport_type);
             
             // 현재 로고 선택
             const logoSelect = document.getElementById('editTeamLogo');
-            if (team.logo_path) {
-                logoSelect.value = team.logo_path;
+            if (logoSelect) {
+                if (team.logo_path) {
+                    logoSelect.value = team.logo_path;
+                } else {
+                    logoSelect.value = '';
+                }
             } else {
-                logoSelect.value = '';
+                console.error('editTeamLogo 요소를 찾을 수 없습니다.');
             }
             
-            document.getElementById('editModal').style.display = 'block';
+            // 모달 표시
+            const editModal = document.getElementById('editModal');
+            if (editModal) {
+                editModal.style.display = 'block';
+            } else {
+                console.error('editModal 요소를 찾을 수 없습니다.');
+                alert('편집 모달을 찾을 수 없습니다. 페이지를 새로고침해주세요.');
+            }
         }
 
         // 팀로고 목록 로드
