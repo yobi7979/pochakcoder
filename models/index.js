@@ -12,6 +12,7 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
       dialect: 'postgres',
       logging: console.log,
       benchmark: false,
+      timezone: '+09:00', // 한국시간 설정
       dialectOptions: {
         ssl: {
           require: true,
@@ -27,7 +28,8 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
       dialect: 'sqlite',
       storage: path.join(__dirname, '../sports.db'),
       logging: console.log,
-      benchmark: false
+      benchmark: false,
+      timezone: '+09:00' // 한국시간 설정
     });
   }
 } else {
@@ -38,6 +40,7 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
     storage: path.join(__dirname, '../sports.db'),
     logging: console.log,
     benchmark: false,
+    timezone: '+09:00', // 한국시간 설정
     define: {
       timestamps: true,
       underscored: false

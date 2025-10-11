@@ -741,7 +741,7 @@ router.post('/TEAMLOGO/:sportType', teamLogoUpload.single('logo'), async (req, r
           throw new Error('팀 정보를 찾을 수 없습니다.');
         }
 
-        // 로고 정보 업데이트 (배경색 우선순위: logoBgColor > bgColor > #ffffff)
+        // 로고 정보 업데이트 (TeamInfo 테이블에만 저장)
         await teamInfo.update({
           logo_path: logoPath,
           logo_bg_color: req.body.logoBgColor || bgColor

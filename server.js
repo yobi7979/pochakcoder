@@ -1,6 +1,10 @@
 // SportsCoder 리팩토링된 서버 파일
 // 기존 server.js (8,119줄)를 모듈화된 구조로 리팩토링
 
+// 한국시간대 설정
+process.env.TZ = 'Asia/Seoul';
+console.log('🇰🇷 한국시간대 설정 완료:', new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }));
+
 // Railway 환경과 로컬 환경 모두 Sequelize 모델 사용
 console.log('🔧 모든 환경에서 Sequelize 모델 로딩 허용');
 console.log('🔍 환경 변수:', {
