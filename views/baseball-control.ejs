@@ -4133,10 +4133,8 @@
                 formData.append('matchId', '<%= match.id %>');
                 formData.append('teamType', teamType);
                 formData.append('logoBgColor', currentBgColor);
-                
-                // 파일 경로에서 실제 파일명 추출
-                const fileName = logoPath.split('/').pop();
-                const actualLogoPath = `TEAMLOGO/BASEBALL/${fileName}`;
+                formData.append('logoPath', logoPath);
+                formData.append('logoName', logoName);
                 
                 const response = await fetch('/api/overlay-images/TEAMLOGO/BASEBALL', {
                     method: 'POST',

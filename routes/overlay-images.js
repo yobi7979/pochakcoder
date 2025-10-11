@@ -685,8 +685,77 @@ router.post('/TEAMLOGO/:sportType', teamLogoUpload.single('logo'), async (req, r
       return res.status(400).json({ success: false, message: '필수 파라미터가 누락되었습니다.' });
     }
 
+    // 파일이 없는 경우 (파일 시스템에서 선택한 로고)
     if (!req.file) {
-      return res.status(400).json({ success: false, message: '파일이 없습니다.' });
+      console.log('파일이 없음 - 파일 시스템에서 선택한 로고 처리');
+      
+      // 파일 시스템에서 선택한 로고인 경우
+      if (req.body.logoPath) {
+        const logoPath = req.body.logoPath;
+        const logoName = req.body.logoName || '선택된 로고';
+        
+        console.log(`파일 시스템 로고 선택: ${logoName}, 경로: ${logoPath}`);
+        
+        // TeamInfo 테이블에 팀로고 정보 저장
+        if (req.body.matchId && req.body.teamType) {
+          try {
+            const { TeamInfo } = require('../models');
+            const bgColor = req.body.logoBgColor || req.body.bgColor || '#ffffff';
+            
+            // TeamInfo 테이블 업데이트
+            await TeamInfo.update({
+              logo_path: logoPath,
+              logo_bg_color: bgColor
+            }, {
+              where: {
+                match_id: req.body.matchId,
+                team_type: req.body.teamType,
+                sport_type: sportTypeUpper
+              }
+            });
+            
+            console.log(`✅ 팀로고 정보 저장 완료: ${req.body.teamType}팀, 경로: ${logoPath}, 배경색: ${bgColor}`);
+            
+            // WebSocket 이벤트 전송
+            const io = require('../server').getIO();
+            const roomName = `match_${req.body.matchId}`;
+            
+            io.to(roomName).emit('teamLogoUpdated', {
+              matchId: req.body.matchId,
+              teamType: req.body.teamType,
+              logoPath: logoPath,
+              logoName: logoName,
+              logoBgColor: bgColor
+            });
+            
+            io.to(roomName).emit('teamLogoBgUpdated', {
+              matchId: req.body.matchId,
+              teamType: req.body.teamType,
+              logoBgColor: bgColor
+            });
+            
+            return res.json({
+              success: true,
+              message: '팀로고가 성공적으로 적용되었습니다.',
+              logoPath: logoPath,
+              logoName: logoName,
+              bgColor: bgColor
+            });
+            
+          } catch (error) {
+            console.error('팀로고 정보 저장 실패:', error);
+            return res.status(500).json({ 
+              success: false, 
+              message: '팀로고 정보 저장에 실패했습니다.',
+              error: error.message 
+            });
+          }
+        } else {
+          return res.status(400).json({ success: false, message: '필수 파라미터가 누락되었습니다.' });
+        }
+      } else {
+        return res.status(400).json({ success: false, message: '파일이 없습니다.' });
+      }
     }
     
     // 원본 파일명을 안전하게 처리
