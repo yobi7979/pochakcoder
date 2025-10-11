@@ -3316,12 +3316,15 @@
                             
                             showToast('로고가 성공적으로 업로드되었습니다', 'success');
                             
+                            // 현재 설정된 배경색 값 가져오기
+                            const currentBgColor = document.querySelector('.home-team-colorbg')?.value || '#ffffff';
+                            
                             // Socket.IO를 통해 오버레이에 실시간 업데이트 전송 (축구와 동일한 방식)
                             socket.emit('teamLogoUpdated', {
                                 matchId: '<%= match.id %>',
                                 teamType: 'home',
                                 path: data.logoPath,
-                                bgColor: data.bgColor || '#ffffff',
+                                bgColor: currentBgColor,
                                 teamColor: null
                             });
                             
@@ -3329,7 +3332,7 @@
                             socket.emit('teamLogoBgUpdated', {
                                 matchId: '<%= match.id %>',
                                 teamType: 'home',
-                                logoBgColor: data.bgColor || '#ffffff'
+                                logoBgColor: currentBgColor
                             });
                         } else {
                             showToast(data.message || '로고 업로드에 실패했습니다', 'error');
@@ -3392,12 +3395,15 @@
                             
                             showToast('로고가 성공적으로 업로드되었습니다', 'success');
                             
+                            // 현재 설정된 배경색 값 가져오기
+                            const currentBgColor = document.querySelector('.away-team-colorbg')?.value || '#ffffff';
+                            
                             // Socket.IO를 통해 오버레이에 실시간 업데이트 전송 (축구와 동일한 방식)
                             socket.emit('teamLogoUpdated', {
                                 matchId: '<%= match.id %>',
                                 teamType: 'away',
                                 path: data.logoPath,
-                                bgColor: data.bgColor || '#ffffff',
+                                bgColor: currentBgColor,
                                 teamColor: null
                             });
                             
@@ -3405,7 +3411,7 @@
                             socket.emit('teamLogoBgUpdated', {
                                 matchId: '<%= match.id %>',
                                 teamType: 'away',
-                                logoBgColor: data.bgColor || '#ffffff'
+                                logoBgColor: currentBgColor
                             });
                         } else {
                             showToast(data.message || '로고 업로드에 실패했습니다', 'error');

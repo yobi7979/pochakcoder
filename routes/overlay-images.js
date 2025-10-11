@@ -962,6 +962,7 @@ router.get('/TEAMLOGO/:sportType', async (req, res) => {
       return {
         filename: file,
         path: `/api/overlay-images/TEAMLOGO/${sportTypeUpper}/${file}`,
+        displayName: file.replace(/\.[^/.]+$/, ""), // 확장자 제거한 파일명
         size: stats.size,
         modified: stats.mtime
       };
