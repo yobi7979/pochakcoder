@@ -3641,18 +3641,8 @@
                         preview.style.backgroundColor = bgColor;
                     }
                     
-                    // WebSocket 이벤트로 실시간 업데이트 전송
-                    if (socket.connected) {
-                        console.log(`팀로고 배경색 WebSocket 이벤트 전송: ${team}팀, 색상: ${bgColor}`);
-                        socket.emit('teamLogoBgUpdated', {
-                            matchId: '<%= match.id %>',
-                            teamType: team,
-                            logoBgColor: bgColor
-                        });
-                        console.log('✅ teamLogoBgUpdated 이벤트 전송 완료');
-                    } else {
-                        console.error('❌ 소켓 연결되지 않음 - teamLogoBgUpdated 이벤트 전송 실패');
-                    }
+                    // 서버에서 자동으로 WebSocket 이벤트를 전송하므로 클라이언트에서 추가 전송 불필요
+                    console.log('✅ 팀로고 배경색 저장 완료 - 서버에서 자동으로 WebSocket 이벤트 전송됨');
                     
                     console.log(`${team}팀 로고 배경색이 저장되었습니다.`);
                 } else {
