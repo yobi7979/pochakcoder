@@ -6,49 +6,79 @@ const { sequelize } = require('../models');
 router.get('/tables', async (req, res) => {
   console.log('라우터 매칭 성공: GET /tables');
   try {
-    // PostgreSQL에서 테이블 목록 조회
-    const tables = await sequelize.query(`
-      SELECT 
-        schemaname,
-        tablename as name,
-        'table' as type,
-        n_tup_ins + n_tup_upd + n_tup_del as rowCount,
-        pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size,
-        pg_stat_get_tuples_inserted(c.oid) as inserts,
-        pg_stat_get_tuples_updated(c.oid) as updates,
-        pg_stat_get_tuples_deleted(c.oid) as deletes
-      FROM pg_tables t
-      LEFT JOIN pg_class c ON c.relname = t.tablename
-      WHERE schemaname = 'public'
-      ORDER BY tablename
-    `, {
-      type: sequelize.QueryTypes.SELECT
-    });
+    // PostgreSQL에서 테이블 목록 조회 (간단한 쿼리)
+    let tables;
+    try {
+      tables = await sequelize.query(`
+        SELECT 
+          tablename as name,
+          'table' as type
+        FROM pg_tables 
+        WHERE schemaname = 'public'
+        ORDER BY tablename
+      `, {
+        type: sequelize.QueryTypes.SELECT
+      });
+    } catch (queryError) {
+      console.error('pg_tables 쿼리 실패, information_schema로 fallback:', queryError.message);
+      // Fallback: information_schema 사용
+      tables = await sequelize.query(`
+        SELECT 
+          table_name as name,
+          'table' as type
+        FROM information_schema.tables 
+        WHERE table_schema = 'public'
+        ORDER BY table_name
+      `, {
+        type: sequelize.QueryTypes.SELECT
+      });
+    }
 
     console.log(`테이블 목록 조회 완료: ${tables.length}개 테이블`);
     
-    // 각 테이블에 대한 추가 정보 수집
+    // 각 테이블에 대한 추가 정보 수집 (안전한 방식)
     const tablesWithInfo = await Promise.all(tables.map(async (table) => {
       try {
-        // 테이블 행 수 정확히 계산
-        const rowCountResult = await sequelize.query(`
-          SELECT COUNT(*) as count FROM "${table.name}"
-        `, {
-          type: sequelize.QueryTypes.SELECT
-        });
+        // 테이블 행 수 계산 (안전한 방식)
+        let rowCount = 0;
+        try {
+          const rowCountResult = await sequelize.query(`
+            SELECT COUNT(*) as count FROM "${table.name}"
+          `, {
+            type: sequelize.QueryTypes.SELECT
+          });
+          rowCount = parseInt(rowCountResult[0]?.count || 0);
+        } catch (countError) {
+          console.log(`테이블 ${table.name} 행 수 계산 실패, 0으로 설정:`, countError.message);
+          rowCount = 0;
+        }
         
-        const rowCount = rowCountResult[0]?.count || 0;
+        // 테이블 크기 계산 (안전한 방식)
+        let size = 'Unknown';
+        try {
+          const sizeResult = await sequelize.query(`
+            SELECT pg_size_pretty(pg_total_relation_size('${table.name}')) as size
+          `, {
+            type: sequelize.QueryTypes.SELECT
+          });
+          size = sizeResult[0]?.size || 'Unknown';
+        } catch (sizeError) {
+          console.log(`테이블 ${table.name} 크기 계산 실패:`, sizeError.message);
+          size = 'Unknown';
+        }
         
         return {
           ...table,
-          rowCount: parseInt(rowCount),
-          createdAt: new Date().toISOString().split('T')[0] // 임시로 현재 날짜 사용
+          rowCount: rowCount,
+          size: size,
+          createdAt: new Date().toISOString().split('T')[0]
         };
       } catch (error) {
         console.error(`테이블 ${table.name} 정보 수집 실패:`, error.message);
         return {
           ...table,
           rowCount: 0,
+          size: 'Unknown',
           createdAt: new Date().toISOString().split('T')[0]
         };
       }
@@ -62,10 +92,20 @@ router.get('/tables', async (req, res) => {
 
   } catch (error) {
     console.error('테이블 목록 조회 실패:', error);
+    console.error('에러 상세:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    
     res.status(500).json({
       success: false,
       message: '테이블 목록을 불러오는데 실패했습니다.',
-      error: error.message
+      error: error.message,
+      details: {
+        name: error.name,
+        message: error.message
+      }
     });
   }
 });
