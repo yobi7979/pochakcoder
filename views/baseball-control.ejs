@@ -3141,7 +3141,7 @@
                             }
                         } else {
                             // 3. 팀 이름과 정확히 일치하는 .png 파일 찾기
-                            logoPath = `/api/overlay-images/TEAMLOGO/BASEBALL/${teamName}.png`;
+                            logoPath = `/api/overlay-images/TEAMLOGO/<%= match.sport_type %>/${teamName}.png`;
                             console.log('팀 로고 정보를 찾을 수 없어 기본 경로 사용:', logoPath);
                         }
                         
@@ -3199,7 +3199,7 @@
                                 formData.append('matchId', '<%= match.id %>');
                                 
                                 console.log('서버 업데이트 시도');
-                                const updateResponse = await fetch('/api/overlay-images/TEAMLOGO/BASEBALL', {
+                                const updateResponse = await fetch(`/api/overlay-images/TEAMLOGO/<%= match.sport_type %>`, {
                                     method: 'POST',
                                     body: formData
                                 });
@@ -3276,7 +3276,7 @@
                         formData.append('teamName', '<%= match.home_team %>');
                         formData.append('originalFilename', file.name);
                         
-                        const response = await fetch('/api/overlay-images/TEAMLOGO/BASEBALL', {
+                        const response = await fetch(`/api/overlay-images/TEAMLOGO/<%= match.sport_type %>`, {
                             method: 'POST',
                             body: formData
                         });
@@ -3341,7 +3341,7 @@
                         formData.append('teamName', '<%= match.away_team %>');
                         formData.append('originalFilename', file.name);
                         
-                        const response = await fetch('/api/overlay-images/TEAMLOGO/BASEBALL', {
+                        const response = await fetch(`/api/overlay-images/TEAMLOGO/<%= match.sport_type %>`, {
                             method: 'POST',
                             body: formData
                         });
@@ -3533,7 +3533,7 @@
                 const currentBgColor = preview.style.backgroundColor || '#ffffff';
                 
                 // 2. API로 이미지만 null로 설정 (배경색 유지)
-                const response = await fetch('/api/overlay-images/TEAMLOGO/BASEBALL', {
+                const response = await fetch(`/api/overlay-images/TEAMLOGO/<%= match.sport_type %>`, {
                     method: 'POST',
                     body: new FormData() // 빈 FormData로 이미지 없음을 전달
                 });
@@ -3943,7 +3943,7 @@
             
             try {
                 // DB 수정 탭과 동일한 API 사용 (파일 시스템 기반)
-                const response = await fetch('/api/sport-management/team-logos/BASEBALL');
+                const response = await fetch(`/api/sport-management/team-logos/<%= match.sport_type %>`);
                 const data = await response.json();
                 
                 console.log('팀로고 API 응답:', data);
@@ -4026,7 +4026,7 @@
                 formData.append('logoPath', logoPath);
                 formData.append('logoName', logoName);
                 
-                const response = await fetch('/api/overlay-images/TEAMLOGO/BASEBALL', {
+                const response = await fetch(`/api/overlay-images/TEAMLOGO/<%= match.sport_type %>`, {
                     method: 'POST',
                     body: formData
                 });
