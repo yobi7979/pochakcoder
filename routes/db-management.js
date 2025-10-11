@@ -525,8 +525,10 @@ router.put('/team-info/:id', async (req, res) => {
     const { team_name, team_color, team_header, logo_path, logo_bg_color } = req.body;
     
     console.log(`팀 정보 수정 요청: ID ${id}`);
+    console.log('요청 데이터:', { team_name, team_color, team_header, logo_path, logo_bg_color });
     
     // 1. TeamInfo 테이블에서 팀 정보 조회 (match_id와 team_type 확인용)
+    console.log('TeamInfo 테이블 조회 시작...');
     const teamInfo = await sequelize.query(`
       SELECT match_id, team_type, sport_type 
       FROM TeamInfo 
@@ -535,6 +537,7 @@ router.put('/team-info/:id', async (req, res) => {
       replacements: [id],
       type: sequelize.QueryTypes.SELECT
     });
+    console.log('TeamInfo 조회 결과:', teamInfo);
     
     if (teamInfo.length === 0) {
       console.log(`팀 정보를 찾을 수 없음: ID ${id}`);
@@ -560,8 +563,11 @@ router.put('/team-info/:id', async (req, res) => {
       console.log(`팀 정보 수정 완료: ID ${id}`);
       
       // 3. Matches 테이블도 업데이트 (실시간 동기화를 위해)
+      console.log('Match 모델 로드 시도...');
       const { Match } = require('../models');
+      console.log('Match 모델:', Match);
       const match = await Match.findByPk(match_id);
+      console.log('Match 조회 결과:', match);
       if (match) {
         if (team_type === 'home') {
           await match.update({
@@ -580,7 +586,9 @@ router.put('/team-info/:id', async (req, res) => {
       }
       
       // 4. WebSocket을 통한 실시간 업데이트 이벤트 전송
+      console.log('WebSocket 인스턴스 확인...');
       const io = req.app.get('io'); // server.js에서 설정된 io 인스턴스
+      console.log('WebSocket io 인스턴스:', io);
       if (io) {
         const roomName = `match_${match_id}`;
         
