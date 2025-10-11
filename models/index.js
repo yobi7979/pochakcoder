@@ -623,7 +623,9 @@ const TeamInfo = sequelize.define('TeamInfo', {
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
-  tableName: 'TeamInfo'
+  tableName: 'TeamInfo',
+  // Railway PostgreSQL 환경에서 테이블명 대소문자 문제 해결
+  freezeTableName: true
 });
 
 // TeamInfo와 Match 간의 관계 설정
@@ -631,12 +633,28 @@ TeamInfo.belongsTo(Match, { foreignKey: 'match_id', as: 'match' });
 Match.hasMany(TeamInfo, { foreignKey: 'match_id', as: 'teamInfo' });
 
 // 데이터베이스 연결 및 테이블 생성
-sequelize.sync()
-  .then(() => {
-    // 연결 성공 로그 제거
+sequelize.sync({ force: false, alter: false })
+  .then(async () => {
+    console.log('✅ 데이터베이스 테이블 동기화 완료');
+    
+    // Railway 환경에서 TeamInfo 테이블 존재 여부 확인 및 생성
+    try {
+      await sequelize.query('SELECT 1 FROM "TeamInfo" LIMIT 1', {
+        type: sequelize.QueryTypes.SELECT
+      });
+      console.log('✅ TeamInfo 테이블 존재 확인');
+    } catch (error) {
+      console.log('⚠️ TeamInfo 테이블이 존재하지 않음, 생성 시도 중...');
+      try {
+        await TeamInfo.sync({ force: false });
+        console.log('✅ TeamInfo 테이블 생성 완료');
+      } catch (syncError) {
+        console.error('❌ TeamInfo 테이블 생성 실패:', syncError);
+      }
+    }
   })
   .catch(err => {
-    console.error('데이터베이스 연결 실패:', err);
+    console.error('❌ 데이터베이스 연결 실패:', err);
   });
 
 module.exports = {

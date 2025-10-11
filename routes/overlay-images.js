@@ -812,16 +812,46 @@ router.get('/TEAMLOGO/:sportType', async (req, res) => {
     console.log(`팀로고 목록 조회: ${sportTypeUpper}`);
     
     // TeamInfo 테이블에서 팀로고 정보 조회
-    const { sequelize } = require('../models');
-    const teamLogos = await sequelize.query(`
-      SELECT team_name, logo_path, logo_bg_color, team_type
-      FROM TeamInfo 
-      WHERE sport_type = ? AND logo_path IS NOT NULL
-      ORDER BY team_name
-    `, {
-      replacements: [sportTypeUpper],
-      type: sequelize.QueryTypes.SELECT
-    });
+    try {
+      const { TeamInfo } = require('../models');
+      
+      // TeamInfo 모델이 존재하는지 확인
+      if (!TeamInfo) {
+        console.log('TeamInfo 모델이 로드되지 않음 - 빈 배열 반환');
+        return res.json({
+          success: true,
+          sportType: sportTypeUpper,
+          teamLogos: [],
+          message: 'TeamInfo 테이블을 사용할 수 없습니다.'
+        });
+      }
+      
+      const teamLogos = await TeamInfo.findAll({
+        where: {
+          sport_type: sportTypeUpper,
+          logo_path: { [require('../models').Op.ne]: null }
+        },
+        attributes: ['team_name', 'logo_path', 'logo_bg_color', 'team_type'],
+        order: [['team_name', 'ASC']]
+      });
+      
+      console.log(`팀로고 목록 조회 완료: ${sportTypeUpper}, 개수: ${teamLogos.length}`);
+      
+      res.json({
+        success: true,
+        sportType: sportTypeUpper,
+        teamLogos: teamLogos
+      });
+      
+    } catch (teamInfoError) {
+      console.log('TeamInfo 테이블 조회 실패:', teamInfoError.message);
+      return res.json({
+        success: true,
+        sportType: sportTypeUpper,
+        teamLogos: [],
+        message: 'TeamInfo 테이블을 조회할 수 없습니다.'
+      });
+    }
     
     res.json({
       success: true,

@@ -447,15 +447,27 @@ router.post('/:matchId/team-name', async (req, res) => {
     }
     
     // TeamInfo 테이블도 업데이트 (DB 관리 페이지와 동기화)
-    const { sequelize } = require('../models');
-    await sequelize.query(`
-      UPDATE TeamInfo 
-      SET team_name = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE match_id = ? AND team_type = ?
-    `, {
-      replacements: [teamName, matchId, team],
-      type: sequelize.QueryTypes.UPDATE
-    });
+    try {
+      const { TeamInfo } = require('../models');
+      
+      // TeamInfo 모델이 존재하는지 확인
+      if (TeamInfo) {
+        await TeamInfo.update({
+          team_name: teamName
+        }, {
+          where: {
+            match_id: matchId,
+            team_type: team
+          }
+        });
+        console.log(`TeamInfo 테이블 동기화 완료: matchId=${matchId}, teamType=${team}, teamName=${teamName}`);
+      } else {
+        console.log('TeamInfo 모델이 로드되지 않음 - Match 테이블만 업데이트');
+      }
+    } catch (teamInfoError) {
+      console.log('TeamInfo 테이블 업데이트 실패 (Match 테이블은 정상 업데이트됨):', teamInfoError.message);
+      // TeamInfo 업데이트 실패해도 Match 테이블 업데이트는 성공했으므로 계속 진행
+    }
     
     console.log(`TeamInfo 테이블 동기화 완료: matchId=${matchId}, teamType=${team}, teamName=${teamName}`);
     
@@ -664,32 +676,50 @@ router.post('/:matchId/team-logo-bg', async (req, res) => {
     // WebSocket을 통한 실시간 업데이트 이벤트 전송
     const io = req.app.get('io');
     if (io) {
-      const roomName = `match_${matchId}`;
+      const matchRoom = `match_${matchId}`;
+      const sportRoom = `sport_BASEBALL`;  // 야구 종목 Room
       
-      // teamLogoUpdated 이벤트 전송 (기존)
-      io.to(roomName).emit('teamLogoUpdated', {
+      // match Room으로 이벤트 전송
+      io.to(matchRoom).emit('teamLogoUpdated', {
         matchId: matchId,
         teamType: team,
         logoBgColor: logoBgColor
       });
       
-      // teamLogoUpdate 이벤트 전송 (팀컬러와 동일한 방식)
-      io.to(roomName).emit('teamLogoUpdate', {
+      io.to(matchRoom).emit('teamLogoUpdate', {
         matchId: matchId,
         teamType: team,
         logoBgColor: logoBgColor
       });
 
-      // teamLogoBgUpdated 이벤트 전송 (추가)
-      io.to(roomName).emit('teamLogoBgUpdated', {
+      io.to(matchRoom).emit('teamLogoBgUpdated', {
         matchId: matchId,
         teamType: team,
         logoBgColor: logoBgColor
       });
       
-      console.log(`WebSocket 팀 로고 배경색 업데이트 이벤트 전송: room=${roomName}`);
-      console.log(`WebSocket teamLogoUpdate 이벤트 전송: room=${roomName}, teamType=${team}, logoBgColor=${logoBgColor}`);
-      console.log(`WebSocket teamLogoBgUpdated 이벤트 전송: room=${roomName}, teamType=${team}, logoBgColor=${logoBgColor}`);
+      // sport Room으로도 이벤트 전송 (오버레이 페이지가 참여한 Room)
+      io.to(sportRoom).emit('teamLogoUpdated', {
+        matchId: matchId,
+        teamType: team,
+        logoBgColor: logoBgColor
+      });
+      
+      io.to(sportRoom).emit('teamLogoUpdate', {
+        matchId: matchId,
+        teamType: team,
+        logoBgColor: logoBgColor
+      });
+
+      io.to(sportRoom).emit('teamLogoBgUpdated', {
+        matchId: matchId,
+        teamType: team,
+        logoBgColor: logoBgColor
+      });
+      
+      console.log(`WebSocket 팀 로고 배경색 업데이트 이벤트 전송: matchRoom=${matchRoom}, sportRoom=${sportRoom}`);
+      console.log(`WebSocket teamLogoUpdate 이벤트 전송: matchRoom=${matchRoom}, sportRoom=${sportRoom}, teamType=${team}, logoBgColor=${logoBgColor}`);
+      console.log(`WebSocket teamLogoBgUpdated 이벤트 전송: matchRoom=${matchRoom}, sportRoom=${sportRoom}, teamType=${team}, logoBgColor=${logoBgColor}`);
     }
     
     res.json({ 
