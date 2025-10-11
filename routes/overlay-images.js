@@ -767,6 +767,7 @@ router.post('/TEAMLOGO/:sportType', teamLogoUpload.single('logo'), async (req, r
             logoBgColor: req.body.logoBgColor || bgColor
           });
           console.log(`WebSocket 팀 로고 업데이트 이벤트 전송: room=${roomName}`);
+          console.log(`WebSocket teamLogoBgUpdated 이벤트 전송: room=${roomName}, logoBgColor=${req.body.logoBgColor || bgColor}`);
         }
       } catch (dbError) {
         console.error('TeamInfo 테이블 업데이트 오류:', dbError);

@@ -3130,7 +3130,8 @@
                         console.log('로고 맵 데이터:', teamLogoMap);
                         
                         let logoPath;
-                        let bgColor = '#ffffff';
+                        // 현재 설정된 배경색 값 가져오기
+                        let bgColor = document.querySelector(`.${teamType}-team-colorbg`)?.value || '#ffffff';
 
                         // 2. 팀 이름으로 로고 정보 찾기
                         if (teamLogoMap.logoMap && teamLogoMap.logoMap[teamName]) {
@@ -3199,6 +3200,7 @@
                                 formData.append('teamType', teamType);
                                 formData.append('logoPath', logoPath);
                                 formData.append('logoBgColor', bgColor);
+                                formData.append('matchId', '<%= match.id %>');
                                 
                                 console.log('서버 업데이트 시도');
                                 const updateResponse = await fetch('/api/overlay-images/TEAMLOGO/BASEBALL', {
