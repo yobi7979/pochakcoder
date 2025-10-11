@@ -1676,7 +1676,7 @@
                         <div class="team-color-section">
                             <label>팀 컬러</label>
                             <div class="color-control">
-                                <input type="color" class="home-team-color" value="<%= teamColors.home || match.home_team_color || match.match_data?.home_team_color || (typeof defaultColors !== 'undefined' ? defaultColors.home : '#1e40af') %>">
+                                <input type="color" class="home-team-color" value="<%= match.home_team_color || match.match_data?.home_team_color || '#1e40af' %>">
                                 <button class="save-team-color" data-team-type="home">
                                     <i class="bi bi-check2"></i> 저장
                                 </button>
@@ -1739,7 +1739,7 @@
                         <div class="team-color-section">
                             <label>팀 컬러</label>
                             <div class="color-control">
-                                <input type="color" class="away-team-color" value="<%= teamColors.away || match.away_team_color || match.match_data?.away_team_color || (typeof defaultColors !== 'undefined' ? defaultColors.away : '#1e40af') %>">
+                                <input type="color" class="away-team-color" value="<%= match.away_team_color || match.match_data?.away_team_color || '#1e40af' %>">
                                 <button class="save-team-color" data-team-type="away">
                                     <i class="bi bi-check2"></i> 저장
                                 </button>

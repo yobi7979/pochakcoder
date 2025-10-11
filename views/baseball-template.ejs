@@ -1602,23 +1602,23 @@
                     }
                 }
 
-                // 팀 컬러 정보 로드 및 적용
+                // 팀 컬러 정보 로드 및 적용 (DB에서 직접 가져오기)
                 const homeTeamSection = document.getElementById('home-team-section');
                 const awayTeamSection = document.getElementById('away-team-section');
                 
-                if (homeLogoInfo && homeTeamSection) {
-                    // 홈팀 컬러가 team_logo_map.json에 저장되어 있으면 적용
-                    if (homeLogoInfo.teamColor) {
-                        homeTeamSection.style.backgroundColor = homeLogoInfo.teamColor;
-                        console.log(`홈팀 컬러 적용: ${homeTeamName} -> ${homeLogoInfo.teamColor}`);
+                if (result.success && result.teamLogos) {
+                    // 홈팀 컬러 적용
+                    const homeTeamInfo = result.teamLogos.find(team => team.team_type === 'home');
+                    if (homeTeamInfo && homeTeamInfo.team_color && homeTeamSection) {
+                        homeTeamSection.style.backgroundColor = homeTeamInfo.team_color;
+                        console.log(`홈팀 컬러 적용: ${homeTeamName} -> ${homeTeamInfo.team_color}`);
                     }
-                }
-                
-                if (awayLogoInfo && awayTeamSection) {
-                    // 원정팀 컬러가 team_logo_map.json에 저장되어 있으면 적용
-                    if (awayLogoInfo.teamColor) {
-                        awayTeamSection.style.backgroundColor = awayLogoInfo.teamColor;
-                        console.log(`원정팀 컬러 적용: ${awayTeamName} -> ${awayLogoInfo.teamColor}`);
+                    
+                    // 원정팀 컬러 적용
+                    const awayTeamInfo = result.teamLogos.find(team => team.team_type === 'away');
+                    if (awayTeamInfo && awayTeamInfo.team_color && awayTeamSection) {
+                        awayTeamSection.style.backgroundColor = awayTeamInfo.team_color;
+                        console.log(`원정팀 컬러 적용: ${awayTeamName} -> ${awayTeamInfo.team_color}`);
                     }
                 }
 

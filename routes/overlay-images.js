@@ -711,8 +711,8 @@ router.post('/TEAMLOGO/:sportType', teamLogoUpload.single('logo'), async (req, r
     
     console.log(`✅ 팀로고 파일 저장 성공: ${savedFilePath}`);
     
-    // 로고 파일 경로 생성 (public 폴더 기준 상대 경로)
-    const logoPath = `TEAMLOGO/${sportTypeUpper}/${savedFileName}`;
+    // 로고 파일 경로 생성 (API 경로로 수정)
+    const logoPath = `/api/overlay-images/TEAMLOGO/${sportTypeUpper}/${savedFileName}`;
     
     // TeamInfo 테이블에 팀로고 정보 저장
     console.log(`팀로고 업로드 요청 데이터: matchId=${req.body.matchId}, teamType=${req.body.teamType}, sportType=${sportTypeUpper}`);
