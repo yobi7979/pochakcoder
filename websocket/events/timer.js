@@ -407,7 +407,6 @@ const timerEvents = (socket, io) => {
       timeDifference: timeDifference
     });
   });
-  });
 
   console.log('타이머 이벤트 설정 완료:', socket.id);
 };
