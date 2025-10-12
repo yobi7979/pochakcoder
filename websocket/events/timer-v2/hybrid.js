@@ -375,7 +375,35 @@ class HybridTimer {
         console.log(`matchId: ${matchId}`);
         console.log(`socket.id: ${socket.id}`);
         
-        // 먼저 데이터베이스에서 타이머 상태 확인
+        // 새로운 타이머 시스템 v2가 활성화된 경우 기존 타이머 데이터 무시
+        // 메모리에서 타이머 데이터 확인 (우선순위 1)
+        const memoryTimerData = this.hybridTimerData.get(matchId);
+        console.log(`메모리 타이머 데이터 존재 여부: ${!!memoryTimerData}`);
+        
+        if (memoryTimerData) {
+            const currentSeconds = this.getCurrentTime(matchId);
+            console.log(`메모리에서 타이머 상태 로드:`, {
+                currentSeconds: currentSeconds,
+                isRunning: memoryTimerData.isRunning,
+                startTime: memoryTimerData.startTime,
+                pausedTime: memoryTimerData.pausedTime
+            });
+            
+            socket.emit('timer_v2_state', {
+                matchId: matchId,
+                currentSeconds: currentSeconds,
+                isRunning: memoryTimerData.isRunning,
+                startTime: memoryTimerData.startTime,
+                pausedTime: memoryTimerData.pausedTime,
+                mode: memoryTimerData.mode || 'hybrid',
+                fallbackMode: memoryTimerData.fallbackMode || false,
+                serverConnectionStatus: memoryTimerData.serverConnectionStatus || true
+            });
+            console.log(`=== 타이머 v2 상태 이벤트 전송 완료 (메모리) ===`);
+            return;
+        }
+        
+        // 메모리에 데이터가 없으면 데이터베이스에서 확인
         let dbTimerData = null;
         try {
             const match = await Match.findByPk(matchId);
@@ -391,54 +419,31 @@ class HybridTimer {
                         serverConnectionStatus: matchData.timer_v2_serverConnectionStatus || true
                     };
                     console.log(`데이터베이스에서 타이머 상태 로드:`, dbTimerData);
+                    
+                    // 메모리에 복원
+                    this.hybridTimerData.set(matchId, dbTimerData);
                 }
             }
         } catch (error) {
             console.error('데이터베이스에서 타이머 상태 로드 실패:', error);
         }
         
-        // 메모리에서 타이머 데이터 확인
-        const memoryTimerData = this.hybridTimerData.get(matchId);
-        console.log(`메모리 타이머 데이터 존재 여부: ${!!memoryTimerData}`);
-        
-        // 데이터베이스 데이터를 우선시하되, 메모리 데이터가 더 최신이면 메모리 데이터 사용
-        let finalTimerData = null;
-        if (dbTimerData && memoryTimerData) {
-            // 둘 다 있으면 더 최신 데이터 사용 (lastUpdateTime 비교)
-            const dbLastUpdate = dbTimerData.lastUpdateTime || 0;
-            const memoryLastUpdate = memoryTimerData.lastUpdateTime || 0;
-            
-            if (memoryLastUpdate > dbLastUpdate) {
-                finalTimerData = memoryTimerData;
-                console.log(`메모리 데이터가 더 최신 - 메모리 데이터 사용`);
-            } else {
-                finalTimerData = dbTimerData;
-                console.log(`데이터베이스 데이터가 더 최신 - DB 데이터 사용`);
-            }
-        } else if (dbTimerData) {
-            finalTimerData = dbTimerData;
-            console.log(`데이터베이스 데이터만 존재 - DB 데이터 사용`);
-        } else if (memoryTimerData) {
-            finalTimerData = memoryTimerData;
-            console.log(`메모리 데이터만 존재 - 메모리 데이터 사용`);
-        }
-        
-        if (finalTimerData) {
+        if (dbTimerData) {
             const currentSeconds = this.getCurrentTime(matchId);
             console.log(`현재 시간: ${currentSeconds}초`);
-            console.log(`타이머 실행 상태: ${finalTimerData.isRunning}`);
+            console.log(`타이머 실행 상태: ${dbTimerData.isRunning}`);
             
             socket.emit('timer_v2_state', {
                 matchId: matchId,
                 currentSeconds: currentSeconds,
-                isRunning: finalTimerData.isRunning,
-                startTime: finalTimerData.startTime,
-                pausedTime: finalTimerData.pausedTime,
-                mode: finalTimerData.mode || 'hybrid',
-                fallbackMode: finalTimerData.fallbackMode || false,
-                serverConnectionStatus: finalTimerData.serverConnectionStatus || true
+                isRunning: dbTimerData.isRunning,
+                startTime: dbTimerData.startTime,
+                pausedTime: dbTimerData.pausedTime,
+                mode: dbTimerData.mode || 'hybrid',
+                fallbackMode: dbTimerData.fallbackMode || false,
+                serverConnectionStatus: dbTimerData.serverConnectionStatus || true
             });
-            console.log(`=== 타이머 v2 상태 이벤트 전송 완료 ===`);
+            console.log(`=== 타이머 v2 상태 이벤트 전송 완료 (DB) ===`);
         } else {
             console.log(`타이머 데이터 없음 - 기본값 전송`);
             socket.emit('timer_v2_state', {

@@ -193,6 +193,17 @@ const timerEvents = (socket, io) => {
       const { matchId } = data;
       console.log(`타이머 상태 요청: matchId=${matchId}`);
       
+      // 새로운 타이머 시스템 v2가 활성화되어 있으면 기존 타이머 데이터 무시
+      if (process.env.ENABLE_NEW_TIMER === 'true') {
+        console.log(`새로운 타이머 시스템 v2 활성화됨 - 기존 타이머 데이터 무시`);
+        socket.emit('timer_status_response', {
+          matchId: matchId,
+          currentSeconds: 0,
+          isRunning: false
+        });
+        return;
+      }
+      
       // 메모리에서 타이머 데이터 가져오기
       let timerData = matchTimerData.get(matchId);
       
