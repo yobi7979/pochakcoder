@@ -271,3 +271,17 @@ if (process.env.RAILWAY_ENVIRONMENT || process.env.DATABASE_URL) {
 console.log('ℹ️ DB 초기화가 비활성화되어 있습니다. 기존 데이터가 보존됩니다.');
 
 module.exports = { initializeDatabase };
+
+// Railway 배포 스크립트 실행
+if (require.main === module) {
+    console.log('🚀 Railway 배포 스크립트 시작...');
+    initializeDatabase()
+        .then(() => {
+            console.log('✅ Railway 배포 준비 완료');
+            process.exit(0);
+        })
+        .catch((error) => {
+            console.error('❌ Railway 배포 중 오류 발생:', error);
+            process.exit(1);
+        });
+}
