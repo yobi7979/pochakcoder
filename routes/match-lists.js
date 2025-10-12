@@ -184,8 +184,10 @@ router.get('/:id/control-mobile', async (req, res) => {
     
     console.log(`[DEBUG] 리스트 모바일 컨트롤 렌더링: listId=${id}, matchId=${match.id}, sport_type=${match.sport_type}`);
     
-    // sport_type이 없으면 기본값 설정
-    const sportType = match.sport_type || 'soccer';
+    // sport_type을 소문자로 변환 (SOCCER -> soccer, BASEBALL -> baseball)
+    const sportType = (match.sport_type || 'SOCCER').toLowerCase();
+    
+    console.log(`[DEBUG] 경기 종목: ${match.sport_type} -> ${sportType}`);
     
     // 템플릿 파일 존재 여부 확인 및 폴백 처리
     const fs = require('fs');
@@ -194,11 +196,18 @@ router.get('/:id/control-mobile', async (req, res) => {
     
     let templateName = `${sportType}-control-mobile`;
     
-    // 템플릿 파일이 존재하지 않으면 기본 템플릿 사용
+    // 템플릿 파일이 존재하지 않으면 종목별 기본 템플릿 사용
     if (!fs.existsSync(templatePath)) {
       console.log(`[DEBUG] 템플릿 파일이 존재하지 않음: ${templatePath}`);
-      console.log(`[DEBUG] 기본 템플릿으로 폴백: soccer-control-mobile`);
-      templateName = 'soccer-control-mobile';
+      
+      // 종목별 기본 템플릿 선택
+      if (sportType === 'baseball') {
+        console.log(`[DEBUG] 야구 기본 템플릿으로 폴백: baseball-control-mobile`);
+        templateName = 'baseball-control-mobile';
+      } else {
+        console.log(`[DEBUG] 축구 기본 템플릿으로 폴백: soccer-control-mobile`);
+        templateName = 'soccer-control-mobile';
+      }
     }
     
     res.render(templateName, { 
