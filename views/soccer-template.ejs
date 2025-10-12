@@ -3811,9 +3811,10 @@
             if (timerElement) {
                 const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                 timerElement.textContent = formattedTime;
-                console.log('로컬 타이머 업데이트:', formattedTime, '(현재 경기:', matchId, ')');
+                console.log('타이머 업데이트:', formattedTime, '(현재 경기:', matchId, ')');
             } else {
-                }
+                console.log('타이머 엘리먼트를 찾을 수 없습니다');
+            }
         }
         
         // 강제 타이머 업데이트 함수 (디버깅용)

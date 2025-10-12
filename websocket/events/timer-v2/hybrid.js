@@ -120,16 +120,18 @@ class HybridTimer {
     resetTimer(matchId) {
         console.log(`하이브리드 타이머 리셋: matchId=${matchId}`);
         
+        const currentTime = Date.now();
         const timerData = {
             startTime: 0,
             pausedTime: 0,
             isRunning: false,
             matchId: matchId,
-            serverTime: Date.now(),
-            localTime: Date.now(),
-            lastSyncTime: Date.now(),
+            serverTime: currentTime,
+            localTime: currentTime,
+            lastSyncTime: currentTime,
             fallbackMode: false,
-            serverConnectionStatus: true
+            serverConnectionStatus: true,
+            lastUpdateTime: currentTime
         };
         
         this.hybridTimerData.set(matchId, timerData);
@@ -141,7 +143,7 @@ class HybridTimer {
             timer_v2_isRunning: false,
             timer_v2_mode: 'hybrid',
             timer_v2_fallbackMode: false,
-            lastUpdateTime: Date.now()
+            lastUpdateTime: currentTime
         });
         
         console.log(`하이브리드 타이머 리셋 완료: matchId=${matchId}`);
@@ -157,17 +159,19 @@ class HybridTimer {
         console.log(`하이브리드 타이머 설정: matchId=${matchId}, minutes=${minutes}, seconds=${seconds}`);
         
         const targetTime = (minutes * 60) + seconds;
+        const currentTime = Date.now();
         
         const timerData = {
             startTime: 0,
             pausedTime: targetTime,
             isRunning: false,
             matchId: matchId,
-            serverTime: Date.now(),
-            localTime: Date.now(),
-            lastSyncTime: Date.now(),
+            serverTime: currentTime,
+            localTime: currentTime,
+            lastSyncTime: currentTime,
             fallbackMode: false,
-            serverConnectionStatus: true
+            serverConnectionStatus: true,
+            lastUpdateTime: currentTime
         };
         
         this.hybridTimerData.set(matchId, timerData);
@@ -179,7 +183,7 @@ class HybridTimer {
             timer_v2_isRunning: false,
             timer_v2_mode: 'hybrid',
             timer_v2_fallbackMode: false,
-            lastUpdateTime: Date.now()
+            lastUpdateTime: currentTime
         });
         
         console.log(`하이브리드 타이머 설정 완료: matchId=${matchId}, targetTime=${targetTime}`);
@@ -371,23 +375,68 @@ class HybridTimer {
         console.log(`matchId: ${matchId}`);
         console.log(`socket.id: ${socket.id}`);
         
-        const timerData = this.hybridTimerData.get(matchId);
-        console.log(`타이머 데이터 존재 여부: ${!!timerData}`);
+        // 먼저 데이터베이스에서 타이머 상태 확인
+        let dbTimerData = null;
+        try {
+            const match = await Match.findByPk(matchId);
+            if (match && match.match_data) {
+                const matchData = match.match_data;
+                if (matchData.timer_v2_startTime !== undefined && matchData.timer_v2_pausedTime !== undefined) {
+                    dbTimerData = {
+                        startTime: matchData.timer_v2_startTime,
+                        pausedTime: matchData.timer_v2_pausedTime,
+                        isRunning: matchData.timer_v2_isRunning || false,
+                        mode: matchData.timer_v2_mode || 'hybrid',
+                        fallbackMode: matchData.timer_v2_fallbackMode || false,
+                        serverConnectionStatus: matchData.timer_v2_serverConnectionStatus || true
+                    };
+                    console.log(`데이터베이스에서 타이머 상태 로드:`, dbTimerData);
+                }
+            }
+        } catch (error) {
+            console.error('데이터베이스에서 타이머 상태 로드 실패:', error);
+        }
         
-        if (timerData) {
+        // 메모리에서 타이머 데이터 확인
+        const memoryTimerData = this.hybridTimerData.get(matchId);
+        console.log(`메모리 타이머 데이터 존재 여부: ${!!memoryTimerData}`);
+        
+        // 데이터베이스 데이터를 우선시하되, 메모리 데이터가 더 최신이면 메모리 데이터 사용
+        let finalTimerData = null;
+        if (dbTimerData && memoryTimerData) {
+            // 둘 다 있으면 더 최신 데이터 사용 (lastUpdateTime 비교)
+            const dbLastUpdate = dbTimerData.lastUpdateTime || 0;
+            const memoryLastUpdate = memoryTimerData.lastUpdateTime || 0;
+            
+            if (memoryLastUpdate > dbLastUpdate) {
+                finalTimerData = memoryTimerData;
+                console.log(`메모리 데이터가 더 최신 - 메모리 데이터 사용`);
+            } else {
+                finalTimerData = dbTimerData;
+                console.log(`데이터베이스 데이터가 더 최신 - DB 데이터 사용`);
+            }
+        } else if (dbTimerData) {
+            finalTimerData = dbTimerData;
+            console.log(`데이터베이스 데이터만 존재 - DB 데이터 사용`);
+        } else if (memoryTimerData) {
+            finalTimerData = memoryTimerData;
+            console.log(`메모리 데이터만 존재 - 메모리 데이터 사용`);
+        }
+        
+        if (finalTimerData) {
             const currentSeconds = this.getCurrentTime(matchId);
             console.log(`현재 시간: ${currentSeconds}초`);
-            console.log(`타이머 실행 상태: ${timerData.isRunning}`);
+            console.log(`타이머 실행 상태: ${finalTimerData.isRunning}`);
             
             socket.emit('timer_v2_state', {
                 matchId: matchId,
                 currentSeconds: currentSeconds,
-                isRunning: timerData.isRunning,
-                startTime: timerData.startTime,
-                pausedTime: timerData.pausedTime,
-                mode: 'hybrid',
-                fallbackMode: timerData.fallbackMode,
-                serverConnectionStatus: timerData.serverConnectionStatus
+                isRunning: finalTimerData.isRunning,
+                startTime: finalTimerData.startTime,
+                pausedTime: finalTimerData.pausedTime,
+                mode: finalTimerData.mode || 'hybrid',
+                fallbackMode: finalTimerData.fallbackMode || false,
+                serverConnectionStatus: finalTimerData.serverConnectionStatus || true
             });
             console.log(`=== 타이머 v2 상태 이벤트 전송 완료 ===`);
         } else {
