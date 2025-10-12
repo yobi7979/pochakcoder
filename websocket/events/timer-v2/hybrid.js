@@ -367,10 +367,17 @@ class HybridTimer {
      */
     async handleStateRequest(socket, data, io) {
         const { matchId } = data;
+        console.log(`=== 하이브리드 타이머 상태 요청 처리 ===`);
+        console.log(`matchId: ${matchId}`);
+        console.log(`socket.id: ${socket.id}`);
         
         const timerData = this.hybridTimerData.get(matchId);
+        console.log(`타이머 데이터 존재 여부: ${!!timerData}`);
+        
         if (timerData) {
             const currentSeconds = this.getCurrentTime(matchId);
+            console.log(`현재 시간: ${currentSeconds}초`);
+            console.log(`타이머 실행 상태: ${timerData.isRunning}`);
             
             socket.emit('timer_v2_state', {
                 matchId: matchId,
@@ -382,7 +389,9 @@ class HybridTimer {
                 fallbackMode: timerData.fallbackMode,
                 serverConnectionStatus: timerData.serverConnectionStatus
             });
+            console.log(`=== 타이머 v2 상태 이벤트 전송 완료 ===`);
         } else {
+            console.log(`타이머 데이터 없음 - 기본값 전송`);
             socket.emit('timer_v2_state', {
                 matchId: matchId,
                 currentSeconds: 0,
@@ -393,6 +402,7 @@ class HybridTimer {
                 fallbackMode: false,
                 serverConnectionStatus: true
             });
+            console.log(`=== 기본 타이머 v2 상태 이벤트 전송 완료 ===`);
         }
     }
     
