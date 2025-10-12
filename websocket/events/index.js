@@ -1,14 +1,14 @@
 // SportsCoder WebSocket 이벤트 설정
 const pushEvents = require('./push');
-const timerEvents = require('./timer');
+const timerEvents = require('./timer-simple');
 const matchEvents = require('./match');
 const overlayEvents = require('./overlay');
 const teamEvents = require('./team');
 const generalEvents = require('./general');
 
-// 새로운 타이머 시스템 v2 (선택적 로딩)
+// 새로운 타이머 시스템 v2 (선택적 로딩) - 비활성화
 let newTimerEvents = null;
-if (process.env.ENABLE_NEW_TIMER === 'true') {
+if (process.env.ENABLE_NEW_TIMER === 'true' && false) { // 강제 비활성화
     newTimerEvents = require('./timer-v2');
     console.log('새로운 타이머 시스템 v2 로딩 완료');
 }

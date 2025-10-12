@@ -187,27 +187,73 @@ const timerEvents = (socket, io) => {
     }
   });
 
-  // 타이머 상태 요청 이벤트 처리 - 기존 server.js와 동일
-  socket.on('request_timer_state', async (data) => {
+// 타이머 상태 요청 이벤트 처리 - 서버 중심 단순화
+socket.on('request_timer_state', async (data) => {
     try {
-      const { matchId } = data;
-      console.log(`타이머 상태 요청: matchId=${matchId}`);
-      
-      // 새로운 타이머 시스템 v2가 활성화되어 있으면 기존 타이머 데이터 무시
-      if (process.env.ENABLE_NEW_TIMER === 'true') {
-        console.log(`새로운 타이머 시스템 v2 활성화됨 - 기존 타이머 데이터 무시`);
-        socket.emit('timer_status_response', {
-          matchId: matchId,
-          currentSeconds: 0,
-          isRunning: false
-        });
-        return;
-      }
-      
-      // 메모리에서 타이머 데이터 가져오기
-      let timerData = matchTimerData.get(matchId);
-      
-      if (!timerData) {
+        const { matchId } = data;
+        console.log(`타이머 상태 요청: matchId=${matchId}`);
+
+        // 서버 중심 타이머 상태 관리
+        const currentTime = Date.now();
+        
+        // 메모리에서 타이머 상태 확인
+        let timerData = global.timerStates && global.timerStates.get(matchId);
+        
+        if (!timerData) {
+            // 데이터베이스에서 타이머 상태 복원 시도
+            try {
+                const match = await Match.findByPk(matchId);
+                if (match && match.match_data) {
+                    const matchData = match.match_data;
+                    if (matchData.timer_startTime && matchData.timer_pausedTime !== undefined) {
+                        const isRunning = matchData.timer_isRunning || false;
+                        const pausedTime = matchData.timer_pausedTime || 0;
+                        
+                        // 서버 재시작 시 시간 복원 계산
+                        let currentSeconds = pausedTime;
+                        if (isRunning && matchData.timer_startTime) {
+                            const elapsedTime = Math.floor((currentTime - matchData.timer_startTime) / 1000);
+                            currentSeconds = pausedTime + elapsedTime;
+                        }
+                        
+                        timerData = {
+                            startTime: matchData.timer_startTime,
+                            pausedTime: pausedTime,
+                            isRunning: isRunning,
+                            lastUpdateTime: currentTime
+                        };
+                        
+                        // 메모리에 저장
+                        if (!global.timerStates) global.timerStates = new Map();
+                        global.timerStates.set(matchId, timerData);
+                        
+                        console.log(`타이머 상태 복원: matchId=${matchId}, currentSeconds=${currentSeconds}, isRunning=${isRunning}`);
+                    }
+                }
+            } catch (error) {
+                console.error('타이머 상태 복원 실패:', error);
+            }
+        }
+        
+        if (timerData) {
+            let currentSeconds = timerData.pausedTime;
+            if (timerData.isRunning && timerData.startTime) {
+                const elapsedTime = Math.floor((currentTime - timerData.startTime) / 1000);
+                currentSeconds = timerData.pausedTime + elapsedTime;
+            }
+            
+            socket.emit('timer_status_response', {
+                matchId: matchId,
+                currentSeconds: currentSeconds,
+                isRunning: timerData.isRunning
+            });
+        } else {
+            socket.emit('timer_status_response', {
+                matchId: matchId,
+                currentSeconds: 0,
+                isRunning: false
+            });
+        }
         // 메모리에 없으면 DB에서 복원
         const match = await Match.findByPk(matchId);
         if (match) {
