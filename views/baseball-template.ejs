@@ -985,6 +985,38 @@
             }
         });
 
+        // 새로운 타이머 시스템 v2 이벤트 리스너 추가 (야구)
+        socket.on('timer_v2_state', function(data) {
+            console.log('=== 타이머 v2 상태 수신 (야구 오버레이) ===');
+            console.log('수신된 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                // 새로운 타이머 시스템 v2 상태 처리
+                timerState.currentSeconds = data.currentSeconds || 0;
+                timerState.isRunning = data.isRunning || false;
+                timerState.startTime = data.startTime || null;
+                timerState.pausedTime = data.pausedTime || 0;
+                
+                console.log('타이머 v2 상태 복원 (야구 오버레이):', {
+                    currentSeconds: timerState.currentSeconds,
+                    isRunning: timerState.isRunning,
+                    startTime: timerState.startTime,
+                    pausedTime: timerState.pausedTime,
+                    mode: data.mode
+                });
+                
+                // 타이머 디스플레이 업데이트
+                updateTimerDisplay();
+                
+                // 타이머 실행 상태에 따라 로컬 타이머 제어
+                if (timerState.isRunning && !timerState.localTimer) {
+                    startLocalTimer();
+                } else if (!timerState.isRunning && timerState.localTimer) {
+                    stopLocalTimer();
+                }
+            }
+        });
+
         // CSV 파일 처리 및 타율, 출루율 계산 함수
         function processPlayerCSV(csvData) {
             // CSV 파일 파싱 (탭으로 구분된 CSV)
