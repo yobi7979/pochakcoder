@@ -3034,6 +3034,13 @@
                 
                 // 타이머 디스플레이 업데이트
                 updateTimerDisplay();
+                
+                // 타이머 실행 상태에 따라 로컬 타이머 제어
+                if (timerState.isRunning && !timerState.localTimer) {
+                    startLocalTimer();
+                } else if (!timerState.isRunning && timerState.localTimer) {
+                    stopLocalTimer();
+                }
             }
         });
 
