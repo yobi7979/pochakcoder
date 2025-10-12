@@ -6,11 +6,11 @@ const overlayEvents = require('./overlay');
 const teamEvents = require('./team');
 const generalEvents = require('./general');
 
-// 새로운 타이머 시스템 v2 (선택적 로딩)
+// 단순화된 타이머 시스템 v2 (선택적 로딩)
 let newTimerEvents = null;
 if (process.env.ENABLE_NEW_TIMER === 'true') {
-    newTimerEvents = require('./timer-v2');
-    console.log('새로운 타이머 시스템 v2 로딩 완료');
+    newTimerEvents = require('./timer-v2-simple');
+    console.log('단순화된 타이머 시스템 v2 로딩 완료');
 }
 
 /**
@@ -29,10 +29,10 @@ const setupEvents = (socket, io) => {
   teamEvents(socket, io);        // 팀 관련 이벤트 (8개)
   generalEvents(socket, io);     // 일반 이벤트 (3개)
   
-  // 새로운 타이머 시스템 v2 (선택적 로딩)
+  // 단순화된 타이머 시스템 v2 (선택적 로딩)
   if (newTimerEvents) {
-    newTimerEvents(socket, io);   // 새로운 타이머 관련 이벤트 (5개)
-    console.log('새로운 타이머 시스템 v2 이벤트 설정 완료:', socket.id);
+    newTimerEvents(socket, io);   // 단순화된 타이머 관련 이벤트 (3개)
+    console.log('단순화된 타이머 시스템 v2 이벤트 설정 완료:', socket.id);
   }
   
   console.log('WebSocket 이벤트 설정 완료:', socket.id);
