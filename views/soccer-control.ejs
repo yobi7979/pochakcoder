@@ -2806,16 +2806,18 @@
             // 페이지 로드 시 팀로고 정보 로드
             loadTeamLogos();
             
-            // 페이지 로드 시 새로운 타이머 시스템 v2 기본값 설정
-            console.log('=== 새로운 타이머 시스템 v2 기본값 설정 ===');
-            const timerV2Toggle = document.getElementById('timer-v2-toggle');
-            if (timerV2Toggle) {
-                // 기본값으로 새로운 타이머 시스템 v2 활성화
-                timerV2Toggle.checked = true;
-                console.log('새로운 타이머 시스템 v2 기본값 활성화');
-                // 초기 모드 요청
-                socket.emit('timer_v2_request_mode', { matchId: matchId });
-            }
+        // 페이지 로드 시 새로운 타이머 시스템 v2 기본값 설정
+        console.log('=== 새로운 타이머 시스템 v2 기본값 설정 ===');
+        const timerV2Toggle = document.getElementById('timer-v2-toggle');
+        if (timerV2Toggle) {
+            // 기본값으로 새로운 타이머 시스템 v2 활성화
+            timerV2Toggle.checked = true;
+            console.log('새로운 타이머 시스템 v2 기본값 활성화');
+            // 초기 모드 요청
+            socket.emit('timer_v2_request_mode', { matchId: matchId });
+            // 타이머 상태 요청
+            socket.emit('request_timer_v2_state', { matchId: matchId });
+        }
             
             // 페이지 로드 시 팀로고 사용 상태 로드 (먼저 실행)
             await loadTeamLogoVisibility();

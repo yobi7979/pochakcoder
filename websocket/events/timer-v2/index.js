@@ -42,6 +42,32 @@ const newTimerEvents = (socket, io) => {
             console.error('새로운 타이머 제어 중 오류 발생:', error);
         }
     });
+
+    // 하이브리드 타이머 이벤트 (컨트롤 페이지에서 사용)
+    socket.on('timer_v2_hybrid_control', async (data) => {
+        try {
+            const { matchId, action } = data;
+            console.log(`하이브리드 타이머 제어 요청: matchId=${matchId}, action=${action}`);
+            
+            await hybridTimer.handleControl(socket, data, io);
+            
+        } catch (error) {
+            console.error('하이브리드 타이머 제어 중 오류 발생:', error);
+        }
+    });
+
+    // 서버 중심 타이머 이벤트 (컨트롤 페이지에서 사용)
+    socket.on('timer_v2_server_centric_control', async (data) => {
+        try {
+            const { matchId, action } = data;
+            console.log(`서버 중심 타이머 제어 요청: matchId=${matchId}, action=${action}`);
+            
+            await serverCentricTimer.handleControl(socket, data, io);
+            
+        } catch (error) {
+            console.error('서버 중심 타이머 제어 중 오류 발생:', error);
+        }
+    });
     
     // 타이머 동기화 이벤트
     socket.on('timer_v2_sync', async (data) => {
@@ -68,7 +94,7 @@ const newTimerEvents = (socket, io) => {
             const { matchId, mode } = data;
             console.log(`새로운 타이머 상태 요청: matchId=${matchId}, mode=${mode}`);
             
-            const currentMode = modeManager.getCurrentMode(matchId) || mode || 'server-centric';
+            const currentMode = modeManager.getCurrentMode(matchId) || mode || 'hybrid';
             
             if (currentMode === 'server-centric') {
                 await serverCentricTimer.handleStateRequest(socket, data, io);
@@ -108,6 +134,26 @@ const newTimerEvents = (socket, io) => {
             
         } catch (error) {
             console.error('타이머 모드 전환 중 오류 발생:', error);
+        }
+    });
+
+    // 타이머 모드 요청 이벤트 (컨트롤 페이지에서 사용)
+    socket.on('timer_v2_request_mode', async (data) => {
+        try {
+            const { matchId } = data;
+            console.log(`타이머 모드 요청: matchId=${matchId}`);
+            
+            const currentMode = modeManager.getCurrentMode(matchId) || 'hybrid';
+            
+            socket.emit('timer_v2_mode_updated', {
+                matchId: matchId,
+                newMode: currentMode
+            });
+            
+            console.log(`타이머 모드 응답: matchId=${matchId}, mode=${currentMode}`);
+            
+        } catch (error) {
+            console.error('타이머 모드 요청 처리 중 오류 발생:', error);
         }
     });
     
