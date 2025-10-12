@@ -208,7 +208,7 @@ class ServerCentricTimer {
         const roomName = `match_${matchId}`;
         const currentSeconds = this.getCurrentTime(matchId);
         
-        io.to(roomName).emit('timer_v2_updated', {
+        io.to(roomName).emit('timer_v2_state', {
             matchId: matchId,
             currentSeconds: currentSeconds,
             isRunning: this.serverCentricTimerData.get(matchId)?.isRunning || false,

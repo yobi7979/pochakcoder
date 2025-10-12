@@ -304,7 +304,7 @@ class HybridTimer {
         const currentSeconds = this.getCurrentTime(matchId);
         const timerData = this.hybridTimerData.get(matchId);
         
-        io.to(roomName).emit('timer_v2_updated', {
+        io.to(roomName).emit('timer_v2_state', {
             matchId: matchId,
             currentSeconds: currentSeconds,
             isRunning: timerData?.isRunning || false,
