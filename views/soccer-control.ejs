@@ -707,6 +707,14 @@
                     <span id="connection-indicator" class="status-indicator"></span>
                     <span id="connection-text">서버 연결 중...</span>
                 </div>
+                <!-- 새로운 타이머 시스템 v2 토글 (컴팩트 버전) -->
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-muted small">서버타이머</span>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="timer-v2-toggle" onchange="toggleTimerV2()" checked>
+                        <label class="form-check-label" for="timer-v2-toggle"></label>
+                    </div>
+                </div>
             <a href="/matches" class="btn btn-outline-secondary back-btn">
                 <i class="bi bi-arrow-left"></i> 목록
             </a>
@@ -1310,22 +1318,52 @@
             alert('득점 정보 저장에 실패했습니다: ' + data.error);
         });
 
+        // 새로운 타이머 시스템 v2 토글
+        function toggleTimerV2() {
+            const isV2Enabled = document.getElementById('timer-v2-toggle').checked;
+            console.log('=== 타이머 시스템 v2 토글 ===');
+            console.log('V2 활성화:', isV2Enabled);
+            
+            if (isV2Enabled) {
+                // 새로운 타이머 시스템 v2 활성화
+                console.log('새로운 타이머 시스템 v2 활성화');
+                // 모드 요청
+                socket.emit('timer_v2_request_mode', { matchId: matchId });
+            } else {
+                // 기존 타이머 시스템 사용
+                console.log('기존 타이머 시스템 사용');
+            }
+        }
+
         // 타이머 시작
         function startTimer() {
             console.log('=== 타이머 시작 버튼 클릭 ===');
             console.log('matchId:', matchId);
             console.log('현재 타이머 상태:', timerState);
             
+            const isV2Enabled = document.getElementById('timer-v2-toggle').checked;
+            
             if (!timerState.isRunning) {
                 timerState.isRunning = true;
                 timerState.startTime = Date.now();
                 
-                // 클라이언트 시작 시간을 서버에 전송하여 정확한 동기화
-                socket.emit('timer_control', {
-                    matchId: matchId,
-                    action: 'start',
-                    clientStartTime: timerState.startTime // 클라이언트 시작 시간 전송
-                });
+                if (isV2Enabled) {
+                    // 새로운 타이머 시스템 v2 사용
+                    console.log('새로운 타이머 v2 시작');
+                    socket.emit('timer_v2_hybrid_control', {
+                        matchId: matchId,
+                        action: 'start',
+                        clientStartTime: timerState.startTime
+                    });
+                } else {
+                    // 기존 타이머 시스템 사용
+                    console.log('기존 타이머 시스템 시작');
+                    socket.emit('timer_control', {
+                        matchId: matchId,
+                        action: 'start',
+                        clientStartTime: timerState.startTime
+                    });
+                }
                 
                 console.log('타이머 시작 이벤트 전송 완료 (클라이언트 시작 시간:', timerState.startTime, ')');
             }
@@ -1335,17 +1373,30 @@
         function stopTimer() {
             console.log('=== 타이머 정지 버튼 클릭 ===');
             console.log('matchId:', matchId, 'currentTime:', timerState.currentSeconds);
+            
+            const isV2Enabled = document.getElementById('timer-v2-toggle').checked;
                 
-                if (timerState.isRunning) {
+            if (timerState.isRunning) {
                 timerState.isRunning = false;
                 timerState.pausedTime = timerState.currentSeconds;
                 
-                // 기존 코드와 동일한 이벤트 사용
-            socket.emit('timer_control', {
-                matchId: matchId,
-                action: 'stop',
-                    currentTime: timerState.currentSeconds
-                });
+                if (isV2Enabled) {
+                    // 새로운 타이머 시스템 v2 사용
+                    console.log('새로운 타이머 v2 정지');
+                    socket.emit('timer_v2_hybrid_control', {
+                        matchId: matchId,
+                        action: 'stop',
+                        currentTime: timerState.currentSeconds
+                    });
+                } else {
+                    // 기존 타이머 시스템 사용
+                    console.log('기존 타이머 시스템 정지');
+                    socket.emit('timer_control', {
+                        matchId: matchId,
+                        action: 'stop',
+                        currentTime: timerState.currentSeconds
+                    });
+                }
                 
                 console.log('타이머 정지 이벤트 전송 완료');
             }
@@ -1356,16 +1407,28 @@
             console.log('=== 타이머 리셋 버튼 클릭 ===');
             console.log('matchId:', matchId);
             
+            const isV2Enabled = document.getElementById('timer-v2-toggle').checked;
+            
             timerState.isRunning = false;
             timerState.currentSeconds = 0;
             timerState.startTime = null;
             timerState.pausedTime = 0;
             
-            // 기존 코드와 동일한 이벤트 사용
-            socket.emit('timer_control', {
-                matchId: matchId,
-                action: 'reset'
-            });
+            if (isV2Enabled) {
+                // 새로운 타이머 시스템 v2 사용
+                console.log('새로운 타이머 v2 리셋');
+                socket.emit('timer_v2_hybrid_control', {
+                    matchId: matchId,
+                    action: 'reset'
+                });
+            } else {
+                // 기존 타이머 시스템 사용
+                console.log('기존 타이머 시스템 리셋');
+                socket.emit('timer_control', {
+                    matchId: matchId,
+                    action: 'reset'
+                });
+            }
             
             updateTimerDisplay();
             console.log('타이머 리셋 이벤트 전송 완료');
@@ -2743,6 +2806,17 @@
             // 페이지 로드 시 팀로고 정보 로드
             loadTeamLogos();
             
+            // 페이지 로드 시 새로운 타이머 시스템 v2 기본값 설정
+            console.log('=== 새로운 타이머 시스템 v2 기본값 설정 ===');
+            const timerV2Toggle = document.getElementById('timer-v2-toggle');
+            if (timerV2Toggle) {
+                // 기본값으로 새로운 타이머 시스템 v2 활성화
+                timerV2Toggle.checked = true;
+                console.log('새로운 타이머 시스템 v2 기본값 활성화');
+                // 초기 모드 요청
+                socket.emit('timer_v2_request_mode', { matchId: matchId });
+            }
+            
             // 페이지 로드 시 팀로고 사용 상태 로드 (먼저 실행)
             await loadTeamLogoVisibility();
             
@@ -2923,6 +2997,41 @@
                     // 서버에서 받은 시작 시간을 그대로 사용 (오버레이 페이지와 동일한 방식)
                     console.log('로컬 타이머 재시작 - 서버 시작 시간 사용:', timerState.startTime);
                 }
+            }
+        });
+
+        // 새로운 타이머 시스템 v2 이벤트 리스너
+        socket.on('timer_v2_mode_updated', function(data) {
+            console.log('=== 타이머 v2 모드 업데이트 ===');
+            console.log('수신된 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                console.log('타이머 v2 모드:', data.newMode);
+                // UI 업데이트 (필요시)
+            }
+        });
+
+        socket.on('timer_v2_state', function(data) {
+            console.log('=== 타이머 v2 상태 수신 ===');
+            console.log('수신된 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                // 새로운 타이머 시스템 v2 상태 처리
+                timerState.currentSeconds = data.currentSeconds || 0;
+                timerState.isRunning = data.isRunning || false;
+                timerState.startTime = data.startTime || null;
+                timerState.pausedTime = data.pausedTime || 0;
+                
+                console.log('타이머 v2 상태 복원:', {
+                    currentSeconds: timerState.currentSeconds,
+                    isRunning: timerState.isRunning,
+                    startTime: timerState.startTime,
+                    pausedTime: timerState.pausedTime,
+                    mode: data.mode
+                });
+                
+                // 타이머 디스플레이 업데이트
+                updateTimerDisplay();
             }
         });
 

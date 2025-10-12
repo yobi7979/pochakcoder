@@ -4,7 +4,8 @@
     "buildCommand": "npm install",
     "environment": {
       "NODE_ENV": "production",
-      "RAILWAY_ENVIRONMENT": "true"
+      "RAILWAY_ENVIRONMENT": "true",
+      "ENABLE_NEW_TIMER": "true"
     }
   }
 }
