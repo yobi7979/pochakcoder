@@ -3048,9 +3048,10 @@
                 
                 if (toggleElement) {
                     if (data.currentMode === null) {
-                        // 저장된 모드가 없는 경우 - 사용자 선택 대기
-                        console.log('저장된 타이머 모드 없음 - 사용자 선택 대기');
-                        console.log('체크박스 상태: 기본값 유지 (사용자가 선택할 때까지)');
+                        // 저장된 모드가 없는 경우 - 기본값으로 설정 (서버타이머 기본 활성화)
+                        toggleElement.checked = true; // 서버타이머 기본 활성화
+                        console.log('저장된 타이머 모드 없음 - 서버타이머 기본 활성화');
+                        console.log('체크박스 상태: 서버타이머 기본 활성화');
                     } else {
                         // 저장된 모드가 있는 경우 - 해당 모드로 복원
                         const isServerTimer = data.currentMode === 'server-timer';
