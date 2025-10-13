@@ -308,6 +308,70 @@ const timerV2SimpleEvents = (socket, io) => {
         }
     });
 
+    // 로컬 타이머 상태 저장 이벤트
+    socket.on('save_local_timer_state', async (data) => {
+        try {
+            const { matchId, timerState } = data;
+            console.log(`로컬 타이머 상태 저장 요청: matchId=${matchId}`);
+            
+            // Match 테이블의 match_data에 로컬 타이머 상태 저장
+            const match = await Match.findByPk(matchId);
+            if (match) {
+                const matchData = match.match_data || {};
+                matchData.local_timer_currentSeconds = timerState.currentSeconds;
+                matchData.local_timer_isRunning = timerState.isRunning;
+                matchData.local_timer_startTime = timerState.startTime;
+                matchData.local_timer_pausedTime = timerState.pausedTime;
+                matchData.local_timer_lastSaveTime = timerState.lastSaveTime;
+                
+                await match.update({ match_data: matchData });
+                console.log(`로컬 타이머 상태 DB 저장 완료: matchId=${matchId}`);
+            }
+        } catch (error) {
+            console.error('로컬 타이머 상태 저장 실패:', error);
+        }
+    });
+
+    // 로컬 타이머 상태 요청 이벤트
+    socket.on('request_local_timer_state', async (data) => {
+        try {
+            const { matchId } = data;
+            console.log(`로컬 타이머 상태 요청: matchId=${matchId}`);
+            
+            // Match 테이블에서 로컬 타이머 상태 복원
+            const match = await Match.findByPk(matchId);
+            if (match && match.match_data) {
+                const matchData = match.match_data;
+                if (matchData.local_timer_currentSeconds !== undefined) {
+                    const localTimerState = {
+                        currentSeconds: matchData.local_timer_currentSeconds || 0,
+                        isRunning: matchData.local_timer_isRunning || false,
+                        startTime: matchData.local_timer_startTime || null,
+                        pausedTime: matchData.local_timer_pausedTime || 0,
+                        lastSaveTime: matchData.local_timer_lastSaveTime || Date.now()
+                    };
+                    
+                    // 실행 중이었다면 경과 시간 계산
+                    if (localTimerState.isRunning && localTimerState.startTime) {
+                        const elapsedTime = Math.floor((Date.now() - localTimerState.startTime) / 1000);
+                        localTimerState.currentSeconds = localTimerState.pausedTime + elapsedTime;
+                    }
+                    
+                    socket.emit('local_timer_state_restored', {
+                        matchId: matchId,
+                        timerState: localTimerState
+                    });
+                    
+                    console.log(`로컬 타이머 상태 복원 완료: matchId=${matchId}`, localTimerState);
+                } else {
+                    console.log(`로컬 타이머 상태 없음: matchId=${matchId}`);
+                }
+            }
+        } catch (error) {
+            console.error('로컬 타이머 상태 요청 처리 중 오류 발생:', error);
+        }
+    });
+
     console.log('단순화된 서버 타이머 시스템 v2 이벤트 설정 완료:', socket.id);
 };
 
