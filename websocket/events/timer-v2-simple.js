@@ -402,6 +402,22 @@ const timerV2SimpleEvents = (socket, io) => {
         }
     });
 
+    // 로컬 타이머 업데이트 이벤트 (컨트롤 페이지에서 오버레이 페이지로 전달)
+    socket.on('local_timer_update', function(data) {
+        try {
+            const { matchId } = data;
+            console.log(`로컬 타이머 업데이트 수신: matchId=${matchId}`);
+            
+            // 오버레이 페이지에 로컬 타이머 상태 전달
+            const roomName = `match_${matchId}`;
+            io.to(roomName).emit('local_timer_update', data);
+            
+            console.log(`로컬 타이머 업데이트 전달: matchId=${matchId}, isRunning=${data.isRunning}`);
+        } catch (error) {
+            console.error('로컬 타이머 업데이트 처리 중 오류 발생:', error);
+        }
+    });
+
     console.log('단순화된 서버 타이머 시스템 v2 이벤트 설정 완료:', socket.id);
 };
 
