@@ -187,6 +187,8 @@ const timerV2SimpleEvents = (socket, io) => {
                     startTime: timerData.startTime,
                     pausedTime: timerData.pausedTime
                 });
+                
+                console.log(`서버 타이머 상태 전송: matchId=${matchId}, currentSeconds=${currentSeconds}, isRunning=${timerData.isRunning}`);
             } else {
                 // 타이머 데이터가 없을 때 기본 상태 전송
                 socket.emit('server_timer_state', {
@@ -196,6 +198,8 @@ const timerV2SimpleEvents = (socket, io) => {
                     startTime: 0,
                     pausedTime: 0
                 });
+                
+                console.log(`서버 타이머 기본 상태 전송: matchId=${matchId}`);
             }
             
         } catch (error) {
