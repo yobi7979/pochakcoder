@@ -216,11 +216,12 @@ const timerV2SimpleEvents = (socket, io) => {
                     mode: timerMode
                 });
             } else {
+                // 타이머 데이터가 없을 때 기본 상태 전송
                 socket.emit('timer_v2_state', {
                     matchId: matchId,
                     currentSeconds: 0,
                     isRunning: false,
-                    startTime: 0,
+                    startTime: null,
                     pausedTime: 0,
                     mode: timerMode
                 });
