@@ -1361,8 +1361,14 @@
                         action: 'start',
                         clientStartTime: timerState.startTime
                     });
+                    
+                    // 로컬 타이머 시작
+                    startLocalTimer();
                 }
             }
+            
+            // 타이머 상태 저장
+            saveTimerState();
         }
 
         // 타이머 정지
@@ -1391,8 +1397,14 @@
                         action: 'stop',
                         currentTime: timerState.pausedTime
                     });
+                    
+                    // 로컬 타이머 정지
+                    stopLocalTimer();
                 }
             }
+            
+            // 타이머 상태 저장
+            saveTimerState();
         }
 
         // 타이머 리셋
@@ -1420,9 +1432,15 @@
                     matchId: matchId,
                     action: 'reset'
                 });
+                
+                // 로컬 타이머 정지
+                stopLocalTimer();
             }
             
             updateTimerDisplay();
+            
+            // 타이머 상태 저장
+            saveTimerState();
             console.log('타이머 리셋 이벤트 전송 완료');
         }
 
@@ -1477,6 +1495,20 @@
                 `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }
 
+        // 타이머 상태 저장 함수
+        function saveTimerState() {
+            const stateToSave = {
+                currentSeconds: timerState.currentSeconds,
+                isRunning: timerState.isRunning,
+                startTime: timerState.startTime,
+                pausedTime: timerState.pausedTime,
+                lastSaveTime: Date.now()
+            };
+            
+            localStorage.setItem(`timer_state_${matchId}`, JSON.stringify(stateToSave));
+            console.log('타이머 상태 저장됨:', stateToSave);
+        }
+
         // 로컬 타이머 시작
         function startLocalTimer() {
             if (timerState.localTimer) {
@@ -1489,6 +1521,9 @@
                     const elapsed = Math.floor((now - timerState.startTime) / 1000);
                     timerState.currentSeconds = timerState.pausedTime + elapsed;
                     updateTimerDisplay();
+                    
+                    // 타이머 상태를 로컬 스토리지에 저장
+                    saveTimerState();
                 }
             }, 100);
             
@@ -2809,9 +2844,53 @@
             console.log('=== 페이지 로드 시 타이머 상태 요청 ===');
             socket.emit('request_timer_state', { matchId: matchId });
             
-            // 페이지 로드 시 서버 타이머 상태 요청
-            console.log('=== 페이지 로드 시 서버 타이머 상태 요청 ===');
-            socket.emit('request_server_timer_state', { matchId: matchId });
+        // 페이지 로드 시 타이머 상태 복원
+        console.log('=== 페이지 로드 시 타이머 상태 복원 ===');
+        
+        // 로컬 스토리지에서 타이머 상태 복원
+        const savedTimerState = localStorage.getItem(`timer_state_${matchId}`);
+        if (savedTimerState) {
+            try {
+                const parsedState = JSON.parse(savedTimerState);
+                const currentTime = Date.now();
+                const timeDiff = currentTime - parsedState.lastSaveTime;
+                
+                // 타이머가 실행 중이었다면 경과 시간 계산
+                if (parsedState.isRunning && parsedState.startTime) {
+                    const elapsedSeconds = Math.floor(timeDiff / 1000);
+                    timerState.currentSeconds = parsedState.currentSeconds + elapsedSeconds;
+                    timerState.isRunning = true;
+                    timerState.startTime = parsedState.startTime;
+                    timerState.pausedTime = parsedState.pausedTime;
+                    
+                    console.log('로컬 타이머 상태 복원:', {
+                        currentSeconds: timerState.currentSeconds,
+                        isRunning: timerState.isRunning,
+                        elapsedSeconds: elapsedSeconds
+                    });
+                    
+                    // 타이머 시작
+                    startLocalTimer();
+                } else {
+                    timerState.currentSeconds = parsedState.currentSeconds;
+                    timerState.isRunning = false;
+                    timerState.startTime = null;
+                    timerState.pausedTime = parsedState.pausedTime;
+                    
+                    console.log('로컬 타이머 정지 상태 복원:', {
+                        currentSeconds: timerState.currentSeconds,
+                        isRunning: timerState.isRunning
+                    });
+                }
+                
+                updateTimerDisplay();
+            } catch (error) {
+                console.error('로컬 타이머 상태 복원 실패:', error);
+            }
+        }
+        
+        // 서버 타이머 상태 요청
+        socket.emit('request_server_timer_state', { matchId: matchId });
             
             // 페이지 로드 시 타이머 모드 상태 요청
             console.log('=== 페이지 로드 시 타이머 모드 상태 요청 ===');

@@ -127,7 +127,7 @@ const timerV2SimpleEvents = (socket, io) => {
         }
     });
 
-    // 서버 타이머 상태 요청 이벤트 (단순화)
+    // 서버 타이머 상태 요청 이벤트 (데이터베이스 복원 포함)
     socket.on('request_server_timer_state', async (data) => {
         try {
             const { matchId } = data;
@@ -137,14 +137,43 @@ const timerV2SimpleEvents = (socket, io) => {
             let timerData = global.timerV2States.get(matchId);
             
             if (!timerData) {
-                // 기본 상태로 초기화
-                timerData = {
-                    startTime: null,
-                    pausedTime: 0,
-                    isRunning: false,
-                    lastUpdateTime: Date.now()
-                };
-                global.timerV2States.set(matchId, timerData);
+                // 데이터베이스에서 타이머 상태 복원 시도
+                try {
+                    const match = await Match.findByPk(matchId);
+                    if (match && match.match_data) {
+                        const matchData = match.match_data;
+                        if (matchData.server_timer_startTime !== undefined && matchData.server_timer_pausedTime !== undefined) {
+                            const isRunning = matchData.server_timer_isRunning || false;
+                            const pausedTime = matchData.server_timer_pausedTime || 0;
+                            const startTime = matchData.server_timer_startTime || null;
+                            
+                            // 타이머 상태 복원
+                            timerData = {
+                                isRunning: isRunning,
+                                startTime: startTime,
+                                pausedTime: pausedTime,
+                                lastUpdateTime: Date.now()
+                            };
+                            
+                            global.timerV2States.set(matchId, timerData);
+                            console.log(`데이터베이스에서 타이머 상태 복원: matchId=${matchId}, isRunning=${isRunning}, pausedTime=${pausedTime}`);
+                        }
+                    }
+                } catch (error) {
+                    console.error(`데이터베이스에서 타이머 상태 복원 실패: ${error.message}`);
+                }
+                
+                // 복원 실패 시 기본 상태로 초기화
+                if (!timerData) {
+                    timerData = {
+                        startTime: null,
+                        pausedTime: 0,
+                        isRunning: false,
+                        lastUpdateTime: Date.now()
+                    };
+                    global.timerV2States.set(matchId, timerData);
+                    console.log(`서버 타이머 기본 상태 초기화: matchId=${matchId}`);
+                }
             }
 
             // 현재 시간 계산
@@ -170,31 +199,8 @@ const timerV2SimpleEvents = (socket, io) => {
         }
     });
 
-    // 실시간 타이머 동기화를 위한 주기적 브로드캐스트
-    setInterval(() => {
-        try {
-            // 모든 활성 타이머에 대해 상태 브로드캐스트
-            for (const [matchId, timerData] of global.timerV2States.entries()) {
-                if (timerData.isRunning) {
-                    const currentTime = Date.now();
-                    const elapsedTime = Math.round((currentTime - timerData.startTime) / 1000);
-                    const currentSeconds = timerData.pausedTime + elapsedTime;
-                    
-                    // 해당 경기의 모든 클라이언트에게 실시간 업데이트 전송
-                    const roomName = `match_${matchId}`;
-                    io.to(roomName).emit('server_timer_update', {
-                        matchId: matchId,
-                        currentSeconds: currentSeconds,
-                        isRunning: timerData.isRunning,
-                        startTime: timerData.startTime,
-                        pausedTime: timerData.pausedTime
-                    });
-                }
-            }
-        } catch (error) {
-            console.error('실시간 타이머 동기화 중 오류 발생:', error);
-        }
-    }, 1000); // 1초마다 실행
+    // 주기적 브로드캐스트 제거 - 단순화된 서버 타이머 시스템
+    // 타이머 상태는 컨트롤 패널에서만 변경되고, 오버레이 페이지는 이벤트 기반으로만 업데이트
 
     // 타이머 모드 변경 이벤트 (컨트롤 패널에서만 사용)
     socket.on('timer_mode_change', async (data) => {
