@@ -111,6 +111,17 @@ const timerV2SimpleEvents = (socket, io) => {
                 console.log(`타이머 시작 조정: 0초 -> 1초`);
             }
 
+            // 타이머 모드 확인
+            let timerMode = 'hybrid'; // 기본값
+            try {
+                const setting = await Settings.findOne({ where: { key: `timer_mode_${matchId}` } });
+                if (setting) {
+                    timerMode = setting.value;
+                }
+            } catch (error) {
+                console.error('타이머 모드 조회 실패:', error);
+            }
+
             // 모든 클라이언트에게 타이머 상태 전송
             io.to(roomName).emit('timer_v2_state', {
                 matchId: matchId,
@@ -118,7 +129,7 @@ const timerV2SimpleEvents = (socket, io) => {
                 isRunning: timerData.isRunning,
                 startTime: timerData.startTime,
                 pausedTime: timerData.pausedTime,
-                mode: 'hybrid'
+                mode: timerMode
             });
 
             console.log(`타이머 v2 업데이트 전송 완료: matchId=${matchId}, action=${action}, currentSeconds=${currentSeconds}`);
@@ -174,6 +185,17 @@ const timerV2SimpleEvents = (socket, io) => {
                 }
             }
             
+            // 타이머 모드 확인
+            let timerMode = 'hybrid'; // 기본값
+            try {
+                const setting = await Settings.findOne({ where: { key: `timer_mode_${matchId}` } });
+                if (setting) {
+                    timerMode = setting.value;
+                }
+            } catch (error) {
+                console.error('타이머 모드 조회 실패:', error);
+            }
+
             if (timerData) {
                 let currentSeconds = timerData.pausedTime;
                 if (timerData.isRunning && timerData.startTime) {
@@ -187,7 +209,7 @@ const timerV2SimpleEvents = (socket, io) => {
                     isRunning: timerData.isRunning,
                     startTime: timerData.startTime,
                     pausedTime: timerData.pausedTime,
-                    mode: 'hybrid'
+                    mode: timerMode
                 });
             } else {
                 socket.emit('timer_v2_state', {
@@ -196,7 +218,7 @@ const timerV2SimpleEvents = (socket, io) => {
                     isRunning: false,
                     startTime: 0,
                     pausedTime: 0,
-                    mode: 'hybrid'
+                    mode: timerMode
                 });
             }
             
