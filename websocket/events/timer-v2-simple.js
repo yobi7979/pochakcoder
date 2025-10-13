@@ -406,13 +406,13 @@ const timerV2SimpleEvents = (socket, io) => {
     socket.on('local_timer_update', function(data) {
         try {
             const { matchId } = data;
-            console.log(`로컬 타이머 업데이트 수신: matchId=${matchId}`);
+            console.log(`🔔 로컬 타이머 업데이트 수신: matchId=${matchId}, isRunning=${data.isRunning}, currentSeconds=${data.currentSeconds}`);
             
             // 오버레이 페이지에 로컬 타이머 상태 전달
             const roomName = `match_${matchId}`;
             io.to(roomName).emit('local_timer_update', data);
             
-            console.log(`로컬 타이머 업데이트 전달: matchId=${matchId}, isRunning=${data.isRunning}`);
+            console.log(`📡 로컬 타이머 업데이트 전달: matchId=${matchId}, isRunning=${data.isRunning}, currentSeconds=${data.currentSeconds}`);
         } catch (error) {
             console.error('로컬 타이머 업데이트 처리 중 오류 발생:', error);
         }
