@@ -1351,6 +1351,15 @@
                 // 로컬 타이머만 시작 (서버와 독립)
                 startLocalTimer();
                 
+                // 오버레이 페이지에 로컬 타이머 상태 전송
+                socket.emit('local_timer_update', {
+                    matchId: matchId,
+                    currentSeconds: timerState.currentSeconds,
+                    isRunning: timerState.isRunning,
+                    startTime: timerState.startTime,
+                    pausedTime: timerState.pausedTime
+                });
+                
                 console.log('로컬 타이머 시작됨 (독립 모드):', {
                     startTime: timerState.startTime,
                     pausedTime: timerState.pausedTime,
@@ -1372,6 +1381,15 @@
                 // 로컬 타이머만 정지 (서버와 독립)
                 stopLocalTimer();
                 
+                // 오버레이 페이지에 로컬 타이머 상태 전송
+                socket.emit('local_timer_update', {
+                    matchId: matchId,
+                    currentSeconds: timerState.currentSeconds,
+                    isRunning: timerState.isRunning,
+                    startTime: timerState.startTime,
+                    pausedTime: timerState.pausedTime
+                });
+                
                 console.log('로컬 타이머 정지됨 (독립 모드):', {
                     pausedTime: timerState.pausedTime,
                     isRunning: timerState.isRunning
@@ -1392,6 +1410,15 @@
             // 로컬 타이머만 정지 (서버와 독립)
             stopLocalTimer();
             updateTimerDisplay();
+            
+            // 오버레이 페이지에 로컬 타이머 상태 전송
+            socket.emit('local_timer_update', {
+                matchId: matchId,
+                currentSeconds: timerState.currentSeconds,
+                isRunning: timerState.isRunning,
+                startTime: timerState.startTime,
+                pausedTime: timerState.pausedTime
+            });
             
             console.log('로컬 타이머 리셋됨 (독립 모드):', {
                 startTime: timerState.startTime,

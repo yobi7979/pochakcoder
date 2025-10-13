@@ -2558,6 +2558,86 @@
             }
         });
 
+        // 로컬 타이머 업데이트 이벤트 리스너 (오버레이 페이지 - 로컬타이머 모드)
+        socket.on('local_timer_update', function(data) {
+            console.log('=== 로컬 타이머 업데이트 수신 (오버레이) ===');
+            console.log('수신된 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                // 로컬 타이머 상태 처리
+                timerState.currentSeconds = data.currentSeconds || 0;
+                timerState.isRunning = data.isRunning || false;
+                timerState.startTime = data.startTime || null;
+                timerState.pausedTime = data.pausedTime || 0;
+                
+                console.log('로컬 타이머 상태 복원 (오버레이):', {
+                    currentSeconds: timerState.currentSeconds,
+                    isRunning: timerState.isRunning,
+                    startTime: timerState.startTime,
+                    pausedTime: timerState.pausedTime
+                });
+                
+                console.log('=== 로컬 타이머 모드 확인 ===');
+                
+                // 로컬 타이머는 오버레이에서도 로컬 타이머를 사용
+                if (timerState.isRunning) {
+                    console.log('로컬 타이머 모드 - 오버레이 로컬 타이머 시작');
+                    startLocalTimer();
+                } else {
+                    console.log('로컬 타이머 모드 - 오버레이 로컬 타이머 정지');
+                    stopLocalTimer();
+                }
+                
+                // 시간 수정 상태 확인
+                if (timerState.pausedTime > 0 && !timerState.isRunning) {
+                    console.log('로컬에서 시간 수정 상태 수신 - 수정된 시간:', timerState.pausedTime, '초');
+                }
+            }
+        });
+
+        // 오버레이 페이지 로컬 타이머 함수들
+        let localTimerInterval = null;
+        
+        function startLocalTimer() {
+            if (localTimerInterval) {
+                clearInterval(localTimerInterval);
+            }
+            
+            localTimerInterval = setInterval(() => {
+                if (timerState.isRunning) {
+                    const now = Date.now();
+                    const elapsed = Math.floor((now - timerState.startTime) / 1000);
+                    timerState.currentSeconds = timerState.pausedTime + elapsed;
+                    updateTimerDisplay();
+                }
+            }, 1000);
+            
+            console.log('오버레이 로컬 타이머 시작됨:', {
+                startTime: timerState.startTime,
+                pausedTime: timerState.pausedTime,
+                isRunning: timerState.isRunning
+            });
+        }
+        
+        function stopLocalTimer() {
+            if (localTimerInterval) {
+                clearInterval(localTimerInterval);
+                localTimerInterval = null;
+            }
+            
+            console.log('오버레이 로컬 타이머 정지됨');
+        }
+        
+        function updateTimerDisplay(overrideSeconds = null) {
+            const targetSeconds = overrideSeconds !== null ? overrideSeconds : timerState.currentSeconds;
+            const minutes = Math.floor(targetSeconds / 60);
+            const seconds = targetSeconds % 60;
+            const timerDisplay = document.getElementById('timer-display');
+            if (timerDisplay) {
+                timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+        }
+
         // 오버레이 페이지에서 서버 타이머 상태 요청
         socket.on('connect', function() {
             console.log('=== 오버레이 페이지 소켓 연결됨 ===');
