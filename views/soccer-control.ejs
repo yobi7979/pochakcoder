@@ -1336,6 +1336,25 @@
             // 현재 타이머 모드 업데이트
             currentTimerMode = newMode;
             
+            // 타이머 모드 변경 시 로컬 타이머 중지
+            if (newMode === 'server-timer') {
+                console.log('서버타이머 모드로 변경 - 로컬 타이머 중지');
+                stopLocalTimer();
+                timerState.isRunning = false;
+                timerState.startTime = null;
+                timerState.pausedTime = 0;
+                timerState.currentSeconds = 0;
+                updateTimerDisplay();
+                saveTimerState();
+            } else if (newMode === 'legacy-timer') {
+                console.log('로컬타이머 모드로 변경 - 서버 타이머 중지');
+                // 서버 타이머 중지 요청
+                socket.emit('server_timer_control', {
+                    matchId: matchId,
+                    action: 'stop'
+                });
+            }
+            
             // 서버에 타이머 모드 변경 요청
             socket.emit('timer_mode_change', { 
                 matchId: matchId, 
