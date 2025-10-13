@@ -2588,7 +2588,11 @@
             console.log('수신된 데이터:', data);
             
             if (data.matchId === matchId) {
-                console.log('오버레이 페이지 타이머 모드:', data.currentMode);
+                if (data.currentMode === null) {
+                    console.log('오버레이 페이지: 저장된 타이머 모드 없음 - 사용자 선택 대기');
+                } else {
+                    console.log('오버레이 페이지 타이머 모드:', data.currentMode);
+                }
                 // 오버레이 페이지에서는 모드 정보만 로그로 확인
                 // 실제 UI 변경은 컨트롤 페이지에서만 필요
             }

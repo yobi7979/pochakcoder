@@ -3044,21 +3044,27 @@
             console.log('수신된 데이터:', data);
             
             if (data.matchId === matchId) {
-                const isServerTimer = data.currentMode === 'server-timer';
                 const toggleElement = document.getElementById('timer-v2-toggle');
                 
                 if (toggleElement) {
-                    toggleElement.checked = isServerTimer;
-                    console.log('타이머 모드 상태 복원:', data.currentMode, '체크박스:', isServerTimer);
-                    
-                    // UI 업데이트 후 로그 출력
-                    console.log('체크박스 상태 업데이트 완료:', toggleElement.checked);
-                    
-                    // 기본값이 server-timer인 경우 사용자에게 알림
-                    if (data.currentMode === 'server-timer') {
-                        console.log('기본 타이머 모드: 서버타이머 시스템 (기본 활성화됨)');
-                    } else if (data.currentMode === 'legacy-timer') {
-                        console.log('기존 타이머 모드: 로컬 타이머 시스템 (서버타이머를 사용하려면 체크박스를 활성화하세요)');
+                    if (data.currentMode === null) {
+                        // 저장된 모드가 없는 경우 - 사용자 선택 대기
+                        console.log('저장된 타이머 모드 없음 - 사용자 선택 대기');
+                        console.log('체크박스 상태: 기본값 유지 (사용자가 선택할 때까지)');
+                    } else {
+                        // 저장된 모드가 있는 경우 - 해당 모드로 복원
+                        const isServerTimer = data.currentMode === 'server-timer';
+                        toggleElement.checked = isServerTimer;
+                        console.log('타이머 모드 상태 복원:', data.currentMode, '체크박스:', isServerTimer);
+                        
+                        // UI 업데이트 후 로그 출력
+                        console.log('체크박스 상태 업데이트 완료:', toggleElement.checked);
+                        
+                        if (data.currentMode === 'server-timer') {
+                            console.log('복원된 타이머 모드: 서버타이머 시스템');
+                        } else if (data.currentMode === 'legacy-timer') {
+                            console.log('복원된 타이머 모드: 로컬 타이머 시스템');
+                        }
                     }
                 } else {
                     console.error('timer-v2-toggle 요소를 찾을 수 없습니다');
