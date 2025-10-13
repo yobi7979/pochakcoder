@@ -1458,6 +1458,9 @@
                 stopLocalTimer();
                 updateTimerDisplay();
                 
+                // 로컬 타이머 상태 저장
+                saveTimerState();
+                
                 // 오버레이 페이지에 로컬 타이머 상태 전송
                 socket.emit('local_timer_update', {
                     matchId: matchId,
