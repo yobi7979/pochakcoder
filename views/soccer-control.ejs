@@ -1188,12 +1188,12 @@
         console.log('matchId:', matchId);
         
         
-        // 타이머 상태 (예전 방식)
+        // 타이머 상태 (기존 방식)
         let timerState = {
             isRunning: false,
             currentSeconds: 0,
-            lastServerTime: 0,
-            lastUpdateTime: Date.now(),
+            startTime: null,
+            pausedTime: 0,
             localTimer: null
         };
         
@@ -1337,17 +1337,18 @@
             console.log('타이머 모드 변경 요청 전송:', newMode);
         }
 
-        // 타이머 시작 (예전 방식)
+        // 타이머 시작 (기존 방식)
         function startTimer() {
-            console.log('=== 타이머 시작 (예전 방식) ===');
+            console.log('=== 타이머 시작 (기존 방식) ===');
             console.log('matchId:', matchId);
             
             if (!timerState.isRunning) {
                 timerState.isRunning = true;
-                timerState.lastUpdateTime = Date.now();
+                timerState.startTime = Date.now();
                 socket.emit('timer_control', {
                     matchId: matchId,
-                    action: 'start'
+                    action: 'start',
+                    clientStartTime: timerState.startTime
                 });
                 
                 // 로컬 타이머 시작
@@ -1358,19 +1359,19 @@
             }
         }
 
-        // 타이머 정지 (예전 방식)
+        // 타이머 정지 (기존 방식)
         function stopTimer() {
-            console.log('=== 타이머 정지 (예전 방식) ===');
+            console.log('=== 타이머 정지 (기존 방식) ===');
             console.log('matchId:', matchId);
             
             if (timerState.isRunning) {
                 timerState.isRunning = false;
-                timerState.lastServerTime = timerState.currentSeconds;
-                timerState.lastUpdateTime = Date.now();
+                const currentTime = Math.floor((Date.now() - timerState.startTime) / 1000);
+                timerState.pausedTime += currentTime;
                 socket.emit('timer_control', {
                     matchId: matchId,
                     action: 'stop',
-                    currentTime: timerState.currentSeconds
+                    currentTime: timerState.pausedTime
                 });
                 
                 // 로컬 타이머 정지
@@ -1381,15 +1382,15 @@
             }
         }
 
-        // 타이머 리셋 (예전 방식)
+        // 타이머 리셋 (기존 방식)
         function resetTimer() {
-            console.log('=== 타이머 리셋 (예전 방식) ===');
+            console.log('=== 타이머 리셋 (기존 방식) ===');
             console.log('matchId:', matchId);
             
             timerState.isRunning = false;
             timerState.currentSeconds = 0;
-            timerState.lastServerTime = 0;
-            timerState.lastUpdateTime = Date.now();
+            timerState.startTime = null;
+            timerState.pausedTime = 0;
             socket.emit('timer_control', {
                 matchId: matchId,
                 action: 'reset'
@@ -1459,48 +1460,48 @@
                 `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }
 
-        // 타이머 상태 저장 함수 (로컬 타이머용 localStorage)
+        // 타이머 상태 저장 함수 (기존 방식)
         function saveTimerState() {
-            // 로컬 타이머의 경우 localStorage에 상태 저장
             const stateToSave = {
                 currentSeconds: timerState.currentSeconds,
                 isRunning: timerState.isRunning,
-                startTime: timerState.lastUpdateTime,
+                startTime: timerState.startTime,
+                pausedTime: timerState.pausedTime,
                 lastSaveTime: Date.now()
             };
             
             localStorage.setItem(`timer_state_${matchId}`, JSON.stringify(stateToSave));
-            console.log('로컬 타이머 상태 저장됨:', stateToSave);
+            console.log('타이머 상태 저장됨:', stateToSave);
         }
 
-        // 로컬 타이머 시작 (예전 방식)
+        // 로컬 타이머 시작 (기존 방식)
         function startLocalTimer() {
             if (timerState.localTimer) {
                 clearInterval(timerState.localTimer);
             }
             
-            // 예전 방식: 단순한 로컬 타이머
+            // startTime이 없거나 0인 경우 현재 시간으로 설정
+            if (!timerState.startTime || timerState.startTime === 0) {
+                timerState.startTime = Date.now();
+                console.log('로컬 타이머 startTime 설정:', timerState.startTime);
+            }
+            
             timerState.localTimer = setInterval(() => {
                 if (timerState.isRunning) {
-                    // 예전 방식: 단순한 시간 계산 (NaN 방지)
-                    const currentTime = Date.now();
-                    const lastUpdateTime = timerState.lastUpdateTime || currentTime;
-                    const lastServerTime = timerState.lastServerTime || 0;
-                    
-                    const timeDiff = Math.floor((currentTime - lastUpdateTime) / 1000);
-                    timerState.currentSeconds = Math.max(0, lastServerTime + timeDiff);
+                    const now = Date.now();
+                    const elapsed = Math.floor((now - timerState.startTime) / 1000);
+                    timerState.currentSeconds = timerState.pausedTime + elapsed;
                     updateTimerDisplay();
                     
                     // 로컬 타이머 상태를 localStorage에 저장
                     saveTimerState();
                 }
-            }, 1000);
+            }, 100);
             
-            console.log('로컬 타이머 시작됨 (예전 방식):', {
-                currentSeconds: timerState.currentSeconds,
-                isRunning: timerState.isRunning,
-                lastServerTime: timerState.lastServerTime,
-                lastUpdateTime: timerState.lastUpdateTime
+            console.log('로컬 타이머 시작됨:', {
+                startTime: timerState.startTime,
+                pausedTime: timerState.pausedTime,
+                isRunning: timerState.isRunning
             });
         }
 
@@ -2818,10 +2819,10 @@
             console.log('=== 페이지 로드 시 타이머 상태 요청 ===');
             socket.emit('request_timer_state', { matchId: matchId });
             
-        // 페이지 로드 시 타이머 상태 복원 (로컬 타이머용 localStorage 복원)
-        console.log('=== 페이지 로드 시 타이머 상태 복원 (로컬 타이머용) ===');
+        // 페이지 로드 시 타이머 상태 복원 (기존 방식)
+        console.log('=== 페이지 로드 시 타이머 상태 복원 (기존 방식) ===');
         
-        // 로컬 타이머의 경우 localStorage에서 상태 복원
+        // localStorage에서 타이머 상태 복원
         const savedTimerState = localStorage.getItem(`timer_state_${matchId}`);
         if (savedTimerState) {
             try {
@@ -2834,14 +2835,15 @@
                     const elapsedSeconds = Math.floor(timeDiff / 1000);
                     timerState.currentSeconds = parsedState.currentSeconds + elapsedSeconds;
                     timerState.isRunning = true;
-                    timerState.lastUpdateTime = parsedState.startTime;
-                    timerState.lastServerTime = parsedState.currentSeconds;
+                    timerState.startTime = parsedState.startTime; // 원래 startTime 유지
+                    timerState.pausedTime = parsedState.pausedTime;
                     
-                    console.log('로컬 타이머 상태 복원:', {
+                    console.log('타이머 상태 복원:', {
                         currentSeconds: timerState.currentSeconds,
                         isRunning: timerState.isRunning,
                         elapsedSeconds: elapsedSeconds,
-                        originalStartTime: parsedState.startTime
+                        originalStartTime: parsedState.startTime,
+                        currentStartTime: timerState.startTime
                     });
                     
                     // 타이머 시작
@@ -2849,10 +2851,10 @@
                 } else {
                     timerState.currentSeconds = parsedState.currentSeconds;
                     timerState.isRunning = false;
-                    timerState.lastUpdateTime = Date.now();
-                    timerState.lastServerTime = parsedState.currentSeconds;
+                    timerState.startTime = null;
+                    timerState.pausedTime = parsedState.pausedTime;
                     
-                    console.log('로컬 타이머 정지 상태 복원:', {
+                    console.log('타이머 정지 상태 복원:', {
                         currentSeconds: timerState.currentSeconds,
                         isRunning: timerState.isRunning
                     });
@@ -2860,7 +2862,7 @@
                 
                 updateTimerDisplay();
             } catch (error) {
-                console.error('로컬 타이머 상태 복원 실패:', error);
+                console.error('타이머 상태 복원 실패:', error);
             }
         }
         
