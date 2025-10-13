@@ -2582,6 +2582,29 @@
                 }
         });
 
+        // 타이머 모드 상태 응답 처리 (오버레이 페이지)
+        socket.on('timer_mode_response', function(data) {
+            console.log('=== 오버레이 페이지 타이머 모드 상태 응답 ===');
+            console.log('수신된 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                console.log('오버레이 페이지 타이머 모드:', data.currentMode);
+                // 오버레이 페이지에서는 모드 정보만 로그로 확인
+                // 실제 UI 변경은 컨트롤 페이지에서만 필요
+            }
+        });
+
+        // 타이머 모드 변경 실시간 동기화 (오버레이 페이지)
+        socket.on('timer_mode_updated', function(data) {
+            console.log('=== 오버레이 페이지 타이머 모드 변경 ===');
+            console.log('수신된 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                console.log('오버레이 페이지 타이머 모드 변경:', data.currentMode);
+                // 오버레이 페이지에서는 모드 정보만 로그로 확인
+            }
+        });
+
         // 오버레이 이미지 변경 이벤트 처리
         socket.on('overlay_image_updated', function(data) {
             if (data.action === 'uploaded') {
