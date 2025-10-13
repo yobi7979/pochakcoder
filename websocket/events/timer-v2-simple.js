@@ -104,6 +104,12 @@ const timerV2SimpleEvents = (socket, io) => {
             } else {
                 console.log(`타이머 v2 정지 상태: pausedTime=${timerData.pausedTime}, isRunning=${timerData.isRunning}`);
             }
+            
+            // 타이머 시작 시 1초부터 시작하도록 조정
+            if (currentSeconds === 0 && timerData.isRunning) {
+                currentSeconds = 1;
+                console.log(`타이머 시작 조정: 0초 -> 1초`);
+            }
 
             // 모든 클라이언트에게 타이머 상태 전송
             io.to(roomName).emit('timer_v2_state', {
