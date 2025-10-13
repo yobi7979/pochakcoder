@@ -1241,6 +1241,9 @@
         socket.on('connect_error', function(error) {
             });
 
+        // 타이머 모드 관리 변수
+        let currentTimerMode = 'legacy-timer';
+        
         // 경기별 타이머 상태 관리 객체 (호환성 지원)
         const timerState = {
             startTime: Date.now(),
@@ -2730,6 +2733,9 @@
             console.log('수신된 데이터:', data);
             
             if (data.matchId === matchId) {
+                // currentTimerMode 변수 업데이트
+                currentTimerMode = data.currentMode || 'legacy-timer';
+                
                 if (data.currentMode === null) {
                     console.log('오버레이 페이지: 저장된 타이머 모드 없음 - 사용자 선택 대기');
                 } else {
