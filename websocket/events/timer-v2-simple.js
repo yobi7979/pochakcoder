@@ -105,10 +105,10 @@ const timerV2SimpleEvents = (socket, io) => {
                 console.log(`타이머 v2 정지 상태: pausedTime=${timerData.pausedTime}, isRunning=${timerData.isRunning}`);
             }
             
-            // 타이머 시작 시 1초부터 시작하도록 조정
+            // 타이머 시작 시 0초부터 시작하도록 설정
             if (currentSeconds === 0 && timerData.isRunning) {
-                currentSeconds = 1;
-                console.log(`타이머 시작 조정: 0초 -> 1초`);
+                currentSeconds = 0;
+                console.log(`타이머 시작: 0초부터 시작`);
             }
 
             // 타이머 모드 확인
