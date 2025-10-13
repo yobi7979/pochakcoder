@@ -2542,15 +2542,22 @@
                 // 타이머 디스플레이 업데이트
                 updateTimerDisplay();
                 
-                // 타이머 실행 상태에 따라 로컬 타이머 제어
-                if (timerState.isRunning && !timerState.localTimer) {
-                    console.log('서버에서 타이머 실행 상태 수신 - 로컬 타이머 시작');
-                    startLocalTimer();
-                } else if (!timerState.isRunning && timerState.localTimer) {
-                    console.log('서버에서 타이머 정지 상태 수신 - 로컬 타이머 정지');
-                    stopLocalTimer();
-                } else if (!timerState.isRunning && !timerState.localTimer) {
-                    console.log('서버에서 타이머 정지 상태 수신 - 로컬 타이머 이미 정지됨');
+                // 서버 타이머 모드일 때는 로컬 타이머를 사용하지 않음
+                if (data.mode === 'server-timer') {
+                    console.log('서버 타이머 모드 - 로컬 타이머 사용 안함');
+                    // 서버에서 받은 currentSeconds 값을 직접 사용
+                    updateTimerDisplay();
+                } else {
+                    // 기존 타이머 모드일 때만 로컬 타이머 제어
+                    if (timerState.isRunning && !timerState.localTimer) {
+                        console.log('서버에서 타이머 실행 상태 수신 - 로컬 타이머 시작');
+                        startLocalTimer();
+                    } else if (!timerState.isRunning && timerState.localTimer) {
+                        console.log('서버에서 타이머 정지 상태 수신 - 로컬 타이머 정지');
+                        stopLocalTimer();
+                    } else if (!timerState.isRunning && !timerState.localTimer) {
+                        console.log('서버에서 타이머 정지 상태 수신 - 로컬 타이머 이미 정지됨');
+                    }
                 }
                 
                 // 시간 수정 상태 확인
