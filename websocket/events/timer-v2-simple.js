@@ -357,15 +357,45 @@ const timerV2SimpleEvents = (socket, io) => {
                         localTimerState.currentSeconds = localTimerState.pausedTime + elapsedTime;
                     }
                     
+                    // 컨트롤 페이지에 응답
                     socket.emit('local_timer_state_restored', {
                         matchId: matchId,
                         timerState: localTimerState
                     });
                     
+                    // 오버레이 페이지에도 전송
+                    const roomName = `match_${matchId}`;
+                    io.to(roomName).emit('local_timer_update', {
+                        matchId: matchId,
+                        currentSeconds: localTimerState.currentSeconds,
+                        isRunning: localTimerState.isRunning,
+                        startTime: localTimerState.startTime,
+                        pausedTime: localTimerState.pausedTime
+                    });
+                    
                     console.log(`로컬 타이머 상태 복원 완료: matchId=${matchId}`, localTimerState);
                 } else {
                     console.log(`로컬 타이머 상태 없음: matchId=${matchId}`);
+                    // 상태가 없어도 오버레이 페이지에 기본 상태 전송
+                    const roomName = `match_${matchId}`;
+                    io.to(roomName).emit('local_timer_update', {
+                        matchId: matchId,
+                        currentSeconds: 0,
+                        isRunning: false,
+                        startTime: null,
+                        pausedTime: 0
+                    });
                 }
+            } else {
+                // 경기 데이터가 없어도 오버레이 페이지에 기본 상태 전송
+                const roomName = `match_${matchId}`;
+                io.to(roomName).emit('local_timer_update', {
+                    matchId: matchId,
+                    currentSeconds: 0,
+                    isRunning: false,
+                    startTime: null,
+                    pausedTime: 0
+                });
             }
         } catch (error) {
             console.error('로컬 타이머 상태 요청 처리 중 오류 발생:', error);

@@ -2577,6 +2577,9 @@
                     pausedTime: timerState.pausedTime
                 });
                 
+                // 디스플레이 먼저 업데이트
+                updateTimerDisplay();
+                
                 console.log('=== 로컬 타이머 모드 확인 ===');
                 
                 // 로컬 타이머는 오버레이에서도 로컬 타이머를 사용
@@ -2599,24 +2602,38 @@
         let localTimerInterval = null;
         
         function startLocalTimer() {
-            if (localTimerInterval) {
-                clearInterval(localTimerInterval);
-            }
-            
-            localTimerInterval = setInterval(() => {
-                if (timerState.isRunning) {
-                    const now = Date.now();
-                    const elapsed = Math.floor((now - timerState.startTime) / 1000);
-                    timerState.currentSeconds = timerState.pausedTime + elapsed;
-                    updateTimerDisplay();
-                }
-            }, 1000);
-            
-            console.log('오버레이 로컬 타이머 시작됨:', {
+            console.log('=== 오버레이 로컬 타이머 시작 함수 호출 ===');
+            console.log('현재 타이머 상태:', {
+                isRunning: timerState.isRunning,
                 startTime: timerState.startTime,
                 pausedTime: timerState.pausedTime,
-                isRunning: timerState.isRunning
+                currentSeconds: timerState.currentSeconds
             });
+            
+            if (localTimerInterval) {
+                clearInterval(localTimerInterval);
+                localTimerInterval = null;
+            }
+            
+            if (timerState.isRunning) {
+                localTimerInterval = setInterval(() => {
+                    if (timerState.isRunning && timerState.startTime) {
+                        const now = Date.now();
+                        const elapsed = Math.floor((now - timerState.startTime) / 1000);
+                        timerState.currentSeconds = timerState.pausedTime + elapsed;
+                        updateTimerDisplay();
+                        console.log('오버레이 로컬 타이머 업데이트:', timerState.currentSeconds);
+                    }
+                }, 1000);
+                
+                console.log('오버레이 로컬 타이머 시작됨:', {
+                    startTime: timerState.startTime,
+                    pausedTime: timerState.pausedTime,
+                    isRunning: timerState.isRunning
+                });
+            } else {
+                console.log('타이머가 실행 중이 아니므로 로컬 타이머 시작하지 않음');
+            }
         }
         
         function stopLocalTimer() {
