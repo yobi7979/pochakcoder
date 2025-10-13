@@ -209,10 +209,47 @@ const timerV2SimpleEvents = (socket, io) => {
             const match = await Match.findByPk(matchId);
             if (match) {
                 const matchData = match.match_data || {};
+                console.log(`저장 전 match_data:`, JSON.stringify(matchData, null, 2));
                 matchData.timer_mode = newMode;
                 matchData.timer_mode_updated_at = Date.now();
-                await match.update({ match_data: matchData });
-                console.log(`타이머 모드 저장 완료: matchId=${matchId}, mode=${newMode}`);
+                console.log(`저장할 match_data:`, JSON.stringify(matchData, null, 2));
+                
+                // 직접 SQL 업데이트 시도
+                try {
+                    await match.update({ match_data: matchData });
+                    console.log(`타이머 모드 저장 완료: matchId=${matchId}, mode=${newMode}`);
+                } catch (updateError) {
+                    console.log(`update() 실패, 직접 SQL 시도:`, updateError.message);
+                    
+                    // 직접 SQL로 업데이트 시도
+                    const { QueryTypes } = require('sequelize');
+                    await match.sequelize.query(
+                        'UPDATE "Matches" SET "match_data" = :matchData WHERE "id" = :matchId',
+                        {
+                            replacements: { matchData: JSON.stringify(matchData), matchId: matchId },
+                            type: QueryTypes.UPDATE
+                        }
+                    );
+                    console.log(`직접 SQL로 타이머 모드 저장 완료: matchId=${matchId}, mode=${newMode}`);
+                }
+                
+                // 저장 후 즉시 확인
+                const updatedMatch = await Match.findByPk(matchId);
+                if (updatedMatch && updatedMatch.match_data) {
+                    console.log(`저장 후 확인:`, JSON.stringify(updatedMatch.match_data, null, 2));
+                    console.log(`저장된 timer_mode:`, updatedMatch.match_data.timer_mode);
+                    
+                    // 저장된 timer_mode가 없다면 데이터베이스 저장 실패
+                    if (!updatedMatch.match_data.timer_mode) {
+                        console.log(`❌ 데이터베이스 저장 실패: timer_mode가 저장되지 않음`);
+                        console.log(`❌ 저장 시도한 값: ${newMode}`);
+                        console.log(`❌ 저장 시도한 시간: ${matchData.timer_mode_updated_at}`);
+                    } else {
+                        console.log(`✅ 데이터베이스 저장 성공: timer_mode=${updatedMatch.match_data.timer_mode}`);
+                    }
+                } else {
+                    console.log(`저장 후 확인 실패: match_data가 없음`);
+                }
             }
             
             // 모든 클라이언트에게 모드 변경 알림
@@ -238,6 +275,15 @@ const timerV2SimpleEvents = (socket, io) => {
             // DB에서 저장된 타이머 모드 조회
             const match = await Match.findByPk(matchId);
             let currentMode = null; // 저장된 모드가 없으면 null
+            
+            console.log(`타이머 모드 조회 디버깅: matchId=${matchId}`);
+            console.log(`매치 데이터 존재: ${!!match}`);
+            console.log(`match_data 존재: ${!!(match && match.match_data)}`);
+            if (match && match.match_data) {
+                console.log(`match_data 내용:`, JSON.stringify(match.match_data, null, 2));
+                console.log(`timer_mode 존재: ${!!match.match_data.timer_mode}`);
+                console.log(`timer_mode 값: ${match.match_data.timer_mode}`);
+            }
             
             if (match && match.match_data && match.match_data.timer_mode) {
                 currentMode = match.match_data.timer_mode;
