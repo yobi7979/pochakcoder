@@ -1,7 +1,7 @@
 // SportsCoder 단순화된 타이머 시스템 v2
 // 복잡한 하이브리드 로직을 제거하고 서버 중심의 단순한 타이머 시스템
 
-const { Match } = require('../../models');
+const { Match, Settings } = require('../../models');
 
 // 전역 타이머 상태 관리
 if (!global.timerV2States) global.timerV2States = new Map();
@@ -112,11 +112,14 @@ const timerV2SimpleEvents = (socket, io) => {
             }
 
             // 타이머 모드 확인
-            let timerMode = 'hybrid'; // 기본값
+            let timerMode = 'server-timer'; // 기본값
             try {
                 const setting = await Settings.findOne({ where: { key: `timer_mode_${matchId}` } });
                 if (setting) {
                     timerMode = setting.value;
+                    console.log(`타이머 모드 조회 성공: key=${setting.key}, value=${setting.value}`);
+                } else {
+                    console.log(`타이머 모드 조회 실패: key=timer_mode_${matchId} (기본값 사용: server-timer)`);
                 }
             } catch (error) {
                 console.error('타이머 모드 조회 실패:', error);
@@ -186,7 +189,7 @@ const timerV2SimpleEvents = (socket, io) => {
             }
             
             // 타이머 모드 확인
-            let timerMode = 'hybrid'; // 기본값
+            let timerMode = 'server-timer'; // 기본값
             try {
                 const setting = await Settings.findOne({ where: { key: `timer_mode_${matchId}` } });
                 if (setting) {
@@ -199,6 +202,7 @@ const timerV2SimpleEvents = (socket, io) => {
             if (timerData) {
                 let currentSeconds = timerData.pausedTime;
                 if (timerData.isRunning && timerData.startTime) {
+                    const currentTime = Date.now();
                     const elapsedTime = Math.floor((currentTime - timerData.startTime) / 1000);
                     currentSeconds = timerData.pausedTime + elapsedTime;
                 }

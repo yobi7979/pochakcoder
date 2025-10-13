@@ -2539,18 +2539,22 @@
                     mode: data.mode
                 });
                 
+                console.log('=== 모드 확인 ===');
+                console.log('data.mode:', data.mode);
+                console.log('data.mode === "server-timer":', data.mode === 'server-timer');
+                
                 // 서버 타이머 모드일 때는 로컬 타이머를 사용하지 않음
-                if (data.mode === 'server-timer') {
-                    console.log('서버 타이머 모드 - 로컬 타이머 사용 안함');
-                    // 기존 로컬 타이머가 실행 중이면 정지
-                    if (localTimerInterval) {
-                        console.log('서버 타이머 모드 - 기존 로컬 타이머 정지');
-                        clearInterval(localTimerInterval);
-                        localTimerInterval = null;
-                    }
-                    // 서버에서 받은 currentSeconds 값을 직접 사용
-                    updateTimerDisplay(currentSeconds);
-                } else {
+            if (data.mode === 'server-timer') {
+                console.log('서버 타이머 모드 - 로컬 타이머 사용 안함');
+                // 기존 로컬 타이머가 실행 중이면 정지
+                if (typeof localTimerInterval !== 'undefined' && localTimerInterval) {
+                    console.log('서버 타이머 모드 - 기존 로컬 타이머 정지');
+                    clearInterval(localTimerInterval);
+                    localTimerInterval = null;
+                }
+                // 서버에서 받은 currentSeconds 값을 직접 사용
+                updateTimerDisplay(data.currentSeconds);
+            } else {
                     // 기존 타이머 모드일 때는 일반 업데이트
                     updateTimerDisplay();
                     // 기존 타이머 모드일 때만 로컬 타이머 제어

@@ -1475,9 +1475,13 @@
         }
 
         // 타이머 디스플레이 업데이트
-        function updateTimerDisplay() {
-            const minutes = Math.floor(timerState.currentSeconds / 60);
-            const seconds = timerState.currentSeconds % 60;
+        function updateTimerDisplay(overrideSeconds = null) {
+            // 서버 타이머 모드일 때는 전달받은 값을 사용, 그렇지 않으면 timerState 사용
+            const targetSeconds = overrideSeconds !== null ? overrideSeconds : timerState.currentSeconds;
+            // 음수 값 방지
+            const safeSeconds = Math.max(0, targetSeconds);
+            const minutes = Math.floor(safeSeconds / 60);
+            const seconds = safeSeconds % 60;
             document.getElementById('timer-display').textContent = 
                 `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }
@@ -3118,14 +3122,11 @@
                     mode: data.mode
                 });
                 
-                // 타이머 디스플레이 업데이트
-                updateTimerDisplay();
-                
                 // 서버 타이머 모드일 때는 로컬 타이머를 사용하지 않음
                 if (data.mode === 'server-timer') {
                     console.log('서버 타이머 모드 (컨트롤) - 로컬 타이머 사용 안함');
                     // 서버에서 받은 currentSeconds 값을 직접 사용
-                    updateTimerDisplay();
+                    updateTimerDisplay(data.currentSeconds);
                 } else {
                     // 기존 타이머 모드일 때만 로컬 타이머 제어
                     if (timerState.isRunning && !timerState.localTimer) {
