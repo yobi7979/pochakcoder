@@ -79,20 +79,24 @@ const timerV2SimpleEvents = (socket, io) => {
             // 전역 상태 업데이트
             global.timerV2States.set(matchId, timerData);
 
-            // DB에 타이머 상태 저장
-            try {
-                const match = await Match.findByPk(matchId);
-                if (match) {
-                    const matchData = match.match_data || {};
-                    matchData.server_timer_startTime = timerData.startTime;
-                    matchData.server_timer_pausedTime = timerData.pausedTime;
-                    matchData.server_timer_isRunning = timerData.isRunning;
-                    matchData.server_timer_lastUpdateTime = timerData.lastUpdateTime;
-                    await match.update({ match_data: matchData });
-                    console.log(`서버 타이머 DB 저장 완료: matchId=${matchId}`);
+            // DB에 타이머 상태 저장 (중요한 액션만)
+            if (action === 'stop' || action === 'pause' || action === 'reset' || action === 'set') {
+                try {
+                    const match = await Match.findByPk(matchId);
+                    if (match) {
+                        const matchData = match.match_data || {};
+                        matchData.server_timer_startTime = timerData.startTime;
+                        matchData.server_timer_pausedTime = timerData.pausedTime;
+                        matchData.server_timer_isRunning = timerData.isRunning;
+                        matchData.server_timer_lastUpdateTime = timerData.lastUpdateTime;
+                        await match.update({ match_data: matchData });
+                        console.log(`서버 타이머 DB 저장 완료: matchId=${matchId}, action=${action}`);
+                    }
+                } catch (error) {
+                    console.error('서버 타이머 DB 저장 실패:', error);
                 }
-            } catch (error) {
-                console.error('서버 타이머 DB 저장 실패:', error);
+            } else {
+                console.log(`서버 타이머 DB 저장 생략: matchId=${matchId}, action=${action} (start 액션은 메모리만 사용)`);
             }
 
             // 현재 시간 계산
@@ -178,13 +182,28 @@ const timerV2SimpleEvents = (socket, io) => {
 
             // 현재 시간 계산
             let currentSeconds = timerData.pausedTime;
-            if (timerData.isRunning && timerData.startTime) {
+            if (timerData.isRunning && timerData.startTime && timerData.startTime > 0) {
                 const elapsedTime = Math.round((Date.now() - timerData.startTime) / 1000);
                 currentSeconds = timerData.pausedTime + elapsedTime;
+                console.log(`서버 타이머 시간 계산: pausedTime=${timerData.pausedTime}, elapsedTime=${elapsedTime}, currentSeconds=${currentSeconds}`);
+            } else if (timerData.isRunning && (!timerData.startTime || timerData.startTime === 0)) {
+                // 타이머가 실행 중이지만 startTime이 없거나 0인 경우
+                console.log(`서버 타이머 실행 중이지만 startTime이 없음: isRunning=${timerData.isRunning}, startTime=${timerData.startTime}`);
+                currentSeconds = timerData.pausedTime;
             }
             
             // 컨트롤 패널에 즉시 응답
             socket.emit('server_timer_state', {
+                matchId: matchId,
+                currentSeconds: currentSeconds,
+                isRunning: timerData.isRunning,
+                startTime: timerData.startTime,
+                pausedTime: timerData.pausedTime
+            });
+            
+            // 오버레이 페이지에도 전송 (최종 아웃풋)
+            const roomName = `match_${matchId}`;
+            io.to(roomName).emit('server_timer_update', {
                 matchId: matchId,
                 currentSeconds: currentSeconds,
                 isRunning: timerData.isRunning,

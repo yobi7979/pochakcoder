@@ -2563,6 +2563,10 @@
             console.log('=== 오버레이 페이지 소켓 연결됨 ===');
             console.log('matchId:', matchId);
             
+            // 경기별 Room에 참여
+            socket.emit('join', `match_${matchId}`);
+            console.log('=== 경기별 Room 참여 요청 ===');
+            
             // 타이머 모드 상태 요청
             socket.emit('request_timer_mode', { matchId: matchId });
             console.log('=== 타이머 모드 상태 요청 전송 ===');

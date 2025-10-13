@@ -1515,6 +1515,12 @@
                 clearInterval(timerState.localTimer);
             }
             
+            // startTime이 없거나 0인 경우 현재 시간으로 설정
+            if (!timerState.startTime || timerState.startTime === 0) {
+                timerState.startTime = Date.now();
+                console.log('로컬 타이머 startTime 설정:', timerState.startTime);
+            }
+            
             timerState.localTimer = setInterval(() => {
                 if (timerState.isRunning) {
                     const now = Date.now();
@@ -1527,7 +1533,11 @@
                 }
             }, 100);
             
-            console.log('로컬 타이머 시작됨');
+            console.log('로컬 타이머 시작됨:', {
+                startTime: timerState.startTime,
+                pausedTime: timerState.pausedTime,
+                isRunning: timerState.isRunning
+            });
         }
 
         // 로컬 타이머 정지
@@ -2860,13 +2870,15 @@
                     const elapsedSeconds = Math.floor(timeDiff / 1000);
                     timerState.currentSeconds = parsedState.currentSeconds + elapsedSeconds;
                     timerState.isRunning = true;
-                    timerState.startTime = parsedState.startTime;
+                    timerState.startTime = parsedState.startTime; // 원래 startTime 유지
                     timerState.pausedTime = parsedState.pausedTime;
                     
                     console.log('로컬 타이머 상태 복원:', {
                         currentSeconds: timerState.currentSeconds,
                         isRunning: timerState.isRunning,
-                        elapsedSeconds: elapsedSeconds
+                        elapsedSeconds: elapsedSeconds,
+                        originalStartTime: parsedState.startTime,
+                        currentStartTime: timerState.startTime
                     });
                     
                     // 타이머 시작
