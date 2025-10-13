@@ -1437,8 +1437,13 @@
         function updateTimerDisplay(overrideSeconds = null) {
             // 서버 타이머 모드일 때는 전달받은 값을 사용, 그렇지 않으면 timerState 사용
             const targetSeconds = overrideSeconds !== null ? overrideSeconds : timerState.currentSeconds;
-            // 음수 값 방지
-            const safeSeconds = Math.max(0, targetSeconds);
+            
+            // NaN 값 방지 및 유효성 검사
+            let safeSeconds = 0;
+            if (typeof targetSeconds === 'number' && !isNaN(targetSeconds) && isFinite(targetSeconds)) {
+                safeSeconds = Math.max(0, targetSeconds);
+            }
+            
             const minutes = Math.floor(safeSeconds / 60);
             const seconds = safeSeconds % 60;
             document.getElementById('timer-display').textContent = 
@@ -1466,10 +1471,13 @@
             // 예전 방식: 단순한 로컬 타이머
             timerState.localTimer = setInterval(() => {
                 if (timerState.isRunning) {
-                    // 예전 방식: 단순한 시간 계산
+                    // 예전 방식: 단순한 시간 계산 (NaN 방지)
                     const currentTime = Date.now();
-                    const timeDiff = Math.floor((currentTime - timerState.lastUpdateTime) / 1000);
-                    timerState.currentSeconds = Math.max(0, timerState.lastServerTime + timeDiff);
+                    const lastUpdateTime = timerState.lastUpdateTime || currentTime;
+                    const lastServerTime = timerState.lastServerTime || 0;
+                    
+                    const timeDiff = Math.floor((currentTime - lastUpdateTime) / 1000);
+                    timerState.currentSeconds = Math.max(0, lastServerTime + timeDiff);
                     updateTimerDisplay();
                 }
             }, 1000);
