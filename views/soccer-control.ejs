@@ -1509,6 +1509,15 @@
                     const elapsed = Math.floor((now - timerState.startTime) / 1000);
                     timerState.currentSeconds = timerState.pausedTime + elapsed;
                     updateTimerDisplay();
+                    
+                    // 오버레이 페이지에 로컬 타이머 상태 주기적 전송 (1초마다)
+                    socket.emit('local_timer_update', {
+                        matchId: matchId,
+                        currentSeconds: timerState.currentSeconds,
+                        isRunning: timerState.isRunning,
+                        startTime: timerState.startTime,
+                        pausedTime: timerState.pausedTime
+                    });
                 }
             }, 1000);
             
@@ -2886,8 +2895,32 @@
             console.log('=== 페이지 로드 시 타이머 모드 상태 요청 ===');
             socket.emit('request_timer_mode', { matchId: matchId });
             
-            // 페이지 로드 시 경기 데이터 로드
-            loadMatchData();
+        // 로컬 타이머 상태 요청 처리
+        socket.on('request_local_timer_state', function(data) {
+            console.log('=== 로컬 타이머 상태 요청 수신 ===');
+            console.log('요청 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                // 현재 로컬 타이머 상태 전송
+                socket.emit('local_timer_update', {
+                    matchId: matchId,
+                    currentSeconds: timerState.currentSeconds,
+                    isRunning: timerState.isRunning,
+                    startTime: timerState.startTime,
+                    pausedTime: timerState.pausedTime
+                });
+                
+                console.log('로컬 타이머 상태 전송:', {
+                    currentSeconds: timerState.currentSeconds,
+                    isRunning: timerState.isRunning,
+                    startTime: timerState.startTime,
+                    pausedTime: timerState.pausedTime
+                });
+            }
+        });
+
+        // 페이지 로드 시 경기 데이터 로드
+        loadMatchData();
             
             // 페이지 로드 시 승부차기 텍스트 로드
             loadPenaltyText();

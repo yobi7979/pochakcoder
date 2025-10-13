@@ -2654,6 +2654,10 @@
             // 서버 타이머 상태 요청
             socket.emit('request_server_timer_state', { matchId: matchId });
             console.log('=== 서버 타이머 상태 요청 전송 ===');
+            
+            // 로컬 타이머 상태 요청 (legacy-timer 모드일 때)
+            socket.emit('request_local_timer_state', { matchId: matchId });
+            console.log('=== 로컬 타이머 상태 요청 전송 ===');
         });
 
         // 경기 상태 표시 설정 변경 이벤트 처리
@@ -2674,9 +2678,18 @@
                     console.log('오버레이 페이지: 저장된 타이머 모드 없음 - 사용자 선택 대기');
                 } else {
                     console.log('오버레이 페이지 타이머 모드:', data.currentMode);
+                    
+                    // 타이머 모드에 따라 적절한 타이머 시스템 사용
+                    if (data.currentMode === 'legacy-timer') {
+                        console.log('오버레이 페이지: 로컬 타이머 모드 활성화');
+                        // 로컬 타이머 상태 요청
+                        socket.emit('request_local_timer_state', { matchId: matchId });
+                    } else if (data.currentMode === 'server-timer') {
+                        console.log('오버레이 페이지: 서버 타이머 모드 활성화');
+                        // 서버 타이머 상태 요청
+                        socket.emit('request_server_timer_state', { matchId: matchId });
+                    }
                 }
-                // 오버레이 페이지에서는 모드 정보만 로그로 확인
-                // 실제 UI 변경은 컨트롤 페이지에서만 필요
             }
         });
 
