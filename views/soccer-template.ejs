@@ -2563,6 +2563,12 @@
             console.log('=== 로컬 타이머 업데이트 수신 (오버레이) ===');
             console.log('수신된 데이터:', data);
             
+            // 서버타이머 모드일 때는 로컬 타이머 업데이트 무시
+            if (currentTimerMode === 'server-timer') {
+                console.log('서버타이머 모드 - 로컬 타이머 업데이트 무시');
+                return;
+            }
+            
             if (data.matchId === matchId) {
                 // 로컬 타이머 상태 처리
                 timerState.currentSeconds = data.currentSeconds || 0;
