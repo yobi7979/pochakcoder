@@ -312,7 +312,7 @@ const timerV2SimpleEvents = (socket, io) => {
     socket.on('save_local_timer_state', async (data) => {
         try {
             const { matchId, timerState } = data;
-            console.log(`로컬 타이머 상태 저장 요청: matchId=${matchId}`);
+            console.log(`💾 로컬 타이머 상태 저장 요청: matchId=${matchId}, isRunning=${timerState.isRunning}, currentSeconds=${timerState.currentSeconds}`);
             
             // Match 테이블의 match_data에 로컬 타이머 상태 저장
             const match = await Match.findByPk(matchId);
@@ -324,11 +324,15 @@ const timerV2SimpleEvents = (socket, io) => {
                 matchData.local_timer_pausedTime = timerState.pausedTime;
                 matchData.local_timer_lastSaveTime = timerState.lastSaveTime;
                 
+                console.log(`💾 저장할 로컬 타이머 상태:`, matchData);
+                
                 await match.update({ match_data: matchData });
-                console.log(`로컬 타이머 상태 DB 저장 완료: matchId=${matchId}`);
+                console.log(`✅ 로컬 타이머 상태 DB 저장 완료: matchId=${matchId}`);
+            } else {
+                console.log(`❌ 경기를 찾을 수 없음: matchId=${matchId}`);
             }
         } catch (error) {
-            console.error('로컬 타이머 상태 저장 실패:', error);
+            console.error('❌ 로컬 타이머 상태 저장 실패:', error);
         }
     });
 
@@ -336,12 +340,14 @@ const timerV2SimpleEvents = (socket, io) => {
     socket.on('request_local_timer_state', async (data) => {
         try {
             const { matchId } = data;
-            console.log(`로컬 타이머 상태 요청: matchId=${matchId}`);
+            console.log(`🔍 로컬 타이머 상태 요청: matchId=${matchId}`);
             
             // Match 테이블에서 로컬 타이머 상태 복원
             const match = await Match.findByPk(matchId);
             if (match && match.match_data) {
                 const matchData = match.match_data;
+                console.log(`🔍 경기 데이터 확인:`, matchData);
+                
                 if (matchData.local_timer_currentSeconds !== undefined) {
                     const localTimerState = {
                         currentSeconds: matchData.local_timer_currentSeconds || 0,
@@ -351,10 +357,13 @@ const timerV2SimpleEvents = (socket, io) => {
                         lastSaveTime: matchData.local_timer_lastSaveTime || Date.now()
                     };
                     
+                    console.log(`🔍 복원할 로컬 타이머 상태:`, localTimerState);
+                    
                     // 실행 중이었다면 경과 시간 계산
                     if (localTimerState.isRunning && localTimerState.startTime) {
                         const elapsedTime = Math.floor((Date.now() - localTimerState.startTime) / 1000);
                         localTimerState.currentSeconds = localTimerState.pausedTime + elapsedTime;
+                        console.log(`🔍 경과 시간 계산: elapsedTime=${elapsedTime}, newCurrentSeconds=${localTimerState.currentSeconds}`);
                     }
                     
                     // 컨트롤 페이지에 응답
@@ -373,9 +382,9 @@ const timerV2SimpleEvents = (socket, io) => {
                         pausedTime: localTimerState.pausedTime
                     });
                     
-                    console.log(`로컬 타이머 상태 복원 완료: matchId=${matchId}`, localTimerState);
+                    console.log(`✅ 로컬 타이머 상태 복원 완료: matchId=${matchId}`, localTimerState);
                 } else {
-                    console.log(`로컬 타이머 상태 없음: matchId=${matchId}`);
+                    console.log(`❌ 로컬 타이머 상태 없음: matchId=${matchId}`);
                     // 상태가 없어도 오버레이 페이지에 기본 상태 전송
                     const roomName = `match_${matchId}`;
                     io.to(roomName).emit('local_timer_update', {
@@ -387,6 +396,7 @@ const timerV2SimpleEvents = (socket, io) => {
                     });
                 }
             } else {
+                console.log(`❌ 경기 데이터 없음: matchId=${matchId}`);
                 // 경기 데이터가 없어도 오버레이 페이지에 기본 상태 전송
                 const roomName = `match_${matchId}`;
                 io.to(roomName).emit('local_timer_update', {
@@ -398,7 +408,7 @@ const timerV2SimpleEvents = (socket, io) => {
                 });
             }
         } catch (error) {
-            console.error('로컬 타이머 상태 요청 처리 중 오류 발생:', error);
+            console.error('❌ 로컬 타이머 상태 요청 처리 중 오류 발생:', error);
         }
     });
 
