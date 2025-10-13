@@ -240,7 +240,14 @@ const timerV2SimpleEvents = (socket, io) => {
                 currentMode = match.match_data.timer_mode;
                 console.log(`저장된 타이머 모드 발견: matchId=${matchId}, mode=${currentMode}`);
             } else {
-                console.log(`기본 타이머 모드 사용: matchId=${matchId}, mode=${currentMode}`);
+                // 기본값을 DB에 저장
+                if (match) {
+                    const matchData = match.match_data || {};
+                    matchData.timer_mode = currentMode;
+                    matchData.timer_mode_updated_at = Date.now();
+                    await match.update({ match_data: matchData });
+                    console.log(`기본 타이머 모드 저장: matchId=${matchId}, mode=${currentMode}`);
+                }
             }
             
             socket.emit('timer_mode_response', {

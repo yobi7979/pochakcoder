@@ -711,7 +711,7 @@
                 <div class="d-flex align-items-center gap-2">
                     <span class="text-muted small">서버타이머</span>
                     <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="timer-v2-toggle" onchange="toggleTimerV2()" checked>
+                        <input class="form-check-input" type="checkbox" id="timer-v2-toggle" onchange="toggleTimerV2()">
                         <label class="form-check-label" for="timer-v2-toggle"></label>
                     </div>
                 </div>
@@ -1480,6 +1480,33 @@
             const seconds = timerState.currentSeconds % 60;
             document.getElementById('timer-display').textContent = 
                 `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // 로컬 타이머 시작
+        function startLocalTimer() {
+            if (timerState.localTimer) {
+                clearInterval(timerState.localTimer);
+            }
+            
+            timerState.localTimer = setInterval(() => {
+                if (timerState.isRunning) {
+                    const now = Date.now();
+                    const elapsed = Math.floor((now - timerState.startTime) / 1000);
+                    timerState.currentSeconds = timerState.pausedTime + elapsed;
+                    updateTimerDisplay();
+                }
+            }, 100);
+            
+            console.log('로컬 타이머 시작됨');
+        }
+
+        // 로컬 타이머 정지
+        function stopLocalTimer() {
+            if (timerState.localTimer) {
+                clearInterval(timerState.localTimer);
+                timerState.localTimer = null;
+                console.log('로컬 타이머 정지됨');
+            }
         }
 
         // 연결 상태 업데이트 함수
@@ -2811,18 +2838,7 @@
             // 페이지 로드 시 팀로고 정보 로드
             loadTeamLogos();
             
-        // 페이지 로드 시 새로운 타이머 시스템 v2 기본값 설정
-        console.log('=== 새로운 타이머 시스템 v2 기본값 설정 ===');
-        const timerV2Toggle = document.getElementById('timer-v2-toggle');
-        if (timerV2Toggle) {
-            // 기본값으로 새로운 타이머 시스템 v2 활성화
-            timerV2Toggle.checked = true;
-            console.log('새로운 타이머 시스템 v2 기본값 활성화');
-            // 초기 모드 요청
-            socket.emit('timer_v2_request_mode', { matchId: matchId });
-            // 타이머 상태 요청
-            socket.emit('request_timer_v2_state', { matchId: matchId });
-        }
+        // 페이지 로드 시 타이머 모드 상태는 서버에서 받아옴 (request_timer_mode 이벤트로 처리)
             
             // 페이지 로드 시 팀로고 사용 상태 로드 (먼저 실행)
             await loadTeamLogoVisibility();
@@ -3019,6 +3035,11 @@
                 if (toggleElement) {
                     toggleElement.checked = isServerTimer;
                     console.log('타이머 모드 상태 복원:', data.currentMode, '체크박스:', isServerTimer);
+                    
+                    // UI 업데이트 후 로그 출력
+                    console.log('체크박스 상태 업데이트 완료:', toggleElement.checked);
+                } else {
+                    console.error('timer-v2-toggle 요소를 찾을 수 없습니다');
                 }
             }
         });
