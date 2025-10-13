@@ -3099,9 +3099,13 @@
                 
                 // 타이머 실행 상태에 따라 로컬 타이머 제어
                 if (timerState.isRunning && !timerState.localTimer) {
+                    console.log('서버에서 타이머 실행 상태 수신 (컨트롤) - 로컬 타이머 시작');
                     startLocalTimer();
                 } else if (!timerState.isRunning && timerState.localTimer) {
+                    console.log('서버에서 타이머 정지 상태 수신 (컨트롤) - 로컬 타이머 정지');
                     stopLocalTimer();
+                } else if (!timerState.isRunning && !timerState.localTimer) {
+                    console.log('서버에서 타이머 정지 상태 수신 (컨트롤) - 로컬 타이머 이미 정지됨');
                 }
             }
         });

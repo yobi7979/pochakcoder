@@ -100,6 +100,9 @@ const timerV2SimpleEvents = (socket, io) => {
             if (timerData.isRunning && timerData.startTime) {
                 const elapsedTime = Math.floor((currentServerTime - timerData.startTime) / 1000);
                 currentSeconds = timerData.pausedTime + elapsedTime;
+                console.log(`타이머 v2 계산: pausedTime=${timerData.pausedTime}, elapsedTime=${elapsedTime}, currentSeconds=${currentSeconds}`);
+            } else {
+                console.log(`타이머 v2 정지 상태: pausedTime=${timerData.pausedTime}, isRunning=${timerData.isRunning}`);
             }
 
             // 모든 클라이언트에게 타이머 상태 전송
