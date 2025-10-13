@@ -4,7 +4,8 @@ const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errorHandler');
 
 // 모델들
-const { Match, User, Sport, Template, TeamInfo } = require('../models');
+const { Match, User, Sport, Template, TeamInfo, Settings } = require('../models');
+const { Op } = require('sequelize');
 
 // 경기 관련 라우터
 // 이 파일은 server.js에서 분리된 경기 관련 API들을 포함합니다.
@@ -178,6 +179,41 @@ router.delete('/all', requireAuth, asyncHandler(async (req, res) => {
     // 일반 사용자는 자신이 만든 경기만 삭제할 수 있음
     if (req.session.userRole !== 'admin') {
       whereCondition.created_by = req.session.userId;
+    }
+
+    // 삭제할 경기들을 먼저 조회
+    const matchesToDelete = await Match.findAll({
+      where: whereCondition,
+      attributes: ['id']
+    });
+
+    const matchIds = matchesToDelete.map(match => match.id);
+    console.log(`[DEBUG] 삭제할 경기 ID들: ${matchIds.join(', ')}`);
+
+    // Settings 정리
+    if (matchIds.length > 0) {
+      try {
+        console.log(`[DEBUG] 모든 경기 삭제 전 Settings 정리 시작`);
+        
+        // 모든 경기와 관련된 Settings 항목들 삭제
+        const deletedSettingsCount = await Settings.destroy({
+          where: {
+            [Op.or]: matchIds.flatMap(matchId => [
+              { key: `timer_mode_${matchId}` },
+              { key: `soccer_team_logo_visibility_${matchId}` },
+              { key: `soccer_team_logo_display_mode_${matchId}` },
+              { key: `tournament_text_${matchId}` },
+              { key: `baseball_team_logo_visibility_${matchId}` },
+              { key: `baseball_team_logo_display_mode_${matchId}` }
+            ])
+          }
+        });
+        
+        console.log(`[DEBUG] Settings 정리 완료: ${deletedSettingsCount}개 항목 삭제됨`);
+      } catch (settingsError) {
+        console.error(`[DEBUG] Settings 정리 중 오류 발생:`, settingsError);
+        // Settings 정리 실패해도 경기 삭제는 계속 진행
+      }
     }
 
     const deletedCount = await Match.destroy({
@@ -815,6 +851,31 @@ router.delete('/:id', requireAuth, asyncHandler(async (req, res) => {
     if (req.session.userRole !== 'admin' && match.created_by !== req.session.userId) {
       console.log(`[DEBUG] 삭제 권한 없음: 사용자 ${req.session.userId}, 경기 생성자 ${match.created_by}`);
       return res.status(403).json({ error: '이 경기를 삭제할 권한이 없습니다.' });
+    }
+
+    // 경기 삭제 전에 관련 Settings 항목들 정리
+    const matchId = match.id;
+    console.log(`[DEBUG] 경기 삭제 전 Settings 정리 시작: ${matchId}`);
+    
+    try {
+      // 해당 경기와 관련된 모든 Settings 항목 삭제
+      const deletedSettingsCount = await Settings.destroy({
+        where: {
+          [Op.or]: [
+            { key: `timer_mode_${matchId}` },
+            { key: `soccer_team_logo_visibility_${matchId}` },
+            { key: `soccer_team_logo_display_mode_${matchId}` },
+            { key: `tournament_text_${matchId}` },
+            { key: `baseball_team_logo_visibility_${matchId}` },
+            { key: `baseball_team_logo_display_mode_${matchId}` }
+          ]
+        }
+      });
+      
+      console.log(`[DEBUG] Settings 정리 완료: ${deletedSettingsCount}개 항목 삭제됨`);
+    } catch (settingsError) {
+      console.error(`[DEBUG] Settings 정리 중 오류 발생:`, settingsError);
+      // Settings 정리 실패해도 경기 삭제는 계속 진행
     }
 
     await match.destroy();

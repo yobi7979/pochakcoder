@@ -442,6 +442,31 @@ app.delete('/api/matches/:id', requireAuth, async (req, res) => {
       return res.status(403).json({ error: '이 경기를 삭제할 권한이 없습니다.' });
     }
 
+    // 경기 삭제 전에 관련 Settings 항목들 정리
+    const matchId = match.id;
+    console.log(`[DEBUG] 경기 삭제 전 Settings 정리 시작: ${matchId}`);
+    
+    try {
+      // 해당 경기와 관련된 모든 Settings 항목 삭제
+      const deletedSettingsCount = await Settings.destroy({
+        where: {
+          [Op.or]: [
+            { key: `timer_mode_${matchId}` },
+            { key: `soccer_team_logo_visibility_${matchId}` },
+            { key: `soccer_team_logo_display_mode_${matchId}` },
+            { key: `tournament_text_${matchId}` },
+            { key: `baseball_team_logo_visibility_${matchId}` },
+            { key: `baseball_team_logo_display_mode_${matchId}` }
+          ]
+        }
+      });
+      
+      console.log(`[DEBUG] Settings 정리 완료: ${deletedSettingsCount}개 항목 삭제됨`);
+    } catch (settingsError) {
+      console.error(`[DEBUG] Settings 정리 중 오류 발생:`, settingsError);
+      // Settings 정리 실패해도 경기 삭제는 계속 진행
+    }
+
     await match.destroy();
     console.log(`[DEBUG] 경기 삭제 완료: ${match.id} (사용자: ${req.session.username})`);
     res.json({ success: true, message: '경기가 성공적으로 삭제되었습니다.' });
