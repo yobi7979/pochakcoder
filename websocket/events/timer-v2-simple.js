@@ -127,85 +127,74 @@ const timerV2SimpleEvents = (socket, io) => {
         }
     });
 
-    // 서버 타이머 상태 요청 이벤트
+    // 서버 타이머 상태 요청 이벤트 (단순화)
     socket.on('request_server_timer_state', async (data) => {
         try {
             const { matchId } = data;
             console.log(`서버 타이머 상태 요청: matchId=${matchId}`);
 
-            const currentTime = Date.now();
-            
             // 메모리에서 타이머 상태 확인
             let timerData = global.timerV2States.get(matchId);
             
             if (!timerData) {
-                // 데이터베이스에서 타이머 상태 복원 시도
-                try {
-                    const match = await Match.findByPk(matchId);
-                    if (match && match.match_data) {
-                        const matchData = match.match_data;
-                        if (matchData.server_timer_startTime !== undefined && matchData.server_timer_pausedTime !== undefined) {
-                            const isRunning = matchData.server_timer_isRunning || false;
-                            const pausedTime = matchData.server_timer_pausedTime || 0;
-                            
-                            // 서버 재시작 시 시간 복원 계산
-                            let currentSeconds = pausedTime;
-                            if (isRunning && matchData.server_timer_startTime) {
-                                const elapsedTime = Math.round((currentTime - matchData.server_timer_startTime) / 1000);
-                                currentSeconds = pausedTime + elapsedTime;
-                            }
-                            
-                            timerData = {
-                                startTime: matchData.server_timer_startTime,
-                                pausedTime: pausedTime,
-                                isRunning: isRunning,
-                                lastUpdateTime: currentTime
-                            };
-                            
-                            // 메모리에 저장
-                            global.timerV2States.set(matchId, timerData);
-                            
-                            console.log(`서버 타이머 상태 복원: matchId=${matchId}, currentSeconds=${currentSeconds}, isRunning=${isRunning}`);
-                        }
-                    }
-                } catch (error) {
-                    console.error('서버 타이머 상태 복원 실패:', error);
-                }
+                // 기본 상태로 초기화
+                timerData = {
+                    startTime: null,
+                    pausedTime: 0,
+                    isRunning: false,
+                    lastUpdateTime: Date.now()
+                };
+                global.timerV2States.set(matchId, timerData);
             }
 
-            if (timerData) {
-                let currentSeconds = timerData.pausedTime;
-                if (timerData.isRunning && timerData.startTime) {
-                    const elapsedTime = Math.round((currentTime - timerData.startTime) / 1000);
-                    currentSeconds = timerData.pausedTime + elapsedTime;
-                }
-                
-                socket.emit('server_timer_state', {
-                    matchId: matchId,
-                    currentSeconds: currentSeconds,
-                    isRunning: timerData.isRunning,
-                    startTime: timerData.startTime,
-                    pausedTime: timerData.pausedTime
-                });
-                
-                console.log(`서버 타이머 상태 전송: matchId=${matchId}, currentSeconds=${currentSeconds}, isRunning=${timerData.isRunning}`);
-            } else {
-                // 타이머 데이터가 없을 때 기본 상태 전송
-                socket.emit('server_timer_state', {
-                    matchId: matchId,
-                    currentSeconds: 0,
-                    isRunning: false,
-                    startTime: 0,
-                    pausedTime: 0
-                });
-                
-                console.log(`서버 타이머 기본 상태 전송: matchId=${matchId}`);
+            // 현재 시간 계산
+            let currentSeconds = timerData.pausedTime;
+            if (timerData.isRunning && timerData.startTime) {
+                const elapsedTime = Math.round((Date.now() - timerData.startTime) / 1000);
+                currentSeconds = timerData.pausedTime + elapsedTime;
             }
+            
+            // 컨트롤 패널에 즉시 응답
+            socket.emit('server_timer_state', {
+                matchId: matchId,
+                currentSeconds: currentSeconds,
+                isRunning: timerData.isRunning,
+                startTime: timerData.startTime,
+                pausedTime: timerData.pausedTime
+            });
+            
+            console.log(`서버 타이머 상태 전송: matchId=${matchId}, currentSeconds=${currentSeconds}, isRunning=${timerData.isRunning}`);
             
         } catch (error) {
             console.error('서버 타이머 상태 요청 처리 중 오류 발생:', error);
         }
     });
+
+    // 실시간 타이머 동기화를 위한 주기적 브로드캐스트
+    setInterval(() => {
+        try {
+            // 모든 활성 타이머에 대해 상태 브로드캐스트
+            for (const [matchId, timerData] of global.timerV2States.entries()) {
+                if (timerData.isRunning) {
+                    const currentTime = Date.now();
+                    const elapsedTime = Math.round((currentTime - timerData.startTime) / 1000);
+                    const currentSeconds = timerData.pausedTime + elapsedTime;
+                    
+                    // 해당 경기의 모든 클라이언트에게 실시간 업데이트 전송
+                    const roomName = `match_${matchId}`;
+                    io.to(roomName).emit('server_timer_update', {
+                        matchId: matchId,
+                        currentSeconds: currentSeconds,
+                        isRunning: timerData.isRunning,
+                        startTime: timerData.startTime,
+                        pausedTime: timerData.pausedTime
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('실시간 타이머 동기화 중 오류 발생:', error);
+        }
+    }, 1000); // 1초마다 실행
 
     // 타이머 모드 변경 이벤트 (컨트롤 패널에서만 사용)
     socket.on('timer_mode_change', async (data) => {
