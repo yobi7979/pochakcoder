@@ -50,7 +50,7 @@ const timerV2SimpleEvents = (socket, io) => {
                 case 'stop':
                 case 'pause':
                     if (timerData.isRunning) {
-                        const elapsedTime = Math.floor((currentServerTime - timerData.startTime) / 1000);
+                        const elapsedTime = Math.round((currentServerTime - timerData.startTime) / 1000);
                         timerData.pausedTime += elapsedTime;
                         timerData.isRunning = false;
                         timerData.lastUpdateTime = currentServerTime;
@@ -98,7 +98,7 @@ const timerV2SimpleEvents = (socket, io) => {
             // 현재 시간 계산 및 전송
             let currentSeconds = timerData.pausedTime;
             if (timerData.isRunning && timerData.startTime) {
-                const elapsedTime = Math.floor((currentServerTime - timerData.startTime) / 1000);
+                const elapsedTime = Math.round((currentServerTime - timerData.startTime) / 1000);
                 currentSeconds = timerData.pausedTime + elapsedTime;
                 console.log(`타이머 v2 계산: pausedTime=${timerData.pausedTime}, elapsedTime=${elapsedTime}, currentSeconds=${currentSeconds}`);
             } else {
@@ -166,7 +166,7 @@ const timerV2SimpleEvents = (socket, io) => {
                             // 서버 재시작 시 시간 복원 계산
                             let currentSeconds = pausedTime;
                             if (isRunning && matchData.timer_v2_startTime) {
-                                const elapsedTime = Math.floor((currentTime - matchData.timer_v2_startTime) / 1000);
+                                const elapsedTime = Math.round((currentTime - matchData.timer_v2_startTime) / 1000);
                                 currentSeconds = pausedTime + elapsedTime;
                             }
                             
@@ -203,7 +203,7 @@ const timerV2SimpleEvents = (socket, io) => {
                 let currentSeconds = timerData.pausedTime;
                 if (timerData.isRunning && timerData.startTime) {
                     const currentTime = Date.now();
-                    const elapsedTime = Math.floor((currentTime - timerData.startTime) / 1000);
+                    const elapsedTime = Math.round((currentTime - timerData.startTime) / 1000);
                     currentSeconds = timerData.pausedTime + elapsedTime;
                 }
                 
