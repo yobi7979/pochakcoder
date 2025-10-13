@@ -1,24 +1,24 @@
-// SportsCoder 단순화된 타이머 시스템 v2
-// 복잡한 하이브리드 로직을 제거하고 서버 중심의 단순한 타이머 시스템
+// SportsCoder 단순화된 서버 타이머 시스템 v2
+// 서버 중심의 단순한 타이머 시스템 - 컨트롤 패널에서만 제어 가능
 
 const { Match, Settings } = require('../../models');
 
-// 전역 타이머 상태 관리
+// 전역 타이머 상태 관리 (메모리)
 if (!global.timerV2States) global.timerV2States = new Map();
 
 /**
- * 단순화된 타이머 시스템 v2 이벤트 설정
+ * 단순화된 서버 타이머 시스템 v2 이벤트 설정
  * @param {Object} socket - Socket.IO 소켓 인스턴스
  * @param {Object} io - Socket.IO 인스턴스
  */
 const timerV2SimpleEvents = (socket, io) => {
-    console.log('단순화된 타이머 시스템 v2 이벤트 설정 시작:', socket.id);
+    console.log('단순화된 서버 타이머 시스템 v2 이벤트 설정 시작:', socket.id);
     
-    // 하이브리드 타이머 제어 이벤트 (컨트롤 페이지에서 사용)
-    socket.on('timer_v2_hybrid_control', async (data) => {
+    // 서버 타이머 제어 이벤트 (컨트롤 패널에서만 사용)
+    socket.on('server_timer_control', async (data) => {
         try {
-            const { matchId, action, clientStartTime, currentTime } = data;
-            console.log(`단순화된 타이머 v2 제어: matchId=${matchId}, action=${action}`);
+            const { matchId, action, timeValue } = data;
+            console.log(`서버 타이머 제어: matchId=${matchId}, action=${action}`);
             
             const roomName = `match_${matchId}`;
             const currentServerTime = Date.now();
@@ -43,7 +43,7 @@ const timerV2SimpleEvents = (socket, io) => {
                         timerData.isRunning = true;
                         timerData.startTime = currentServerTime;
                         timerData.lastUpdateTime = currentServerTime;
-                        console.log(`타이머 v2 시작: matchId=${matchId}, startTime=${timerData.startTime}`);
+                        console.log(`서버 타이머 시작: matchId=${matchId}, startTime=${timerData.startTime}`);
                     }
                     break;
                     
@@ -54,7 +54,7 @@ const timerV2SimpleEvents = (socket, io) => {
                         timerData.pausedTime += elapsedTime;
                         timerData.isRunning = false;
                         timerData.lastUpdateTime = currentServerTime;
-                        console.log(`타이머 v2 정지: matchId=${matchId}, pausedTime=${timerData.pausedTime}`);
+                        console.log(`서버 타이머 정지: matchId=${matchId}, pausedTime=${timerData.pausedTime}`);
                     }
                     break;
                     
@@ -63,90 +63,75 @@ const timerV2SimpleEvents = (socket, io) => {
                     timerData.pausedTime = 0;
                     timerData.isRunning = false;
                     timerData.lastUpdateTime = currentServerTime;
-                    console.log(`타이머 v2 리셋: matchId=${matchId}`);
+                    console.log(`서버 타이머 리셋: matchId=${matchId}`);
                     break;
                     
                 case 'set':
-                    const targetTime = currentTime || 0;
+                    const targetTime = timeValue || 0;
                     timerData.pausedTime = targetTime;
                     timerData.isRunning = false;
                     timerData.startTime = 0;
                     timerData.lastUpdateTime = currentServerTime;
-                    console.log(`타이머 v2 설정: matchId=${matchId}, targetTime=${targetTime}, pausedTime=${timerData.pausedTime}`);
+                    console.log(`서버 타이머 설정: matchId=${matchId}, targetTime=${targetTime}`);
                     break;
             }
 
             // 전역 상태 업데이트
             global.timerV2States.set(matchId, timerData);
 
-            // DB 업데이트
+            // DB에 타이머 상태 저장
             try {
                 const match = await Match.findByPk(matchId);
                 if (match) {
                     const matchData = match.match_data || {};
-                    matchData.timer_v2_startTime = timerData.startTime;
-                    matchData.timer_v2_pausedTime = timerData.pausedTime;
-                    matchData.timer_v2_isRunning = timerData.isRunning;
-                    matchData.timer_v2_lastUpdateTime = timerData.lastUpdateTime;
+                    matchData.server_timer_startTime = timerData.startTime;
+                    matchData.server_timer_pausedTime = timerData.pausedTime;
+                    matchData.server_timer_isRunning = timerData.isRunning;
+                    matchData.server_timer_lastUpdateTime = timerData.lastUpdateTime;
                     await match.update({ match_data: matchData });
-                    console.log(`타이머 v2 DB 업데이트 완료: matchId=${matchId}`);
+                    console.log(`서버 타이머 DB 저장 완료: matchId=${matchId}`);
                 }
             } catch (error) {
-                console.error('타이머 v2 DB 업데이트 실패:', error);
+                console.error('서버 타이머 DB 저장 실패:', error);
             }
 
-            // 현재 시간 계산 및 전송
+            // 현재 시간 계산
             let currentSeconds = timerData.pausedTime;
             if (timerData.isRunning && timerData.startTime) {
                 const elapsedTime = Math.round((currentServerTime - timerData.startTime) / 1000);
                 currentSeconds = timerData.pausedTime + elapsedTime;
-                console.log(`타이머 v2 계산: pausedTime=${timerData.pausedTime}, elapsedTime=${elapsedTime}, currentSeconds=${currentSeconds}`);
-            } else {
-                console.log(`타이머 v2 정지 상태: pausedTime=${timerData.pausedTime}, isRunning=${timerData.isRunning}`);
-            }
-            
-            // 타이머 시작 시 0초부터 시작하도록 설정
-            if (currentSeconds === 0 && timerData.isRunning) {
-                currentSeconds = 0;
-                console.log(`타이머 시작: 0초부터 시작`);
             }
 
-            // 타이머 모드 확인
-            let timerMode = 'server-timer'; // 기본값
-            try {
-                const setting = await Settings.findOne({ where: { key: `timer_mode_${matchId}` } });
-                if (setting) {
-                    timerMode = setting.value;
-                    console.log(`타이머 모드 조회 성공: key=${setting.key}, value=${setting.value}`);
-                } else {
-                    console.log(`타이머 모드 조회 실패: key=timer_mode_${matchId} (기본값 사용: server-timer)`);
-                }
-            } catch (error) {
-                console.error('타이머 모드 조회 실패:', error);
-            }
-
-            // 모든 클라이언트에게 타이머 상태 전송
-            io.to(roomName).emit('timer_v2_state', {
+            // 컨트롤 패널에 즉시 응답
+            socket.emit('server_timer_state', {
                 matchId: matchId,
                 currentSeconds: currentSeconds,
                 isRunning: timerData.isRunning,
                 startTime: timerData.startTime,
-                pausedTime: timerData.pausedTime,
-                mode: timerMode
+                pausedTime: timerData.pausedTime
             });
 
-            console.log(`타이머 v2 업데이트 전송 완료: matchId=${matchId}, action=${action}, currentSeconds=${currentSeconds}`);
+            // 오버레이 페이지에 전송 (최종 아웃풋)
+            io.to(roomName).emit('server_timer_update', {
+                matchId: matchId,
+                currentSeconds: currentSeconds,
+                isRunning: timerData.isRunning,
+                startTime: timerData.startTime,
+                pausedTime: timerData.pausedTime
+            });
+
+            console.log(`서버 타이머 업데이트 전송 완료: matchId=${matchId}, currentSeconds=${currentSeconds}`);
             
         } catch (error) {
-            console.error('타이머 v2 제어 중 오류 발생:', error);
+            console.error('서버 타이머 제어 중 오류 발생:', error);
         }
     });
 
-    // 타이머 v2 상태 요청 이벤트
-    socket.on('request_timer_v2_state', async (data) => {
+    // 서버 타이머 상태 요청 이벤트
+    socket.on('request_server_timer_state', async (data) => {
         try {
             const { matchId } = data;
-            console.log(`타이머 v2 상태 요청: matchId=${matchId}`);
+            console.log(`서버 타이머 상태 요청: matchId=${matchId}`);
 
             const currentTime = Date.now();
             
@@ -159,19 +144,19 @@ const timerV2SimpleEvents = (socket, io) => {
                     const match = await Match.findByPk(matchId);
                     if (match && match.match_data) {
                         const matchData = match.match_data;
-                        if (matchData.timer_v2_startTime && matchData.timer_v2_pausedTime !== undefined) {
-                            const isRunning = matchData.timer_v2_isRunning || false;
-                            const pausedTime = matchData.timer_v2_pausedTime || 0;
+                        if (matchData.server_timer_startTime !== undefined && matchData.server_timer_pausedTime !== undefined) {
+                            const isRunning = matchData.server_timer_isRunning || false;
+                            const pausedTime = matchData.server_timer_pausedTime || 0;
                             
                             // 서버 재시작 시 시간 복원 계산
                             let currentSeconds = pausedTime;
-                            if (isRunning && matchData.timer_v2_startTime) {
-                                const elapsedTime = Math.round((currentTime - matchData.timer_v2_startTime) / 1000);
+                            if (isRunning && matchData.server_timer_startTime) {
+                                const elapsedTime = Math.round((currentTime - matchData.server_timer_startTime) / 1000);
                                 currentSeconds = pausedTime + elapsedTime;
                             }
                             
                             timerData = {
-                                startTime: matchData.timer_v2_startTime,
+                                startTime: matchData.server_timer_startTime,
                                 pausedTime: pausedTime,
                                 isRunning: isRunning,
                                 lastUpdateTime: currentTime
@@ -180,66 +165,51 @@ const timerV2SimpleEvents = (socket, io) => {
                             // 메모리에 저장
                             global.timerV2States.set(matchId, timerData);
                             
-                            console.log(`타이머 v2 상태 복원: matchId=${matchId}, currentSeconds=${currentSeconds}, isRunning=${isRunning}`);
+                            console.log(`서버 타이머 상태 복원: matchId=${matchId}, currentSeconds=${currentSeconds}, isRunning=${isRunning}`);
                         }
                     }
                 } catch (error) {
-                    console.error('타이머 v2 상태 복원 실패:', error);
+                    console.error('서버 타이머 상태 복원 실패:', error);
                 }
-            }
-            
-            // 타이머 모드 확인
-            let timerMode = 'server-timer'; // 기본값
-            try {
-                const setting = await Settings.findOne({ where: { key: `timer_mode_${matchId}` } });
-                if (setting) {
-                    timerMode = setting.value;
-                }
-            } catch (error) {
-                console.error('타이머 모드 조회 실패:', error);
             }
 
             if (timerData) {
                 let currentSeconds = timerData.pausedTime;
                 if (timerData.isRunning && timerData.startTime) {
-                    const currentTime = Date.now();
                     const elapsedTime = Math.round((currentTime - timerData.startTime) / 1000);
                     currentSeconds = timerData.pausedTime + elapsedTime;
                 }
                 
-                socket.emit('timer_v2_state', {
+                socket.emit('server_timer_state', {
                     matchId: matchId,
                     currentSeconds: currentSeconds,
                     isRunning: timerData.isRunning,
                     startTime: timerData.startTime,
-                    pausedTime: timerData.pausedTime,
-                    mode: timerMode
+                    pausedTime: timerData.pausedTime
                 });
             } else {
                 // 타이머 데이터가 없을 때 기본 상태 전송
-                socket.emit('timer_v2_state', {
+                socket.emit('server_timer_state', {
                     matchId: matchId,
                     currentSeconds: 0,
                     isRunning: false,
-                    startTime: null,
-                    pausedTime: 0,
-                    mode: timerMode
+                    startTime: 0,
+                    pausedTime: 0
                 });
             }
             
         } catch (error) {
-            console.error('타이머 v2 상태 요청 처리 중 오류 발생:', error);
+            console.error('서버 타이머 상태 요청 처리 중 오류 발생:', error);
         }
     });
 
-    // 타이머 모드 변경 이벤트 (컨트롤 페이지에서 사용)
+    // 타이머 모드 변경 이벤트 (컨트롤 패널에서만 사용)
     socket.on('timer_mode_change', async (data) => {
         try {
             const { matchId, newMode } = data;
             console.log(`타이머 모드 변경 요청: matchId=${matchId}, newMode=${newMode}`);
             
             // Settings 테이블에 타이머 모드 저장
-            const { Settings } = require('../../models');
             const settingKey = `timer_mode_${matchId}`;
             
             try {
@@ -250,103 +220,77 @@ const timerV2SimpleEvents = (socket, io) => {
                     // 기존 설정 업데이트
                     await setting.update({ 
                         value: newMode,
-                        updated_at: new Date()
+                        description: `타이머 모드: ${newMode}`
                     });
-                    console.log(`Settings 테이블 업데이트 성공: key=${settingKey}, value=${newMode}`);
+                    console.log(`타이머 모드 업데이트: ${settingKey} = ${newMode}`);
                 } else {
                     // 새 설정 생성
                     await Settings.create({
                         key: settingKey,
                         value: newMode,
-                        description: `타이머 모드 설정 - 경기 ${matchId}`,
-                        created_at: new Date(),
-                        updated_at: new Date()
+                        description: `타이머 모드: ${newMode}`
                     });
-                    console.log(`Settings 테이블 생성 성공: key=${settingKey}, value=${newMode}`);
+                    console.log(`타이머 모드 생성: ${settingKey} = ${newMode}`);
                 }
                 
-                // 저장 후 확인
-                const savedSetting = await Settings.findOne({ where: { key: settingKey } });
-                if (savedSetting) {
-                    console.log(`✅ Settings 테이블 저장 확인: key=${savedSetting.key}, value=${savedSetting.value}`);
-                } else {
-                    console.log(`❌ Settings 테이블 저장 확인 실패`);
-                }
+                // 컨트롤 패널에 응답
+                socket.emit('timer_mode_updated', {
+                    matchId: matchId,
+                    currentMode: newMode
+                });
                 
-            } catch (settingsError) {
-                console.error(`❌ Settings 테이블 저장 실패:`, settingsError.message);
+            } catch (error) {
+                console.error('타이머 모드 저장 실패:', error);
+                socket.emit('timer_mode_error', {
+                    matchId: matchId,
+                    error: '타이머 모드 저장에 실패했습니다.'
+                });
             }
             
-            // 모든 클라이언트에게 모드 변경 알림
-            const roomName = `match_${matchId}`;
-            io.to(roomName).emit('timer_mode_updated', {
-                matchId: matchId,
-                currentMode: newMode
-            });
-            
-            console.log(`타이머 모드 변경 완료: matchId=${matchId}, mode=${newMode}`);
-            
         } catch (error) {
-            console.error('타이머 모드 변경 중 오류 발생:', error);
+            console.error('타이머 모드 변경 처리 중 오류 발생:', error);
         }
     });
 
-    // 타이머 모드 요청 이벤트 (페이지 로드 시 사용)
+    // 타이머 모드 요청 이벤트
     socket.on('request_timer_mode', async (data) => {
         try {
             const { matchId } = data;
             console.log(`타이머 모드 요청: matchId=${matchId}`);
             
-            // Settings 테이블에서 타이머 모드 조회
-            const { Settings } = require('../../models');
             const settingKey = `timer_mode_${matchId}`;
-            let currentMode = null; // 저장된 모드가 없으면 null
             
             try {
                 const setting = await Settings.findOne({ where: { key: settingKey } });
                 
                 if (setting) {
-                    currentMode = setting.value;
-                    console.log(`Settings 테이블에서 타이머 모드 발견: key=${settingKey}, value=${currentMode}`);
+                    console.log(`타이머 모드 발견: ${settingKey} = ${setting.value}`);
+                    socket.emit('timer_mode_response', {
+                        matchId: matchId,
+                        currentMode: setting.value
+                    });
                 } else {
-                    console.log(`Settings 테이블에서 타이머 모드 없음: key=${settingKey} (사용자 선택 대기)`);
+                    console.log(`타이머 모드 없음: ${settingKey} (기본값: server-timer)`);
+                    socket.emit('timer_mode_response', {
+                        matchId: matchId,
+                        currentMode: 'server-timer'
+                    });
                 }
                 
-            } catch (settingsError) {
-                console.error(`Settings 테이블 조회 실패:`, settingsError.message);
+            } catch (error) {
+                console.error('타이머 모드 조회 실패:', error);
+                socket.emit('timer_mode_response', {
+                    matchId: matchId,
+                    currentMode: 'server-timer'
+                });
             }
-            
-            socket.emit('timer_mode_response', {
-                matchId: matchId,
-                currentMode: currentMode
-            });
-            
-            console.log(`타이머 모드 응답: matchId=${matchId}, mode=${currentMode}`);
             
         } catch (error) {
             console.error('타이머 모드 요청 처리 중 오류 발생:', error);
         }
     });
 
-    // 타이머 v2 모드 요청 이벤트 (기존 호환성 유지)
-    socket.on('timer_v2_request_mode', async (data) => {
-        try {
-            const { matchId } = data;
-            console.log(`타이머 v2 모드 요청: matchId=${matchId}`);
-            
-            socket.emit('timer_v2_mode_updated', {
-                matchId: matchId,
-                newMode: 'hybrid'
-            });
-            
-            console.log(`타이머 v2 모드 응답: matchId=${matchId}, mode=hybrid`);
-            
-        } catch (error) {
-            console.error('타이머 v2 모드 요청 처리 중 오류 발생:', error);
-        }
-    });
-    
-    console.log('단순화된 타이머 시스템 v2 이벤트 설정 완료:', socket.id);
+    console.log('단순화된 서버 타이머 시스템 v2 이벤트 설정 완료:', socket.id);
 };
 
 module.exports = timerV2SimpleEvents;

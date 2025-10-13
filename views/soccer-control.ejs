@@ -1338,93 +1338,84 @@
 
         // 타이머 시작
         function startTimer() {
-            console.log('=== 타이머 시작 버튼 클릭 ===');
+            console.log('=== 서버 타이머 시작 ===');
             console.log('matchId:', matchId);
-            console.log('현재 타이머 상태:', timerState);
             
             const isV2Enabled = document.getElementById('timer-v2-toggle').checked;
             
-            if (!timerState.isRunning) {
-                timerState.isRunning = true;
-                timerState.startTime = Date.now();
-                
-                if (isV2Enabled) {
-                    // 새로운 타이머 시스템 v2 사용
-                    console.log('새로운 타이머 v2 시작');
-                    socket.emit('timer_v2_hybrid_control', {
-                        matchId: matchId,
-                        action: 'start',
-                        clientStartTime: timerState.startTime
-                    });
-                } else {
-                    // 기존 타이머 시스템 사용
-                    console.log('기존 타이머 시스템 시작');
+            if (isV2Enabled) {
+                // 서버 타이머 시스템 사용
+                console.log('서버 타이머 시작');
+                socket.emit('server_timer_control', {
+                    matchId: matchId,
+                    action: 'start'
+                });
+            } else {
+                // 기존 타이머 시스템 사용
+                console.log('기존 타이머 시스템 시작');
+                if (!timerState.isRunning) {
+                    timerState.isRunning = true;
+                    timerState.startTime = Date.now();
                     socket.emit('timer_control', {
                         matchId: matchId,
                         action: 'start',
                         clientStartTime: timerState.startTime
                     });
                 }
-                
-                console.log('타이머 시작 이벤트 전송 완료 (클라이언트 시작 시간:', timerState.startTime, ')');
             }
         }
 
         // 타이머 정지
         function stopTimer() {
-            console.log('=== 타이머 정지 버튼 클릭 ===');
-            console.log('matchId:', matchId, 'currentTime:', timerState.currentSeconds);
+            console.log('=== 서버 타이머 정지 ===');
+            console.log('matchId:', matchId);
             
             const isV2Enabled = document.getElementById('timer-v2-toggle').checked;
-                
-            if (timerState.isRunning) {
-                timerState.isRunning = false;
-                timerState.pausedTime = timerState.currentSeconds;
-                
-                if (isV2Enabled) {
-                    // 새로운 타이머 시스템 v2 사용
-                    console.log('새로운 타이머 v2 정지');
-                    socket.emit('timer_v2_hybrid_control', {
-                        matchId: matchId,
-                        action: 'stop',
-                        currentTime: timerState.currentSeconds
-                    });
-                } else {
-                    // 기존 타이머 시스템 사용
-                    console.log('기존 타이머 시스템 정지');
+            
+            if (isV2Enabled) {
+                // 서버 타이머 시스템 사용
+                console.log('서버 타이머 정지');
+                socket.emit('server_timer_control', {
+                    matchId: matchId,
+                    action: 'stop'
+                });
+            } else {
+                // 기존 타이머 시스템 사용
+                console.log('기존 타이머 시스템 정지');
+                if (timerState.isRunning) {
+                    timerState.isRunning = false;
+                    const currentTime = Math.floor((Date.now() - timerState.startTime) / 1000);
+                    timerState.pausedTime += currentTime;
                     socket.emit('timer_control', {
                         matchId: matchId,
                         action: 'stop',
-                        currentTime: timerState.currentSeconds
+                        currentTime: timerState.pausedTime
                     });
                 }
-                
-                console.log('타이머 정지 이벤트 전송 완료');
             }
         }
 
         // 타이머 리셋
         function resetTimer() {
-            console.log('=== 타이머 리셋 버튼 클릭 ===');
+            console.log('=== 서버 타이머 리셋 ===');
             console.log('matchId:', matchId);
             
             const isV2Enabled = document.getElementById('timer-v2-toggle').checked;
             
-            timerState.isRunning = false;
-            timerState.currentSeconds = 0;
-            timerState.startTime = null;
-            timerState.pausedTime = 0;
-            
             if (isV2Enabled) {
-                // 새로운 타이머 시스템 v2 사용
-                console.log('새로운 타이머 v2 리셋');
-                socket.emit('timer_v2_hybrid_control', {
+                // 서버 타이머 시스템 사용
+                console.log('서버 타이머 리셋');
+                socket.emit('server_timer_control', {
                     matchId: matchId,
                     action: 'reset'
                 });
             } else {
                 // 기존 타이머 시스템 사용
                 console.log('기존 타이머 시스템 리셋');
+                timerState.isRunning = false;
+                timerState.currentSeconds = 0;
+                timerState.startTime = null;
+                timerState.pausedTime = 0;
                 socket.emit('timer_control', {
                     matchId: matchId,
                     action: 'reset'
@@ -2818,6 +2809,10 @@
             console.log('=== 페이지 로드 시 타이머 상태 요청 ===');
             socket.emit('request_timer_state', { matchId: matchId });
             
+            // 페이지 로드 시 서버 타이머 상태 요청
+            console.log('=== 페이지 로드 시 서버 타이머 상태 요청 ===');
+            socket.emit('request_server_timer_state', { matchId: matchId });
+            
             // 페이지 로드 시 타이머 모드 상태 요청
             console.log('=== 페이지 로드 시 타이머 모드 상태 요청 ===');
             socket.emit('request_timer_mode', { matchId: matchId });
@@ -2914,12 +2909,12 @@
                 const totalSeconds = minutes * 60 + seconds;
                 
                 if (isV2Enabled) {
-                    // 새로운 타이머 시스템 v2 사용
-                    console.log('새로운 타이머 v2 시간 설정');
-                    socket.emit('timer_v2_hybrid_control', {
+                    // 서버 타이머 시스템 사용
+                    console.log('서버 타이머 시간 설정');
+                    socket.emit('server_timer_control', {
                         matchId: matchId,
                         action: 'set',
-                        currentTime: totalSeconds
+                        timeValue: totalSeconds
                     });
                 } else {
                     // 기존 타이머 시스템 사용
@@ -3103,27 +3098,27 @@
             }
         });
 
-        socket.on('timer_v2_state', function(data) {
-            console.log('=== 타이머 v2 상태 수신 ===');
+        // 서버 타이머 상태 수신
+        socket.on('server_timer_state', function(data) {
+            console.log('=== 서버 타이머 상태 수신 ===');
             console.log('수신된 데이터:', data);
             
             if (data.matchId === matchId) {
-                // 새로운 타이머 시스템 v2 상태 처리
+                // 서버 타이머 상태 처리
                 timerState.currentSeconds = data.currentSeconds || 0;
                 timerState.isRunning = data.isRunning || false;
                 timerState.startTime = data.startTime || null;
                 timerState.pausedTime = data.pausedTime || 0;
                 
-                console.log('타이머 v2 상태 복원:', {
+                console.log('서버 타이머 상태 복원:', {
                     currentSeconds: timerState.currentSeconds,
                     isRunning: timerState.isRunning,
                     startTime: timerState.startTime,
-                    pausedTime: timerState.pausedTime,
-                    mode: data.mode
+                    pausedTime: timerState.pausedTime
                 });
                 
-                // 서버 타이머 모드일 때는 로컬 타이머를 사용하지 않음
-                if (data.mode === 'server-timer') {
+                // 서버 타이머는 로컬 타이머를 사용하지 않음
+                if (timerState.isRunning) {
                     console.log('서버 타이머 모드 (컨트롤) - 로컬 타이머 사용 안함');
                     // 서버에서 받은 currentSeconds 값을 직접 사용
                     updateTimerDisplay(data.currentSeconds);
