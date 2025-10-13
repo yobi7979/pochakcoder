@@ -72,7 +72,7 @@ const timerV2SimpleEvents = (socket, io) => {
                     timerData.isRunning = false;
                     timerData.startTime = 0;
                     timerData.lastUpdateTime = currentServerTime;
-                    console.log(`타이머 v2 설정: matchId=${matchId}, targetTime=${targetTime}`);
+                    console.log(`타이머 v2 설정: matchId=${matchId}, targetTime=${targetTime}, pausedTime=${timerData.pausedTime}`);
                     break;
             }
 

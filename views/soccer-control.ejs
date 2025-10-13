@@ -2906,12 +2906,27 @@
                 }
                 
                 // 서버에 시간 설정 요청
-                socket.emit('timer_control', {
+                const isV2Enabled = document.getElementById('timer-v2-toggle').checked;
+                const totalSeconds = minutes * 60 + seconds;
+                
+                if (isV2Enabled) {
+                    // 새로운 타이머 시스템 v2 사용
+                    console.log('새로운 타이머 v2 시간 설정');
+                    socket.emit('timer_v2_hybrid_control', {
                         matchId: matchId,
-                    action: 'set',
-                    minutes: minutes,
-                    seconds: seconds
-                });
+                        action: 'set',
+                        currentTime: totalSeconds
+                    });
+                } else {
+                    // 기존 타이머 시스템 사용
+                    console.log('기존 타이머 시스템 시간 설정');
+                    socket.emit('timer_control', {
+                        matchId: matchId,
+                        action: 'set',
+                        minutes: minutes,
+                        seconds: seconds
+                    });
+                }
                 
                 // 로컬 타이머 상태 업데이트
                 timerState.currentSeconds = minutes * 60 + seconds;

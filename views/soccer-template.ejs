@@ -2552,6 +2552,11 @@
                 } else if (!timerState.isRunning && !timerState.localTimer) {
                     console.log('서버에서 타이머 정지 상태 수신 - 로컬 타이머 이미 정지됨');
                 }
+                
+                // 시간 수정 상태 확인
+                if (timerState.pausedTime > 0 && !timerState.isRunning) {
+                    console.log('서버에서 시간 수정 상태 수신 - 수정된 시간:', timerState.pausedTime, '초');
+                }
             }
         });
 
