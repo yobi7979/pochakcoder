@@ -2598,6 +2598,39 @@
             }
         });
 
+        // 로컬 타이머 상태 복원 이벤트 리스너 (오버레이 페이지)
+        socket.on('local_timer_state_restored', function(data) {
+            console.log('=== 로컬 타이머 상태 복원 수신 (오버레이) ===');
+            console.log('수신된 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                // 로컬 타이머 상태 복원
+                timerState.currentSeconds = data.timerState.currentSeconds || 0;
+                timerState.isRunning = data.timerState.isRunning || false;
+                timerState.startTime = data.timerState.startTime || null;
+                timerState.pausedTime = data.timerState.pausedTime || 0;
+                
+                console.log('로컬 타이머 상태 복원 (오버레이):', {
+                    currentSeconds: timerState.currentSeconds,
+                    isRunning: timerState.isRunning,
+                    startTime: timerState.startTime,
+                    pausedTime: timerState.pausedTime
+                });
+                
+                // 디스플레이 먼저 업데이트
+                updateTimerDisplay();
+                
+                // 로컬 타이머 상태에 따라 시작/정지
+                if (timerState.isRunning) {
+                    console.log('로컬 타이머 상태 복원 - 오버레이 로컬 타이머 시작');
+                    startLocalTimer();
+                } else {
+                    console.log('로컬 타이머 상태 복원 - 오버레이 로컬 타이머 정지');
+                    stopLocalTimer();
+                }
+            }
+        });
+
         // 오버레이 페이지 로컬 타이머 함수들
         let localTimerInterval = null;
         
