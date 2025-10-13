@@ -2498,6 +2498,27 @@
         // 리셋 이벤트는 별도 처리 (0값 무시하지 않음)
         socket.on('timer_reset', handleTimerReset);
 
+        // 타이머 모드 상태 처리 이벤트 리스너 (오버레이 페이지)
+        socket.on('timer_mode_response', function(data) {
+            console.log('=== 타이머 모드 상태 응답 (오버레이) ===');
+            console.log('수신된 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                console.log('오버레이 페이지 타이머 모드:', data.currentMode);
+                // 오버레이 페이지에서는 모드에 따른 타이머 시스템 선택 로직이 필요할 수 있음
+            }
+        });
+
+        socket.on('timer_mode_updated', function(data) {
+            console.log('=== 타이머 모드 실시간 업데이트 (오버레이) ===');
+            console.log('수신된 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                console.log('오버레이 페이지 타이머 모드 변경:', data.currentMode);
+                // 오버레이 페이지에서는 모드에 따른 타이머 시스템 선택 로직이 필요할 수 있음
+            }
+        });
+
         // 새로운 타이머 시스템 v2 이벤트 리스너 추가
         socket.on('timer_v2_state', function(data) {
             console.log('=== 타이머 v2 상태 수신 (오버레이) ===');
@@ -2534,6 +2555,10 @@
         socket.on('connect', function() {
             console.log('=== 오버레이 페이지 소켓 연결됨 ===');
             console.log('matchId:', matchId);
+            
+            // 타이머 모드 상태 요청
+            socket.emit('request_timer_mode', { matchId: matchId });
+            console.log('=== 타이머 모드 상태 요청 전송 ===');
             
             // 타이머 v2 상태 요청
             socket.emit('request_timer_v2_state', { matchId: matchId });

@@ -196,7 +196,66 @@ const timerV2SimpleEvents = (socket, io) => {
         }
     });
 
-    // 타이머 v2 모드 요청 이벤트
+    // 타이머 모드 변경 이벤트 (컨트롤 페이지에서 사용)
+    socket.on('timer_mode_change', async (data) => {
+        try {
+            const { matchId, newMode } = data;
+            console.log(`타이머 모드 변경 요청: matchId=${matchId}, newMode=${newMode}`);
+            
+            // DB에 타이머 모드 저장
+            const match = await Match.findByPk(matchId);
+            if (match) {
+                const matchData = match.match_data || {};
+                matchData.timer_mode = newMode;
+                matchData.timer_mode_updated_at = Date.now();
+                await match.update({ match_data: matchData });
+                console.log(`타이머 모드 저장 완료: matchId=${matchId}, mode=${newMode}`);
+            }
+            
+            // 모든 클라이언트에게 모드 변경 알림
+            const roomName = `match_${matchId}`;
+            io.to(roomName).emit('timer_mode_updated', {
+                matchId: matchId,
+                currentMode: newMode
+            });
+            
+            console.log(`타이머 모드 변경 완료: matchId=${matchId}, mode=${newMode}`);
+            
+        } catch (error) {
+            console.error('타이머 모드 변경 중 오류 발생:', error);
+        }
+    });
+
+    // 타이머 모드 요청 이벤트 (페이지 로드 시 사용)
+    socket.on('request_timer_mode', async (data) => {
+        try {
+            const { matchId } = data;
+            console.log(`타이머 모드 요청: matchId=${matchId}`);
+            
+            // DB에서 저장된 타이머 모드 조회
+            const match = await Match.findByPk(matchId);
+            let currentMode = 'server-timer'; // 기본값
+            
+            if (match && match.match_data && match.match_data.timer_mode) {
+                currentMode = match.match_data.timer_mode;
+                console.log(`저장된 타이머 모드 발견: matchId=${matchId}, mode=${currentMode}`);
+            } else {
+                console.log(`기본 타이머 모드 사용: matchId=${matchId}, mode=${currentMode}`);
+            }
+            
+            socket.emit('timer_mode_response', {
+                matchId: matchId,
+                currentMode: currentMode
+            });
+            
+            console.log(`타이머 모드 응답: matchId=${matchId}, mode=${currentMode}`);
+            
+        } catch (error) {
+            console.error('타이머 모드 요청 처리 중 오류 발생:', error);
+        }
+    });
+
+    // 타이머 v2 모드 요청 이벤트 (기존 호환성 유지)
     socket.on('timer_v2_request_mode', async (data) => {
         try {
             const { matchId } = data;

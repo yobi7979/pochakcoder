@@ -1321,18 +1321,19 @@
         // 새로운 타이머 시스템 v2 토글
         function toggleTimerV2() {
             const isV2Enabled = document.getElementById('timer-v2-toggle').checked;
+            const newMode = isV2Enabled ? 'server-timer' : 'legacy-timer';
+            
             console.log('=== 타이머 시스템 v2 토글 ===');
             console.log('V2 활성화:', isV2Enabled);
+            console.log('새로운 모드:', newMode);
             
-            if (isV2Enabled) {
-                // 새로운 타이머 시스템 v2 활성화
-                console.log('새로운 타이머 시스템 v2 활성화');
-                // 모드 요청
-                socket.emit('timer_v2_request_mode', { matchId: matchId });
-            } else {
-                // 기존 타이머 시스템 사용
-                console.log('기존 타이머 시스템 사용');
-            }
+            // 서버에 타이머 모드 변경 요청
+            socket.emit('timer_mode_change', { 
+                matchId: matchId, 
+                newMode: newMode 
+            });
+            
+            console.log('타이머 모드 변경 요청 전송:', newMode);
         }
 
         // 타이머 시작
@@ -2786,6 +2787,10 @@
             console.log('=== 페이지 로드 시 타이머 상태 요청 ===');
             socket.emit('request_timer_state', { matchId: matchId });
             
+            // 페이지 로드 시 타이머 모드 상태 요청
+            console.log('=== 페이지 로드 시 타이머 모드 상태 요청 ===');
+            socket.emit('request_timer_mode', { matchId: matchId });
+            
             // 페이지 로드 시 경기 데이터 로드
             loadMatchData();
             
@@ -3002,7 +3007,38 @@
             }
         });
 
-        // 새로운 타이머 시스템 v2 이벤트 리스너
+        // 타이머 모드 상태 복원 및 실시간 동기화 이벤트 리스너
+        socket.on('timer_mode_response', function(data) {
+            console.log('=== 타이머 모드 상태 응답 ===');
+            console.log('수신된 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                const isServerTimer = data.currentMode === 'server-timer';
+                const toggleElement = document.getElementById('timer-v2-toggle');
+                
+                if (toggleElement) {
+                    toggleElement.checked = isServerTimer;
+                    console.log('타이머 모드 상태 복원:', data.currentMode, '체크박스:', isServerTimer);
+                }
+            }
+        });
+
+        socket.on('timer_mode_updated', function(data) {
+            console.log('=== 타이머 모드 실시간 업데이트 ===');
+            console.log('수신된 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                const isServerTimer = data.currentMode === 'server-timer';
+                const toggleElement = document.getElementById('timer-v2-toggle');
+                
+                if (toggleElement) {
+                    toggleElement.checked = isServerTimer;
+                    console.log('타이머 모드 실시간 동기화:', data.currentMode, '체크박스:', isServerTimer);
+                }
+            }
+        });
+
+        // 새로운 타이머 시스템 v2 이벤트 리스너 (기존 호환성 유지)
         socket.on('timer_v2_mode_updated', function(data) {
             console.log('=== 타이머 v2 모드 업데이트 ===');
             console.log('수신된 데이터:', data);
