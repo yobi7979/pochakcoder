@@ -100,6 +100,7 @@ const logsRouter = require('./routes/logs');
 const settingsRouter = require('./routes/settings');
 const dbManagementRouter = require('./routes/db-management');
 const tableManagementRouter = require('./routes/table-management');
+const teamLogosRouter = require('./routes/team-logos');
 
 // 모델들
 const { sequelize, Match, Settings, MatchList, SportOverlayImage, SportActiveOverlayImage, User, UserSportPermission } = require('./models');
@@ -305,6 +306,7 @@ function connectRouters() {
     { path: '/api/templates', router: templatesRouter, name: '템플릿 API' },
     { path: '/api/sport', router: sportsRouter, name: '종목 API' },
     { path: '/api/backup', router: backupRouter, name: '백업 API' },
+    { path: '/api/team-logos', router: teamLogosRouter, name: '통합 팀로고 API' },
     { path: '/api/logs', router: logsRouter, name: '로그 API' },
     { path: '/api/settings', router: settingsRouter, name: '설정 API' },
     { path: '/api/matches', router: matchesRouter, name: '경기 API' },

@@ -4,7 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Baseball Overlay</title>
+    <script>
+        // 전역 변수 설정
+        window.matchId = '<%= match.id %>';
+        window.sportType = 'BASEBALL';
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="/js/unified-overlay-logo-loader.js"></script>
     <style>
         /* 기본 스타일 */
         body {

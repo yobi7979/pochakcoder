@@ -635,6 +635,128 @@ const TeamInfo = sequelize.define('TeamInfo', {
 TeamInfo.belongsTo(Match, { foreignKey: 'match_id', as: 'match' });
 Match.hasMany(TeamInfo, { foreignKey: 'match_id', as: 'teamInfo' });
 
+// TeamLogo 모델 정의 (통합 팀로고 시스템)
+const TeamLogo = sequelize.define('TeamLogo', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  sport_type: {
+    type: DataTypes.STRING(50),
+    allowNull: false
+  },
+  team_name: {
+    type: DataTypes.STRING(100),
+    allowNull: false
+  },
+  logo_path: {
+    type: DataTypes.STRING(500),
+    allowNull: false
+  },
+  logo_bg_color: {
+    type: DataTypes.STRING(7),
+    defaultValue: '#ffffff'
+  },
+  is_active: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  }
+}, {
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  tableName: 'TeamLogos',
+  indexes: [
+    {
+      unique: true,
+      fields: ['sport_type', 'team_name']
+    }
+  ]
+});
+
+// MatchTeamLogo 모델 정의 (경기별 팀로고 연결)
+const MatchTeamLogo = sequelize.define('MatchTeamLogo', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  match_id: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    references: {
+      model: 'Matches',
+      key: 'id'
+    },
+    onDelete: 'CASCADE'
+  },
+  team_type: {
+    type: DataTypes.STRING(10),
+    allowNull: false,
+    validate: {
+      isIn: [['home', 'away']]
+    }
+  },
+  team_logo_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'TeamLogos',
+      key: 'id'
+    },
+    onDelete: 'CASCADE'
+  }
+}, {
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  tableName: 'MatchTeamLogos',
+  indexes: [
+    {
+      unique: true,
+      fields: ['match_id', 'team_type']
+    }
+  ]
+});
+
+// SportTeamLogoConfig 모델 정의 (종목별 설정)
+const SportTeamLogoConfig = sequelize.define('SportTeamLogoConfig', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  sport_type: {
+    type: DataTypes.STRING(50),
+    allowNull: false,
+    unique: true
+  },
+  default_logo_size: {
+    type: DataTypes.STRING(20),
+    defaultValue: '40px'
+  },
+  default_bg_color: {
+    type: DataTypes.STRING(7),
+    defaultValue: '#ffffff'
+  },
+  logo_upload_path: {
+    type: DataTypes.STRING(200),
+    defaultValue: '/TEAMLOGO'
+  }
+}, {
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  tableName: 'SportTeamLogoConfigs'
+});
+
+// 관계 설정
+TeamLogo.hasMany(MatchTeamLogo, { foreignKey: 'team_logo_id', as: 'matchTeamLogos' });
+MatchTeamLogo.belongsTo(TeamLogo, { foreignKey: 'team_logo_id', as: 'teamLogo' });
+MatchTeamLogo.belongsTo(Match, { foreignKey: 'match_id', as: 'match' });
+Match.hasMany(MatchTeamLogo, { foreignKey: 'match_id', as: 'matchTeamLogos' });
+
 // 데이터베이스 연결 및 테이블 생성
 sequelize.sync({ force: false, alter: false })
   .then(async () => {
@@ -672,5 +794,8 @@ module.exports = {
   User,
   UserSportPermission,
   TeamInfo,
+  TeamLogo,
+  MatchTeamLogo,
+  SportTeamLogoConfig,
   Op
 }; 
