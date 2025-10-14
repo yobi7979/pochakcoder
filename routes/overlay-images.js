@@ -52,12 +52,13 @@ router.use('/TEAMLOGO', async (req, res, next) => {
     const fullPath = path.join(teamLogoPath, decodedUrl);
     console.log('🔧 전체 파일 경로:', fullPath);
     
-    // 파일 존재 확인
+    // 파일 존재 확인 및 디렉토리 체크
     const fileExists = fsSync.existsSync(fullPath);
-    console.log('🔧 파일 존재 여부:', fileExists);
+    const isDirectory = fsSync.statSync(fullPath).isDirectory();
+    console.log('🔧 파일 존재 여부:', fileExists, '디렉토리 여부:', isDirectory);
     
-    if (fileExists) {
-      // 파일이 존재하면 직접 서빙
+    if (fileExists && !isDirectory) {
+      // 파일이 존재하고 디렉토리가 아니면 직접 서빙
       const ext = path.extname(fullPath).toLowerCase();
       let contentType = 'application/octet-stream';
       
@@ -98,7 +99,7 @@ router.use('/TEAMLOGO', async (req, res, next) => {
       fileStream.pipe(res);
       return;
     } else {
-      console.log('🔧 파일이 존재하지 않음, 정적 서빙으로 전달');
+      console.log('🔧 파일이 존재하지 않거나 디렉토리임, 정적 서빙으로 전달');
     }
   } catch (error) {
     console.error('🔧 파일 처리 중 오류:', error);
