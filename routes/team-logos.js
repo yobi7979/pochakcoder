@@ -41,9 +41,8 @@ router.get('/:sportType', asyncHandler(async (req, res) => {
       
       imageFiles.forEach(file => {
         const fileName = path.parse(file).name; // 확장자 제거
-        // 한글 파일명의 경우 URL 인코딩된 경로 사용
-        const encodedFileName = encodeURIComponent(file);
-        const logoPath = `/api/overlay-images/TEAMLOGO/${sportType.toUpperCase()}/${encodedFileName}`;
+        // 한글 파일명 처리를 위한 경로 생성
+        const logoPath = `/api/overlay-images/TEAMLOGO/${sportType.toUpperCase()}/${file}`;
         
         // 데이터베이스에 이미 있는지 확인
         const existsInDb = dbTeamLogos.some(dbLogo => 
