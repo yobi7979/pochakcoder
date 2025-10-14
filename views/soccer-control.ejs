@@ -864,7 +864,7 @@
                             <!-- 팀로고 미리보기 및 컨트롤 -->
                             <div class="logo-preview-section">
                                 <div class="logo-preview-container">
-                                    <div class="logo-preview" id="home-logo-preview">
+                                    <div class="logo-preview" id="home-logo-preview" onclick="openLogoModal('home')" style="cursor: pointer;">
                                         <div class="preview-bg" id="home-preview-bg" style="background-color: #FFFFFF;">
                                             <img id="home-preview-logo" src="" alt="홈팀 로고" style="display: none;">
                                             <span class="no-logo-text">로고 없음</span>
@@ -948,7 +948,7 @@
                             <!-- 팀로고 미리보기 및 컨트롤 -->
                             <div class="logo-preview-section">
                                 <div class="logo-preview-container">
-                                    <div class="logo-preview" id="away-logo-preview">
+                                    <div class="logo-preview" id="away-logo-preview" onclick="openLogoModal('away')" style="cursor: pointer;">
                                         <div class="preview-bg" id="away-preview-bg" style="background-color: #FFFFFF;">
                                             <img id="away-preview-logo" src="" alt="어웨이팀 로고" style="display: none;">
                                             <span class="no-logo-text">로고 없음</span>
@@ -3513,6 +3513,191 @@
         
         // 페이지 로드 시 팀로고 사용 상태 로드
         loadTeamLogoVisibility();
+
+        // 팀 로고 선택 모달 관련 변수
+        let currentTeamType = null; // 'home' 또는 'away'
+        let allLogos = []; // 모든 로고 목록
+        let filteredLogos = []; // 필터링된 로고 목록
+        
+        // 로고 미리보기 클릭 이벤트 핸들러
+        function openLogoModal(teamType) {
+            currentTeamType = teamType;
+            const modal = new bootstrap.Modal(document.getElementById('teamLogoModal'));
+            modal.show();
+            loadTeamLogos();
+        }
+        
+        // 팀 로고 목록 로드 (통합 API 기반)
+        async function loadTeamLogos() {
+            const logoList = document.getElementById('logoList');
+            const logoLoading = document.getElementById('logoLoading');
+            const noLogosMessage = document.getElementById('noLogosMessage');
+            
+            // 로딩 표시
+            logoLoading.style.display = 'block';
+            logoList.innerHTML = '';
+            noLogosMessage.style.display = 'none';
+            
+            try {
+                // 통합 팀로고 API 호출
+                const response = await fetch('/api/team-logos/SOCCER');
+                const data = await response.json();
+                
+                if (data.success && data.teamLogos.length > 0) {
+                    allLogos = data.teamLogos;
+                    filteredLogos = [...allLogos];
+                    displayLogos();
+                } else {
+                    noLogosMessage.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('팀 로고 목록 로드 실패:', error);
+                noLogosMessage.style.display = 'block';
+            } finally {
+                logoLoading.style.display = 'none';
+            }
+        }
+        
+        // 로고 목록 표시
+        function displayLogos() {
+            const logoList = document.getElementById('logoList');
+            logoList.innerHTML = filteredLogos.map(logo => `
+                <div class="col-6 col-md-4">
+                    <div class="card h-100 logo-card" onclick="selectLogo('${logo.logo_path}', '${logo.team_name}')" style="cursor: pointer;">
+                        <div class="card-body text-center p-2">
+                            <img src="${logo.logo_path}" alt="${logo.team_name}" class="img-fluid mb-2" style="max-height: 60px; object-fit: contain;">
+                            <h6 class="card-title mb-0" style="font-size: 0.8rem;">${logo.team_name}</h6>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // 로고 선택
+        function selectLogo(logoPath, logoName) {
+            if (!currentTeamType) return;
+            
+            // 팀 로고 매핑 업데이트
+            updateTeamLogo(currentTeamType, logoPath, logoName);
+            
+            // 모달 닫기
+            const modal = bootstrap.Modal.getInstance(document.getElementById('teamLogoModal'));
+            modal.hide();
+        }
+        
+        // 팀 로고 업데이트 (통합 API 기반)
+        async function updateTeamLogo(teamType, logoPath, logoName) {
+            try {
+                console.log(`팀 로고 업데이트: ${teamType}팀, 로고: ${logoName}`);
+                
+                // 현재 팀의 배경색 가져오기
+                const currentBgColor = document.getElementById(`${teamType}-preview-bg`).style.backgroundColor || '#ffffff';
+                
+                // 통합 팀로고 API로 업데이트
+                const response = await fetch(`/api/team-logos/${window.matchId}/select`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        teamType: teamType,
+                        logoPath: logoPath,
+                        teamName: logoName,
+                        bgColor: currentBgColor
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    console.log('팀 로고 업데이트 성공:', result);
+                    
+                    // UI 업데이트
+                    const previewBg = document.getElementById(`${teamType}-preview-bg`);
+                    const previewImg = document.getElementById(`${teamType}-preview-logo`);
+                    const noLogoText = previewBg.querySelector('.no-logo-text');
+                    
+                    if (previewBg && previewImg && noLogoText) {
+                        previewImg.src = logoPath;
+                        previewImg.style.display = 'block';
+                        noLogoText.style.display = 'none';
+                        previewBg.style.backgroundColor = currentBgColor;
+                    }
+                    
+                    // WebSocket으로 실시간 업데이트
+                    socket.emit('dataChanged', {
+                        matchId: window.matchId,
+                        type: 'team_logo_update',
+                        teamType: teamType,
+                        logoPath: logoPath,
+                        teamName: logoName,
+                        bgColor: currentBgColor
+                    });
+                } else {
+                    console.error('팀 로고 업데이트 실패:', result.message);
+                    alert('로고 업데이트에 실패했습니다: ' + result.message);
+                }
+            } catch (error) {
+                console.error('팀 로고 업데이트 중 오류:', error);
+                alert('로고 업데이트 중 오류가 발생했습니다.');
+            }
+        }
+        
+        // 검색 기능
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('logoSearchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase();
+                    filteredLogos = allLogos.filter(logo => 
+                        logo.team_name.toLowerCase().includes(searchTerm)
+                    );
+                    displayLogos();
+                });
+            }
+        });
     </script>
+
+    <!-- 팀 로고 선택 모달 -->
+    <div class="modal fade" id="teamLogoModal" tabindex="-1" aria-labelledby="teamLogoModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="teamLogoModalLabel">팀 로고 선택</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- 검색 입력 필드 -->
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="logoSearchInput" placeholder="로고 이름으로 검색...">
+                        </div>
+                    </div>
+                    
+                    <!-- 로고 목록 -->
+                    <div id="logoList" class="row g-2">
+                        <!-- 로고들이 여기에 동적으로 로드됩니다 -->
+                    </div>
+                    
+                    <!-- 로딩 상태 -->
+                    <div id="logoLoading" class="text-center py-3" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">로딩 중...</span>
+                        </div>
+                        <p class="mt-2">로고 목록을 불러오는 중...</p>
+                    </div>
+                    
+                    <!-- 로고가 없을 때 메시지 -->
+                    <div id="noLogosMessage" class="text-center py-4" style="display: none;">
+                        <i class="bi bi-image text-muted" style="font-size: 2rem;"></i>
+                        <p class="text-muted mt-2">등록된 로고가 없습니다.</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html> 
