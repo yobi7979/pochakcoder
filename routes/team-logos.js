@@ -274,4 +274,71 @@ router.get('/config/:sportType', asyncHandler(async (req, res) => {
   }
 }));
 
+// POST /api/team-logos/:matchId/select - 경기 팀로고 선택
+router.post('/:matchId/select', asyncHandler(async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { teamType, logoPath, teamName, bgColor } = req.body;
+    console.log(`🔧 경기 팀로고 선택: ${matchId} - ${teamType}팀`);
+    
+    // 경기 존재 확인
+    const match = await Match.findByPk(matchId);
+    if (!match) {
+      return res.status(404).json({
+        success: false,
+        message: '경기를 찾을 수 없습니다.'
+      });
+    }
+    
+    // 팀로고 정보 찾기
+    const teamLogo = await TeamLogo.findOne({
+      where: {
+        logo_path: logoPath,
+        is_active: true
+      }
+    });
+    
+    if (!teamLogo) {
+      return res.status(404).json({
+        success: false,
+        message: '팀로고를 찾을 수 없습니다.'
+      });
+    }
+    
+    // 기존 매핑 삭제
+    await MatchTeamLogo.destroy({
+      where: {
+        match_id: matchId,
+        team_type: teamType
+      }
+    });
+    
+    // 새 매핑 생성
+    await MatchTeamLogo.create({
+      match_id: matchId,
+      team_type: teamType,
+      team_logo_id: teamLogo.id
+    });
+    
+    console.log(`✅ 경기 ${matchId} ${teamType}팀 로고 선택 완료: ${teamName}`);
+    res.json({ 
+      success: true, 
+      message: '팀로고가 성공적으로 선택되었습니다.',
+      teamLogo: {
+        team_type: teamType,
+        logo_path: logoPath,
+        logo_bg_color: bgColor,
+        team_name: teamName
+      }
+    });
+  } catch (error) {
+    console.error('경기 팀로고 선택 실패:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '경기 팀로고 선택에 실패했습니다.',
+      error: error.message 
+    });
+  }
+}));
+
 module.exports = router;

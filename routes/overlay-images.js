@@ -11,8 +11,27 @@ const fsSync = require('fs');
 const teamLogoPath = process.env.VOLUME_STORAGE_PATH ? 
     path.join(process.env.VOLUME_STORAGE_PATH, 'TEAMLOGO') : 
     path.join(__dirname, '../public/TEAMLOGO');
+
+console.log('🔧 TEAMLOGO 경로 설정:', {
+  VOLUME_STORAGE_PATH: process.env.VOLUME_STORAGE_PATH,
+  teamLogoPath: teamLogoPath,
+  exists: fsSync.existsSync(teamLogoPath)
+});
+
+// 한글 파일명 처리를 위한 미들웨어
+router.use('/TEAMLOGO', (req, res, next) => {
+  console.log('🔧 TEAMLOGO 요청:', {
+    originalUrl: req.originalUrl,
+    url: req.url,
+    decoded: decodeURIComponent(req.url)
+  });
+  next();
+});
+
 router.use('/TEAMLOGO', express.static(teamLogoPath, {
   setHeaders: (res, filePath) => {
+    console.log('🔧 정적 파일 서빙:', filePath);
+    
     // 한글 파일명을 위한 인코딩 설정
     const fileName = path.basename(filePath);
     if (/[가-힣]/.test(fileName)) {
