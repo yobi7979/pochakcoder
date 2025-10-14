@@ -1587,14 +1587,21 @@
                     timerState.currentSeconds = timerState.pausedTime + elapsed;
                     updateTimerDisplay();
                     
-                    // 오버레이 페이지에 로컬 타이머 상태 주기적 전송 (1초마다)
-                    socket.emit('local_timer_update', {
-                        matchId: matchId,
-                        currentSeconds: timerState.currentSeconds,
-                        isRunning: timerState.isRunning,
-                        startTime: timerState.startTime,
-                        pausedTime: timerState.pausedTime
-                    });
+                    // 오버레이 페이지에 로컬 타이머 상태 주기적 전송 (5초마다만)
+                    if (timerState.currentSeconds % 5 === 0) {
+                        socket.emit('local_timer_update', {
+                            matchId: matchId,
+                            currentSeconds: timerState.currentSeconds,
+                            isRunning: timerState.isRunning,
+                            startTime: timerState.startTime,
+                            pausedTime: timerState.pausedTime
+                        });
+                    }
+                    
+                    // 로컬 타이머 상태 저장 (10초마다)
+                    if (timerState.currentSeconds % 10 === 0) {
+                        saveTimerState();
+                    }
                 }
             }, 1000);
             
