@@ -10,13 +10,17 @@ const { TeamLogo, MatchTeamLogo, Match, SportTeamLogoConfig, Op } = require('../
 // 통합 팀로고 시스템 API
 // ========================================
 
-// GET /api/team-logos/:sportType - 종목별 팀로고 목록 조회
+// GET /api/team-logos/:sportType - 종목별 팀로고 목록 조회 (데이터베이스 + 파일시스템)
 router.get('/:sportType', asyncHandler(async (req, res) => {
   try {
     const { sportType } = req.params;
     console.log(`🔧 종목별 팀로고 목록 조회: ${sportType}`);
     
-    const teamLogos = await TeamLogo.findAll({
+    const fs = require('fs');
+    const path = require('path');
+    
+    // 1. 데이터베이스에서 팀로고 조회
+    const dbTeamLogos = await TeamLogo.findAll({
       where: { 
         sport_type: sportType.toUpperCase(),
         is_active: true 
@@ -24,8 +28,45 @@ router.get('/:sportType', asyncHandler(async (req, res) => {
       order: [['team_name', 'ASC']]
     });
     
-    console.log(`✅ ${sportType} 팀로고 ${teamLogos.length}개 조회 완료`);
-    res.json({ success: true, teamLogos });
+    // 2. 파일시스템에서 팀로고 조회
+    const fileSystemLogos = [];
+    const sportDir = path.join(__dirname, '../public/TEAMLOGO', sportType.toUpperCase());
+    
+    if (fs.existsSync(sportDir)) {
+      const files = fs.readdirSync(sportDir);
+      const imageFiles = files.filter(file => {
+        const ext = path.extname(file).toLowerCase();
+        return ['.png', '.jpg', '.jpeg', '.gif', '.svg'].includes(ext);
+      });
+      
+      imageFiles.forEach(file => {
+        const fileName = path.parse(file).name; // 확장자 제거
+        const logoPath = `/api/overlay-images/TEAMLOGO/${sportType.toUpperCase()}/${file}`;
+        
+        // 데이터베이스에 이미 있는지 확인
+        const existsInDb = dbTeamLogos.some(dbLogo => 
+          dbLogo.logo_path === logoPath || dbLogo.team_name === fileName
+        );
+        
+        if (!existsInDb) {
+          fileSystemLogos.push({
+            id: `file_${fileName}`,
+            sport_type: sportType.toUpperCase(),
+            team_name: fileName,
+            logo_path: logoPath,
+            logo_bg_color: '#ffffff',
+            is_active: true,
+            is_file_system: true
+          });
+        }
+      });
+    }
+    
+    // 3. 데이터베이스와 파일시스템 로고 합치기
+    const allTeamLogos = [...dbTeamLogos, ...fileSystemLogos];
+    
+    console.log(`✅ ${sportType} 팀로고 ${allTeamLogos.length}개 조회 완료 (DB: ${dbTeamLogos.length}, 파일: ${fileSystemLogos.length})`);
+    res.json({ success: true, teamLogos: allTeamLogos });
   } catch (error) {
     console.error('종목별 팀로고 조회 실패:', error);
     res.status(500).json({ 
