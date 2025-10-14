@@ -138,19 +138,28 @@ router.post('/:matchId/select', requireAuth, asyncHandler(async (req, res) => {
       });
     }
     
-    // 팀로고 정보 찾기
-    const teamLogo = await TeamLogo.findOne({
+    // 팀로고 정보 찾기 또는 생성
+    let teamLogo = await TeamLogo.findOne({
       where: {
         logo_path: logoPath,
         is_active: true
       }
     });
     
+    // 데이터베이스에 없으면 새로 생성 (파일시스템에서만 존재하는 경우)
     if (!teamLogo) {
-      return res.status(404).json({
-        success: false,
-        message: '팀로고를 찾을 수 없습니다.'
+      console.log(`🔧 파일시스템 전용 로고를 DB에 등록: ${logoPath}`);
+      
+      // 파일시스템에서만 존재하는 로고를 DB에 등록
+      teamLogo = await TeamLogo.create({
+        sport_type: match.sport_type,
+        team_name: teamName,
+        logo_path: logoPath,
+        logo_bg_color: bgColor || '#ffffff',
+        is_active: true
       });
+      
+      console.log(`✅ 파일시스템 로고 DB 등록 완료: ${teamLogo.id}`);
     }
     
     // 기존 매핑 삭제
