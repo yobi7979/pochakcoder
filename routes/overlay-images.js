@@ -7,8 +7,9 @@ const path = require('path');
 const fs = require('fs').promises;
 const fsSync = require('fs');
 
-// TEAMLOGO 폴더에 대한 정적 파일 서빙
-router.use('/TEAMLOGO', express.static(path.join(__dirname, '../public/TEAMLOGO'), {
+// TEAMLOGO 폴더에 대한 정적 파일 서빙 (Railway Volume 지원)
+const teamLogoPath = process.env.VOLUME_TEAM_LOGOS_PATH || path.join(__dirname, '../public/TEAMLOGO');
+router.use('/TEAMLOGO', express.static(teamLogoPath, {
   setHeaders: (res, filePath) => {
     // 한글 파일명을 위한 인코딩 설정
     const fileName = path.basename(filePath);
@@ -111,7 +112,9 @@ const overlayImageUpload = multer({
         
         // 종목코드를 대문자로 변환하여 폴더명으로 사용
         const sportFolderName = sport.code.toUpperCase();
-        const dir = path.join(__dirname, '..', 'public', 'overlay-images', sportFolderName);
+        // Railway Volume 사용 (환경변수로 경로 설정)
+        const baseDir = process.env.VOLUME_OVERLAY_IMAGES_PATH || path.join(__dirname, '..', 'public', 'overlay-images');
+        const dir = path.join(baseDir, sportFolderName);
         
         // 종목별 폴더가 없으면 생성
         if (!fsSync.existsSync(dir)) {
@@ -597,8 +600,9 @@ router.delete('/delete/:sportCode/:filename', requireAuth, asyncHandler(async (r
       where: { sport_code: sportCode }
     });
     
-    // 물리적 파일 삭제
-    const filePath = path.join(__dirname, '..', 'public', 'overlay-images', sportCode, filename);
+    // 물리적 파일 삭제 (Railway Volume 지원)
+    const baseDir = process.env.VOLUME_OVERLAY_IMAGES_PATH || path.join(__dirname, '..', 'public', 'overlay-images');
+    const filePath = path.join(baseDir, sportCode, filename);
     if (fsSync.existsSync(filePath)) {
       fsSync.unlinkSync(filePath);
       console.log(`🔧 물리적 파일 삭제: ${filePath}`);
@@ -629,7 +633,9 @@ const teamLogoUpload = multer({
   storage: multer.diskStorage({
     destination: function (req, file, cb) {
       const sportType = req.params.sportType.toUpperCase();
-      const dir = path.join(__dirname, '..', 'public', 'TEAMLOGO', sportType);
+      // Railway Volume 사용 (환경변수로 경로 설정)
+      const baseDir = process.env.VOLUME_TEAM_LOGOS_PATH || path.join(__dirname, '..', 'public', 'TEAMLOGO');
+      const dir = path.join(baseDir, sportType);
       
       // 종목별 폴더가 없으면 생성
       if (!fsSync.existsSync(dir)) {
@@ -955,7 +961,9 @@ router.delete('/TEAMLOGO/:sportType/:filename', async (req, res) => {
     console.log(`팀로고 삭제 요청: ${sportTypeUpper}/${filename}`);
     
     // 파일 시스템에서 삭제
-    const filePath = path.join(__dirname, '../public', 'TEAMLOGO', sportTypeUpper, filename);
+    // Railway Volume 지원
+    const baseDir = process.env.VOLUME_TEAM_LOGOS_PATH || path.join(__dirname, '../public', 'TEAMLOGO');
+    const filePath = path.join(baseDir, sportTypeUpper, filename);
     
     if (fsSync.existsSync(filePath)) {
       fsSync.unlinkSync(filePath);
