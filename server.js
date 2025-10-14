@@ -10,7 +10,8 @@ console.log('🔧 모든 환경에서 Sequelize 모델 로딩 허용');
 console.log('🔍 환경 변수:', {
   NODE_ENV: process.env.NODE_ENV,
   RAILWAY_ENVIRONMENT: process.env.RAILWAY_ENVIRONMENT,
-  DATABASE_URL: process.env.DATABASE_URL ? '설정됨' : '없음'
+  DATABASE_URL: process.env.DATABASE_URL ? '설정됨' : '없음',
+  VOLUME_STORAGE_PATH: process.env.VOLUME_STORAGE_PATH || '설정되지 않음'
 });
 
 const express = require('express');
