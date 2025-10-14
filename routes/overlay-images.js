@@ -7,6 +7,23 @@ const path = require('path');
 const fs = require('fs').promises;
 const fsSync = require('fs');
 
+// 한글 파일명을 영문으로 변환하는 함수
+function convertKoreanToEnglish(koreanText) {
+  const koreanToEnglish = {
+    '연천FC': 'yeoncheon_fc',
+    '평택FC': 'pyeongtaek_fc',
+    '로고': 'logo',
+    'FC': 'fc'
+  };
+  
+  let result = koreanText;
+  for (const [korean, english] of Object.entries(koreanToEnglish)) {
+    result = result.replace(new RegExp(korean, 'g'), english);
+  }
+  
+  return result;
+}
+
 // TEAMLOGO 폴더에 대한 정적 파일 서빙 (Railway Volume 지원)
 const teamLogoPath = process.env.VOLUME_STORAGE_PATH ? 
     path.join(process.env.VOLUME_STORAGE_PATH, 'TEAMLOGO') : 
@@ -19,12 +36,104 @@ console.log('🔧 TEAMLOGO 경로 설정:', {
 });
 
 // 한글 파일명 처리를 위한 미들웨어
-router.use('/TEAMLOGO', (req, res, next) => {
+router.use('/TEAMLOGO', async (req, res, next) => {
   console.log('🔧 TEAMLOGO 요청:', {
     originalUrl: req.originalUrl,
     url: req.url,
     decoded: decodeURIComponent(req.url)
   });
+  
+  // 한글 파일명이 포함된 요청 처리
+  if (req.url.includes('%')) {
+    try {
+      const decodedUrl = decodeURIComponent(req.url);
+      console.log('🔧 디코딩된 URL:', decodedUrl);
+      
+      // 파일 경로 구성
+      const fullPath = path.join(teamLogoPath, decodedUrl);
+      console.log('🔧 전체 파일 경로:', fullPath);
+      
+      // 파일 존재 확인
+      const fileExists = fsSync.existsSync(fullPath);
+      console.log('🔧 파일 존재 여부:', fileExists);
+      
+      if (fileExists) {
+        // 파일이 존재하면 직접 서빙
+        const ext = path.extname(fullPath).toLowerCase();
+        let contentType = 'application/octet-stream';
+        
+        switch (ext) {
+          case '.png':
+            contentType = 'image/png';
+            break;
+          case '.jpg':
+          case '.jpeg':
+            contentType = 'image/jpeg';
+            break;
+          case '.gif':
+            contentType = 'image/gif';
+            break;
+          case '.webp':
+            contentType = 'image/webp';
+            break;
+        }
+        
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        
+        // 파일 스트림으로 직접 응답
+        const fileStream = fsSync.createReadStream(fullPath);
+        fileStream.pipe(res);
+        return;
+      } else {
+        console.log('🔧 파일이 존재하지 않음, 영문 변환 시도');
+        
+        // 영문 변환된 파일명으로 시도
+        const fileName = path.basename(decodedUrl);
+        const englishFileName = convertKoreanToEnglish(fileName);
+        const englishPath = path.join(teamLogoPath, decodedUrl.replace(fileName, englishFileName));
+        
+        console.log('🔧 영문 변환 시도:', {
+          original: fileName,
+          converted: englishFileName,
+          path: englishPath
+        });
+        
+        if (fsSync.existsSync(englishPath)) {
+          const ext = path.extname(englishPath).toLowerCase();
+          let contentType = 'application/octet-stream';
+          
+          switch (ext) {
+            case '.png':
+              contentType = 'image/png';
+              break;
+            case '.jpg':
+            case '.jpeg':
+              contentType = 'image/jpeg';
+              break;
+            case '.gif':
+              contentType = 'image/gif';
+              break;
+            case '.webp':
+              contentType = 'image/webp';
+              break;
+          }
+          
+          res.setHeader('Content-Type', contentType);
+          res.setHeader('Cache-Control', 'public, max-age=3600');
+          
+          const fileStream = fsSync.createReadStream(englishPath);
+          fileStream.pipe(res);
+          return;
+        } else {
+          console.log('🔧 영문 변환 파일도 존재하지 않음, 정적 서빙으로 전달');
+        }
+      }
+    } catch (error) {
+      console.error('🔧 한글 파일명 처리 중 오류:', error);
+    }
+  }
+  
   next();
 });
 
