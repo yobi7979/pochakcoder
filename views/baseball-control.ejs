@@ -3598,8 +3598,17 @@
                         preview.style.backgroundColor = bgColor;
                     }
                     
-                    // 서버에서 자동으로 WebSocket 이벤트를 전송하므로 클라이언트에서 추가 전송 불필요
-                    console.log('✅ 팀로고 배경색 저장 완료 - 서버에서 자동으로 WebSocket 이벤트 전송됨');
+                    // WebSocket 이벤트로 DB 정보 업데이트 알림 (축구와 동일)
+                    if (socket.connected) {
+                        socket.emit('dataChanged', {
+                            matchId: '<%= match.id %>',
+                            type: 'teamLogo',
+                            teamType: team
+                        });
+                        console.log('✅ dataChanged 이벤트 전송 완료');
+                    } else {
+                        console.error('❌ 소켓 연결되지 않음 - dataChanged 이벤트 전송 실패');
+                    }
                     
                     console.log(`${team}팀 로고 배경색이 저장되었습니다.`);
                 } else {
@@ -4234,6 +4243,42 @@
             }
         }
 
+        // 팀로고 정보 로드 함수 (축구와 동일한 방식)
+        async function loadTeamLogosFromDB() {
+            try {
+                console.log('팀로고 정보 로드 시작...');
+                const response = await fetch(`/api/matches/${matchId}/team-logos`);
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('팀로고 정보 로드 성공:', result.teamLogos);
+                    
+                    // 각 팀의 로고 정보 업데이트
+                    result.teamLogos.forEach(teamInfo => {
+                        const teamType = teamInfo.team_type;
+                        console.log(`${teamType}팀 로고 정보 업데이트:`, teamInfo);
+                        
+                        // 로고 미리보기 업데이트
+                        const logoPreview = document.getElementById(`${teamType}-team-logo-preview`);
+                        if (logoPreview && teamInfo.logo_path) {
+                            logoPreview.innerHTML = `<img src="${teamInfo.logo_path}" alt="${teamType}팀 로고" class="img-fluid">`;
+                            logoPreview.style.backgroundColor = teamInfo.logo_bg_color || '#ffffff';
+                        }
+                        
+                        // 배경색 선택기 업데이트
+                        const colorInput = document.querySelector(`.${teamType}-team-colorbg`);
+                        if (colorInput && teamInfo.logo_bg_color) {
+                            colorInput.value = teamInfo.logo_bg_color;
+                        }
+                    });
+                } else {
+                    console.error('팀로고 정보 로드 실패:', response.status);
+                }
+            } catch (error) {
+                console.error('팀로고 정보 로드 오류:', error);
+            }
+        }
+
         // 페이지 로드 시 팀로고 사용 상태 불러오기
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('=== 메인 컨트롤 페이지 로드 완료 ===');
@@ -4244,6 +4289,9 @@
             
             // 팀로고 사용 상태 불러오기
             await loadTeamLogoVisibility();
+            
+            // 팀로고 정보 로드 (DB에서)
+            await loadTeamLogosFromDB();
         });
     </script>
 </body>

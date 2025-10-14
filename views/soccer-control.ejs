@@ -837,7 +837,7 @@
                             <div class="team-logo-bg-container">
                                 <div class="team-logo-bg-section">
                                     <label class="form-label">배경색</label>
-                                    <input type="color" id="home-team-logo-bg" class="form-control form-control-color" value="#FFFFFF" title="로고 배경색">
+                                    <input type="color" id="home-team-logo-bg" class="form-control form-control-color" value="<%= match.match_data?.home_team_colorbg || '#ffffff' %>" title="로고 배경색">
                                     <button class="btn btn-success save-team-logo-bg" data-team="home">
                                         <i class="bi bi-save"></i> 저장
                                     </button>
@@ -920,7 +920,7 @@
                             <div class="team-logo-bg-container">
                                 <div class="team-logo-bg-section">
                                     <label class="form-label">배경색</label>
-                                    <input type="color" id="away-team-logo-bg" class="form-control form-control-color" value="#FFFFFF" title="로고 배경색">
+                                    <input type="color" id="away-team-logo-bg" class="form-control form-control-color" value="<%= match.match_data?.away_team_colorbg || '#ffffff' %>" title="로고 배경색">
                                     <button class="btn btn-success save-team-logo-bg" data-team="away">
                                         <i class="bi bi-save"></i> 저장
                                     </button>
