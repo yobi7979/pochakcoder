@@ -6,6 +6,30 @@ const { asyncHandler } = require('../middleware/errorHandler');
 // 모델들
 const { TeamLogo, MatchTeamLogo, Match, SportTeamLogoConfig, Op } = require('../models');
 
+// RGB를 HEX로 변환하는 함수
+function rgbToHex(rgb) {
+  if (!rgb) return '#ffffff';
+  
+  // 이미 HEX 형식인 경우
+  if (rgb.startsWith('#')) {
+    return rgb;
+  }
+  
+  // RGB 형식인 경우 변환
+  if (rgb.startsWith('rgb(')) {
+    const matches = rgb.match(/\d+/g);
+    if (matches && matches.length >= 3) {
+      const r = parseInt(matches[0]);
+      const g = parseInt(matches[1]);
+      const b = parseInt(matches[2]);
+      return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+    }
+  }
+  
+  // 기본값 반환
+  return '#ffffff';
+}
+
 // ========================================
 // 통합 팀로고 시스템 API
 // ========================================
@@ -155,7 +179,7 @@ router.post('/:matchId/select', requireAuth, asyncHandler(async (req, res) => {
         sport_type: match.sport_type,
         team_name: teamName,
         logo_path: logoPath,
-        logo_bg_color: bgColor || '#ffffff',
+        logo_bg_color: rgbToHex(bgColor),
         is_active: true
       });
       

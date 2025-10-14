@@ -655,7 +655,7 @@ const TeamLogo = sequelize.define('TeamLogo', {
     allowNull: false
   },
   logo_bg_color: {
-    type: DataTypes.STRING(7),
+    type: DataTypes.STRING(50),
     defaultValue: '#ffffff'
   },
   is_active: {
