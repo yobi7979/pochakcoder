@@ -35,6 +35,47 @@ console.log('🔧 TEAMLOGO 경로 설정:', {
   exists: fsSync.existsSync(teamLogoPath)
 });
 
+// 팀로고 업로드를 위한 multer 설정 (POST 라우트보다 먼저 정의)
+const teamLogoUpload = multer({
+  storage: multer.diskStorage({
+    destination: function (req, file, cb) {
+      const sportType = req.params.sportType.toUpperCase();
+      // Railway Volume 사용 (환경변수로 경로 설정)
+      const baseDir = process.env.VOLUME_STORAGE_PATH ? 
+          path.join(process.env.VOLUME_STORAGE_PATH, 'TEAMLOGO') : 
+          path.join(__dirname, '..', 'public', 'TEAMLOGO');
+      const dir = path.join(baseDir, sportType);
+      
+      // 종목별 폴더가 없으면 생성
+      if (!fsSync.existsSync(dir)) {
+        fsSync.mkdirSync(dir, { recursive: true });
+        console.log(`🔧 팀로고 폴더 생성: ${dir}`);
+      }
+      
+      cb(null, dir);
+    },
+    filename: function (req, file, cb) {
+      // 한글 파일명 처리
+      const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+      console.log(`🔧 팀로고 파일명 디코딩: ${file.originalname} -> ${originalName}`);
+      
+      // 파일명을 안전하게 처리
+      const safeFileName = originalName.replace(/[^a-zA-Z0-9가-힣._-]/g, '_');
+      console.log(`🔧 팀로고 파일명 처리: ${safeFileName}`);
+      
+      cb(null, safeFileName);
+    }
+  }),
+  fileFilter: function (req, file, cb) {
+    // 이미지 파일만 허용
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('이미지 파일만 업로드 가능합니다.'));
+    }
+  }
+});
+
 // POST 라우트를 먼저 정의 (미들웨어보다 우선)
 // POST /api/overlay-images/TEAMLOGO/:sportType - 팀로고 업로드
 router.post('/TEAMLOGO/:sportType', teamLogoUpload.single('logo'), async (req, res) => {
@@ -900,56 +941,6 @@ router.delete('/delete/:sportCode/:filename', requireAuth, asyncHandler(async (r
   }
 }));
 
-// 팀로고 업로드를 위한 multer 설정
-const teamLogoUpload = multer({
-  storage: multer.diskStorage({
-    destination: function (req, file, cb) {
-      const sportType = req.params.sportType.toUpperCase();
-      // Railway Volume 사용 (환경변수로 경로 설정)
-      const baseDir = process.env.VOLUME_STORAGE_PATH ? 
-          path.join(process.env.VOLUME_STORAGE_PATH, 'TEAMLOGO') : 
-          path.join(__dirname, '..', 'public', 'TEAMLOGO');
-      const dir = path.join(baseDir, sportType);
-      
-      // 종목별 폴더가 없으면 생성
-      if (!fsSync.existsSync(dir)) {
-        fsSync.mkdirSync(dir, { recursive: true });
-        console.log(`🔧 팀로고 폴더 생성: ${dir}`);
-      }
-      
-      cb(null, dir);
-    },
-    filename: function (req, file, cb) {
-      // 한글 파일명 처리
-      let originalName = file.originalname;
-      
-      // 깨진 파일명인지 확인하고 디코딩 시도
-      if (originalName.includes('ì') || originalName.includes('ë') || originalName.includes('í')) {
-        try {
-          const decoded = Buffer.from(originalName, 'latin1').toString('utf8');
-          console.log(`🔧 팀로고 파일명 디코딩: ${originalName} -> ${decoded}`);
-          originalName = decoded;
-        } catch (error) {
-          console.error('🔧 팀로고 파일명 디코딩 실패:', error);
-        }
-      }
-      
-      console.log(`🔧 팀로고 파일명 처리: ${originalName}`);
-      cb(null, originalName);
-    }
-  }),
-  limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB 제한
-  },
-  fileFilter: function (req, file, cb) {
-    // 이미지 파일만 허용
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('이미지 파일만 업로드 가능합니다.'));
-    }
-  }
-});
 
 
 // GET /api/overlay-images/TEAMLOGO/:sportType - 팀로고 목록 조회
