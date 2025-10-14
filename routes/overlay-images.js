@@ -35,6 +35,170 @@ console.log('🔧 TEAMLOGO 경로 설정:', {
   exists: fsSync.existsSync(teamLogoPath)
 });
 
+// POST 라우트를 먼저 정의 (미들웨어보다 우선)
+// POST /api/overlay-images/TEAMLOGO/:sportType - 팀로고 업로드
+router.post('/TEAMLOGO/:sportType', teamLogoUpload.single('logo'), async (req, res) => {
+  try {
+    const { sportType } = req.params;
+    const sportTypeUpper = sportType.toUpperCase();
+    
+    console.log(`팀 로고 업로드 요청: matchId=${req.body.matchId}, teamType=${req.body.teamType}, sportType=${sportTypeUpper}`);
+    
+    // matchId와 teamType이 있는지 확인
+    if (!req.body.matchId || !req.body.teamType) {
+      console.warn(`필수 파라미터 누락: matchId=${req.body.matchId}, teamType=${req.body.teamType}`);
+      return res.status(400).json({ success: false, message: '필수 파라미터가 누락되었습니다.' });
+    }
+
+    // 파일이 없는 경우 (파일 시스템에서 선택한 로고)
+    if (!req.file) {
+      console.log('파일이 없음 - 파일 시스템에서 선택한 로고 처리');
+      
+      // 파일 시스템에서 선택한 로고인 경우
+      if (req.body.logoPath) {
+        const logoPath = req.body.logoPath;
+        const logoName = req.body.logoName || '선택된 로고';
+        
+        console.log(`파일 시스템 로고 선택: ${logoName}, 경로: ${logoPath}`);
+        
+        // Match 테이블의 match_data JSON 필드에 팀로고 정보 저장
+        if (req.body.matchId && req.body.teamType) {
+          try {
+            const { Match } = require('../models');
+            const bgColor = req.body.logoBgColor || req.body.bgColor || '#ffffff';
+            
+            // 현재 경기 정보 조회
+            const match = await Match.findByPk(req.body.matchId);
+            if (!match) {
+              throw new Error('경기를 찾을 수 없습니다.');
+            }
+            
+            // match_data JSON 필드 업데이트
+            const matchData = match.match_data || {};
+            const teamKey = req.body.teamType === 'home' ? 'home_team_logo' : 'away_team_logo';
+            const bgColorKey = req.body.teamType === 'home' ? 'home_team_colorbg' : 'away_team_colorbg';
+            
+            matchData[teamKey] = logoPath;
+            matchData[bgColorKey] = bgColor;
+            
+            // Match 테이블 업데이트
+            await Match.update({
+              match_data: matchData
+            }, {
+              where: {
+                id: req.body.matchId
+              }
+            });
+            
+            console.log(`팀로고 정보 저장 완료: ${req.body.teamType}팀, 경로: ${logoPath}`);
+            
+            return res.json({
+              success: true,
+              message: '팀로고가 성공적으로 선택되었습니다.',
+              logoPath: logoPath,
+              teamType: req.body.teamType
+            });
+          } catch (error) {
+            console.error('팀로고 정보 저장 실패:', error);
+            return res.status(500).json({
+              success: false,
+              message: '팀로고 정보 저장에 실패했습니다.',
+              error: error.message
+            });
+          }
+        }
+      }
+      
+      return res.status(400).json({ success: false, message: '파일 또는 로고 경로가 필요합니다.' });
+    }
+
+    // 파일이 있는 경우 (새로운 파일 업로드)
+    console.log(`🔧 팀로고 업로드 처리 시작: ${req.file.originalname}`);
+    console.log(`🔧 Multer 저장 경로: ${req.file.path}`);
+    console.log(`🔧 Multer 저장 파일명: ${req.file.filename}`);
+    
+    // 파일 저장 성공 확인
+    if (req.file && req.file.path) {
+      console.log(`✅ 팀로고 파일 저장 성공: ${req.file.path}`);
+    } else {
+      console.error('❌ 팀로고 파일 저장 실패');
+      return res.status(500).json({ success: false, message: '파일 저장에 실패했습니다.' });
+    }
+
+    // 팀로고 정보를 TeamInfo 테이블에 저장
+    const { TeamInfo } = require('../models');
+    const bgColor = req.body.logoBgColor || req.body.bgColor || '#ffffff';
+    
+    console.log(`팀로고 업로드 요청 데이터: matchId=${req.body.matchId}, teamType=${req.body.teamType}, sportType=${sportTypeUpper}`);
+    
+    try {
+      // 기존 팀 정보 조회
+      const existingTeam = await TeamInfo.findOne({
+        where: {
+          match_id: req.body.matchId,
+          team_type: req.body.teamType
+        }
+      });
+
+      if (existingTeam) {
+        // 기존 팀 정보 업데이트
+        await TeamInfo.update({
+          logo_path: `/api/overlay-images/TEAMLOGO/${sportTypeUpper}/${req.file.filename}`,
+          logo_bg_color: bgColor
+        }, {
+          where: {
+            match_id: req.body.matchId,
+            team_type: req.body.teamType
+          }
+        });
+        
+        console.log(`TeamInfo 테이블 로고 정보 업데이트 완료: matchId=${req.body.matchId}, teamType=${req.body.teamType}`);
+      } else {
+        console.log('기존 팀 정보가 없음 - TeamInfo 테이블 업데이트 건너뜀');
+      }
+
+      // WebSocket으로 실시간 업데이트 전송
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`match_${req.body.matchId}`).emit('teamLogoUpdate', {
+          teamType: req.body.teamType,
+          logoPath: `/api/overlay-images/TEAMLOGO/${sportTypeUpper}/${req.file.filename}`,
+          bgColor: bgColor
+        });
+        console.log(`WebSocket 팀로고 업데이트 이벤트 전송: room=match_${req.body.matchId}, logoPath=/api/overlay-images/TEAMLOGO/${sportTypeUpper}/${req.file.filename}`);
+      }
+
+      // 팀 이름 가져오기 (기존 팀 정보에서)
+      const teamName = existingTeam ? existingTeam.team_name : `${sportTypeUpper}팀`;
+      
+      console.log(`팀 로고 업로드 성공: /api/overlay-images/TEAMLOGO/${sportTypeUpper}/${req.file.filename}, 팀: ${teamName}, 타입: ${req.body.teamType}, 종목: ${sportTypeUpper}`);
+      console.log(`실제 저장 경로: ${req.file.path}`);
+      
+      res.json({
+        success: true,
+        message: '팀로고가 성공적으로 업로드되었습니다.',
+        logoPath: `/api/overlay-images/TEAMLOGO/${sportTypeUpper}/${req.file.filename}`,
+        teamType: req.body.teamType,
+        teamName: teamName
+      });
+    } catch (error) {
+      console.error('팀로고 정보 저장 실패:', error);
+      res.status(500).json({
+        success: false,
+        message: '팀로고 정보 저장에 실패했습니다.',
+        error: error.message
+      });
+    }
+  } catch (error) {
+    console.error('팀로고 업로드 실패:', error);
+    res.status(500).json({
+      success: false,
+      message: '팀로고 업로드에 실패했습니다.',
+      error: error.message
+    });
+  }
+});
+
 // 한글 파일명 처리를 위한 미들웨어
 router.use('/TEAMLOGO', async (req, res, next) => {
   console.log('🔧 TEAMLOGO 요청:', {
@@ -787,220 +951,6 @@ const teamLogoUpload = multer({
   }
 });
 
-// POST /api/overlay-images/TEAMLOGO/:sportType - 팀로고 업로드
-router.post('/TEAMLOGO/:sportType', teamLogoUpload.single('logo'), async (req, res) => {
-  try {
-    const { sportType } = req.params;
-    const sportTypeUpper = sportType.toUpperCase();
-    
-    console.log(`팀 로고 업로드 요청: matchId=${req.body.matchId}, teamType=${req.body.teamType}, sportType=${sportTypeUpper}`);
-    
-    // matchId와 teamType이 있는지 확인
-    if (!req.body.matchId || !req.body.teamType) {
-      console.warn(`필수 파라미터 누락: matchId=${req.body.matchId}, teamType=${req.body.teamType}`);
-      return res.status(400).json({ success: false, message: '필수 파라미터가 누락되었습니다.' });
-    }
-
-    // 파일이 없는 경우 (파일 시스템에서 선택한 로고)
-    if (!req.file) {
-      console.log('파일이 없음 - 파일 시스템에서 선택한 로고 처리');
-      
-      // 파일 시스템에서 선택한 로고인 경우
-      if (req.body.logoPath) {
-        const logoPath = req.body.logoPath;
-        const logoName = req.body.logoName || '선택된 로고';
-        
-        console.log(`파일 시스템 로고 선택: ${logoName}, 경로: ${logoPath}`);
-        
-        // Match 테이블의 match_data JSON 필드에 팀로고 정보 저장
-        if (req.body.matchId && req.body.teamType) {
-          try {
-            const { Match } = require('../models');
-            const bgColor = req.body.logoBgColor || req.body.bgColor || '#ffffff';
-            
-            // 현재 경기 정보 조회
-            const match = await Match.findByPk(req.body.matchId);
-            if (!match) {
-              throw new Error('경기를 찾을 수 없습니다.');
-            }
-            
-            // match_data JSON 필드 업데이트
-            const matchData = match.match_data || {};
-            const teamKey = req.body.teamType === 'home' ? 'home_team_logo' : 'away_team_logo';
-            const bgColorKey = req.body.teamType === 'home' ? 'home_team_colorbg' : 'away_team_colorbg';
-            
-            matchData[teamKey] = logoPath;
-            matchData[bgColorKey] = bgColor;
-            
-            // Match 테이블 업데이트
-            await Match.update({
-              match_data: matchData
-            }, {
-              where: {
-                id: req.body.matchId
-              }
-            });
-            
-            console.log(`✅ 팀로고 정보 저장 완료: ${req.body.teamType}팀, 경로: ${logoPath}, 배경색: ${bgColor}`);
-            
-            // WebSocket 이벤트 전송
-            const io = require('../server').getIO();
-            const roomName = `match_${req.body.matchId}`;
-            
-            io.to(roomName).emit('teamLogoUpdated', {
-              matchId: req.body.matchId,
-              teamType: req.body.teamType,
-              logoPath: logoPath,
-              logoName: logoName,
-              logoBgColor: bgColor
-            });
-            
-            io.to(roomName).emit('teamLogoBgUpdated', {
-              matchId: req.body.matchId,
-              teamType: req.body.teamType,
-              logoBgColor: bgColor
-            });
-            
-            return res.json({
-              success: true,
-              message: '팀로고가 성공적으로 적용되었습니다.',
-              logoPath: logoPath,
-              logoName: logoName,
-              bgColor: bgColor
-            });
-            
-          } catch (error) {
-            console.error('팀로고 정보 저장 실패:', error);
-            console.error('오류 상세:', {
-              message: error.message,
-              stack: error.stack,
-              matchId: req.body.matchId,
-              teamType: req.body.teamType,
-              sportType: sportTypeUpper
-            });
-            return res.status(500).json({ 
-              success: false, 
-              message: '팀로고 정보 저장에 실패했습니다.',
-              error: error.message,
-              details: {
-                matchId: req.body.matchId,
-                teamType: req.body.teamType,
-                sportType: sportTypeUpper
-              }
-            });
-          }
-        } else {
-          return res.status(400).json({ success: false, message: '필수 파라미터가 누락되었습니다.' });
-        }
-      } else {
-        return res.status(400).json({ success: false, message: '파일이 없습니다.' });
-      }
-    }
-    
-    // 원본 파일명을 안전하게 처리
-    const originalName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
-    
-    console.log(`🔧 팀로고 업로드 처리 시작: ${originalName}`);
-    console.log(`🔧 Multer 저장 경로: ${req.file.path}`);
-    console.log(`🔧 Multer 저장 파일명: ${req.file.filename}`);
-    
-    // Multer가 이미 파일을 저장했으므로 해당 경로 사용
-    const savedFilePath = req.file.path;
-    const savedFileName = req.file.filename;
-    
-    // 파일이 올바르게 저장되었는지 확인
-    if (!fsSync.existsSync(savedFilePath)) {
-      console.error(`파일 저장 실패: ${savedFilePath}`);
-      return res.status(500).json({ 
-        success: false, 
-        message: '파일 저장에 실패했습니다.' 
-      });
-    }
-    
-    console.log(`✅ 팀로고 파일 저장 성공: ${savedFilePath}`);
-    
-    // 로고 파일 경로 생성 (API 경로로 수정)
-    const logoPath = `/api/overlay-images/TEAMLOGO/${sportTypeUpper}/${savedFileName}`;
-    
-    // TeamInfo 테이블에 팀로고 정보 저장
-    console.log(`팀로고 업로드 요청 데이터: matchId=${req.body.matchId}, teamType=${req.body.teamType}, sportType=${sportTypeUpper}`);
-    
-    if (req.body.matchId && req.body.teamType) {
-      try {
-        const { TeamInfo } = require('../models');
-        const bgColor = req.body.logoBgColor || req.body.bgColor || '#ffffff';
-        
-        // TeamInfo 모델이 존재하는지 확인
-        if (!TeamInfo) {
-          console.error('TeamInfo 모델이 로드되지 않았습니다.');
-          throw new Error('TeamInfo 모델을 찾을 수 없습니다.');
-        }
-        
-        // TeamInfo 테이블에서 해당 팀 정보 찾기
-        const teamInfo = await TeamInfo.findOne({
-          where: { 
-            match_id: req.body.matchId, 
-            team_type: req.body.teamType 
-          }
-        });
-
-        if (!teamInfo) {
-          console.log(`팀 정보를 찾을 수 없음: matchId=${req.body.matchId}, teamType=${req.body.teamType}`);
-          throw new Error('팀 정보를 찾을 수 없습니다.');
-        }
-
-        // 로고 정보 업데이트 (TeamInfo 테이블에만 저장)
-        await teamInfo.update({
-          logo_path: logoPath,
-          logo_bg_color: req.body.logoBgColor || bgColor
-        });
-        
-        console.log(`TeamInfo 테이블 로고 정보 업데이트 완료: matchId=${req.body.matchId}, teamType=${req.body.teamType}`);
-        
-        // WebSocket 이벤트 전송 (실제 파일 업로드 시)
-        const io = require('../server').getIO();
-        const roomName = `match_${req.body.matchId}`;
-        
-        io.to(roomName).emit('teamLogoUpdated', {
-          matchId: req.body.matchId,
-          teamType: req.body.teamType,
-          logoPath: logoPath,
-          logoName: originalName,
-          logoBgColor: req.body.logoBgColor || bgColor
-        });
-        
-        io.to(roomName).emit('teamLogoBgUpdated', {
-          matchId: req.body.matchId,
-          teamType: req.body.teamType,
-          logoBgColor: req.body.logoBgColor || bgColor
-        });
-        
-        console.log(`WebSocket 팀로고 업데이트 이벤트 전송: room=${roomName}, logoPath=${logoPath}`);
-      } catch (dbError) {
-        console.error('TeamInfo 테이블 업데이트 오류:', dbError);
-        // DB 오류 시에도 응답은 성공으로 처리하되, 로그는 남김
-        console.log('⚠️ 팀로고 DB 저장 실패했지만 파일 업로드는 성공');
-      }
-    }
-    
-    res.json({ 
-      success: true, 
-      logoPath: logoPath,
-      bgColor: req.body.logoBgColor || '#ffffff', // 전달받은 배경색 사용
-      message: '로고가 성공적으로 업로드되었습니다.'
-    });
-    
-    console.log(`팀 로고 업로드 성공: ${logoPath}, 팀: ${req.body.teamName}, 타입: ${req.body.teamType}, 종목: ${sportTypeUpper}`);
-    console.log(`실제 저장 경로: ${savedFilePath}`);
-  } catch (error) {
-    console.error('로고 업로드 오류:', error);
-    res.status(500).json({ 
-      success: false,
-      message: '로고 업로드 중 오류가 발생했습니다.',
-      error: error.message
-    });
-  }
-});
 
 // GET /api/overlay-images/TEAMLOGO/:sportType - 팀로고 목록 조회
 router.get('/TEAMLOGO/:sportType', async (req, res) => {
