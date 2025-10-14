@@ -30,7 +30,18 @@ router.get('/:sportType', asyncHandler(async (req, res) => {
     
     // 2. 파일시스템에서 팀로고 조회
     const fileSystemLogos = [];
-    const sportDir = path.join(__dirname, '../public/TEAMLOGO', sportType.toUpperCase());
+    // Railway Volume 경로 우선 사용
+    const baseDir = process.env.VOLUME_STORAGE_PATH ? 
+      path.join(process.env.VOLUME_STORAGE_PATH, 'TEAMLOGO') : 
+      path.join(__dirname, '../public/TEAMLOGO');
+    const sportDir = path.join(baseDir, sportType.toUpperCase());
+    
+    console.log(`🔧 팀로고 파일시스템 스캔: ${sportType}`, {
+      VOLUME_STORAGE_PATH: process.env.VOLUME_STORAGE_PATH,
+      baseDir: baseDir,
+      sportDir: sportDir,
+      exists: fs.existsSync(sportDir)
+    });
     
     if (fs.existsSync(sportDir)) {
       const files = fs.readdirSync(sportDir);
