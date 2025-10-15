@@ -2719,7 +2719,7 @@
                 
                 // 2. 팀 로고 맵 정보 로드 (백업) - 오버레이와 동일한 방식
                 try {
-                    const response = await fetch('/api/overlay-images/team-logo-map/SOCCER');
+                    const response = await fetch('/api/overlay-images/TEAMLOGO/SOCCER/');
                     if (response.ok) {
                         const data = await response.json();
                         if (data && data.teamLogoMap) {
