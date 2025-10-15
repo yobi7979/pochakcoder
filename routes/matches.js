@@ -712,6 +712,58 @@ router.put('/:matchId/team-logos', async (req, res) => {
   }
 });
 
+// POST /api/matches/:matchId/team-logos - TeamInfo 테이블에 팀로고 정보 추가
+router.post('/:matchId/team-logos', async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { homeLogoPath, awayLogoPath, homeTeamName, awayTeamName } = req.body;
+
+    console.log(`TeamInfo 테이블에 팀로고 정보 추가: ${matchId}`, { 
+      homeLogoPath, awayLogoPath, homeTeamName, awayTeamName 
+    });
+
+    const { TeamInfo } = require('../models');
+    
+    // 홈팀 정보 추가/업데이트
+    if (homeLogoPath && homeTeamName) {
+      await TeamInfo.upsert({
+        match_id: matchId,
+        team_type: 'home',
+        team_name: homeTeamName,
+        logo_path: homeLogoPath,
+        logo_bg_color: '#ffffff',
+        sport_type: 'SOCCER'
+      });
+      console.log(`홈팀 정보 추가/업데이트: ${homeTeamName} - ${homeLogoPath}`);
+    }
+
+    // 어웨이팀 정보 추가/업데이트
+    if (awayLogoPath && awayTeamName) {
+      await TeamInfo.upsert({
+        match_id: matchId,
+        team_type: 'away',
+        team_name: awayTeamName,
+        logo_path: awayLogoPath,
+        logo_bg_color: '#ffffff',
+        sport_type: 'SOCCER'
+      });
+      console.log(`어웨이팀 정보 추가/업데이트: ${awayTeamName} - ${awayLogoPath}`);
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'TeamInfo 테이블에 팀로고 정보가 성공적으로 추가되었습니다.' 
+    });
+  } catch (error) {
+    console.error('TeamInfo 테이블 팀로고 정보 추가 실패:', error);
+    res.status(500).json({
+      success: false,
+      message: 'TeamInfo 테이블 팀로고 정보 추가에 실패했습니다.',
+      error: error.message
+    });
+  }
+});
+
 // POST /api/matches/:matchId/team-logo-bg - 팀 로고 배경색 수정
 router.post('/:matchId/team-logo-bg', async (req, res) => {
   try {
