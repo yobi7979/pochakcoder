@@ -355,7 +355,7 @@
             try {
                 console.log('팀로고 정보 로드 시작...');
                 
-                // 1. DB에서 팀로고 정보 로드 (최우선순위)
+                // 1. DB에서 팀로고 정보 로드 (최우선순위) - 오버레이와 동일한 방식
                 try {
                     const response = await fetch(`/api/matches/${matchId}/team-logos`);
                     
@@ -364,7 +364,7 @@
                         console.log('팀로고 정보 로드 성공:', result.teamLogos);
                         
                         if (result.teamLogos && result.teamLogos.length > 0) {
-                            // 각 팀의 로고 정보 업데이트
+                            // 각 팀의 로고 정보 업데이트 (오버레이와 동일한 방식)
                             result.teamLogos.forEach(teamInfo => {
                                 const teamType = teamInfo.team_type;
                                 console.log(`${teamType}팀 로고 정보 업데이트:`, teamInfo);
@@ -375,13 +375,13 @@
                                     logoBgInput.value = teamInfo.logo_bg_color;
                                 }
                                 
-                                // 로고 미리보기 업데이트
+                                // 로고 미리보기 업데이트 (오버레이와 동일한 경로 사용)
                                 const previewBg = document.getElementById(`${teamType}-preview-bg`);
                                 const previewImg = document.getElementById(`${teamType}-preview-logo`);
                                 const noLogoText = previewBg.querySelector('.no-logo-text');
                                 
                                 if (teamInfo.logo_path) {
-                                    // 로고가 있는 경우 - API 경로 그대로 사용
+                                    // 오버레이와 동일한 경로 사용
                                     previewImg.src = teamInfo.logo_path;
                                     previewImg.style.display = 'block';
                                     previewBg.style.backgroundColor = teamInfo.logo_bg_color || '#FFFFFF';
