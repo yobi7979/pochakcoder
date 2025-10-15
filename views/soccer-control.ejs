@@ -2717,7 +2717,7 @@
                     console.error('팀로고 DB 조회 오류:', dbError);
                 }
                 
-                // 2. 팀 로고 맵 정보 로드 (백업)
+                // 2. 팀 로고 맵 정보 로드 (백업) - 오버레이와 동일한 방식
                 try {
                     const response = await fetch('/api/overlay-images/TEAMLOGO/SOCCER');
                     if (response.ok) {
@@ -2729,12 +2729,13 @@
                             console.log('사용 가능한 팀들:', Object.keys(data.teamLogoMap));
                             console.log('현재 경기 팀명:', { homeTeamName, awayTeamName });
                             
-                            // 홈팀 로고 설정
+                            // 홈팀 로고 설정 (오버레이와 동일한 방식)
                             if (data.teamLogoMap[homeTeamName]) {
                                 const previewBg = document.getElementById('home-preview-bg');
                                 const previewImg = document.getElementById('home-preview-logo');
                                 const noLogoText = previewBg.querySelector('.no-logo-text');
                                 
+                                // 오버레이와 동일한 경로 사용
                                 previewImg.src = data.teamLogoMap[homeTeamName].path;
                                 previewImg.style.display = 'block';
                                 previewBg.style.backgroundColor = data.teamLogoMap[homeTeamName].bgColor || '#FFFFFF';
@@ -2743,12 +2744,13 @@
                                 console.log('홈팀 로고 정보 로드 (팀 맵):', data.teamLogoMap[homeTeamName]);
                             }
                             
-                            // 어웨이팀 로고 설정
+                            // 어웨이팀 로고 설정 (오버레이와 동일한 방식)
                             if (data.teamLogoMap[awayTeamName]) {
                                 const previewBg = document.getElementById('away-preview-bg');
                                 const previewImg = document.getElementById('away-preview-logo');
                                 const noLogoText = previewBg.querySelector('.no-logo-text');
                                 
+                                // 오버레이와 동일한 경로 사용
                                 previewImg.src = data.teamLogoMap[awayTeamName].path;
                                 previewImg.style.display = 'block';
                                 previewBg.style.backgroundColor = data.teamLogoMap[awayTeamName].bgColor || '#FFFFFF';
