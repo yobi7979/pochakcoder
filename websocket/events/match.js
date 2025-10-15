@@ -262,6 +262,22 @@ const matchEvents = (socket, io) => {
     console.log(`✅ 방 참가 확인 이벤트 전송: ${roomName}`);
   });
 
+  // 경기 방 참여 이벤트 처리 (join_match)
+  socket.on('join_match', (data) => {
+    const { matchId } = data;
+    const roomName = `match_${matchId}`;
+    socket.join(roomName);
+    console.log(`클라이언트 ${socket.id}가 경기 방 ${roomName}에 참여함 (join_match)`);
+    
+    // 방 참가 확인 이벤트 전송
+    socket.emit('joined_room', { 
+      roomName: roomName, 
+      matchId: matchId,
+      clientId: socket.id 
+    });
+    console.log(`✅ 방 참가 확인 이벤트 전송: ${roomName}`);
+  });
+
   // 득점 정보 저장 이벤트 처리
   socket.on('saveGoals', async (data) => {
     try {

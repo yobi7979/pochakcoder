@@ -180,9 +180,9 @@ node create-admin.js
 웹 인터페이스에서 "백업 생성" 기능 사용
 
 ## 📚 참고 문서
-- `JAVASCRIPT_FILES_REFERENCE.md` - JavaScript 파일 역할 상세
+- `docs/JAVASCRIPT_FILES_REFERENCE.md` - JavaScript 파일 역할 상세
 - `.cursorrules` - Cursor AI 개발 규칙
-- `PROJECT_STRUCTURE.md` - 프로젝트 구조 (이 파일)
+- `docs/PROJECT_STRUCTURE.md` - 프로젝트 구조 (이 파일)
 
 ---
 *SportsCoder 프로젝트 구조 문서*

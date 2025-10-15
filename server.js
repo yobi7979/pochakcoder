@@ -2597,6 +2597,35 @@ app.get('/:sport/:id/control', async (req, res) => {
   }
 });
 
+// 서버 중심 타이머 컨트롤 패널 라우트 (새로운 버전)
+app.get('/:sport/:id/control-new', async (req, res) => {
+  try {
+    const match = await Match.findByPk(req.params.id);
+    if (!match) {
+      return res.status(404).json({ error: '경기를 찾을 수 없습니다.' });
+    }
+    
+    // 스포츠 타입이 일치하는지 확인
+    if (match.sport_type.toLowerCase() !== req.params.sport.toLowerCase()) {
+      return res.status(400).json({ error: '잘못된 스포츠 타입입니다.' });
+    }
+
+    console.log(`🎯 서버 중심 타이머 컨트롤 패널 로드: ${match.sport_type}-${match.id}`);
+    
+    // 서버 중심 타이머 컨트롤 패널 렌더링
+    res.render('soccer-control-new', { 
+      match: {
+        ...match.toJSON(),
+        home_score: match.home_score || 0,
+        away_score: match.away_score || 0
+      }
+    });
+  } catch (error) {
+    console.error('서버 중심 타이머 컨트롤 페이지 로드 실패:', error);
+    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+  }
+});
+
 // 동적 모바일 컨트롤 패널 라우트
 app.get('/:sport/:id/control-mobile', async (req, res) => {
   try {
@@ -2756,6 +2785,35 @@ app.get('/:sport/:id/overlay', async (req, res) => {
     });
   } catch (error) {
     console.error('오버레이 페이지 로드 실패:', error);
+    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+  }
+});
+
+// 서버 중심 타이머 오버레이 라우트 (새로운 버전)
+app.get('/:sport/:id/overlay-new', async (req, res) => {
+  try {
+    const match = await Match.findByPk(req.params.id);
+    if (!match) {
+      return res.status(404).json({ error: '경기를 찾을 수 없습니다.' });
+    }
+    
+    // 스포츠 타입이 일치하는지 확인
+    if (match.sport_type.toLowerCase() !== req.params.sport.toLowerCase()) {
+      return res.status(400).json({ error: '잘못된 스포츠 타입입니다.' });
+    }
+
+    console.log(`🎯 서버 중심 타이머 오버레이 로드: ${match.sport_type}-${match.id}`);
+    
+    // 서버 중심 타이머 오버레이 렌더링
+    res.render('soccer-template-new', { 
+      match: {
+        ...match.toJSON(),
+        home_score: match.home_score || 0,
+        away_score: match.away_score || 0
+      }
+    });
+  } catch (error) {
+    console.error('서버 중심 타이머 오버레이 페이지 로드 실패:', error);
     res.status(500).json({ error: '서버 오류가 발생했습니다.' });
   }
 });

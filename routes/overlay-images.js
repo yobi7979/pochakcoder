@@ -1105,8 +1105,11 @@ router.get('/TEAMLOGO/:sportType', async (req, res) => {
     
     console.log(`팀로고 목록 조회: ${sportTypeUpper}`);
     
-    // 팀로고 폴더 경로
-    const teamLogoDir = path.join(__dirname, '../public', 'TEAMLOGO', sportTypeUpper);
+    // 팀로고 폴더 경로 (업로드와 동일한 로직 사용)
+    const baseDir = process.env.VOLUME_STORAGE_PATH ? 
+        path.join(process.env.VOLUME_STORAGE_PATH, 'TEAMLOGO') : 
+        path.join(__dirname, '..', 'public', 'TEAMLOGO');
+    const teamLogoDir = path.join(baseDir, sportTypeUpper);
     
     // 폴더 존재 여부 확인
     if (!fsSync.existsSync(teamLogoDir)) {

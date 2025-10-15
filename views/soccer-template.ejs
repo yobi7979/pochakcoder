@@ -15,6 +15,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="/css/animations.css" rel="stylesheet">
     <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/hybrid-timer-system.js"></script>
     <script src="/js/unified-overlay-logo-loader.js"></script>
     <style>
         
@@ -1257,6 +1258,7 @@
             currentSeconds: 0,
             isRunning: false,
             lastServerTime: 0,
+            serverStateReceived: false,  // 서버 상태 수신 여부 추가
             lastUpdateTime: 0,
             localTimer: null
         };
@@ -1705,23 +1707,26 @@
                     updateTeamColors(homeTeamColor, awayTeamColor);
                 }
                 
-                // 2. 팀로고 정보 로드
-                const teamLogosResponse = await fetch(`/api/matches/${matchId}/team-logos`);
-                if (teamLogosResponse.ok) {
-                    const teamLogosData = await teamLogosResponse.json();
-                    
-                    if (teamLogosData && teamLogosData.teamLogos) {
-                        teamLogosData.teamLogos.forEach((teamInfo) => {
-                            const teamType = teamInfo.team_type;
-                            if (teamInfo.logo_path || teamInfo.logo_bg_color) {
-                                logoState[teamType] = {
-                                    path: teamInfo.logo_path || '',
-                                    bgColor: teamInfo.logo_bg_color || '#ffffff',
-                                    teamName: teamInfo.team_name
-                                };
-                                updateTeamLogo(teamType, logoState[teamType]);
-                            }
-                        });
+                // 2. 팀로고 정보 로드 (중복 방지)
+                if (!teamLogosLoaded) {
+                    const teamLogosResponse = await fetch(`/api/matches/${matchId}/team-logos`);
+                    if (teamLogosResponse.ok) {
+                        const teamLogosData = await teamLogosResponse.json();
+                        
+                        if (teamLogosData && teamLogosData.teamLogos) {
+                            teamLogosData.teamLogos.forEach((teamInfo) => {
+                                const teamType = teamInfo.team_type;
+                                if (teamInfo.logo_path || teamInfo.logo_bg_color) {
+                                    logoState[teamType] = {
+                                        path: teamInfo.logo_path || '',
+                                        bgColor: teamInfo.logo_bg_color || '#ffffff',
+                                        teamName: teamInfo.team_name
+                                    };
+                                    updateTeamLogo(teamType, logoState[teamType]);
+                                }
+                            });
+                            teamLogosLoaded = true;
+                        }
                     }
                 }
                 
@@ -1735,8 +1740,13 @@
                 }
         }
 
-        // 초기 로고 로드 함수
+        // 초기 로고 로드 함수 (최적화된 버전)
         async function loadInitialLogos() {
+            if (teamLogosLoaded) {
+                console.log('🔧 팀로고 이미 로드됨 - 중복 호출 방지');
+                return;
+            }
+            
             try {
                 // 1. DB에서 팀로고 정보 로드 (최우선순위)
                 try {
@@ -1766,6 +1776,12 @@
                                     console.log(`⚠️ ${teamType}팀 로고 정보 없음`);
                                 }
                             });
+                            
+                            // VS 오버레이도 업데이트 (한 번만)
+                            updateVSOverlayLogos();
+                            teamLogosLoaded = true;
+                            console.log('✅ 팀로고 로딩 완료 (DB)');
+                            return;
                         } else {
                             console.log('⚠️ 팀로고 데이터가 없습니다.');
                         }
@@ -1822,6 +1838,7 @@
                     const awayTeamName = '<%= match.away_team %>';
                     
                     console.log('사용 가능한 팀들:', Object.keys(data.teamLogoMap));
+                    console.log('현재 경기 팀명:', { homeTeamName, awayTeamName });
                     
                     // 홈팀 로고 설정 (경기 데이터에 없을 때만)
                     if (data.teamLogoMap[homeTeamName] && !logoState.home) {
@@ -1833,6 +1850,7 @@
                         console.log('홈팀 로고 정보 로드 (팀 맵):', logoState.home);
                         updateTeamLogo('home', logoState.home);
                     } else if (!logoState.home) {
+                        console.log('홈팀 로고 없음 - 팀명:', homeTeamName);
                         }
                     
                     // 원정팀 로고 설정 (경기 데이터에 없을 때만)
@@ -1845,6 +1863,7 @@
                         console.log('원정팀 로고 정보 로드 (팀 맵):', logoState.away);
                         updateTeamLogo('away', logoState.away);
                     } else if (!logoState.away) {
+                        console.log('원정팀 로고 없음 - 팀명:', awayTeamName);
                         }
                     
                     // VS 오버레이 로고도 업데이트
@@ -1859,6 +1878,9 @@
             } catch (error) {
                 }
         }
+
+        // 팀로고 로딩 상태 관리
+        let teamLogosLoaded = false;
 
         // 팀로고 가시성 업데이트 함수
         function updateTeamLogoVisibility(useLogos) {
@@ -2708,6 +2730,10 @@
             console.log('=== 오버레이 페이지 소켓 연결됨 ===');
             console.log('matchId:', matchId);
             
+            // 타이머 상태 요청을 최우선으로 처리
+            socket.emit('request_timer_state', { matchId: matchId });
+            console.log('=== 타이머 상태 요청 (최우선) ===');
+            
             // 경기별 Room에 참여
             socket.emit('join', `match_${matchId}`);
             console.log('=== 경기별 Room 참여 요청 ===');
@@ -2715,14 +2741,6 @@
             // 타이머 모드 상태 요청
             socket.emit('request_timer_mode', { matchId: matchId });
             console.log('=== 타이머 모드 상태 요청 전송 ===');
-            
-            // 서버 타이머 상태 요청
-            socket.emit('request_server_timer_state', { matchId: matchId });
-            console.log('=== 서버 타이머 상태 요청 전송 ===');
-            
-            // 로컬 타이머 상태 요청 (legacy-timer 모드일 때)
-            socket.emit('request_local_timer_state', { matchId: matchId });
-            console.log('=== 로컬 타이머 상태 요청 전송 ===');
         });
 
         // 경기 상태 표시 설정 변경 이벤트 처리
@@ -2757,6 +2775,42 @@
                         // 서버 타이머 상태 요청
                         socket.emit('request_server_timer_state', { matchId: matchId });
                     }
+                }
+            }
+        });
+
+        // 서버 중심 타이머 상태 수신 (오버레이 페이지)
+        socket.on('timer_state', function(data) {
+            console.log('=== 서버 타이머 상태 수신 (오버레이) ===');
+            console.log('수신된 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                // 서버 상태 수신 플래그 설정
+                timerState.serverStateReceived = true;
+                
+                // 서버에서 전송된 정확한 시간 사용 (지연 보정 제거)
+                timerState.currentSeconds = Math.max(0, data.currentSeconds || 0);
+                timerState.isRunning = data.isRunning || false;
+                timerState.startTime = data.startTime || null;
+                timerState.pausedTime = data.pausedTime || 0;
+                timerState.lastServerTime = data.serverTime || Date.now(); // 서버 시간 저장
+                
+                console.log('서버 타이머 상태 업데이트 (오버레이):', {
+                    currentSeconds: timerState.currentSeconds,
+                    isRunning: timerState.isRunning,
+                    startTime: timerState.startTime,
+                    pausedTime: timerState.pausedTime,
+                    serverTime: data.serverTime
+                });
+                
+                // 타이머 디스플레이 업데이트
+                updateTimerDisplay();
+                
+                // 서버 타이머가 실행 중이면 로컬 타이머 시작 (서버 동기화)
+                if (timerState.isRunning) {
+                    startLocalTimer();
+                } else {
+                    stopLocalTimer();
                 }
             }
         });
@@ -3656,8 +3710,15 @@
                 });
         }
 
-        // VS 오버레이 팀 로고 업데이트 함수
+        // VS 오버레이 팀 로고 업데이트 함수 (최적화된 버전)
+        let vsOverlayUpdated = false;
+        
         function updateVSOverlayLogos() {
+            if (vsOverlayUpdated) {
+                console.log('🔧 VS 오버레이 이미 업데이트됨 - 중복 호출 방지');
+                return;
+            }
+            
             console.log('🔧 VS 오버레이 팀로고 업데이트 시작');
             console.log('현재 로고 상태:', logoState);
             
@@ -3715,6 +3776,7 @@
                 }
             }
             
+            vsOverlayUpdated = true;
             console.log('🔧 VS 오버레이 팀로고 업데이트 완료');
         }
         
@@ -3979,7 +4041,7 @@
             socket.emit('request_timer_state', { matchId: matchId });
         }
 
-        // 로컬 타이머 시작 (호환성 지원)
+        // 로컬 타이머 시작 (서버 직접 동기화)
         function startLocalTimer() {
             if (timerState.localTimer) {
                 clearInterval(timerState.localTimer);
@@ -3988,30 +4050,9 @@
             
             timerState.localTimer = setInterval(() => {
                 if (timerState.isRunning) {
-                    let newSeconds = 0;
-                    
-                    // 새로운 독립 타이머 시스템 지원
-                    if (timerState.startTime && timerState.pausedTime !== undefined) {
-                        // startTime이 0이면 pausedTime을 그대로 사용 (리셋된 상태)
-                        if (timerState.startTime === 0) {
-                            newSeconds = Math.max(0, timerState.pausedTime);
-                        } else {
-                            // 서버에서 받은 시작 시간을 기준으로 정확한 계산
-                            const currentTime = Date.now();
-                            const elapsedTime = Math.floor((currentTime - timerState.startTime) / 1000);
-                            newSeconds = Math.max(0, timerState.pausedTime + elapsedTime);
-                            console.log(`로컬 타이머 계산: startTime=${timerState.startTime}, pausedTime=${timerState.pausedTime}, elapsedTime=${elapsedTime}, newSeconds=${newSeconds}`);
-                        }
-                    } else {
-                        // 기존 방식 호환성 지원
-                        const currentTime = Date.now();
-                        const timeDiff = Math.floor((currentTime - timerState.lastUpdateTime) / 1000);
-                        newSeconds = Math.max(0, timerState.lastServerTime + timeDiff);
-                    }
-                    
-                    timerState.currentSeconds = newSeconds;
-                    updateTimerDisplay();
-
+                    // 서버에서 주기적으로 상태 요청 (로컬 계산 제거)
+                    socket.emit('request_timer_state', { matchId: matchId });
+                    console.log('서버 타이머 상태 요청 (주기적):', matchId);
                 }
             }, 1000);
             
@@ -4029,6 +4070,17 @@
         function updateTimerDisplay(overrideSeconds = null) {
             // 서버 타이머 모드일 때는 전달받은 값을 사용, 그렇지 않으면 timerState 사용
             const targetSeconds = overrideSeconds !== null ? overrideSeconds : timerState.currentSeconds;
+            
+            // 서버 상태 수신 전까지 로딩 상태 표시
+            if (targetSeconds === 0 && !timerState.serverStateReceived) {
+                const timerElement = document.querySelector('.match-time');
+                if (timerElement) {
+                    timerElement.textContent = '---';
+                    console.log('타이머 로딩 상태 표시: ---');
+                    return;
+                }
+            }
+            
             // 음수 값 방지
             const safeSeconds = Math.max(0, targetSeconds);
             const minutes = Math.floor(safeSeconds / 60);
@@ -4440,6 +4492,32 @@
                 } else {
                 }
         }
+        
+        // 하이브리드 타이머 시스템 초기화
+        let hybridTimer = null;
+        
+        // DOM 로드 완료 후 하이브리드 타이머 시스템 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔧 하이브리드 타이머 시스템 초기화 시작');
+
+            // 하이브리드 타이머 시스템 생성
+            hybridTimer = new HybridTimerSystem({
+                matchId: window.matchId,
+                socket: socket,
+                onTimerUpdate: function(currentSeconds, isRunning) {
+                    // 타이머 표시 업데이트
+                    updateTimerDisplay(currentSeconds);
+                },
+                onServerDisconnect: function() {
+                    console.log('🔌 서버 연결 끊김 - 로컬 타이머로 전환됨');
+                },
+                onServerReconnect: function() {
+                    console.log('🔌 서버 재연결 - 원래 상태로 복원됨');
+                }
+            });
+
+            console.log('✅ 하이브리드 타이머 시스템 초기화 완료');
+        });
         
     </script>
 </body>

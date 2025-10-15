@@ -3,11 +3,11 @@
 ## ✅ 완료된 준비 사항
 
 ### 📚 문서화 완료
-- [x] JAVASCRIPT_FILES_REFERENCE.md - 모든 JS 파일 역할 및 의존성
-- [x] API_REFERENCE.md - 122개 API 엔드포인트 상세 정보 + 라인 번호
-- [x] REFACTORING_PLAN.md - 5단계 마이그레이션 전략
-- [x] PROJECT_STRUCTURE.md - 프로젝트 구조 및 파일 분류
-- [x] README.md - 프로젝트 개요
+- [x] docs/JAVASCRIPT_FILES_REFERENCE.md - 모든 JS 파일 역할 및 의존성
+- [x] docs/API_REFERENCE.md - 122개 API 엔드포인트 상세 정보 + 라인 번호
+- [x] docs/REFACTORING_PLAN.md - 5단계 마이그레이션 전략
+- [x] docs/PROJECT_STRUCTURE.md - 프로젝트 구조 및 파일 분류
+- [x] docs/README.md - 프로젝트 개요
 
 ### 🤖 Cursor AI 설정 완료
 - [x] .cursorrules - 메인 규칙 파일
@@ -157,10 +157,10 @@
 - [ ] 백업/복원 기능 테스트
 
 ### 문서 업데이트
-- [ ] API_REFERENCE.md 업데이트 (새로운 파일 구조 반영)
-- [ ] JAVASCRIPT_FILES_REFERENCE.md 업데이트
-- [ ] PROJECT_STRUCTURE.md 업데이트
-- [ ] README.md 업데이트
+- [ ] docs/API_REFERENCE.md 업데이트 (새로운 파일 구조 반영)
+- [ ] docs/JAVASCRIPT_FILES_REFERENCE.md 업데이트
+- [ ] docs/PROJECT_STRUCTURE.md 업데이트
+- [ ] docs/README.md 업데이트
 
 ### Git 관리
 - [ ] 리팩토링 완료 커밋
@@ -176,7 +176,7 @@
 4. 수정 후 재시작
 
 ### API 동작 오류 시
-1. API_REFERENCE.md 확인
+1. docs/API_REFERENCE.md 확인
 2. 원본 server.js와 비교
 3. 의존성 확인
 4. 단계별 롤백

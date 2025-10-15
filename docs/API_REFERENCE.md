@@ -111,7 +111,7 @@ app.delete('/api/matches/all', requireAuth, async (req, res) => {
 - **모든 API 코드**: `server.js` 파일에 작성됨 (8,119줄)
 - **라인 번호**: 각 API의 정확한 위치를 라인 번호로 표시
 - **파일 구조**: 단일 파일에 모든 라우트가 정의되어 있음
-- **리팩토링 계획**: `REFACTORING_PLAN.md` 참조
+- **리팩토링 계획**: `docs/REFACTORING_PLAN.md` 참조
 
 ## 🔄 리팩토링 상태
 - **현재 상태**: 모듈화된 구조 (server_refactored_new.js)

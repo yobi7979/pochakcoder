@@ -713,14 +713,6 @@
                     <span id="connection-indicator" class="status-indicator"></span>
                     <span id="connection-text">서버 연결 중...</span>
                 </div>
-                <!-- 새로운 타이머 시스템 v2 토글 (컴팩트 버전) -->
-                <div class="d-flex align-items-center gap-2">
-                    <span class="text-muted small">서버타이머</span>
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="timer-v2-toggle" onchange="toggleTimerV2()">
-                        <label class="form-check-label" for="timer-v2-toggle"></label>
-                    </div>
-                </div>
             <a href="/matches" class="btn btn-outline-secondary back-btn">
                 <i class="bi bi-arrow-left"></i> 목록
             </a>
@@ -1194,19 +1186,13 @@
         console.log('matchId:', matchId);
         
         
-        // 타이머 상태 (백업 폴더의 예전 방식 - 서버타이머와 완전 독립)
-        const timerState = {
-            startTime: Date.now(),
-            pausedTime: 0,
-            currentSeconds: 0,
-            isRunning: false,
-            lastServerTime: 0,
-            lastUpdateTime: 0,
-            localTimer: null
-        };
+        // ========================================
+        // 완전히 새로운 단순한 타이머 시스템
+        // ========================================
         
-        // 현재 타이머 모드 상태
-        let currentTimerMode = 'legacy-timer'; // 기본값: 로컬 타이머
+        // 타이머 상태 (완전 단순화)
+        let currentTime = 0;
+        let isRunning = false;
         
         // 소켓 연결
         socket.on('connect', function() {
@@ -1218,7 +1204,14 @@
             
             // 연결 시 현재 타이머 상태 요청 (재연결 시 정확한 동기화)
             console.log('=== 타이머 상태 요청 ===');
+            console.log('요청할 matchId:', matchId);
             socket.emit('request_timer_state', { matchId: matchId });
+            
+            // 추가: 페이지 로드 시에도 타이머 상태 요청
+            setTimeout(() => {
+                console.log('=== 추가 타이머 상태 요청 (3초 후) ===');
+                socket.emit('request_timer_state', { matchId: matchId });
+            }, 3000);
         });
 
         socket.on('disconnect', function() {
@@ -1330,191 +1323,32 @@
             alert('득점 정보 저장에 실패했습니다: ' + data.error);
         });
 
-        // 새로운 타이머 시스템 v2 토글
-        function toggleTimerV2() {
-            const isV2Enabled = document.getElementById('timer-v2-toggle').checked;
-            const newMode = isV2Enabled ? 'server-timer' : 'legacy-timer';
-            
-            console.log('=== 타이머 시스템 v2 토글 ===');
-            console.log('V2 활성화:', isV2Enabled);
-            console.log('새로운 모드:', newMode);
-            
-            // 현재 타이머 모드 업데이트
-            currentTimerMode = newMode;
-            
-            // 타이머 모드 변경 시 로컬 타이머 중지
-            if (newMode === 'server-timer') {
-                console.log('서버타이머 모드로 변경 - 로컬 타이머 중지');
-                stopLocalTimer();
-                timerState.isRunning = false;
-                timerState.startTime = null;
-                timerState.pausedTime = 0;
-                timerState.currentSeconds = 0;
-                updateTimerDisplay();
-                saveTimerState();
-            } else if (newMode === 'legacy-timer') {
-                console.log('로컬타이머 모드로 변경 - 서버 타이머 중지');
-                // 서버 타이머 중지 요청
-                socket.emit('server_timer_control', {
-                    matchId: matchId,
-                    action: 'stop'
-                });
-            }
-            
-            // 서버에 타이머 모드 변경 요청
-            socket.emit('timer_mode_change', { 
-                matchId: matchId, 
-                newMode: newMode 
-            });
-            
-            console.log('타이머 모드 변경 요청 전송:', newMode);
-        }
 
-        // 타이머 시작 (모드에 따른 분기 처리)
+        // 완전히 새로운 단순한 타이머 제어 함수들
         function startTimer() {
-            console.log('=== 타이머 시작 ===');
-            console.log('matchId:', matchId);
-            console.log('현재 타이머 모드:', currentTimerMode);
-            
-            if (currentTimerMode === 'server-timer') {
-                // 서버 타이머 모드
-                console.log('서버 타이머 시작 요청');
-                socket.emit('server_timer_control', {
-                    matchId: matchId,
-                    action: 'start'
-                });
-            } else {
-                // 로컬 타이머 모드
-                console.log('로컬 타이머 시작');
-                if (!timerState.isRunning) {
-                    timerState.isRunning = true;
-                    timerState.startTime = Date.now();
-                    
-                    // 로컬 타이머 시작
-                    startLocalTimer();
-                    
-                    // 로컬 타이머 상태 저장
-                    saveTimerState();
-                    
-                    // 오버레이 페이지에 로컬 타이머 상태 전송
-                    socket.emit('local_timer_update', {
-                        matchId: matchId,
-                        currentSeconds: timerState.currentSeconds,
-                        isRunning: timerState.isRunning,
-                        startTime: timerState.startTime,
-                        pausedTime: timerState.pausedTime
-                    });
-                    
-                    console.log('로컬 타이머 시작됨:', {
-                        startTime: timerState.startTime,
-                        pausedTime: timerState.pausedTime,
-                        isRunning: timerState.isRunning
-                    });
-                }
-            }
+            console.log('타이머 시작 요청');
+            socket.emit('timer_control', { matchId: matchId, action: 'start' });
         }
 
-        // 타이머 정지 (모드에 따른 분기 처리)
         function stopTimer() {
-            console.log('=== 타이머 정지 ===');
-            console.log('matchId:', matchId);
-            console.log('현재 타이머 모드:', currentTimerMode);
-            
-            if (currentTimerMode === 'server-timer') {
-                // 서버 타이머 모드
-                console.log('서버 타이머 정지 요청');
-                socket.emit('server_timer_control', {
-                    matchId: matchId,
-                    action: 'stop'
-                });
-            } else {
-                // 로컬 타이머 모드
-                console.log('로컬 타이머 정지');
-                if (timerState.isRunning) {
-                    timerState.isRunning = false;
-                    const currentTime = Math.floor((Date.now() - timerState.startTime) / 1000);
-                    timerState.pausedTime += currentTime;
-                    
-                    // 로컬 타이머 정지
-                    stopLocalTimer();
-                    
-                    // 로컬 타이머 상태 저장
-                    saveTimerState();
-                    
-                    // 오버레이 페이지에 로컬 타이머 상태 전송
-                    socket.emit('local_timer_update', {
-                        matchId: matchId,
-                        currentSeconds: timerState.currentSeconds,
-                        isRunning: timerState.isRunning,
-                        startTime: timerState.startTime,
-                        pausedTime: timerState.pausedTime
-                    });
-                    
-                    console.log('로컬 타이머 정지됨:', {
-                        pausedTime: timerState.pausedTime,
-                        isRunning: timerState.isRunning
-                    });
-                }
-            }
+            console.log('타이머 정지 요청');
+            socket.emit('timer_control', { matchId: matchId, action: 'stop' });
         }
 
-        // 타이머 리셋 (모드에 따른 분기 처리)
         function resetTimer() {
-            console.log('=== 타이머 리셋 ===');
-            console.log('matchId:', matchId);
-            console.log('현재 타이머 모드:', currentTimerMode);
-            
-            if (currentTimerMode === 'server-timer') {
-                // 서버 타이머 모드
-                console.log('서버 타이머 리셋 요청');
-                socket.emit('server_timer_control', {
-                    matchId: matchId,
-                    action: 'reset'
-                });
-            } else {
-                // 로컬 타이머 모드
-                console.log('로컬 타이머 리셋');
-                timerState.isRunning = false;
-                timerState.currentSeconds = 0;
-                timerState.startTime = Date.now();
-                timerState.pausedTime = 0;
-                
-                // 로컬 타이머 정지
-                stopLocalTimer();
-                updateTimerDisplay();
-                
-                // 로컬 타이머 상태 저장
-                saveTimerState();
-                
-                // 오버레이 페이지에 로컬 타이머 상태 전송
-                socket.emit('local_timer_update', {
-                    matchId: matchId,
-                    currentSeconds: timerState.currentSeconds,
-                    isRunning: timerState.isRunning,
-                    startTime: timerState.startTime,
-                    pausedTime: timerState.pausedTime
-                });
-                
-                console.log('로컬 타이머 리셋됨:', {
-                    startTime: timerState.startTime,
-                    pausedTime: timerState.pausedTime,
-                    isRunning: timerState.isRunning
-                });
-            }
+            console.log('타이머 리셋 요청');
+            socket.emit('timer_control', { matchId: matchId, action: 'reset' });
         }
 
-        // 시간 수정 토글 (기존 방식)
+        // 시간 수정 토글 (서버 중심)
         function toggleTimeEdit() {
-            console.log('=== 시간 수정 토글 ===');
             const timeEditContainer = document.getElementById('time-edit-container');
             const timeEditInput = document.getElementById('time-edit-input');
             
-            // 현재 시간을 00:00 형식으로 설정
-            const minutes = Math.floor(timerState.currentSeconds / 60);
-            const seconds = timerState.currentSeconds % 60;
+            const minutes = Math.floor(currentTime / 60);
+            const seconds = currentTime % 60;
             timeEditInput.value = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
             
-            // 컨테이너 표시/숨김 토글
             if (timeEditContainer.style.display === 'none') {
                 timeEditContainer.style.display = 'block';
                 timeEditInput.focus();
@@ -1542,21 +1376,13 @@
             }
         }
 
-        // 타이머 디스플레이 업데이트
-        function updateTimerDisplay(overrideSeconds = null) {
-            // 서버 타이머 모드일 때는 전달받은 값을 사용, 그렇지 않으면 timerState 사용
-            const targetSeconds = overrideSeconds !== null ? overrideSeconds : timerState.currentSeconds;
-            
-            // NaN 값 방지 및 유효성 검사
-            let safeSeconds = 0;
-            if (typeof targetSeconds === 'number' && !isNaN(targetSeconds) && isFinite(targetSeconds)) {
-                safeSeconds = Math.max(0, targetSeconds);
-            }
-            
-            const minutes = Math.floor(safeSeconds / 60);
-            const seconds = safeSeconds % 60;
-            document.getElementById('timer-display').textContent = 
-                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        // 완전히 새로운 단순한 타이머 표시 업데이트
+        function updateTimerDisplay() {
+            const minutes = Math.floor(currentTime / 60);
+            const seconds = currentTime % 60;
+            const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('timer-display').textContent = display;
+            console.log('타이머 표시 업데이트:', display);
         }
 
         // 타이머 상태 저장 함수 (로컬 스토리지 + DB 저장)
@@ -1580,51 +1406,26 @@
             });
         }
 
-        // 로컬 타이머 시작 (백업 폴더의 예전 방식 - 서버타이머와 완전 독립)
+        // 완전히 새로운 단순한 실시간 업데이트 시스템
+        let timerInterval = null;
+        
         function startLocalTimer() {
-            if (timerState.localTimer) {
-                clearInterval(timerState.localTimer);
-            }
-            
-            timerState.localTimer = setInterval(() => {
-                if (timerState.isRunning) {
-                    const now = Date.now();
-                    const elapsed = Math.floor((now - timerState.startTime) / 1000);
-                    timerState.currentSeconds = timerState.pausedTime + elapsed;
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (isRunning) {
+                    currentTime++;
                     updateTimerDisplay();
-                    
-                    // 오버레이 페이지에 로컬 타이머 상태 주기적 전송 (5초마다만)
-                    if (timerState.currentSeconds % 5 === 0) {
-                        socket.emit('local_timer_update', {
-                            matchId: matchId,
-                            currentSeconds: timerState.currentSeconds,
-                            isRunning: timerState.isRunning,
-                            startTime: timerState.startTime,
-                            pausedTime: timerState.pausedTime
-                        });
-                    }
-                    
-                    // 로컬 타이머 상태 저장 (10초마다)
-                    if (timerState.currentSeconds % 10 === 0) {
-                        saveTimerState();
-                    }
                 }
             }, 1000);
-            
-            console.log('로컬 타이머 시작됨 (독립 모드):', {
-                startTime: timerState.startTime,
-                pausedTime: timerState.pausedTime,
-                isRunning: timerState.isRunning
-            });
+            console.log('로컬 타이머 시작');
         }
-
-        // 로컬 타이머 정지
+        
         function stopLocalTimer() {
-            if (timerState.localTimer) {
-                clearInterval(timerState.localTimer);
-                timerState.localTimer = null;
-                console.log('로컬 타이머 정지됨');
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
             }
+            console.log('로컬 타이머 정지');
         }
 
         // 연결 상태 업데이트 함수
@@ -2251,16 +2052,7 @@
             }
         }
 
-        // 타이머 업데이트 루프 (서버 시작 시간 기준으로 정확한 계산)
-        setInterval(() => {
-                if (timerState.isRunning) {
-                    // 서버에서 받은 시작 시간을 기준으로 정확한 계산 (오버레이 페이지와 동일한 방식)
-                    const currentTime = Date.now();
-                    const elapsedTime = Math.floor((currentTime - timerState.startTime) / 1000);
-                    timerState.currentSeconds = timerState.pausedTime + elapsedTime;
-                    updateTimerDisplay();
-                }
-            }, 1000);
+        // 중복된 타이머 업데이트 루프 제거됨 - startLocalTimer()에서 처리
 
         // 점수 업데이트
         function updateScore(team, change) {
@@ -3128,48 +2920,13 @@
                     return;
                 }
                 
-                // 서버에 시간 설정 요청
-                const isV2Enabled = document.getElementById('timer-v2-toggle').checked;
-                const totalSeconds = minutes * 60 + seconds;
-                
-                if (isV2Enabled) {
-                    // 서버 타이머 시스템 사용
-                    console.log('서버 타이머 시간 설정');
-                    socket.emit('server_timer_control', {
-                        matchId: matchId,
-                        action: 'set',
-                        timeValue: totalSeconds
-                    });
-                } else {
-                    // 기존 타이머 시스템 사용
-                    console.log('기존 타이머 시스템 시간 설정');
-                    socket.emit('timer_control', {
-                        matchId: matchId,
-                        action: 'set',
-                        minutes: minutes,
-                        seconds: seconds
-                    });
-                }
-                
-                // 로컬 타이머 상태 업데이트 (로컬 타이머 모드일 때만)
-                if (currentTimerMode === 'legacy-timer') {
-                    timerState.currentSeconds = minutes * 60 + seconds;
-                    timerState.isRunning = false;
-                    timerState.startTime = null;
-                    timerState.pausedTime = timerState.currentSeconds;
-                    
-                    // 로컬 타이머 상태 저장
-                    saveTimerState();
-                    
-                    // 오버레이 페이지에 로컬 타이머 상태 전송
-                    socket.emit('local_timer_update', {
-                        matchId: matchId,
-                        currentSeconds: timerState.currentSeconds,
-                        isRunning: timerState.isRunning,
-                        startTime: timerState.startTime,
-                        pausedTime: timerState.pausedTime
-                    });
-                }
+                // 서버에 시간 설정 요청 (서버 중심)
+                console.log('서버 타이머 시간 설정');
+                socket.emit('timer_control', {
+                    matchId: matchId,
+                    action: 'set',
+                    timeValue: { minutes: minutes, seconds: seconds }
+                });
                 
                 // 디스플레이 업데이트
                 updateTimerDisplay();
@@ -3245,104 +3002,34 @@
         });
         });
 
-        // 타이머 상태 복원 이벤트 리스너
+        // 완전히 새로운 단순한 서버 타이머 상태 수신
         socket.on('timer_state', function(data) {
-            console.log('=== 타이머 상태 수신 ===');
+            console.log('=== 서버 타이머 상태 수신 (컨트롤) ===');
             console.log('수신된 데이터:', data);
+            console.log('현재 matchId:', matchId);
             
             if (data.matchId === matchId) {
-                // 타이머 상태 복원
-                timerState.currentSeconds = data.currentSeconds || 0;
-                timerState.isRunning = data.isRunning || false;
-                timerState.startTime = data.startTime || null;
-                timerState.pausedTime = data.pausedTime || 0;
+                console.log('타이머 상태 업데이트 전:', { currentTime, isRunning });
                 
-                console.log('타이머 상태 복원:', {
-                    currentSeconds: timerState.currentSeconds,
-                    isRunning: timerState.isRunning,
-                    startTime: timerState.startTime,
-                    pausedTime: timerState.pausedTime
-                });
+                currentTime = data.currentSeconds || 0;
+                isRunning = data.isRunning || false;
                 
-                // 타이머 디스플레이 업데이트
+                console.log('타이머 상태 업데이트 후:', { currentTime, isRunning });
                 updateTimerDisplay();
                 
-                // 타이머가 실행 중이면 서버 시작 시간을 기준으로 로컬 타이머 시작
-                if (timerState.isRunning && timerState.startTime) {
-                    // 서버에서 받은 시작 시간을 그대로 사용 (오버레이 페이지와 동일한 방식)
-                    console.log('로컬 타이머 재시작 - 서버 시작 시간 사용:', timerState.startTime);
-                }
-            }
-        });
-
-        // 타이머 모드 상태 복원 및 실시간 동기화 이벤트 리스너
-        socket.on('timer_mode_response', function(data) {
-            console.log('=== 타이머 모드 상태 응답 ===');
-            console.log('수신된 데이터:', data);
-            
-            if (data.matchId === matchId) {
-                const toggleElement = document.getElementById('timer-v2-toggle');
-                
-                if (toggleElement) {
-                    if (data.currentMode === null) {
-                        // 저장된 모드가 없는 경우 - 기본값으로 설정 (서버타이머 기본 활성화)
-                        toggleElement.checked = true; // 서버타이머 기본 활성화
-                        currentTimerMode = 'server-timer'; // 현재 모드 업데이트
-                        console.log('저장된 타이머 모드 없음 - 서버타이머 기본 활성화');
-                        console.log('체크박스 상태: 서버타이머 기본 활성화');
-                    } else {
-                        // 저장된 모드가 있는 경우 - 해당 모드로 복원
-                        const isServerTimer = data.currentMode === 'server-timer';
-                        toggleElement.checked = isServerTimer;
-                        currentTimerMode = data.currentMode; // 현재 모드 업데이트
-                        console.log('타이머 모드 상태 복원:', data.currentMode, '체크박스:', isServerTimer);
-                        
-                        // UI 업데이트 후 로그 출력
-                        console.log('체크박스 상태 업데이트 완료:', toggleElement.checked);
-                        
-                        if (data.currentMode === 'server-timer') {
-                            console.log('복원된 타이머 모드: 서버타이머 시스템');
-                        } else if (data.currentMode === 'legacy-timer') {
-                            console.log('복원된 타이머 모드: 로컬 타이머 시스템');
-                        }
-                    }
+                if (isRunning) {
+                    console.log('로컬 타이머 시작');
+                    startLocalTimer();
                 } else {
-                    console.error('timer-v2-toggle 요소를 찾을 수 없습니다');
+                    console.log('로컬 타이머 정지');
+                    stopLocalTimer();
                 }
+            } else {
+                console.log('matchId 불일치:', data.matchId, 'vs', matchId);
             }
         });
 
-        socket.on('timer_mode_updated', function(data) {
-            console.log('=== 타이머 모드 실시간 업데이트 ===');
-            console.log('수신된 데이터:', data);
-            
-            if (data.matchId === matchId) {
-                const isServerTimer = data.currentMode === 'server-timer';
-                const toggleElement = document.getElementById('timer-v2-toggle');
-                
-                if (toggleElement) {
-                    toggleElement.checked = isServerTimer;
-                    console.log('타이머 모드 실시간 동기화:', data.currentMode, '체크박스:', isServerTimer);
-                }
-            }
-        });
 
-        // 새로운 타이머 시스템 v2 이벤트 리스너 (기존 호환성 유지)
-        socket.on('timer_v2_mode_updated', function(data) {
-            console.log('=== 타이머 v2 모드 업데이트 ===');
-            console.log('수신된 데이터:', data);
-            
-            if (data.matchId === matchId) {
-                console.log('타이머 v2 모드:', data.newMode);
-                // UI 업데이트 (필요시)
-            }
-        });
-
-        // 로컬 타이머만 사용 (서버타이머와 완전 독립)
-        // 서버타이머 관련 이벤트 리스너는 제거하여 간섭 방지
-
-        // 로컬 타이머만 사용 (서버타이머와 완전 독립)
-        // 서버타이머 관련 이벤트 리스너는 제거하여 간섭 방지
 
         socket.on('match_updated', function(data) {
             console.log('=== 경기 업데이트 이벤트 수신 ===');

@@ -5,8 +5,8 @@
 
 ## 🔄 실시간 업데이트 개발 룰
 **DB 저장 형태의 코드 작성 시 실시간 업데이트가 필요한 경우, 다음 룰을 참고하세요:**
-- **룰 문서**: `REALTIME_UPDATE_RULES.md`
-- **개발 계획서**: `REFACTORING_PLAN.md`의 "실시간 업데이트 개발 표준" 섹션
+- **룰 문서**: `docs/REALTIME_UPDATE_RULES.md`
+- **개발 계획서**: `docs/REFACTORING_PLAN.md`의 "실시간 업데이트 개발 표준" 섹션
 - **핵심 원칙**: 복잡한 소켓 이벤트 대신 단순한 `dataChanged` 이벤트 사용
 - **데이터 일관성**: DB에서 직접 최신 데이터 로드하여 보장
 
