@@ -259,7 +259,10 @@ router.use('/TEAMLOGO', async (req, res, next) => {
     
     // 파일 존재 확인 및 디렉토리 체크
     const fileExists = fsSync.existsSync(fullPath);
-    const isDirectory = fsSync.statSync(fullPath).isDirectory();
+    let isDirectory = false;
+    if (fileExists) {
+      isDirectory = fsSync.statSync(fullPath).isDirectory();
+    }
     console.log('🔧 파일 존재 여부:', fileExists, '디렉토리 여부:', isDirectory);
     
     if (fileExists && !isDirectory) {
