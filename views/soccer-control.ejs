@@ -2329,16 +2329,85 @@
             }
         }
         
+        // 미리보기 섹션에서 현재 로고 정보 추출
+        function getCurrentPreviewLogoInfo(team) {
+            const logoPreview = document.getElementById(`${team}-team-logo-preview`);
+            const currentLogoImg = logoPreview.querySelector('img');
+            
+            return {
+                logoPath: currentLogoImg ? currentLogoImg.src : null,
+                bgColor: logoPreview.style.backgroundColor || '#ffffff',
+                hasLogo: currentLogoImg !== null
+            };
+        }
+
+        // 현재 미리보기 로고 저장 함수
+        async function saveCurrentPreviewLogo(team) {
+            const logoInfo = getCurrentPreviewLogoInfo(team);
+            
+            if (!logoInfo.hasLogo) {
+                alert('저장할 로고가 없습니다. 먼저 로고를 선택해주세요.');
+                return;
+            }
+            
+            console.log(`${team}팀 현재 미리보기 로고 저장 시작:`, logoInfo);
+            
+            try {
+                // DB에 팀로고 정보 저장 (파일 업로드 없이)
+                const response = await fetch(`/api/matches/${matchId}/team-logos`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        homeLogoPath: team === 'home' ? logoInfo.logoPath : null,
+                        awayLogoPath: team === 'away' ? logoInfo.logoPath : null,
+                        homeTeamName: team === 'home' ? '<%= match.home_team %>' : null,
+                        awayTeamName: team === 'away' ? '<%= match.away_team %>' : null,
+                        homeTeamColor: team === 'home' ? document.getElementById('home-team-color').value : null,
+                        awayTeamColor: team === 'away' ? document.getElementById('away-team-color').value : null,
+                        homeTeamColorBg: team === 'home' ? logoInfo.bgColor : null,
+                        awayTeamColorBg: team === 'away' ? logoInfo.bgColor : null
+                    })
+                });
+                
+                if (response.ok) {
+                    console.log(`${team}팀 현재 미리보기 로고 저장 성공`);
+                    
+                    // WebSocket 이벤트로 DB 정보 업데이트 알림
+                    if (socket.connected) {
+                        socket.emit('dataChanged', {
+                            matchId: matchId,
+                            type: 'teamLogo',
+                            teamType: team
+                        });
+                        console.log('✅ dataChanged 이벤트 전송 완료');
+                    }
+                } else {
+                    console.error(`${team}팀 현재 미리보기 로고 저장 실패: ${response.status}`);
+                }
+            } catch (error) {
+                console.error(`${team}팀 현재 미리보기 로고 저장 오류:`, error);
+            }
+        }
+
         // 팀로고 저장
         async function saveTeamLogo(team) {
             const fileInput = document.getElementById(`${team}-team-logo`);
-            const bgColor = document.getElementById(`${team}-team-logo-bg`).value;
             const file = fileInput.files[0];
             
-            if (!file) {
-                alert('로고 파일을 선택해주세요.');
-                return;
+            if (file) {
+                // 파일이 선택된 경우: 기존 파일 업로드 로직
+                console.log(`${team}팀 새 파일 업로드 모드`);
+                await uploadNewLogoFile(team, file);
+            } else {
+                // 파일이 선택되지 않은 경우: 미리보기 섹션의 현재 로고 활용
+                console.log(`${team}팀 현재 미리보기 로고 저장 모드`);
+                await saveCurrentPreviewLogo(team);
             }
+        }
+
+        // 새 파일 업로드 함수 (기존 로직 분리)
+        async function uploadNewLogoFile(team, file) {
+            const bgColor = document.getElementById(`${team}-team-logo-bg`).value;
             
             const formData = new FormData();
             formData.append('logo', file);
