@@ -59,8 +59,10 @@ const teamLogoUpload = multer({
       const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
       console.log(`🔧 팀로고 파일명 디코딩: ${file.originalname} -> ${originalName}`);
       
-      // 파일명을 안전하게 처리
-      const safeFileName = originalName.replace(/[^a-zA-Z0-9가-힣._-]/g, '_');
+      // 파일명을 안전하게 처리 (공백은 하이픈으로, 특수문자만 언더바로)
+      const safeFileName = originalName
+        .replace(/\s+/g, '-')  // 공백을 하이픈으로 변경
+        .replace(/[^a-zA-Z0-9가-힣._-]/g, '_');  // 나머지 특수문자만 언더바로
       console.log(`🔧 팀로고 파일명 처리: ${safeFileName}`);
       
       cb(null, safeFileName);
