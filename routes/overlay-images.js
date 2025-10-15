@@ -25,9 +25,10 @@ function convertKoreanToEnglish(koreanText) {
 }
 
 // TEAMLOGO 폴더에 대한 정적 파일 서빙 (Railway Volume 지원)
+// Railway Volume이 /app/public에 마운트되어 있으므로 이를 우선 사용
 const teamLogoPath = process.env.VOLUME_STORAGE_PATH ? 
     path.join(process.env.VOLUME_STORAGE_PATH, 'TEAMLOGO') : 
-    path.join(__dirname, '../public/TEAMLOGO');
+    path.join('/app/public', 'TEAMLOGO');
 
 console.log('🔧 TEAMLOGO 경로 설정:', {
   VOLUME_STORAGE_PATH: process.env.VOLUME_STORAGE_PATH,
@@ -41,9 +42,10 @@ const teamLogoUpload = multer({
     destination: function (req, file, cb) {
       const sportType = req.params.sportType.toUpperCase();
       // Railway Volume 사용 (환경변수로 경로 설정)
+      // Railway Volume이 /app/public에 마운트되어 있으므로 이를 우선 사용
       const baseDir = process.env.VOLUME_STORAGE_PATH ? 
           path.join(process.env.VOLUME_STORAGE_PATH, 'TEAMLOGO') : 
-          path.join(__dirname, '..', 'public', 'TEAMLOGO');
+          path.join('/app/public', 'TEAMLOGO');
       const dir = path.join(baseDir, sportType);
       
       // 종목별 폴더가 없으면 생성
@@ -954,9 +956,10 @@ router.get('/TEAMLOGO/:sportType/debug', async (req, res) => {
     console.log(`🔧 팀로고 디버그 정보 조회: ${sportTypeUpper}`);
     
     // Volume Storage 경로 확인
+    // Railway Volume이 /app/public에 마운트되어 있으므로 이를 우선 사용
     const baseDir = process.env.VOLUME_STORAGE_PATH ? 
         path.join(process.env.VOLUME_STORAGE_PATH, 'TEAMLOGO') : 
-        path.join(__dirname, '..', 'public', 'TEAMLOGO');
+        path.join('/app/public', 'TEAMLOGO');
     const sportDir = path.join(baseDir, sportTypeUpper);
     
     const debugInfo = {
@@ -1059,9 +1062,10 @@ router.delete('/TEAMLOGO/:sportType/cleanup', async (req, res) => {
     console.log(`🔧 팀로고 전체 삭제 요청: ${sportTypeUpper}`);
     
     // 파일 시스템에서 모든 파일 삭제
+    // Railway Volume이 /app/public에 마운트되어 있으므로 이를 우선 사용
     const baseDir = process.env.VOLUME_STORAGE_PATH ? 
         path.join(process.env.VOLUME_STORAGE_PATH, 'TEAMLOGO') : 
-        path.join(__dirname, '..', 'public', 'TEAMLOGO');
+        path.join('/app/public', 'TEAMLOGO');
     const sportDir = path.join(baseDir, sportTypeUpper);
     
     let deletedCount = 0;
