@@ -3273,6 +3273,25 @@
             document.getElementById('home-team-logo').addEventListener('change', async function(e) {
                 const file = e.target.files[0];
                 if (file) {
+                    // 파일명 검증
+                    const fileName = file.name;
+                    const invalidChars = /[<>:"/\\|?*]/;
+                    const controlChars = /[\x00-\x1f\x80-\x9f]/;
+                    
+                    if (invalidChars.test(fileName) || controlChars.test(fileName)) {
+                        alert(`❌ 파일 업로드 불가\n\n파일명에 사용할 수 없는 문자가 포함되어 있습니다.\n\n사용 불가능한 문자: < > : " / \\ | ? *\n또는 제어 문자\n\n파일명을 변경한 후 다시 시도해주세요.\n\n현재 파일명: ${fileName}`);
+                        e.target.value = ''; // 파일 선택 초기화
+                        return;
+                    }
+                    
+                    // 파일 크기 검증 (5MB 제한)
+                    const maxSize = 5 * 1024 * 1024; // 5MB
+                    if (file.size > maxSize) {
+                        alert(`❌ 파일 크기 초과\n\n파일 크기가 5MB를 초과합니다.\n\n현재 파일 크기: ${(file.size / 1024 / 1024).toFixed(2)}MB\n\n더 작은 파일을 선택해주세요.`);
+                        e.target.value = ''; // 파일 선택 초기화
+                        return;
+                    }
+                    
                     try {
                         const formData = new FormData();
                         formData.append('logo', file);
@@ -3338,6 +3357,25 @@
             document.getElementById('away-team-logo').addEventListener('change', async function(e) {
                 const file = e.target.files[0];
                 if (file) {
+                    // 파일명 검증
+                    const fileName = file.name;
+                    const invalidChars = /[<>:"/\\|?*]/;
+                    const controlChars = /[\x00-\x1f\x80-\x9f]/;
+                    
+                    if (invalidChars.test(fileName) || controlChars.test(fileName)) {
+                        alert(`❌ 파일 업로드 불가\n\n파일명에 사용할 수 없는 문자가 포함되어 있습니다.\n\n사용 불가능한 문자: < > : " / \\ | ? *\n또는 제어 문자\n\n파일명을 변경한 후 다시 시도해주세요.\n\n현재 파일명: ${fileName}`);
+                        e.target.value = ''; // 파일 선택 초기화
+                        return;
+                    }
+                    
+                    // 파일 크기 검증 (5MB 제한)
+                    const maxSize = 5 * 1024 * 1024; // 5MB
+                    if (file.size > maxSize) {
+                        alert(`❌ 파일 크기 초과\n\n파일 크기가 5MB를 초과합니다.\n\n현재 파일 크기: ${(file.size / 1024 / 1024).toFixed(2)}MB\n\n더 작은 파일을 선택해주세요.`);
+                        e.target.value = ''; // 파일 선택 초기화
+                        return;
+                    }
+                    
                     try {
                         const formData = new FormData();
                         formData.append('logo', file);
