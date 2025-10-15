@@ -2686,27 +2686,27 @@
                                 const teamType = teamInfo.team_type;
                                 console.log(`${teamType}팀 로고 정보 업데이트:`, teamInfo);
                                 
-                                // 로고 배경색 업데이트
+                                // 로고 배경색 업데이트 (오버레이와 동일한 방식)
                                 const logoBgInput = document.getElementById(`${teamType}-team-logo-bg`);
                                 if (logoBgInput && teamInfo.logo_bg_color) {
                                     logoBgInput.value = teamInfo.logo_bg_color;
                                 }
                                 
-                                // 로고 미리보기 업데이트 (오버레이와 동일한 경로 사용)
+                                // 로고 미리보기 업데이트 (오버레이와 동일한 방식)
                                 const previewBg = document.getElementById(`${teamType}-preview-bg`);
                                 const previewImg = document.getElementById(`${teamType}-preview-logo`);
                                 const noLogoText = previewBg.querySelector('.no-logo-text');
                                 
                                 if (teamInfo.logo_path) {
-                                    // 오버레이와 동일한 경로 사용
+                                    // 오버레이와 동일한 경로 및 배경색 사용
                                     previewImg.src = teamInfo.logo_path;
                                     previewImg.style.display = 'block';
-                                    previewBg.style.backgroundColor = teamInfo.logo_bg_color || '#FFFFFF';
+                                    previewBg.style.backgroundColor = teamInfo.logo_bg_color || '#ffffff';
                                     noLogoText.style.display = 'none';
                                 } else {
                                     // 로고가 없는 경우
                                     previewImg.style.display = 'none';
-                                    previewBg.style.backgroundColor = teamInfo.logo_bg_color || '#FFFFFF';
+                                    previewBg.style.backgroundColor = teamInfo.logo_bg_color || '#ffffff';
                                     noLogoText.style.display = 'block';
                                 }
                             });
