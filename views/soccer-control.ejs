@@ -2720,6 +2720,9 @@
             document.getElementById('mobile-url').value = `${baseUrl}/soccer/${matchId}/control-mobile`;
             document.getElementById('overlay-url').value = `${baseUrl}/soccer/${matchId}/overlay`;
             
+            // 팀로고 정보 로드 (DB에서)
+            await loadTeamLogos();
+            
             // 페이지 로드 시 타이머 상태 요청
             console.log('=== 페이지 로드 시 타이머 상태 요청 ===');
             socket.emit('request_timer_state', { matchId: matchId });
