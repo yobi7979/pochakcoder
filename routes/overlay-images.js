@@ -1102,7 +1102,7 @@ router.delete('/TEAMLOGO/:sportType/cleanup', async (req, res) => {
     res.json({
       success: true,
       message: `${sportTypeUpper} 팀로고가 모두 삭제되었습니다.`,
-      deletedFiles: files ? files.length : 0
+      deletedFiles: deletedCount
     });
   } catch (error) {
     console.error('팀로고 전체 삭제 실패:', error);
