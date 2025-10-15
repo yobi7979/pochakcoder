@@ -945,6 +945,59 @@ router.delete('/delete/:sportCode/:filename', requireAuth, asyncHandler(async (r
 
 
 
+// GET /api/overlay-images/TEAMLOGO/:sportType/debug - 팀로고 디버그 정보
+router.get('/TEAMLOGO/:sportType/debug', async (req, res) => {
+  try {
+    const { sportType } = req.params;
+    const sportTypeUpper = sportType.toUpperCase();
+    
+    console.log(`🔧 팀로고 디버그 정보 조회: ${sportTypeUpper}`);
+    
+    // Volume Storage 경로 확인
+    const baseDir = process.env.VOLUME_STORAGE_PATH ? 
+        path.join(process.env.VOLUME_STORAGE_PATH, 'TEAMLOGO') : 
+        path.join(__dirname, '..', 'public', 'TEAMLOGO');
+    const sportDir = path.join(baseDir, sportTypeUpper);
+    
+    const debugInfo = {
+      VOLUME_STORAGE_PATH: process.env.VOLUME_STORAGE_PATH,
+      baseDir: baseDir,
+      sportDir: sportDir,
+      baseDirExists: fsSync.existsSync(baseDir),
+      sportDirExists: fsSync.existsSync(sportDir),
+      files: []
+    };
+    
+    if (fsSync.existsSync(sportDir)) {
+      try {
+        const files = fsSync.readdirSync(sportDir);
+        debugInfo.files = files.map(file => {
+          const filePath = path.join(sportDir, file);
+          return {
+            name: file,
+            path: filePath,
+            exists: fsSync.existsSync(filePath),
+            size: fsSync.existsSync(filePath) ? fsSync.statSync(filePath).size : 0
+          };
+        });
+      } catch (error) {
+        debugInfo.readError = error.message;
+      }
+    }
+    
+    res.json({
+      success: true,
+      debug: debugInfo
+    });
+  } catch (error) {
+    console.error('팀로고 디버그 정보 조회 실패:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // GET /api/overlay-images/TEAMLOGO/:sportType - 팀로고 목록 조회
 router.get('/TEAMLOGO/:sportType', async (req, res) => {
   try {
