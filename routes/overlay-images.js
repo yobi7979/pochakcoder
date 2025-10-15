@@ -1029,13 +1029,20 @@ router.delete('/TEAMLOGO/:sportType/cleanup', async (req, res) => {
       console.log(`🔧 팀로고 파일 삭제 완료: ${deletedCount}개`);
     }
     
-    // DB에서 모든 팀로고 정보 삭제
-    const { TeamInfo } = require('../models');
-    await TeamInfo.destroy({
-      where: {
-        sport_type: sportTypeUpper
+    // DB에서 모든 팀로고 정보 삭제 (TeamInfo 테이블)
+    try {
+      const { TeamInfo } = require('../models');
+      if (TeamInfo) {
+        await TeamInfo.destroy({
+          where: {
+            sport_type: sportTypeUpper
+          }
+        });
+        console.log(`🔧 TeamInfo 테이블 삭제 완료: ${sportTypeUpper}`);
       }
-    });
+    } catch (dbError) {
+      console.log(`🔧 TeamInfo 테이블 삭제 건너뜀: ${dbError.message}`);
+    }
     
     console.log(`🔧 DB 팀로고 정보 삭제 완료: ${sportTypeUpper}`);
     
