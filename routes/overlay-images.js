@@ -59,13 +59,10 @@ const teamLogoUpload = multer({
       const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
       console.log(`🔧 팀로고 파일명 디코딩: ${file.originalname} -> ${originalName}`);
       
-      // 파일명을 안전하게 처리 (문제가 될 수 있는 문자만 제거)
-      const safeFileName = originalName
-        .replace(/[<>:"/\\|?*]/g, '_')  // Windows에서 금지된 문자만 언더바로 변경
-        .replace(/[\x00-\x1f\x80-\x9f]/g, '_');  // 제어 문자 제거
-      console.log(`🔧 팀로고 파일명 처리: ${safeFileName}`);
+      // 원본 파일명 그대로 사용 (수정하지 않음)
+      console.log(`🔧 팀로고 파일명 그대로 사용: ${originalName}`);
       
-      cb(null, safeFileName);
+      cb(null, originalName);
     }
   }),
   fileFilter: function (req, file, cb) {
@@ -995,6 +992,63 @@ router.get('/TEAMLOGO/:sportType', async (req, res) => {
     res.status(500).json({
       success: false,
       message: '팀로고 목록 조회 중 오류가 발생했습니다.',
+      error: error.message
+    });
+  }
+});
+
+// DELETE /api/overlay-images/TEAMLOGO/:sportType/cleanup - 모든 팀로고 삭제 (정리용)
+router.delete('/TEAMLOGO/:sportType/cleanup', async (req, res) => {
+  try {
+    const { sportType } = req.params;
+    const sportTypeUpper = sportType.toUpperCase();
+    
+    console.log(`🔧 팀로고 전체 삭제 요청: ${sportTypeUpper}`);
+    
+    // 파일 시스템에서 모든 파일 삭제
+    const baseDir = process.env.VOLUME_STORAGE_PATH ? 
+        path.join(process.env.VOLUME_STORAGE_PATH, 'TEAMLOGO') : 
+        path.join(__dirname, '..', 'public', 'TEAMLOGO');
+    const sportDir = path.join(baseDir, sportTypeUpper);
+    
+    if (fsSync.existsSync(sportDir)) {
+      const files = fsSync.readdirSync(sportDir);
+      let deletedCount = 0;
+      
+      files.forEach(file => {
+        try {
+          const filePath = path.join(sportDir, file);
+          fsSync.unlinkSync(filePath);
+          deletedCount++;
+          console.log(`🔧 파일 삭제: ${file}`);
+        } catch (error) {
+          console.error(`🔧 파일 삭제 실패: ${file}`, error);
+        }
+      });
+      
+      console.log(`🔧 팀로고 파일 삭제 완료: ${deletedCount}개`);
+    }
+    
+    // DB에서 모든 팀로고 정보 삭제
+    const { TeamInfo } = require('../models');
+    await TeamInfo.destroy({
+      where: {
+        sport_type: sportTypeUpper
+      }
+    });
+    
+    console.log(`🔧 DB 팀로고 정보 삭제 완료: ${sportTypeUpper}`);
+    
+    res.json({
+      success: true,
+      message: `${sportTypeUpper} 팀로고가 모두 삭제되었습니다.`,
+      deletedFiles: files ? files.length : 0
+    });
+  } catch (error) {
+    console.error('팀로고 전체 삭제 실패:', error);
+    res.status(500).json({
+      success: false,
+      message: '팀로고 삭제에 실패했습니다.',
       error: error.message
     });
   }

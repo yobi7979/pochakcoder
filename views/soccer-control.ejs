@@ -2261,15 +2261,18 @@
             const file = fileInput.files[0];
             
             if (file) {
-                // 파일명 검증
+                // 파일명 검증 (문제가 있는 경우에만 경고)
                 const fileName = file.name;
                 const invalidChars = /[<>:"/\\|?*]/;
                 const controlChars = /[\x00-\x1f\x80-\x9f]/;
                 
                 if (invalidChars.test(fileName) || controlChars.test(fileName)) {
-                    alert(`❌ 파일 업로드 불가\n\n파일명에 사용할 수 없는 문자가 포함되어 있습니다.\n\n사용 불가능한 문자: < > : " / \\ | ? *\n또는 제어 문자\n\n파일명을 변경한 후 다시 시도해주세요.\n\n현재 파일명: ${fileName}`);
-                    fileInput.value = ''; // 파일 선택 초기화
-                    return;
+                    const confirmUpload = confirm(`⚠️ 파일명 경고\n\n파일명에 사용할 수 없는 문자가 포함되어 있습니다.\n\n사용 불가능한 문자: < > : " / \\ | ? *\n또는 제어 문자\n\n현재 파일명: ${fileName}\n\n그래도 업로드하시겠습니까?\n(서버에서 자동으로 처리됩니다)`);
+                    
+                    if (!confirmUpload) {
+                        fileInput.value = ''; // 파일 선택 초기화
+                        return;
+                    }
                 }
                 
                 // 파일 크기 검증 (5MB 제한)
