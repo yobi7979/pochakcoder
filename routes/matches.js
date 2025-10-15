@@ -662,6 +662,56 @@ router.get('/:matchId/team-logos', async (req, res) => {
   }
 });
 
+// PUT /api/matches/:matchId/team-logos - 팀로고 경로 수정 (실제 존재하는 파일로)
+router.put('/:matchId/team-logos', async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { homeLogoPath, awayLogoPath } = req.body;
+
+    console.log(`팀로고 경로 수정 요청: ${matchId}`, { homeLogoPath, awayLogoPath });
+
+    const { TeamInfo } = require('../models');
+    
+    // 홈팀 로고 경로 업데이트
+    if (homeLogoPath) {
+      await TeamInfo.update({
+        logo_path: homeLogoPath
+      }, {
+        where: {
+          match_id: matchId,
+          team_type: 'home'
+        }
+      });
+      console.log(`홈팀 로고 경로 업데이트: ${homeLogoPath}`);
+    }
+
+    // 어웨이팀 로고 경로 업데이트
+    if (awayLogoPath) {
+      await TeamInfo.update({
+        logo_path: awayLogoPath
+      }, {
+        where: {
+          match_id: matchId,
+          team_type: 'away'
+        }
+      });
+      console.log(`어웨이팀 로고 경로 업데이트: ${awayLogoPath}`);
+    }
+
+    res.json({ 
+      success: true, 
+      message: '팀로고 경로가 성공적으로 업데이트되었습니다.' 
+    });
+  } catch (error) {
+    console.error('팀로고 경로 수정 실패:', error);
+    res.status(500).json({
+      success: false,
+      message: '팀로고 경로 수정에 실패했습니다.',
+      error: error.message
+    });
+  }
+});
+
 // POST /api/matches/:matchId/team-logo-bg - 팀 로고 배경색 수정
 router.post('/:matchId/team-logo-bg', async (req, res) => {
   try {
