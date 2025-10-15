@@ -402,7 +402,7 @@
                 
                 // 2. 팀 로고 맵 정보 로드 (백업) - 오버레이와 동일한 방식
                 try {
-                    const response = await fetch('/api/overlay-images/TEAMLOGO/SOCCER');
+                    const response = await fetch('/api/overlay-images/team-logo-map/SOCCER');
                     if (response.ok) {
                         const data = await response.json();
                         if (data && data.teamLogoMap) {
@@ -421,7 +421,7 @@
                                 // 오버레이와 동일한 경로 사용
                                 previewImg.src = data.teamLogoMap[homeTeamName].path;
                                 previewImg.style.display = 'block';
-                                previewBg.style.backgroundColor = data.teamLogoMap[homeTeamName].bgColor || '#FFFFFF';
+                                previewBg.style.backgroundColor = data.teamLogoMap[homeTeamName].bgColor || '#ffffff';
                                 noLogoText.style.display = 'none';
                                 
                                 console.log('홈팀 로고 정보 로드 (팀 맵):', data.teamLogoMap[homeTeamName]);
@@ -436,7 +436,7 @@
                                 // 오버레이와 동일한 경로 사용
                                 previewImg.src = data.teamLogoMap[awayTeamName].path;
                                 previewImg.style.display = 'block';
-                                previewBg.style.backgroundColor = data.teamLogoMap[awayTeamName].bgColor || '#FFFFFF';
+                                previewBg.style.backgroundColor = data.teamLogoMap[awayTeamName].bgColor || '#ffffff';
                                 noLogoText.style.display = 'none';
                                 
                                 console.log('어웨이팀 로고 정보 로드 (팀 맵):', data.teamLogoMap[awayTeamName]);
