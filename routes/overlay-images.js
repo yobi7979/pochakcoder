@@ -1064,9 +1064,9 @@ router.delete('/TEAMLOGO/:sportType/cleanup', async (req, res) => {
         path.join(__dirname, '..', 'public', 'TEAMLOGO');
     const sportDir = path.join(baseDir, sportTypeUpper);
     
+    let deletedCount = 0;
     if (fsSync.existsSync(sportDir)) {
       const files = fsSync.readdirSync(sportDir);
-      let deletedCount = 0;
       
       files.forEach(file => {
         try {
@@ -1080,6 +1080,8 @@ router.delete('/TEAMLOGO/:sportType/cleanup', async (req, res) => {
       });
       
       console.log(`🔧 팀로고 파일 삭제 완료: ${deletedCount}개`);
+    } else {
+      console.log(`🔧 팀로고 디렉토리가 존재하지 않음: ${sportDir}`);
     }
     
     // DB에서 모든 팀로고 정보 삭제 (TeamInfo 테이블)
