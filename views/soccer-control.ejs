@@ -3436,55 +3436,27 @@
             modal.hide();
         }
         
-        // 팀 로고 업데이트 (통합 API 기반)
+        // 팀 로고 업데이트 (UI만 업데이트, DB 저장은 저장 버튼에서 처리)
         async function updateTeamLogo(teamType, logoPath, logoName) {
             try {
-                console.log(`팀 로고 업데이트: ${teamType}팀, 로고: ${logoName}`);
+                console.log(`팀 로고 UI 업데이트: ${teamType}팀, 로고: ${logoName}`);
                 
                 // 현재 팀의 배경색 가져오기
                 const currentBgColor = document.getElementById(`${teamType}-team-logo-preview`).style.backgroundColor || '#ffffff';
                 
-                // 통합 팀로고 API로 업데이트
-                const response = await fetch(`/api/team-logos/${window.matchId}/select`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        teamType: teamType,
-                        logoPath: logoPath,
-                        teamName: logoName,
-                        bgColor: currentBgColor
-                    })
-                });
-                
-                const result = await response.json();
-                if (result.success) {
-                    console.log('팀 로고 업데이트 성공:', result);
-                    
-                    // UI 업데이트 (단순한 방식)
-                    const logoPreview = document.getElementById(`${teamType}-team-logo-preview`);
-                    if (logoPreview) {
-                        logoPreview.innerHTML = `<img src="${logoPath}" alt="${teamType}팀 로고" class="img-fluid">`;
-                        logoPreview.style.backgroundColor = currentBgColor;
-                    }
-                    
-                    // WebSocket으로 실시간 업데이트
-                    socket.emit('dataChanged', {
-                        matchId: window.matchId,
-                        type: 'team_logo_update',
-                        teamType: teamType,
-                        logoPath: logoPath,
-                        teamName: logoName,
-                        bgColor: currentBgColor
-                    });
-                } else {
-                    console.error('팀 로고 업데이트 실패:', result.message);
-                    alert('로고 업데이트에 실패했습니다: ' + result.message);
+                // UI 업데이트만 수행 (DB 저장은 저장 버튼에서 처리)
+                const logoPreview = document.getElementById(`${teamType}-team-logo-preview`);
+                if (logoPreview) {
+                    logoPreview.innerHTML = `<img src="${logoPath}" alt="${teamType}팀 로고" class="img-fluid">`;
+                    logoPreview.style.backgroundColor = currentBgColor;
+                    console.log(`${teamType}팀 로고 UI 업데이트 완료`);
                 }
+                
+                // DB 저장은 저장 버튼 클릭 시에만 수행
+                console.log(`${teamType}팀 로고 미리보기 업데이트 완료 - 저장 버튼을 클릭하여 DB에 저장하세요`);
             } catch (error) {
-                console.error('팀 로고 업데이트 중 오류:', error);
-                alert('로고 업데이트 중 오류가 발생했습니다.');
+                console.error('팀 로고 UI 업데이트 중 오류:', error);
+                alert('로고 UI 업데이트 중 오류가 발생했습니다.');
             }
         }
         

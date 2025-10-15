@@ -4084,48 +4084,28 @@
             modal.hide();
         }
         
-        // 팀 로고 업데이트 (DB 수정 탭과 동일한 방식)
+        // 팀 로고 업데이트 (UI만 업데이트, DB 저장은 저장 버튼에서 처리)
         async function updateTeamLogo(teamType, logoPath, logoName) {
             try {
-                console.log(`팀 로고 업데이트: ${teamType}팀, 로고: ${logoName}`);
+                console.log(`팀 로고 UI 업데이트: ${teamType}팀, 로고: ${logoName}`);
                 
                 // 현재 팀의 배경색 가져오기
                 const currentBgColor = document.getElementById(`${teamType}-team-logo-preview`).style.backgroundColor || '#ffffff';
                 
-                // 팀로고 업로드 API 호출 (파일 시스템 기반)
-                const formData = new FormData();
-                formData.append('matchId', '<%= match.id %>');
-                formData.append('teamType', teamType);
-                formData.append('logoBgColor', currentBgColor);
-                formData.append('logoPath', logoPath);
-                formData.append('logoName', logoName);
-                
-                const response = await fetch(`/api/overlay-images/TEAMLOGO/<%= match.sport_type %>`, {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (response.ok) {
-                    const result = await response.json();
-                    console.log('팀 로고 업데이트 성공:', result);
-                    
-                    // UI 업데이트
-                    const logoPreview = document.getElementById(`${teamType}-team-logo-preview`);
-                    if (logoPreview) {
-                        logoPreview.innerHTML = `<img src="${logoPath}" alt="${teamType === 'home' ? '홈' : '원정'}팀 로고" class="img-fluid">`;
-                        logoPreview.style.backgroundColor = currentBgColor;
-                    }
-                    
-                    // WebSocket 이벤트는 서버에서 자동으로 전송됨 (중복 제거)
-                    
-                    showToast(`${teamType === 'home' ? '홈' : '어웨이'}팀 로고가 적용되었습니다.`, 'success');
-                } else {
-                    console.error('팀 로고 업데이트 실패:', response.status);
-                    showToast('로고 적용 중 오류가 발생했습니다.', 'error');
+                // UI 업데이트만 수행 (DB 저장은 저장 버튼에서 처리)
+                const logoPreview = document.getElementById(`${teamType}-team-logo-preview`);
+                if (logoPreview) {
+                    logoPreview.innerHTML = `<img src="${logoPath}" alt="${teamType === 'home' ? '홈' : '원정'}팀 로고" class="img-fluid">`;
+                    logoPreview.style.backgroundColor = currentBgColor;
+                    console.log(`${teamType}팀 로고 UI 업데이트 완료`);
                 }
+                
+                // DB 저장은 저장 버튼 클릭 시에만 수행
+                console.log(`${teamType}팀 로고 미리보기 업데이트 완료 - 저장 버튼을 클릭하여 DB에 저장하세요`);
+                showToast(`${teamType === 'home' ? '홈' : '어웨이'}팀 로고 미리보기가 업데이트되었습니다. 저장 버튼을 클릭하여 적용하세요.`, 'info');
             } catch (error) {
-                console.error('팀 로고 업데이트 중 오류:', error);
-                showToast('로고 적용 중 오류가 발생했습니다.', 'error');
+                console.error('팀 로고 UI 업데이트 중 오류:', error);
+                showToast('로고 UI 업데이트 중 오류가 발생했습니다.', 'error');
             }
         }
         
