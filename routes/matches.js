@@ -623,31 +623,27 @@ router.get('/:matchId/tournament-text', async (req, res) => {
   }
 });
 
-// GET /api/matches/:matchId/team-logos - 팀로고 정보 조회 (통합 시스템)
+// GET /api/matches/:matchId/team-logos - 팀로고 정보 조회 (TeamInfo 테이블 기반)
 router.get('/:matchId/team-logos', async (req, res) => {
   try {
     const { matchId } = req.params;
     console.log(`🔧 경기별 팀로고 정보 조회: ${matchId}`);
     
-    // MatchTeamLogo + TeamLogo 테이블 조회 (통합 시스템)
-    const { MatchTeamLogo, TeamLogo } = require('../models');
+    // TeamInfo 테이블 조회 (컨트롤 페이지에서 업로드한 데이터)
+    const { TeamInfo } = require('../models');
     
-    const matchTeamLogos = await MatchTeamLogo.findAll({
-      where: { match_id: matchId },
-      include: [{
-        model: TeamLogo,
-        as: 'teamLogo'
-      }]
+    const teamInfos = await TeamInfo.findAll({
+      where: { match_id: matchId }
     });
     
-    const teamLogos = matchTeamLogos.map(mtl => ({
-      team_type: mtl.team_type,
-      logo_path: mtl.teamLogo.logo_path,
-      logo_bg_color: mtl.teamLogo.logo_bg_color,
-      team_name: mtl.teamLogo.team_name
+    const teamLogos = teamInfos.map(team => ({
+      team_type: team.team_type,
+      logo_path: team.logo_path,
+      logo_bg_color: team.logo_bg_color,
+      team_name: team.team_name
     }));
     
-    console.log(`✅ 경기 ${matchId} 팀로고 ${teamLogos.length}개 조회 완료`);
+    console.log(`✅ 경기 ${matchId} 팀로고 ${teamLogos.length}개 조회 완료 (TeamInfo 테이블)`);
     console.log('팀로고 상세 정보:', teamLogos.map(team => ({
       team_type: team.team_type,
       logo_path: team.logo_path,
