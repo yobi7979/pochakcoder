@@ -2723,7 +2723,7 @@
         }
 
         // 팀로고 정보 로드 함수 (오버레이와 동일한 로직)
-        async function loadTeamLogos() {
+        async function loadTeamLogoInfo() {
             try {
                 console.log('팀로고 정보 로드 시작...');
                 
@@ -2814,7 +2814,7 @@
             document.getElementById('overlay-url').value = `${baseUrl}/soccer/${matchId}/overlay`;
             
             // 팀로고 정보 로드 (DB에서)
-            await loadTeamLogos();
+            await loadTeamLogoInfo();
             
             // 페이지 로드 시 타이머 상태 요청
             console.log('=== 페이지 로드 시 타이머 상태 요청 ===');
@@ -2946,8 +2946,7 @@
             renderHomeGoalsList();
             renderAwayGoalsList();
             
-            // 페이지 로드 시 팀로고 정보 로드
-            loadTeamLogos();
+            // 팀로고 정보는 이미 위에서 로드했으므로 중복 호출 제거
             
         // 페이지 로드 시 타이머 모드 상태는 서버에서 받아옴 (request_timer_mode 이벤트로 처리)
             
@@ -3307,11 +3306,11 @@
             currentTeamType = teamType;
             const modal = new bootstrap.Modal(document.getElementById('teamLogoModal'));
             modal.show();
-            loadTeamLogos();
+            loadTeamLogoList();
         }
         
         // 팀 로고 목록 로드 (통합 API 기반)
-        async function loadTeamLogos() {
+        async function loadTeamLogoList() {
             const logoList = document.getElementById('logoList');
             const logoLoading = document.getElementById('logoLoading');
             const noLogosMessage = document.getElementById('noLogosMessage');
