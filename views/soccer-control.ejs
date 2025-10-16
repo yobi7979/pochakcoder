@@ -2462,29 +2462,8 @@
                     const fileInput = document.getElementById(`${team}-team-logo`);
                     if (fileInput) fileInput.value = '';
                     
-                    // TeamInfo 테이블에 팀로고 정보 저장
-                    try {
-                        const teamInfoResponse = await fetch(`/api/matches/${matchId}/team-logos`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                homeLogoPath: team === 'home' ? result.logoPath : null,
-                                awayLogoPath: team === 'away' ? result.logoPath : null,
-                                homeTeamName: team === 'home' ? '<%= match.home_team %>' : null,
-                                awayTeamName: team === 'away' ? '<%= match.away_team %>' : null
-                            })
-                        });
-                        
-                        if (teamInfoResponse.ok) {
-                            console.log(`${team}팀 TeamInfo 테이블 저장 성공`);
-                        } else {
-                            console.error(`${team}팀 TeamInfo 테이블 저장 실패:`, await teamInfoResponse.text());
-                        }
-                    } catch (teamInfoError) {
-                        console.error(`${team}팀 TeamInfo 테이블 저장 오류:`, teamInfoError);
-                    }
+                    // TeamInfo 테이블 저장은 /api/overlay-images/TEAMLOGO/:sportType에서 이미 처리됨
+                    console.log(`${team}팀 TeamInfo 테이블 저장 완료 (파일 업로드 API에서 처리)`);
                     
                     // WebSocket 이벤트로 DB 정보 업데이트 알림
                     if (socket.connected) {
