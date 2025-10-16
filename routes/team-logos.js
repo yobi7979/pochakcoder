@@ -202,7 +202,7 @@ router.post('/:matchId/select', requireAuth, asyncHandler(async (req, res) => {
     });
     
     if (existingTeamInfo) {
-      // 기존 레코드 업데이트
+      // 기존 팀 정보 업데이트 (경기 생성 시 이미 TeamInfo 레코드가 생성됨)
       await existingTeamInfo.update({
         sport_type: match.sport_type,
         team_name: teamName,
@@ -211,8 +211,12 @@ router.post('/:matchId/select', requireAuth, asyncHandler(async (req, res) => {
       });
       console.log(`🔧 기존 TeamInfo 레코드 업데이트: ID ${existingTeamInfo.id}`);
     } else {
-      // 새 레코드 생성
-      await TeamInfo.create({
+      // TeamInfo 레코드가 없는 경우 (경기 생성 시 자동 생성되어야 함)
+      console.error(`❌ TeamInfo 레코드가 없음: matchId=${matchId}, teamType=${teamType}`);
+      console.error(`❌ 경기 생성 시 TeamInfo 레코드가 자동 생성되어야 합니다.`);
+      
+      // 임시로 새 레코드 생성 (정상적인 경우라면 발생하지 않아야 함)
+      const newTeamInfo = await TeamInfo.create({
         match_id: matchId,
         sport_type: match.sport_type,
         team_name: teamName,
@@ -220,7 +224,7 @@ router.post('/:matchId/select', requireAuth, asyncHandler(async (req, res) => {
         logo_path: logoPath,
         logo_bg_color: rgbToHex(bgColor)
       });
-      console.log(`🔧 새 TeamInfo 레코드 생성: ${matchId} - ${teamType}팀`);
+      console.log(`⚠️ TeamInfo 임시 레코드 생성: ID ${newTeamInfo.id}, ${matchId} - ${teamType}팀`);
     }
     
     console.log(`✅ 경기 ${matchId} ${teamType}팀 로고 선택 완료: ${teamName}`);
@@ -286,6 +290,7 @@ router.put('/:matchId/team-logos', requireAuth, asyncHandler(async (req, res) =>
       });
       
       if (existingHomeTeamInfo) {
+        // 기존 팀 정보 업데이트 (경기 생성 시 이미 TeamInfo 레코드가 생성됨)
         await existingHomeTeamInfo.update({
           sport_type: match.sport_type,
           team_name: home_team_name || match.home_team,
@@ -294,7 +299,12 @@ router.put('/:matchId/team-logos', requireAuth, asyncHandler(async (req, res) =>
         });
         console.log(`🔧 홈팀 기존 레코드 업데이트: ID ${existingHomeTeamInfo.id}`);
       } else {
-        await TeamInfo.create({
+        // TeamInfo 레코드가 없는 경우 (경기 생성 시 자동 생성되어야 함)
+        console.error(`❌ 홈팀 TeamInfo 레코드가 없음: matchId=${matchId}`);
+        console.error(`❌ 경기 생성 시 TeamInfo 레코드가 자동 생성되어야 합니다.`);
+        
+        // 임시로 새 레코드 생성 (정상적인 경우라면 발생하지 않아야 함)
+        const newHomeTeamInfo = await TeamInfo.create({
           match_id: matchId,
           sport_type: match.sport_type,
           team_name: home_team_name || match.home_team,
@@ -302,7 +312,7 @@ router.put('/:matchId/team-logos', requireAuth, asyncHandler(async (req, res) =>
           logo_path: home_team_logo_path,
           logo_bg_color: home_logo_bg_color || '#ffffff'
         });
-        console.log(`🔧 홈팀 새 레코드 생성: ${matchId}`);
+        console.log(`⚠️ 홈팀 TeamInfo 임시 레코드 생성: ID ${newHomeTeamInfo.id}, ${matchId}`);
       }
     }
     
@@ -316,6 +326,7 @@ router.put('/:matchId/team-logos', requireAuth, asyncHandler(async (req, res) =>
       });
       
       if (existingAwayTeamInfo) {
+        // 기존 팀 정보 업데이트 (경기 생성 시 이미 TeamInfo 레코드가 생성됨)
         await existingAwayTeamInfo.update({
           sport_type: match.sport_type,
           team_name: away_team_name || match.away_team,
@@ -324,7 +335,12 @@ router.put('/:matchId/team-logos', requireAuth, asyncHandler(async (req, res) =>
         });
         console.log(`🔧 어웨이팀 기존 레코드 업데이트: ID ${existingAwayTeamInfo.id}`);
       } else {
-        await TeamInfo.create({
+        // TeamInfo 레코드가 없는 경우 (경기 생성 시 자동 생성되어야 함)
+        console.error(`❌ 어웨이팀 TeamInfo 레코드가 없음: matchId=${matchId}`);
+        console.error(`❌ 경기 생성 시 TeamInfo 레코드가 자동 생성되어야 합니다.`);
+        
+        // 임시로 새 레코드 생성 (정상적인 경우라면 발생하지 않아야 함)
+        const newAwayTeamInfo = await TeamInfo.create({
           match_id: matchId,
           sport_type: match.sport_type,
           team_name: away_team_name || match.away_team,
@@ -332,7 +348,7 @@ router.put('/:matchId/team-logos', requireAuth, asyncHandler(async (req, res) =>
           logo_path: away_team_logo_path,
           logo_bg_color: away_logo_bg_color || '#ffffff'
         });
-        console.log(`🔧 어웨이팀 새 레코드 생성: ${matchId}`);
+        console.log(`⚠️ 어웨이팀 TeamInfo 임시 레코드 생성: ID ${newAwayTeamInfo.id}, ${matchId}`);
       }
     }
     
