@@ -232,7 +232,7 @@ const matchEvents = (socket, io) => {
       console.log(`전체 데이터:`, data);
       
       // 1. 데이터베이스에서 현재 경기 데이터 가져오기
-      const { Match, BaseballScore } = require('../../models');
+      const { Match } = require('../../models');
       const match = await Match.findByPk(matchId);
       
       if (!match) {
@@ -241,56 +241,38 @@ const matchEvents = (socket, io) => {
         return;
       }
       
-      // 2. BaseballScore 테이블에서 이닝 점수 업데이트/생성 (JSON 구조)
-      let baseballScore = await BaseballScore.findOne({
-        where: { match_id: matchId }
-      });
-      
-      if (!baseballScore) {
-        // 새로운 경기 점수 레코드 생성
-        baseballScore = await BaseballScore.create({
-          match_id: matchId,
-          innings: {
-            home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0},
-            away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0}
-          },
-          home_total: 0,
-          away_total: 0
-        });
-        console.log(`새로운 야구 점수 레코드 생성: ${matchId}`);
+      // 2. match_data에서 이닝 점수 업데이트
+      let matchData = match.match_data || {};
+      if (!matchData.innings) {
+        matchData.innings = {
+          home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0},
+          away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0}
+        };
       }
       
-      // 3. 이닝 점수 업데이트
-      const innings = baseballScore.innings;
+      const innings = matchData.innings;
       console.log(`업데이트 전 innings:`, innings);
       console.log(`업데이트할 위치: ${team}[${parseInt(inning)}] = ${parseInt(score)}`);
       
       innings[team][parseInt(inning)] = parseInt(score);
       console.log(`업데이트 후 innings:`, innings);
       
-      // 4. 총 점수 계산
+      // 3. 총 점수 계산
       const homeTotal = Object.values(innings.home).reduce((sum, score) => sum + score, 0);
       const awayTotal = Object.values(innings.away).reduce((sum, score) => sum + score, 0);
       console.log(`계산된 총 점수: 홈팀 ${homeTotal}, 원정팀 ${awayTotal}`);
       
-      // 5. BaseballScore 테이블 업데이트
-      await baseballScore.update({
-        innings: innings,
-        home_total: homeTotal,
-        away_total: awayTotal
-      });
-      
-      console.log(`야구 이닝 점수 업데이트 완료: ${team}팀 ${inning}회 = ${score}`);
-      
-      // 6. Match 테이블의 총 점수 업데이트
+      // 4. Match 테이블의 match_data와 총 점수 업데이트
       await match.update({
+        match_data: matchData,
         home_score: homeTotal,
         away_score: awayTotal
       });
       
+      console.log(`야구 이닝 점수 업데이트 완료: ${team}팀 ${inning}회 = ${score}`);
       console.log(`야구 총 점수 업데이트 완료: 홈팀 ${homeTotal}, 원정팀 ${awayTotal}`);
       
-      // 7. 이닝별 점수 데이터 구성 (JSON 구조에서)
+      // 5. 이닝별 점수 데이터 구성 (match_data 구조에서)
       const inningsData = {};
       Object.keys(innings.home).forEach(inningNum => {
         inningsData[`home_${inningNum}`] = innings.home[inningNum];
@@ -299,7 +281,7 @@ const matchEvents = (socket, io) => {
         inningsData[`away_${inningNum}`] = innings.away[inningNum];
       });
       
-      // 8. 해당 방의 모든 클라이언트에게 야구 이닝 점수 업데이트 이벤트 전송
+      // 6. 해당 방의 모든 클라이언트에게 야구 이닝 점수 업데이트 이벤트 전송
       io.to(roomName).emit('baseball_inning_score_updated', {
         matchId: matchId,
         team: team,

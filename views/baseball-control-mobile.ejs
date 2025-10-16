@@ -977,23 +977,23 @@
             }
         }
 
-        // 서버에서 최신 경기 데이터 로딩 (BaseballScore 테이블 기반)
+        // 서버에서 최신 경기 데이터 로딩 (match_data 기반)
         async function loadCurrentMatchData() {
             try {
                 console.log('=== 서버에서 최신 경기 데이터 로딩 시작 ===');
                 
-                // 1. BaseballScore 테이블에서 이닝별 점수 조회
-                const baseballScoreResponse = await fetch(`/api/matches/${matchId}/baseball-scores`);
+                // 1. Match 테이블에서 경기 데이터 조회
+                const response = await fetch(`/api/matches/${matchId}`);
                 
-                if (baseballScoreResponse.ok) {
-                    const baseballScoreData = await baseballScoreResponse.json();
-                    console.log('BaseballScore 테이블에서 받은 데이터:', baseballScoreData);
+                if (response.ok) {
+                    const matchData = await response.json();
+                    console.log('Match 테이블에서 받은 데이터:', matchData);
                     
-                    // BaseballScore 테이블의 총 점수 사용
-                    const homeScore = baseballScoreData.home_total || 0;
-                    const awayScore = baseballScoreData.away_total || 0;
+                    // Match 테이블의 총 점수 사용
+                    const homeScore = matchData.home_score || 0;
+                    const awayScore = matchData.away_score || 0;
                     
-                    console.log('BaseballScore 총 점수:', { homeScore, awayScore });
+                    console.log('Match 총 점수:', { homeScore, awayScore });
                     
                     // UI 업데이트
                     const homeScoreElement = document.getElementById('home-score');
@@ -1008,9 +1008,9 @@
                         console.log(`원정팀 점수 설정: ${awayScore}`);
                     }
                     
-                    // 이닝별 스코어 데이터 확인 (BaseballScore 테이블의 innings)
-                    const innings = baseballScoreData.innings || {};
-                    console.log('BaseballScore 이닝별 스코어:', innings);
+                    // 이닝별 스코어 데이터 확인 (match_data의 innings)
+                    const innings = matchData.match_data?.innings || {};
+                    console.log('Match 이닝별 스코어:', innings);
                     
                     // 숨겨진 이닝별 점수 입력 필드 업데이트
                     for (let i = 1; i <= 9; i++) {
@@ -1025,9 +1025,9 @@
                         }
                     }
                     
-                    console.log('=== BaseballScore 테이블에서 최신 경기 데이터 로딩 완료 ===');
+                    console.log('=== Match 테이블에서 최신 경기 데이터 로딩 완료 ===');
                 } else {
-                    console.error('BaseballScore 데이터 가져오기 실패:', baseballScoreResponse.status);
+                    console.error('Match 데이터 가져오기 실패:', response.status);
                 }
             } catch (error) {
                 console.error('현재 경기 데이터 가져오기 오류:', error);

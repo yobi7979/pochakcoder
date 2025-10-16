@@ -4449,18 +4449,18 @@
             try {
                 console.log('=== 서버에서 최신 경기 데이터 로딩 시작 (메인 컨트롤) ===');
                 
-                // 1. BaseballScore 테이블에서 이닝별 점수 조회
-                const baseballScoreResponse = await fetch(`/api/matches/${matchId}/baseball-scores`);
+                // 1. Match 테이블에서 경기 데이터 조회
+                const response = await fetch(`/api/matches/${matchId}`);
                 
-                if (baseballScoreResponse.ok) {
-                    const baseballScoreData = await baseballScoreResponse.json();
-                    console.log('BaseballScore 테이블에서 받은 데이터:', baseballScoreData);
+                if (response.ok) {
+                    const matchData = await response.json();
+                    console.log('Match 테이블에서 받은 데이터:', matchData);
                     
-                    // BaseballScore 테이블의 총 점수 사용
-                    const homeScore = baseballScoreData.home_total || 0;
-                    const awayScore = baseballScoreData.away_total || 0;
+                    // Match 테이블의 총 점수 사용
+                    const homeScore = matchData.home_score || 0;
+                    const awayScore = matchData.away_score || 0;
                     
-                    console.log('BaseballScore 총 점수:', { homeScore, awayScore });
+                    console.log('Match 총 점수:', { homeScore, awayScore });
                     
                     // UI 업데이트
                     const homeScoreElement = document.getElementById('home-score');
@@ -4475,9 +4475,9 @@
                         console.log(`원정팀 점수 설정: ${awayScore}`);
                     }
                     
-                    // 이닝별 스코어 데이터 확인 및 업데이트 (BaseballScore 테이블의 innings)
-                    const innings = baseballScoreData.innings || {};
-                    console.log('BaseballScore 이닝별 스코어:', innings);
+                    // 이닝별 스코어 데이터 확인 및 업데이트 (match_data의 innings)
+                    const innings = matchData.match_data?.innings || {};
+                    console.log('Match 이닝별 스코어:', innings);
                     
                     // 이닝별 스코어 테이블 업데이트
                     for (let i = 1; i <= 9; i++) {
@@ -4494,19 +4494,19 @@
                         }
                     }
                     
-                    // 이닝별 스코어 합계 계산하여 검증 (BaseballScore 구조)
+                    // 이닝별 스코어 합계 계산하여 검증 (match_data 구조)
                     const homeTotal = Object.values(innings.home || {}).reduce((sum, score) => sum + (parseInt(score) || 0), 0);
                     const awayTotal = Object.values(innings.away || {}).reduce((sum, score) => sum + (parseInt(score) || 0), 0);
                     
                     console.log('이닝별 스코어 합계:', { homeTotal, awayTotal });
-                    console.log('BaseballScore 총 점수:', { homeScore, awayScore });
+                    console.log('Match 총 점수:', { homeScore, awayScore });
                     
                     // 불일치 감지 시 자동 수정
                     if (homeScore !== homeTotal || awayScore !== awayTotal) {
                         console.warn('점수 불일치 감지:', {
-                            baseballScoreHome: homeScore,
+                            matchHome: homeScore,
                             calculatedHome: homeTotal,
-                            baseballScoreAway: awayScore,
+                            matchAway: awayScore,
                             calculatedAway: awayTotal
                         });
                         

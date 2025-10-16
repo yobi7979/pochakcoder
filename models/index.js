@@ -722,58 +722,6 @@ const MatchTeamLogo = sequelize.define('MatchTeamLogo', {
 
 // SportTeamLogoConfig 모델 제거됨 (사용되지 않음)
 
-// BaseballScore 모델 정의 (야구 이닝별 점수)
-const BaseballScore = sequelize.define('BaseballScore', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-    allowNull: false
-  },
-  match_id: {
-    type: DataTypes.STRING(50),
-    allowNull: false,
-    comment: '경기 ID'
-  },
-  team_type: {
-    type: DataTypes.ENUM('home', 'away'),
-    allowNull: false,
-    comment: '팀 타입 (홈팀/원정팀)'
-  },
-  inning: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    comment: '이닝 번호 (1-9)',
-    validate: {
-      min: 1,
-      max: 9
-    }
-  },
-  score: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    defaultValue: 0,
-    comment: '해당 이닝 점수',
-    validate: {
-      min: 0
-    }
-  }
-}, {
-  tableName: 'BaseballScore',
-  timestamps: true,
-  indexes: [
-    {
-      unique: true,
-      fields: ['match_id', 'team_type', 'inning'],
-      name: 'baseball_score_match_team_inning'
-    },
-    {
-      fields: ['match_id'],
-      name: 'baseball_score_match_id'
-    }
-  ],
-  comment: '야구 이닝별 점수 저장 테이블'
-});
 
 // 관계 설정
 TeamLogo.hasMany(MatchTeamLogo, { foreignKey: 'team_logo_id', as: 'matchTeamLogos' });
@@ -781,9 +729,6 @@ MatchTeamLogo.belongsTo(TeamLogo, { foreignKey: 'team_logo_id', as: 'teamLogo' }
 MatchTeamLogo.belongsTo(Match, { foreignKey: 'match_id', as: 'match' });
 Match.hasMany(MatchTeamLogo, { foreignKey: 'match_id', as: 'matchTeamLogos' });
 
-// BaseballScore와 Match 간의 관계 설정
-BaseballScore.belongsTo(Match, { foreignKey: 'match_id', as: 'match' });
-Match.hasMany(BaseballScore, { foreignKey: 'match_id', as: 'baseballScores' });
 
 // 데이터베이스 연결 및 테이블 생성
 sequelize.sync({ force: false, alter: false })
@@ -824,6 +769,5 @@ module.exports = {
   TeamInfo,
   TeamLogo,
   MatchTeamLogo,
-  BaseballScore,
   Op
 }; 
