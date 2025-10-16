@@ -1241,19 +1241,19 @@
             lastUpdateTime: 0,
             localTimer: null
         };
-        let homeTeamColor = '<%= match.home_team_color || "#00cc33" %>';
-        let awayTeamColor = '<%= match.away_team_color || "#00cc33" %>';
+        let homeTeamColor = null;
+        let awayTeamColor = null;
 
         // 전역 상태 관리 객체
         const logoState = {
             home: {
                 path: '',
-                bgColor: '#ffffff',
+                bgColor: null,
                 teamName: '<%= match.home_team %>'
             },
             away: {
                 path: '',
-                bgColor: '#ffffff',
+                bgColor: null,
                 teamName: '<%= match.away_team %>'
             }
         };
@@ -1681,16 +1681,21 @@
                 if (matchResponse.ok) {
                     const matchData = await matchResponse.json();
                     
-                    // 팀 색상 업데이트
+                    // 팀 색상 업데이트 (DB에서 가져온 값 사용)
                     if (matchData.home_team_color) {
                         homeTeamColor = matchData.home_team_color;
+                        console.log('🔧 홈팀 컬러 로드 (DB):', homeTeamColor);
                     }
                     if (matchData.away_team_color) {
                         awayTeamColor = matchData.away_team_color;
+                        console.log('🔧 어웨이팀 컬러 로드 (DB):', awayTeamColor);
                     }
                     
-                    // 팀 색상 적용
-                    updateTeamColors(homeTeamColor, awayTeamColor);
+                    // 팀 색상 적용 (DB에서 가져온 값으로)
+                    if (homeTeamColor && awayTeamColor) {
+                        updateTeamColors(homeTeamColor, awayTeamColor);
+                        console.log('🔧 팀 컬러 적용 완료:', { homeTeamColor, awayTeamColor });
+                    }
                     
                     // 팀명 업데이트
                     if (matchData.home_team) {
@@ -3324,8 +3329,14 @@
                 // 팀로고 표시 모드 상태 로드 및 적용
                 await loadAndApplyLogoDisplayMode();
                 
-                // 팀 색상 적용 (로고 배경색은 덮어쓰지 않음)
-                updateTeamColors(homeTeamColor, awayTeamColor);
+                // 초기 팀 컬러 로드 (DB에서 가져오기)
+                await reloadAllDataFromDB();
+                
+                // 팀 색상 적용 (DB에서 로드된 값으로)
+                if (homeTeamColor && awayTeamColor) {
+                    updateTeamColors(homeTeamColor, awayTeamColor);
+                    console.log('🔧 초기 팀 컬러 적용 완료:', { homeTeamColor, awayTeamColor });
+                }
                 document.querySelectorAll('.team-name').forEach(function(el) {
                     if (el.textContent.trim().length >= 8) {
                         el.classList.add('small-font');
@@ -4119,17 +4130,22 @@
             const homeHeader = document.querySelector('.home .team-header');
             const awayHeader = document.querySelector('.away .team-header');
             
-            if (homeSection) {
-                homeSection.style.backgroundColor = homeColor; // 완전 불투명
+            // null 체크 추가
+            if (homeSection && homeColor) {
+                homeSection.style.backgroundColor = homeColor;
+                console.log('🔧 홈팀 섹션 컬러 적용:', homeColor);
             }
-            if (awaySection) {
+            if (awaySection && awayColor) {
                 awaySection.style.backgroundColor = awayColor;
+                console.log('🔧 어웨이팀 섹션 컬러 적용:', awayColor);
             }
-            if (homeHeader) {
+            if (homeHeader && homeColor) {
                 homeHeader.style.backgroundColor = homeColor;
+                console.log('🔧 홈팀 헤더 컬러 적용:', homeColor);
             }
-            if (awayHeader) {
+            if (awayHeader && awayColor) {
                 awayHeader.style.backgroundColor = awayColor;
+                console.log('🔧 어웨이팀 헤더 컬러 적용:', awayColor);
             }
             
             // 로고 컨테이너의 배경색은 덮어쓰지 않음 (저장된 배경색 유지)

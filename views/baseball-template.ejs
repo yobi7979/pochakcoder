@@ -900,8 +900,8 @@
                         // 팀 색상 가져오기
                         const homeTeamSection = document.getElementById('home-team-section');
                         const awayTeamSection = document.getElementById('away-team-section');
-                        const homeTeamColor = homeTeamSection ? homeTeamSection.style.backgroundColor : '#333333';
-                        const awayTeamColor = awayTeamSection ? awayTeamSection.style.backgroundColor : '#333333';
+                        const homeTeamColor = homeTeamSection ? homeTeamSection.style.backgroundColor : null;
+                        const awayTeamColor = awayTeamSection ? awayTeamSection.style.backgroundColor : null;
                         
                         // 팀 이름 가져오기
                         const homeTeamName = '<%= match.home_team %>';
@@ -910,15 +910,15 @@
                         // 이닝 타입에 따라 패널 제목 색상 설정
                         if (isTopInning) {
                             // 초(top) 이닝: 홈팀 타자, 어웨이팀 투수
-                            batterTitlePanel.style.backgroundColor = homeTeamColor;
-                            pitcherTitlePanel.style.backgroundColor = awayTeamColor;
+                            if (homeTeamColor) batterTitlePanel.style.backgroundColor = homeTeamColor;
+                            if (awayTeamColor) pitcherTitlePanel.style.backgroundColor = awayTeamColor;
                             batterTitlePanel.textContent = homeTeamName;  // 홈팀 타자
                             pitcherTitlePanel.textContent = awayTeamName; // 어웨이팀 투수
                             console.log('초 이닝: 홈팀 타자, 어웨이팀 투수');
                         } else {
                             // 말(bottom) 이닝: 어웨이팀 타자, 홈팀 투수
-                            batterTitlePanel.style.backgroundColor = awayTeamColor;
-                            pitcherTitlePanel.style.backgroundColor = homeTeamColor;
+                            if (awayTeamColor) batterTitlePanel.style.backgroundColor = awayTeamColor;
+                            if (homeTeamColor) pitcherTitlePanel.style.backgroundColor = homeTeamColor;
                             batterTitlePanel.textContent = awayTeamName;  // 어웨이팀 타자
                             pitcherTitlePanel.textContent = homeTeamName; // 홈팀 투수
                             console.log('말 이닝: 어웨이팀 타자, 홈팀 투수');
@@ -1618,14 +1618,14 @@
                     const homeTeamInfo = result.teamLogos.find(team => team.team_type === 'home');
                     if (homeTeamInfo && homeTeamInfo.team_color && homeTeamSection) {
                         homeTeamSection.style.backgroundColor = homeTeamInfo.team_color;
-                        console.log(`홈팀 컬러 적용: ${homeTeamName} -> ${homeTeamInfo.team_color}`);
+                        console.log(`🔧 홈팀 컬러 적용 (초기 로드): ${homeTeamName} -> ${homeTeamInfo.team_color}`);
                     }
                     
                     // 원정팀 컬러 적용
                     const awayTeamInfo = result.teamLogos.find(team => team.team_type === 'away');
                     if (awayTeamInfo && awayTeamInfo.team_color && awayTeamSection) {
                         awayTeamSection.style.backgroundColor = awayTeamInfo.team_color;
-                        console.log(`원정팀 컬러 적용: ${awayTeamName} -> ${awayTeamInfo.team_color}`);
+                        console.log(`🔧 원정팀 컬러 적용 (초기 로드): ${awayTeamName} -> ${awayTeamInfo.team_color}`);
                     }
                 }
 
@@ -1788,8 +1788,8 @@
                     return;
                 }
                 
-                const homeTeamColor = homeTeamSection.style.backgroundColor || '#333333';
-                const awayTeamColor = awayTeamSection.style.backgroundColor || '#333333';
+                const homeTeamColor = homeTeamSection.style.backgroundColor || null;
+                const awayTeamColor = awayTeamSection.style.backgroundColor || null;
                 
                 console.log('패널 타이틀 업데이트:', {
                     inningType,
@@ -1801,8 +1801,8 @@
                 
                 if (inningType === 'top') {
                     // 초(top) 이닝: 홈팀 타자, 어웨이팀 투수
-                    batterPanel.style.backgroundColor = homeTeamColor;
-                    pitcherPanel.style.backgroundColor = awayTeamColor;
+                    if (homeTeamColor) batterPanel.style.backgroundColor = homeTeamColor;
+                    if (awayTeamColor) pitcherPanel.style.backgroundColor = awayTeamColor;
                     
                     // 패널 제목을 팀명으로 변경
                     batterPanel.textContent = homeTeamName;  // 홈팀 타자
@@ -1811,8 +1811,8 @@
                     console.log('초 이닝: 홈팀 타자, 어웨이팀 투수');
                 } else {
                     // 말(bottom) 이닝: 어웨이팀 타자, 홈팀 투수
-                    batterPanel.style.backgroundColor = awayTeamColor;
-                    pitcherPanel.style.backgroundColor = homeTeamColor;
+                    if (awayTeamColor) batterPanel.style.backgroundColor = awayTeamColor;
+                    if (homeTeamColor) pitcherPanel.style.backgroundColor = homeTeamColor;
                     
                     // 패널 제목을 팀명으로 변경
                     batterPanel.textContent = awayTeamName;  // 어웨이팀 타자
@@ -2269,6 +2269,15 @@
                                                 container.innerHTML = `<div class="team-logo-placeholder"></div>`;
                                             }
                                         });
+                                        
+                                        // 홈팀 섹션 컬러 업데이트
+                                        if (homeTeamInfo.team_color) {
+                                            const homeTeamSection = document.getElementById('home-team-section');
+                                            if (homeTeamSection) {
+                                                homeTeamSection.style.backgroundColor = homeTeamInfo.team_color;
+                                                console.log('🔧 홈팀 섹션 컬러 업데이트:', homeTeamInfo.team_color);
+                                            }
+                                        }
                                     }
                                     
                                     if (awayTeamInfo) {
@@ -2283,6 +2292,15 @@
                                                 container.innerHTML = `<div class="team-logo-placeholder"></div>`;
                                             }
                                         });
+                                        
+                                        // 어웨이팀 섹션 컬러 업데이트
+                                        if (awayTeamInfo.team_color) {
+                                            const awayTeamSection = document.getElementById('away-team-section');
+                                            if (awayTeamSection) {
+                                                awayTeamSection.style.backgroundColor = awayTeamInfo.team_color;
+                                                console.log('🔧 어웨이팀 섹션 컬러 업데이트:', awayTeamInfo.team_color);
+                                            }
+                                        }
                                     }
                                 }
                                 console.log('🔧 팀로고 정보 재로드 완료');
