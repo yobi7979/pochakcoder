@@ -4036,8 +4036,29 @@
                 console.log('팀로고 API 응답:', data);
                 
                 if (data.success && data.teamLogos && data.teamLogos.length > 0) {
+                    // 중복 제거 로직 추가
+                    const uniqueLogos = [];
+                    const seenPaths = new Set();
+                    const seenNames = new Set();
+                    
+                    data.teamLogos.forEach(logo => {
+                        const logoPath = logo.logo_path;
+                        const displayName = logo.display_name || logo.team_name;
+                        
+                        // logo_path와 display_name 모두 중복 체크
+                        if (!seenPaths.has(logoPath) && !seenNames.has(displayName)) {
+                            seenPaths.add(logoPath);
+                            seenNames.add(displayName);
+                            uniqueLogos.push(logo);
+                        } else {
+                            console.log('🔧 중복 로고 제거 (야구):', { logoPath, displayName });
+                        }
+                    });
+                    
+                    console.log(`🔧 원본 로고 (야구): ${data.teamLogos.length}개, 중복 제거 후: ${uniqueLogos.length}개`);
+                    
                     // TeamInfo 기반 로고 데이터를 모달용으로 변환
-                    allLogos = data.teamLogos.map(logo => ({
+                    allLogos = uniqueLogos.map(logo => ({
                         path: logo.logo_path,
                         displayName: logo.display_name || logo.team_name,
                         name: logo.display_name || logo.team_name,

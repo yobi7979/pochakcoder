@@ -3542,7 +3542,27 @@
                 const data = await response.json();
                 
                 if (data.success && data.teamLogos.length > 0) {
-                    allLogos = data.teamLogos;
+                    // 중복 제거 로직 추가
+                    const uniqueLogos = [];
+                    const seenPaths = new Set();
+                    const seenNames = new Set();
+                    
+                    data.teamLogos.forEach(logo => {
+                        const logoPath = logo.logo_path;
+                        const displayName = logo.display_name || logo.team_name;
+                        
+                        // logo_path와 display_name 모두 중복 체크
+                        if (!seenPaths.has(logoPath) && !seenNames.has(displayName)) {
+                            seenPaths.add(logoPath);
+                            seenNames.add(displayName);
+                            uniqueLogos.push(logo);
+                        } else {
+                            console.log('🔧 중복 로고 제거:', { logoPath, displayName });
+                        }
+                    });
+                    
+                    console.log(`🔧 원본 로고: ${data.teamLogos.length}개, 중복 제거 후: ${uniqueLogos.length}개`);
+                    allLogos = uniqueLogos;
                     filteredLogos = [...allLogos];
                     displayLogos();
                 } else {

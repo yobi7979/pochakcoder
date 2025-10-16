@@ -95,10 +95,16 @@ router.get('/:sportType', asyncHandler(async (req, res) => {
         // 한글 파일명 처리를 위한 경로 생성
         const logoPath = `/api/overlay-images/TEAMLOGO/${sportType.toUpperCase()}/${file}`;
         
-        // 데이터베이스에 이미 있는지 확인
-        const existsInDb = dbTeamLogos.some(dbLogo => 
-          dbLogo.logo_path === logoPath || dbLogo.team_name === fileName
-        );
+        // 데이터베이스에 이미 있는지 확인 (더 정확한 중복 체크)
+        const existsInDb = processedDbTeamLogos.some(dbLogo => {
+          // logo_path 비교
+          if (dbLogo.logo_path === logoPath) return true;
+          // display_name 비교 (파일 이름)
+          if (dbLogo.display_name === fileName) return true;
+          // team_name 비교
+          if (dbLogo.team_name === fileName) return true;
+          return false;
+        });
         
         if (!existsInDb) {
           fileSystemLogos.push({
@@ -119,6 +125,16 @@ router.get('/:sportType', asyncHandler(async (req, res) => {
     const allTeamLogos = [...processedDbTeamLogos, ...fileSystemLogos];
     
     console.log(`✅ ${sportType} 팀로고 ${allTeamLogos.length}개 조회 완료 (DB: ${dbTeamLogos.length}, 파일: ${fileSystemLogos.length})`);
+    console.log('🔧 DB 로고 목록:', processedDbTeamLogos.map(logo => ({ 
+      team_name: logo.team_name, 
+      display_name: logo.display_name, 
+      logo_path: logo.logo_path 
+    })));
+    console.log('🔧 파일시스템 로고 목록:', fileSystemLogos.map(logo => ({ 
+      team_name: logo.team_name, 
+      display_name: logo.display_name, 
+      logo_path: logo.logo_path 
+    })));
     res.json({ success: true, teamLogos: allTeamLogos });
   } catch (error) {
     console.error('종목별 팀로고 조회 실패:', error);
