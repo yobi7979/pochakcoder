@@ -3327,6 +3327,20 @@
         document.addEventListener('DOMContentLoaded', async function() {
             
             try {
+                // VS 섹션 placeholder 초기 숨김 처리
+                const vsHomePlaceholder = document.getElementById('vs-home-placeholder');
+                const vsAwayPlaceholder = document.getElementById('vs-away-placeholder');
+                if (vsHomePlaceholder) {
+                    vsHomePlaceholder.style.display = 'none';
+                    vsHomePlaceholder.style.visibility = 'hidden';
+                    vsHomePlaceholder.textContent = '';
+                }
+                if (vsAwayPlaceholder) {
+                    vsAwayPlaceholder.style.display = 'none';
+                    vsAwayPlaceholder.style.visibility = 'hidden';
+                    vsAwayPlaceholder.textContent = '';
+                }
+                
                 // 초기 로고 로드 (팀 색상 적용 전에 먼저 실행)
                 await loadInitialLogos();
                 
@@ -3763,7 +3777,10 @@
                 // 로고 이미지 설정
                 homeLogoImg.src = logoState.home.path;
                 homeLogoImg.style.display = 'block';
+                // placeholder 강제로 숨기기
                 homePlaceholder.style.display = 'none';
+                homePlaceholder.style.visibility = 'hidden';
+                homePlaceholder.textContent = ''; // 텍스트도 제거
                 // 로고 컨테이너에 배경색 적용
                 if (homeLogoContainer) {
                     homeLogoContainer.style.backgroundColor = logoState.home.bgColor || '#ffffff';
@@ -3773,6 +3790,7 @@
                 console.log('홈팀 로고 없음 - 플레이스홀더 표시');
                 homeLogoImg.style.display = 'none';
                 homePlaceholder.style.display = 'flex';
+                homePlaceholder.style.visibility = 'visible';
                 homePlaceholder.textContent = 'HOME';
                 // 기본 배경색
                 if (homeLogoContainer) {
@@ -3790,7 +3808,10 @@
                 // 로고 이미지 설정
                 awayLogoImg.src = logoState.away.path;
                 awayLogoImg.style.display = 'block';
+                // placeholder 강제로 숨기기
                 awayPlaceholder.style.display = 'none';
+                awayPlaceholder.style.visibility = 'hidden';
+                awayPlaceholder.textContent = ''; // 텍스트도 제거
                 // 로고 컨테이너에 배경색 적용
                 if (awayLogoContainer) {
                     awayLogoContainer.style.backgroundColor = logoState.away.bgColor || '#ffffff';
@@ -3800,6 +3821,7 @@
                 console.log('어웨이팀 로고 없음 - 플레이스홀더 표시');
                 awayLogoImg.style.display = 'none';
                 awayPlaceholder.style.display = 'flex';
+                awayPlaceholder.style.visibility = 'visible';
                 awayPlaceholder.textContent = 'AWAY';
                 // 기본 배경색
                 if (awayLogoContainer) {
