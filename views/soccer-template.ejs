@@ -1238,15 +1238,7 @@
         window.socket = socket;
         let matchId = '<%= match.id %>';
         
-        // 소켓 연결 상태 확인
-        socket.on('connect', function() {
-            });
-
-        socket.on('disconnect', function() {
-            });
-
-        socket.on('connect_error', function(error) {
-            });
+        // 소켓 연결 상태 확인 (중복 제거됨 - 아래에서 처리)
 
         // 타이머 모드 관리 변수
         let currentTimerMode = 'legacy-timer';
@@ -1695,6 +1687,7 @@
         // 강력한 DB 데이터 로드 함수 (모든 데이터 다시 로드)
         async function reloadAllDataFromDB() {
             try {
+                console.log('🔧 reloadAllDataFromDB 함수 시작');
                 
                 // 1. 경기 기본 정보 로드
                 const matchResponse = await fetch(`/api/matches/${matchId}`);
@@ -1742,7 +1735,10 @@
                 // 4. 팀로고 표시 모드 상태 로드
                 await loadAndApplyLogoDisplayMode();
                 
+                console.log('🔧 reloadAllDataFromDB 함수 완료');
+                
                 } catch (error) {
+                console.error('🔧 reloadAllDataFromDB 함수 오류:', error);
                 }
         }
 
@@ -2980,13 +2976,19 @@
         // 데이터 변경 이벤트 처리 (DB에서 최신 데이터 로드)
         socket.on('dataChanged', async function(data) {
             console.log('🔧 dataChanged 이벤트 수신:', data);
+            console.log('🔧 현재 경기 ID:', matchId);
+            console.log('🔧 이벤트 경기 ID:', data.matchId);
+            console.log('🔧 이벤트 타입:', data.type);
+            console.log('🔧 팀 타입:', data.teamType);
             
             if (data.matchId === matchId) {
+                console.log('🔧 동일 경기 dataChanged 이벤트 - 데이터 재로드 시작');
                 // DB 저장 완료를 위해 500ms 지연 후 데이터 재로드
                 setTimeout(async () => {
                     try {
                         console.log('🔧 500ms 지연 후 데이터 재로드 실행');
                         await reloadAllDataFromDB();
+                        console.log('🔧 데이터 재로드 완료');
                     } catch (error) {
                         console.error('🔧 데이터 재로드 오류:', error);
                     }
@@ -2996,15 +2998,7 @@
             }
         });
 
-        // 소켓 연결 상태 확인
-        socket.on('connect', function() {
-            });
-
-        socket.on('disconnect', function() {
-            });
-
-        socket.on('connect_error', function(error) {
-            });
+        // 소켓 연결 상태 확인 (중복 제거됨 - 위에서 처리)
 
         // 팀 위치 변경 이벤트 처리
         socket.on('teamsSwapped', function(data) {
