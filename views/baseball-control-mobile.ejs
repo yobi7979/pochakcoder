@@ -1009,8 +1009,17 @@
                     }
                     
                     // 이닝별 스코어 데이터 확인 (match_data의 innings)
-                    const innings = matchData.match_data?.innings || {};
+                    let innings = matchData.match_data?.innings || {};
                     console.log('Match 이닝별 스코어:', innings);
+                    
+                    // innings가 비어있거나 home/away가 없는 경우 기본값으로 초기화
+                    if (!innings.home || !innings.away) {
+                        innings = {
+                            home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0},
+                            away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0}
+                        };
+                        console.log('innings 기본값으로 초기화:', innings);
+                    }
                     
                     // 숨겨진 이닝별 점수 입력 필드 업데이트
                     for (let i = 1; i <= 9; i++) {

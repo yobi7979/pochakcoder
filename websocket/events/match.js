@@ -243,11 +243,12 @@ const matchEvents = (socket, io) => {
       
       // 2. match_data에서 이닝 점수 업데이트
       let matchData = match.match_data || {};
-      if (!matchData.innings) {
+      if (!matchData.innings || !matchData.innings.home || !matchData.innings.away) {
         matchData.innings = {
           home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0},
           away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0}
         };
+        console.log(`innings 초기화 완료:`, matchData.innings);
       }
       
       const innings = matchData.innings;
