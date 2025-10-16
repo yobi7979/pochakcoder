@@ -180,19 +180,24 @@ router.post('/TEAMLOGO/:sportType', teamLogoUpload.single('logo'), async (req, r
 
       if (existingTeam) {
         // 기존 팀 정보 업데이트
-        await TeamInfo.update({
+        await existingTeam.update({
           logo_path: `/api/overlay-images/TEAMLOGO/${sportTypeUpper}/${req.file.filename}`,
           logo_bg_color: bgColor
-        }, {
-          where: {
-            match_id: req.body.matchId,
-            team_type: req.body.teamType
-          }
         });
         
-        console.log(`TeamInfo 테이블 로고 정보 업데이트 완료: matchId=${req.body.matchId}, teamType=${req.body.teamType}`);
+        console.log(`🔧 TeamInfo 기존 레코드 업데이트: ID ${existingTeam.id}, matchId=${req.body.matchId}, teamType=${req.body.teamType}`);
       } else {
-        console.log('기존 팀 정보가 없음 - TeamInfo 테이블 업데이트 건너뜀');
+        // 새 레코드 생성 (파일 업로드 시에도 TeamInfo 생성)
+        const newTeamInfo = await TeamInfo.create({
+          match_id: req.body.matchId,
+          sport_type: sportTypeUpper,
+          team_name: req.body.teamName || `${req.body.teamType}팀`,
+          team_type: req.body.teamType,
+          logo_path: `/api/overlay-images/TEAMLOGO/${sportTypeUpper}/${req.file.filename}`,
+          logo_bg_color: bgColor
+        });
+        
+        console.log(`🔧 TeamInfo 새 레코드 생성: ID ${newTeamInfo.id}, matchId=${req.body.matchId}, teamType=${req.body.teamType}`);
       }
 
       // WebSocket으로 실시간 업데이트 전송
