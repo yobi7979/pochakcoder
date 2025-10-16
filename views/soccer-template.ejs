@@ -1346,7 +1346,10 @@
             if (teamSection) {
                 // 팀 섹션은 팀 색상 유지, 로고 배경색과는 별개
                 const teamColor = teamType === 'home' ? homeTeamColor : awayTeamColor;
-                teamSection.style.backgroundColor = teamColor;
+                if (teamColor) {
+                    teamSection.style.backgroundColor = teamColor;
+                    console.log(`🔧 ${teamType}팀 섹션 컬러 업데이트:`, teamColor);
+                }
             }
 
             // 팀 헤더 배경색 업데이트
@@ -1734,6 +1737,16 @@
                             }
                         });
                         console.log('🔧 팀로고 정보 재로드 완료');
+                        
+                        // 팀로고 정보 로드 후 UI 업데이트 강제 실행
+                        console.log('🔧 팀로고 UI 업데이트 강제 실행');
+                        teamLogosData.teamLogos.forEach((teamInfo) => {
+                            const teamType = teamInfo.team_type;
+                            if (logoState[teamType]) {
+                                updateTeamLogo(teamType, logoState[teamType]);
+                                console.log(`🔧 ${teamType}팀 로고 UI 업데이트 강제 실행 완료`);
+                            }
+                        });
                     }
                 } else {
                     console.error('🔧 팀로고 정보 로드 실패:', teamLogosResponse.status);

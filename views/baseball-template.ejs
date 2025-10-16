@@ -2251,22 +2251,29 @@
                             const response = await fetch(`/api/matches/${matchId}/team-logos`);
                             if (response.ok) {
                                 const result = await response.json();
+                                console.log('🔧 팀로고 정보 응답:', result);
                                 
                                 // 홈팀 로고 업데이트
                                 if (result.teamLogos && result.teamLogos.length > 0) {
                                     const homeTeamInfo = result.teamLogos.find(team => team.team_type === 'home');
                                     const awayTeamInfo = result.teamLogos.find(team => team.team_type === 'away');
                                     
+                                    console.log('🔧 홈팀 정보:', homeTeamInfo);
+                                    console.log('🔧 어웨이팀 정보:', awayTeamInfo);
+                                    
                                     if (homeTeamInfo) {
                                         const homeLogoContainers = document.querySelectorAll('.team-info.home-team .team-logo-container');
+                                        console.log('🔧 홈팀 로고 컨테이너 개수:', homeLogoContainers.length);
                                         homeLogoContainers.forEach(container => {
                                             if (homeTeamInfo.logo_path) {
                                                 container.innerHTML = `
                                                     <img src="${homeTeamInfo.logo_path}" alt="홈팀 로고" class="team-logo">
                                                 `;
                                                 container.style.backgroundColor = homeTeamInfo.logo_bg_color || '#ffffff';
+                                                console.log('🔧 홈팀 로고 업데이트 완료:', homeTeamInfo.logo_path);
                                             } else {
                                                 container.innerHTML = `<div class="team-logo-placeholder"></div>`;
+                                                console.log('🔧 홈팀 로고 없음 - 플레이스홀더 표시');
                                             }
                                         });
                                         
@@ -2282,14 +2289,17 @@
                                     
                                     if (awayTeamInfo) {
                                         const awayLogoContainers = document.querySelectorAll('.team-info.away-team .team-logo-container');
+                                        console.log('🔧 어웨이팀 로고 컨테이너 개수:', awayLogoContainers.length);
                                         awayLogoContainers.forEach(container => {
                                             if (awayTeamInfo.logo_path) {
                                                 container.innerHTML = `
                                                     <img src="${awayTeamInfo.logo_path}" alt="원정팀 로고" class="team-logo">
                                                 `;
                                                 container.style.backgroundColor = awayTeamInfo.logo_bg_color || '#ffffff';
+                                                console.log('🔧 어웨이팀 로고 업데이트 완료:', awayTeamInfo.logo_path);
                                             } else {
                                                 container.innerHTML = `<div class="team-logo-placeholder"></div>`;
+                                                console.log('🔧 어웨이팀 로고 없음 - 플레이스홀더 표시');
                                             }
                                         });
                                         
@@ -2304,6 +2314,8 @@
                                     }
                                 }
                                 console.log('🔧 팀로고 정보 재로드 완료');
+                            } else {
+                                console.error('🔧 팀로고 정보 로드 실패:', response.status);
                             }
                         }
                         
