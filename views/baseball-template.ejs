@@ -10,7 +10,6 @@
         window.sportType = 'BASEBALL';
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-    <script src="/js/unified-overlay-logo-loader.js"></script>
     <style>
         /* 기본 스타일 */
         body {
@@ -2051,7 +2050,7 @@
                 const homeTotal = home_score !== undefined ? home_score : (document.querySelector('.home-team .team-score')?.textContent || '0');
                 const awayTotal = away_score !== undefined ? away_score : (document.querySelector('.away-team .team-score')?.textContent || '0');
                 
-                // 총 점수 표시 업데이트
+                // 메인 스코어보드 업데이트
                 const homeScoreElement = document.querySelector('.home-team .team-score');
                 const awayScoreElement = document.querySelector('.away-team .team-score');
                 
@@ -2064,13 +2063,6 @@
                 
                 if (homeTotalElement) homeTotalElement.textContent = homeTotal;
                 if (awayTotalElement) awayTotalElement.textContent = awayTotal;
-                
-                // 메인 스코어보드 업데이트
-                const homeScoreElement = document.querySelector('.home-team .team-score');
-                const awayScoreElement = document.querySelector('.away-team .team-score');
-                
-                if (homeScoreElement) homeScoreElement.textContent = homeTotal;
-                if (awayScoreElement) awayScoreElement.textContent = awayTotal;
                 
                 console.log(`총 점수 업데이트: 홈팀 ${homeTotal}, 원정팀 ${awayTotal}`);
                 console.log('=== 야구 이닝 스코어 업데이트 처리 완료 (오버레이) ===');

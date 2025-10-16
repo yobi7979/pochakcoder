@@ -240,28 +240,43 @@ const matchEvents = (socket, io) => {
         return;
       }
       
-      // 2. BaseballScore 테이블에서 이닝 점수 업데이트/생성
-      const [baseballScore, created] = await BaseballScore.upsert({
-        match_id: matchId,
-        team_type: team,
-        inning: parseInt(inning),
-        score: parseInt(score)
+      // 2. BaseballScore 테이블에서 이닝 점수 업데이트/생성 (JSON 구조)
+      let baseballScore = await BaseballScore.findOne({
+        where: { match_id: matchId }
       });
       
-      console.log(`야구 이닝 점수 ${created ? '생성' : '업데이트'} 완료: ${team}팀 ${inning}회 = ${score}`);
+      if (!baseballScore) {
+        // 새로운 경기 점수 레코드 생성
+        baseballScore = await BaseballScore.create({
+          match_id: matchId,
+          innings: {
+            home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0},
+            away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0}
+          },
+          home_total: 0,
+          away_total: 0
+        });
+        console.log(`새로운 야구 점수 레코드 생성: ${matchId}`);
+      }
       
-      // 3. 총 점수 계산 (BaseballScore 테이블에서 조회)
-      const homeScores = await BaseballScore.findAll({
-        where: { match_id: matchId, team_type: 'home' }
+      // 3. 이닝 점수 업데이트
+      const innings = baseballScore.innings;
+      innings[team][parseInt(inning)] = parseInt(score);
+      
+      // 4. 총 점수 계산
+      const homeTotal = Object.values(innings.home).reduce((sum, score) => sum + score, 0);
+      const awayTotal = Object.values(innings.away).reduce((sum, score) => sum + score, 0);
+      
+      // 5. BaseballScore 테이블 업데이트
+      await baseballScore.update({
+        innings: innings,
+        home_total: homeTotal,
+        away_total: awayTotal
       });
-      const awayScores = await BaseballScore.findAll({
-        where: { match_id: matchId, team_type: 'away' }
-      });
       
-      const homeTotal = homeScores.reduce((sum, record) => sum + (record.score || 0), 0);
-      const awayTotal = awayScores.reduce((sum, record) => sum + (record.score || 0), 0);
+      console.log(`야구 이닝 점수 업데이트 완료: ${team}팀 ${inning}회 = ${score}`);
       
-      // 4. Match 테이블의 총 점수 업데이트
+      // 6. Match 테이블의 총 점수 업데이트
       await match.update({
         home_score: homeTotal,
         away_score: awayTotal
@@ -269,19 +284,16 @@ const matchEvents = (socket, io) => {
       
       console.log(`야구 총 점수 업데이트 완료: 홈팀 ${homeTotal}, 원정팀 ${awayTotal}`);
       
-      // 5. 이닝별 점수 데이터 구성 (BaseballScore 테이블에서)
-      const allScores = await BaseballScore.findAll({
-        where: { match_id: matchId },
-        order: [['team_type', 'ASC'], ['inning', 'ASC']]
+      // 7. 이닝별 점수 데이터 구성 (JSON 구조에서)
+      const inningsData = {};
+      Object.keys(innings.home).forEach(inningNum => {
+        inningsData[`home_${inningNum}`] = innings.home[inningNum];
+      });
+      Object.keys(innings.away).forEach(inningNum => {
+        inningsData[`away_${inningNum}`] = innings.away[inningNum];
       });
       
-      const innings = {};
-      allScores.forEach(scoreRecord => {
-        const key = `${scoreRecord.team_type}_${scoreRecord.inning}`;
-        innings[key] = scoreRecord.score;
-      });
-      
-      // 6. 해당 방의 모든 클라이언트에게 야구 이닝 점수 업데이트 이벤트 전송
+      // 8. 해당 방의 모든 클라이언트에게 야구 이닝 점수 업데이트 이벤트 전송
       io.to(roomName).emit('baseball_inning_score_updated', {
         matchId: matchId,
         team: team,
@@ -289,7 +301,7 @@ const matchEvents = (socket, io) => {
         inningType: inningType,
         score: score,
         change: change,
-        innings: innings,
+        innings: inningsData,
         home_score: homeTotal,
         away_score: awayTotal
       });

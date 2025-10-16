@@ -11,30 +11,29 @@ module.exports = (sequelize) => {
     match_id: {
       type: DataTypes.STRING(50),
       allowNull: false,
-      comment: '경기 ID'
+      unique: true,
+      comment: '경기 ID (유니크)'
     },
-    team_type: {
-      type: DataTypes.ENUM('home', 'away'),
+    innings: {
+      type: DataTypes.JSON,
       allowNull: false,
-      comment: '팀 타입 (홈팀/원정팀)'
+      defaultValue: {
+        home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0},
+        away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0}
+      },
+      comment: '홈팀/원정팀 이닝별 점수 (JSON)'
     },
-    inning: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      comment: '이닝 번호 (1-9)',
-      validate: {
-        min: 1,
-        max: 9
-      }
-    },
-    score: {
+    home_total: {
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0,
-      comment: '해당 이닝 점수',
-      validate: {
-        min: 0
-      }
+      comment: '홈팀 총 점수'
+    },
+    away_total: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      comment: '원정팀 총 점수'
     }
   }, {
     tableName: 'BaseballScore',
@@ -42,15 +41,11 @@ module.exports = (sequelize) => {
     indexes: [
       {
         unique: true,
-        fields: ['match_id', 'team_type', 'inning'],
-        name: 'baseball_score_match_team_inning'
-      },
-      {
         fields: ['match_id'],
-        name: 'baseball_score_match_id'
+        name: 'baseball_score_match_id_unique'
       }
     ],
-    comment: '야구 이닝별 점수 저장 테이블'
+    comment: '야구 경기별 이닝 점수 저장 테이블 (JSON 구조)'
   });
 
   // 관계 설정
