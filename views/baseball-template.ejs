@@ -1896,6 +1896,24 @@
                     });
                 }
                 
+                // 팀 섹션 색상 업데이트
+                const teamSection = document.getElementById(`${teamType}-team-section`);
+                if (teamSection) {
+                    teamSection.style.backgroundColor = teamColor;
+                    console.log(`${teamType}팀 섹션 색상 업데이트:`, {
+                        section: teamSection,
+                        color: teamColor,
+                        teamType: teamType
+                    });
+                    
+                    // 타자/투수 패널의 색상도 업데이트
+                    const inningType = document.querySelector('.inning-indicator')?.classList.contains('bottom') ? 'bottom' : 'top';
+                    updatePanelTitles(inningType);
+                    console.log('🔧 타자/투수 패널 팀컬러 업데이트 완료 (teamColorUpdated 이벤트)');
+                } else {
+                    console.error(`${teamType}팀 섹션을 찾을 수 없음`);
+                }
+                
                 console.log(`${teamType}팀 색상 업데이트 완료: ${teamColor}`);
             }
         });
@@ -2313,6 +2331,12 @@
                                         }
                                     }
                                 }
+                                
+                                // 타자/투수 패널의 팀컬러도 업데이트
+                                const inningType = document.querySelector('.inning-indicator')?.classList.contains('bottom') ? 'bottom' : 'top';
+                                updatePanelTitles(inningType);
+                                console.log('🔧 타자/투수 패널 팀컬러 업데이트 완료');
+                                
                                 console.log('🔧 팀로고 정보 재로드 완료');
                             } else {
                                 console.error('🔧 팀로고 정보 로드 실패:', response.status);

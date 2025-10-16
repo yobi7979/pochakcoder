@@ -2139,14 +2139,24 @@
             
             // 2. WebSocket 이벤트로 DB 정보 업데이트 알림 (축구와 동일)
             if (socket.connected) {
+                // dataChanged 이벤트 (일반적인 실시간 업데이트용)
                 socket.emit('dataChanged', {
                     matchId: '<%= match.id %>',
                     type: 'teamColor',
                     teamType: team
                 });
-                console.log('✅ dataChanged 이벤트 전송 완료');
+                
+                // teamColorUpdated 이벤트 (타자/투수 패널 업데이트용)
+                socket.emit('teamColorUpdated', {
+                    matchId: '<%= match.id %>',
+                    teamType: team,
+                    teamColor: teamColor,
+                    headerText: team === 'home' ? '<%= match.home_team %>' : '<%= match.away_team %>'
+                });
+                
+                console.log('✅ dataChanged 및 teamColorUpdated 이벤트 전송 완료');
             } else {
-                console.error('❌ 소켓 연결되지 않음 - dataChanged 이벤트 전송 실패');
+                console.error('❌ 소켓 연결되지 않음 - 이벤트 전송 실패');
             }
             
             console.log(`${team}팀 컬러 저장 이벤트 전송 완료: ${teamColor}`);
