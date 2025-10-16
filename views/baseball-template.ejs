@@ -2244,6 +2244,51 @@
                     try {
                         console.log('🔧 500ms 지연 후 데이터 재로드 실행');
                         await loadMatchData();
+                        
+                        // 팀로고 정보도 함께 로드
+                        if (data.type === 'teamLogo' || data.type === 'teamName' || data.type === 'teamColor') {
+                            console.log('🔧 팀로고 정보 재로드 시작');
+                            const response = await fetch(`/api/matches/${matchId}/team-logos`);
+                            if (response.ok) {
+                                const result = await response.json();
+                                
+                                // 홈팀 로고 업데이트
+                                if (result.teamLogos && result.teamLogos.length > 0) {
+                                    const homeTeamInfo = result.teamLogos.find(team => team.team_type === 'home');
+                                    const awayTeamInfo = result.teamLogos.find(team => team.team_type === 'away');
+                                    
+                                    if (homeTeamInfo) {
+                                        const homeLogoContainers = document.querySelectorAll('.team-info.home-team .team-logo-container');
+                                        homeLogoContainers.forEach(container => {
+                                            if (homeTeamInfo.logo_path) {
+                                                container.innerHTML = `
+                                                    <img src="${homeTeamInfo.logo_path}" alt="홈팀 로고" class="team-logo">
+                                                `;
+                                                container.style.backgroundColor = homeTeamInfo.logo_bg_color || '#ffffff';
+                                            } else {
+                                                container.innerHTML = `<div class="team-logo-placeholder"></div>`;
+                                            }
+                                        });
+                                    }
+                                    
+                                    if (awayTeamInfo) {
+                                        const awayLogoContainers = document.querySelectorAll('.team-info.away-team .team-logo-container');
+                                        awayLogoContainers.forEach(container => {
+                                            if (awayTeamInfo.logo_path) {
+                                                container.innerHTML = `
+                                                    <img src="${awayTeamInfo.logo_path}" alt="원정팀 로고" class="team-logo">
+                                                `;
+                                                container.style.backgroundColor = awayTeamInfo.logo_bg_color || '#ffffff';
+                                            } else {
+                                                container.innerHTML = `<div class="team-logo-placeholder"></div>`;
+                                            }
+                                        });
+                                    }
+                                }
+                                console.log('🔧 팀로고 정보 재로드 완료');
+                            }
+                        }
+                        
                         console.log('🔧 데이터 재로드 완료');
                     } catch (error) {
                         console.error('🔧 데이터 재로드 오류:', error);

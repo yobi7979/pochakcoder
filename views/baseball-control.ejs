@@ -4296,8 +4296,22 @@
             const logoPreview = document.getElementById(`${teamType}-team-logo-preview`);
             const currentLogoImg = logoPreview.querySelector('img');
             
+            let logoPath = null;
+            if (currentLogoImg && currentLogoImg.src) {
+                // 전체 URL에서 상대 경로만 추출
+                const fullUrl = currentLogoImg.src;
+                const urlParts = fullUrl.split('/');
+                const apiIndex = urlParts.findIndex(part => part === 'api');
+                if (apiIndex !== -1) {
+                    logoPath = '/' + urlParts.slice(apiIndex).join('/');
+                } else {
+                    logoPath = fullUrl; // fallback
+                }
+                console.log(`🔧 로고 경로 변환: ${fullUrl} -> ${logoPath}`);
+            }
+            
             return {
-                logoPath: currentLogoImg ? currentLogoImg.src : null,
+                logoPath: logoPath,
                 bgColor: logoPreview.style.backgroundColor || '#ffffff',
                 hasLogo: currentLogoImg !== null
             };
