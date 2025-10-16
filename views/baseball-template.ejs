@@ -1855,7 +1855,7 @@
         }
 
         // 팀 이름 업데이트 이벤트
-        socket.on('teamNameUpdated', function(data) {
+        socket.on('teamNameUpdated', async function(data) {
             console.log('팀명 업데이트 이벤트 수신 (첫 번째 리스너):', data);
             
             if (data.matchId === matchId) {
@@ -1903,7 +1903,7 @@
         });
 
         // 팀 색상 업데이트 이벤트 처리
-        socket.on('teamColorUpdated', function(data) {
+        socket.on('teamColorUpdated', async function(data) {
             console.log('팀 색상 업데이트 이벤트 수신:', data);
             
             if (data.matchId === matchId) {
@@ -1949,7 +1949,7 @@
 
 
         // 스코어 업데이트 이벤트
-        socket.on('scoreUpdated', (data) => {
+        socket.on('scoreUpdated', async (data) => {
             console.log('스코어 업데이트:', data);
             
             // 스코어와 기타 정보 업데이트
