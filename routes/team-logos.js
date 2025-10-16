@@ -193,15 +193,35 @@ router.post('/:matchId/select', requireAuth, asyncHandler(async (req, res) => {
       });
     }
     
-    // TeamInfo 테이블에 팀 정보 업서트 (upsert)
-    await TeamInfo.upsert({
-      match_id: matchId,
-      sport_type: match.sport_type,
-      team_name: teamName,
-      team_type: teamType,
-      logo_path: logoPath,
-      logo_bg_color: rgbToHex(bgColor)
+    // 기존 TeamInfo 레코드 찾기
+    const existingTeamInfo = await TeamInfo.findOne({
+      where: {
+        match_id: matchId,
+        team_type: teamType
+      }
     });
+    
+    if (existingTeamInfo) {
+      // 기존 레코드 업데이트
+      await existingTeamInfo.update({
+        sport_type: match.sport_type,
+        team_name: teamName,
+        logo_path: logoPath,
+        logo_bg_color: rgbToHex(bgColor)
+      });
+      console.log(`🔧 기존 TeamInfo 레코드 업데이트: ID ${existingTeamInfo.id}`);
+    } else {
+      // 새 레코드 생성
+      await TeamInfo.create({
+        match_id: matchId,
+        sport_type: match.sport_type,
+        team_name: teamName,
+        team_type: teamType,
+        logo_path: logoPath,
+        logo_bg_color: rgbToHex(bgColor)
+      });
+      console.log(`🔧 새 TeamInfo 레코드 생성: ${matchId} - ${teamType}팀`);
+    }
     
     console.log(`✅ 경기 ${matchId} ${teamType}팀 로고 선택 완료: ${teamName}`);
     res.json({ 
@@ -256,28 +276,64 @@ router.put('/:matchId/team-logos', requireAuth, asyncHandler(async (req, res) =>
       });
     }
     
-    // 홈팀 정보 업서트
+    // 홈팀 정보 업데이트
     if (home_team_logo_path) {
-      await TeamInfo.upsert({
-        match_id: matchId,
-        sport_type: match.sport_type,
-        team_name: home_team_name || match.home_team,
-        team_type: 'home',
-        logo_path: home_team_logo_path,
-        logo_bg_color: home_logo_bg_color || '#ffffff'
+      const existingHomeTeamInfo = await TeamInfo.findOne({
+        where: {
+          match_id: matchId,
+          team_type: 'home'
+        }
       });
+      
+      if (existingHomeTeamInfo) {
+        await existingHomeTeamInfo.update({
+          sport_type: match.sport_type,
+          team_name: home_team_name || match.home_team,
+          logo_path: home_team_logo_path,
+          logo_bg_color: home_logo_bg_color || '#ffffff'
+        });
+        console.log(`🔧 홈팀 기존 레코드 업데이트: ID ${existingHomeTeamInfo.id}`);
+      } else {
+        await TeamInfo.create({
+          match_id: matchId,
+          sport_type: match.sport_type,
+          team_name: home_team_name || match.home_team,
+          team_type: 'home',
+          logo_path: home_team_logo_path,
+          logo_bg_color: home_logo_bg_color || '#ffffff'
+        });
+        console.log(`🔧 홈팀 새 레코드 생성: ${matchId}`);
+      }
     }
     
-    // 어웨이팀 정보 업서트
+    // 어웨이팀 정보 업데이트
     if (away_team_logo_path) {
-      await TeamInfo.upsert({
-        match_id: matchId,
-        sport_type: match.sport_type,
-        team_name: away_team_name || match.away_team,
-        team_type: 'away',
-        logo_path: away_team_logo_path,
-        logo_bg_color: away_logo_bg_color || '#ffffff'
+      const existingAwayTeamInfo = await TeamInfo.findOne({
+        where: {
+          match_id: matchId,
+          team_type: 'away'
+        }
       });
+      
+      if (existingAwayTeamInfo) {
+        await existingAwayTeamInfo.update({
+          sport_type: match.sport_type,
+          team_name: away_team_name || match.away_team,
+          logo_path: away_team_logo_path,
+          logo_bg_color: away_logo_bg_color || '#ffffff'
+        });
+        console.log(`🔧 어웨이팀 기존 레코드 업데이트: ID ${existingAwayTeamInfo.id}`);
+      } else {
+        await TeamInfo.create({
+          match_id: matchId,
+          sport_type: match.sport_type,
+          team_name: away_team_name || match.away_team,
+          team_type: 'away',
+          logo_path: away_team_logo_path,
+          logo_bg_color: away_logo_bg_color || '#ffffff'
+        });
+        console.log(`🔧 어웨이팀 새 레코드 생성: ${matchId}`);
+      }
     }
     
     console.log(`✅ 경기 ${matchId} 팀로고 설정 완료`);
@@ -326,71 +382,6 @@ router.get('/config/:sportType', asyncHandler(async (req, res) => {
   }
 }));
 
-// POST /api/team-logos/:matchId/select - 경기 팀로고 선택
-router.post('/:matchId/select', asyncHandler(async (req, res) => {
-  try {
-    const { matchId } = req.params;
-    const { teamType, logoPath, teamName, bgColor } = req.body;
-    console.log(`🔧 경기 팀로고 선택: ${matchId} - ${teamType}팀`);
-    
-    // 경기 존재 확인
-    const match = await Match.findByPk(matchId);
-    if (!match) {
-      return res.status(404).json({
-        success: false,
-        message: '경기를 찾을 수 없습니다.'
-      });
-    }
-    
-    // 팀로고 정보 찾기
-    const teamLogo = await TeamLogo.findOne({
-      where: {
-        logo_path: logoPath,
-        is_active: true
-      }
-    });
-    
-    if (!teamLogo) {
-      return res.status(404).json({
-        success: false,
-        message: '팀로고를 찾을 수 없습니다.'
-      });
-    }
-    
-    // 기존 매핑 삭제
-    await MatchTeamLogo.destroy({
-      where: {
-        match_id: matchId,
-        team_type: teamType
-      }
-    });
-    
-    // 새 매핑 생성
-    await MatchTeamLogo.create({
-      match_id: matchId,
-      team_type: teamType,
-      team_logo_id: teamLogo.id
-    });
-    
-    console.log(`✅ 경기 ${matchId} ${teamType}팀 로고 선택 완료: ${teamName}`);
-    res.json({ 
-      success: true, 
-      message: '팀로고가 성공적으로 선택되었습니다.',
-      teamLogo: {
-        team_type: teamType,
-        logo_path: logoPath,
-        logo_bg_color: bgColor,
-        team_name: teamName
-      }
-    });
-  } catch (error) {
-    console.error('경기 팀로고 선택 실패:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: '경기 팀로고 선택에 실패했습니다.',
-      error: error.message 
-    });
-  }
-}));
+// 중복된 API 제거됨 - 위의 POST /:matchId/select API 사용
 
 module.exports = router;
