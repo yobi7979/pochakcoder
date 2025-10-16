@@ -2230,6 +2230,30 @@
             }
         });
 
+        // dataChanged 이벤트 처리 (실시간 업데이트)
+        socket.on('dataChanged', async function(data) {
+            console.log('🔧 dataChanged 이벤트 수신 (야구):', data);
+            console.log('🔧 현재 경기 ID:', matchId);
+            console.log('🔧 이벤트 경기 ID:', data.matchId);
+            console.log('🔧 이벤트 타입:', data.type);
+            console.log('🔧 팀 타입:', data.teamType);
+
+            if (data.matchId === matchId) {
+                console.log('🔧 동일 경기 dataChanged 이벤트 - 데이터 재로드 시작');
+                setTimeout(async () => {
+                    try {
+                        console.log('🔧 500ms 지연 후 데이터 재로드 실행');
+                        await loadMatchData();
+                        console.log('🔧 데이터 재로드 완료');
+                    } catch (error) {
+                        console.error('🔧 데이터 재로드 오류:', error);
+                    }
+                }, 500);
+            } else {
+                console.log('🔧 다른 경기의 dataChanged 이벤트로 무시');
+            }
+        });
+
         // 팀로고 업데이트 이벤트 처리 (통합된 방식)
         socket.on('teamLogoUpdated', function(data) {
             if (data.matchId !== matchId) return;

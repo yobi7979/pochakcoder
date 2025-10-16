@@ -4315,9 +4315,9 @@
             console.log(`${teamType}팀 현재 미리보기 로고 저장 시작:`, logoInfo);
             
             try {
-                // DB에 팀로고 정보 저장 (파일 업로드 없이)
+                // DB에 팀로고 정보 업데이트 (기존 레코드 수정)
                 const response = await fetch(`/api/matches/<%= match.id %>/team-logos`, {
-                    method: 'POST',
+                    method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         homeLogoPath: teamType === 'home' ? logoInfo.logoPath : null,
