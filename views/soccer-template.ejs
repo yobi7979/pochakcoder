@@ -1704,29 +1704,47 @@
                     
                     // 팀 색상 적용
                     updateTeamColors(homeTeamColor, awayTeamColor);
+                    
+                    // 팀명 업데이트
+                    if (matchData.home_team) {
+                        const homeTeamElements = document.querySelectorAll('.team-section.home .team-name');
+                        homeTeamElements.forEach(element => {
+                            element.textContent = matchData.home_team;
+                        });
+                        console.log('🔧 홈팀명 업데이트:', matchData.home_team);
+                    }
+                    if (matchData.away_team) {
+                        const awayTeamElements = document.querySelectorAll('.team-section.away .team-name');
+                        awayTeamElements.forEach(element => {
+                            element.textContent = matchData.away_team;
+                        });
+                        console.log('🔧 어웨이팀명 업데이트:', matchData.away_team);
+                    }
                 }
                 
-                // 2. 팀로고 정보 로드 (중복 방지)
-                if (!teamLogosLoaded) {
-                    const teamLogosResponse = await fetch(`/api/matches/${matchId}/team-logos`);
-                    if (teamLogosResponse.ok) {
-                        const teamLogosData = await teamLogosResponse.json();
-                        
-                        if (teamLogosData && teamLogosData.teamLogos) {
-                            teamLogosData.teamLogos.forEach((teamInfo) => {
-                                const teamType = teamInfo.team_type;
-                                if (teamInfo.logo_path || teamInfo.logo_bg_color) {
-                                    logoState[teamType] = {
-                                        path: teamInfo.logo_path || '',
-                                        bgColor: teamInfo.logo_bg_color || '#ffffff',
-                                        teamName: teamInfo.team_name
-                                    };
-                                    updateTeamLogo(teamType, logoState[teamType]);
-                                }
-                            });
-                            teamLogosLoaded = true;
-                        }
+                // 2. 팀로고 정보 로드 (dataChanged 이벤트에서는 항상 재로드)
+                console.log('🔧 팀로고 정보 재로드 시작');
+                const teamLogosResponse = await fetch(`/api/matches/${matchId}/team-logos`);
+                if (teamLogosResponse.ok) {
+                    const teamLogosData = await teamLogosResponse.json();
+                    
+                    if (teamLogosData && teamLogosData.teamLogos) {
+                        teamLogosData.teamLogos.forEach((teamInfo) => {
+                            const teamType = teamInfo.team_type;
+                            if (teamInfo.logo_path || teamInfo.logo_bg_color) {
+                                logoState[teamType] = {
+                                    path: teamInfo.logo_path || '',
+                                    bgColor: teamInfo.logo_bg_color || '#ffffff',
+                                    teamName: teamInfo.team_name
+                                };
+                                console.log(`🔧 ${teamType}팀 로고 정보 업데이트:`, logoState[teamType]);
+                                updateTeamLogo(teamType, logoState[teamType]);
+                            }
+                        });
+                        console.log('🔧 팀로고 정보 재로드 완료');
                     }
+                } else {
+                    console.error('🔧 팀로고 정보 로드 실패:', teamLogosResponse.status);
                 }
                 
                 // 3. 팀로고 가시성 상태 로드
