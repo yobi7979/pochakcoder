@@ -242,18 +242,24 @@
         <div class="timer-section">
             <div id="timer-display">00:00</div>
             <div class="timer-controls mb-2">
-                <button id="start-timer" class="btn btn-success timer-btn">
+                <button class="btn btn-success timer-btn" onclick="startTimer()">
                     <i class="bi bi-play-fill"></i> 시작
                 </button>
-                <button id="stop-timer" class="btn btn-danger timer-btn">
+                <button class="btn btn-danger timer-btn" onclick="stopTimer()">
                     <i class="bi bi-pause-fill"></i> 멈춤
                 </button>
-                <button id="reset-timer" class="btn btn-secondary timer-btn">
+                <button class="btn btn-secondary timer-btn" onclick="resetTimer()">
                     <i class="bi bi-arrow-counterclockwise"></i> 리셋
                 </button>
             </div>
             <!-- 시간 수정 UI -->
             <div class="d-flex justify-content-center align-items-center gap-3 mb-2">
+                <button class="btn btn-primary timer-btn" onclick="toggleTimeEdit()">
+                    <i class="bi bi-pencil"></i> 수정
+                </button>
+            </div>
+            <!-- 시간 수정 입력 필드 (수정 버튼 클릭 시 표시) -->
+            <div id="time-edit-container" class="d-flex justify-content-center align-items-center gap-3 mb-2" style="display: none;">
                 <input type="text" id="time-edit-input" class="form-control" style="width:96px; text-align:center; font-size: 1.1em;" placeholder="00:00" pattern="[0-9]{2}:[0-9]{2}">
                 <button id="apply-time-btn" class="btn btn-primary" style="font-size: 1.1em; padding: 8px 16px;">적용</button>
             </div>
@@ -339,15 +345,19 @@
             localTimer: null
         };
         
+        // 타이머 상태 (일반 컨트롤 페이지와 동일)
+        let currentTime = 0;
+        let isRunning = false;
+        
         let isConnected = true;
 
-        // 타이머 표시 업데이트
+        // 타이머 표시 업데이트 (일반 컨트롤 페이지와 동일)
         function updateTimerDisplay() {
-            // 음수 값 방지
-            const safeSeconds = Math.max(0, timerState.currentSeconds);
-            const minutes = Math.floor(safeSeconds / 60);
-            const seconds = safeSeconds % 60;
-            document.getElementById('timer-display').textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            const minutes = Math.floor(currentTime / 60);
+            const seconds = currentTime % 60;
+            const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('timer-display').textContent = display;
+            console.log('타이머 표시 업데이트:', display);
         }
 
         // 팀로고 정보 로드 함수 (오버레이와 동일한 로직)
@@ -536,37 +546,16 @@
             socket.emit('leave_all_rooms');
         });
 
-        // 통합된 타이머 이벤트 처리 (백업 방식과 호환)
+        // 타이머 상태 수신 (일반 컨트롤 페이지와 동일)
         socket.on('timer_state', (data) => {
             console.log('=== 타이머 상태 수신 ===');
             console.log('수신된 데이터:', data);
             
             if (data.matchId === matchId) {
-                // 0값 무시 로직: 현재 타이머가 0이 아닌데 서버에서 0을 받으면 무시
-                const serverTime = data.currentSeconds || data.timer || 0;
-                if (timerState.currentSeconds > 0 && serverTime === 0) {
-                    console.log('현재 타이머가 0이 아닌데 서버에서 0을 받음 - 무시:', {
-                        currentTimer: timerState.currentSeconds,
-                        serverTime: serverTime
-                    });
-                    return;
-                }
+                currentTime = Math.max(0, data.currentSeconds || 0);
+                isRunning = data.isRunning || false;
                 
-                // 새로운 독립 타이머 시스템 지원
-                if (data.startTime && data.pausedTime !== undefined) {
-                    timerState.startTime = data.startTime;
-                    timerState.pausedTime = data.pausedTime;
-                    timerState.isRunning = data.isRunning || false;
-                    timerState.currentSeconds = data.pausedTime; // ✅ 정지된 시간을 currentSeconds로 설정
-                } else {
-                    // 기존 방식 호환성 지원
-                    timerState.currentSeconds = Math.max(0, data.currentSeconds || 0);
-                    timerState.isRunning = data.isRunning || false;
-                    timerState.lastServerTime = Math.max(0, data.currentSeconds || 0);
-                    timerState.lastUpdateTime = data.lastUpdateTime || Date.now();
-                }
-                
-                if (timerState.isRunning) {
+                if (isRunning) {
                     startLocalTimer();
                 } else {
                     updateTimerDisplay();
@@ -581,35 +570,14 @@
             console.log('수신된 데이터:', data);
             
             if (data.matchId === matchId) {
-                // 0값 무시 로직: 현재 타이머가 0이 아닌데 서버에서 0을 받으면 무시
-                const serverTime = data.currentSeconds || data.timer || 0;
-                if (timerState.currentSeconds > 0 && serverTime === 0) {
-                    console.log('현재 타이머가 0이 아닌데 서버에서 0을 받음 - 무시:', {
-                        currentTimer: timerState.currentSeconds,
-                        serverTime: serverTime
-                    });
-                    return;
-                }
-                
-                // 새로운 독립 타이머 시스템 지원
-                if (data.startTime && data.pausedTime !== undefined) {
-                    timerState.startTime = data.startTime;
-                    timerState.pausedTime = data.pausedTime;
-                    timerState.isRunning = data.isRunning || false;
-                    timerState.currentSeconds = data.pausedTime; // ✅ 정지된 시간을 currentSeconds로 설정
-                } else {
-                    // 기존 방식 호환성 지원
-                    timerState.currentSeconds = Math.max(0, data.currentSeconds || 0);
-                    timerState.isRunning = data.isRunning || false;
-                    timerState.lastServerTime = Math.max(0, data.currentSeconds || 0);
-                    timerState.lastUpdateTime = data.lastUpdateTime || Date.now();
-                }
+                currentTime = Math.max(0, data.currentSeconds || 0);
+                isRunning = data.isRunning || false;
                 
                 updateTimerDisplay();
                 
-                if (timerState.isRunning && !timerState.localTimer) {
+                if (isRunning && !timerInterval) {
                     startLocalTimer();
-                } else if (!timerState.isRunning && timerState.localTimer) {
+                } else if (!isRunning && timerInterval) {
                     stopLocalTimer();
                 }
                 
@@ -617,135 +585,11 @@
             }
         });
 
-        socket.on('timer_updated', (data) => {
-            console.log('=== 타이머 업데이트 이벤트 수신 ===');
-            console.log('수신된 데이터:', data);
-            
-            if (data.matchId === matchId) {
-                // 0값 무시 로직: 현재 타이머가 0이 아닌데 서버에서 0을 받으면 무시
-                const serverTime = data.currentSeconds || data.timer || 0;
-                if (timerState.currentSeconds > 0 && serverTime === 0) {
-                    console.log('현재 타이머가 0이 아닌데 서버에서 0을 받음 - 무시:', {
-                        currentTimer: timerState.currentSeconds,
-                        serverTime: serverTime
-                    });
-                    return;
-                }
-                
-                // 새로운 독립 타이머 시스템 지원
-                if (data.startTime && data.pausedTime !== undefined) {
-                    timerState.startTime = data.startTime;
-                    timerState.pausedTime = data.pausedTime;
-                    timerState.isRunning = data.isRunning || false;
-                    timerState.currentSeconds = data.pausedTime; // ✅ 정지된 시간을 currentSeconds로 설정
-                } else {
-                    // 기존 방식 호환성 지원
-                    timerState.currentSeconds = Math.max(0, data.currentSeconds || 0);
-                    timerState.isRunning = data.isRunning || false;
-                    timerState.lastServerTime = Math.max(0, data.currentSeconds || 0);
-                    timerState.lastUpdateTime = data.lastUpdateTime || Date.now();
-                }
-                
-                updateTimerDisplay();
-                
-                if (timerState.isRunning && !timerState.localTimer) {
-                    startLocalTimer();
-                } else if (!timerState.isRunning && timerState.localTimer) {
-                    stopLocalTimer();
-                }
-                
-                console.log('타이머 업데이트 완료:', data);
-            }
-        });
+        // 추가 타이머 이벤트들은 단순화된 시스템에서 불필요하므로 제거
 
-        // 새로운 독립 타이머 이벤트 처리 (추가 지원)
-        socket.on('timer_started', (data) => {
-            console.log('=== 타이머 시작 이벤트 수신 ===');
-            console.log('수신된 데이터:', data);
-            
-            if (data.matchId === matchId) {
-                timerState.startTime = data.startTime;
-                timerState.pausedTime = data.pausedTime;
-                timerState.isRunning = true;
-                startLocalTimer();
-                console.log('타이머 시작 완료:', data);
-            }
-        });
+        // 복잡한 타이머 이벤트들은 단순화된 시스템에서 불필요하므로 제거
 
-        socket.on('timer_stopped', (data) => {
-            console.log('=== 타이머 정지 이벤트 수신 ===');
-            console.log('수신된 데이터:', data);
-            
-            if (data.matchId === matchId) {
-                timerState.startTime = data.startTime;
-                timerState.pausedTime = data.pausedTime;
-                timerState.isRunning = false;
-                timerState.currentSeconds = data.pausedTime; // ✅ 정지된 시간을 currentSeconds로 설정
-                stopLocalTimer();
-                updateTimerDisplay();
-                console.log('타이머 정지 완료:', data);
-            }
-        });
-
-        socket.on('timer_reset', (data) => {
-            console.log('=== 타이머 리셋 이벤트 수신 ===');
-            console.log('수신된 데이터:', data);
-            
-            if (data.matchId === matchId) {
-                // 리셋은 0값을 무시하지 않고 정상적으로 처리
-                timerState.startTime = data.startTime;
-                timerState.pausedTime = data.pausedTime;
-                timerState.isRunning = false;
-                timerState.currentSeconds = 0; // 명시적으로 0으로 설정
-                timerState.lastServerTime = 0; // 서버 시간도 0으로 설정
-                stopLocalTimer();
-                updateTimerDisplay();
-                console.log('타이머 리셋 완료 - 00:00으로 변경됨:', data);
-            }
-        });
-
-        socket.on('timer_set', (data) => {
-            console.log('=== 타이머 설정 이벤트 수신 ===');
-            console.log('수신된 데이터:', data);
-            
-            if (data.matchId === matchId) {
-                timerState.startTime = data.startTime;
-                timerState.pausedTime = data.pausedTime;
-                timerState.isRunning = false;
-                stopLocalTimer();
-                updateTimerDisplay();
-                console.log('타이머 설정 완료:', data);
-            }
-        });
-
-        // 타이머 컨트롤 버튼 이벤트
-        document.getElementById('start-timer').addEventListener('click', function() {
-            console.log('=== 타이머 시작 버튼 클릭 ===');
-            console.log('matchId:', matchId);
-            socket.emit('timer_control', {
-                matchId: matchId,
-                action: 'start'
-            });
-        });
-        document.getElementById('stop-timer').addEventListener('click', function() {
-            console.log('=== 타이머 정지 버튼 클릭 ===');
-            console.log('matchId:', matchId, 'currentTime:', timerState.currentSeconds);
-            // 현재 로컬 타이머의 시간을 서버로 전송
-            const currentTime = timerState.currentSeconds;
-            socket.emit('timer_control', {
-                matchId: matchId,
-                action: 'stop',
-                currentTime: currentTime
-            });
-        });
-        document.getElementById('reset-timer').addEventListener('click', function() {
-            console.log('=== 타이머 리셋 버튼 클릭 ===');
-            console.log('matchId:', matchId);
-            socket.emit('timer_control', {
-                matchId: matchId,
-                action: 'reset'
-            });
-        });
+        // 타이머 컨트롤 버튼 이벤트는 onclick으로 처리됨
         
 
 
@@ -784,10 +628,11 @@
             }
         }
 
-        // 시간 수정 적용 버튼 이벤트
+        // 시간 수정 적용 버튼 이벤트 (일반 컨트롤 페이지와 동일)
         document.getElementById('apply-time-btn').addEventListener('click', function() {
             const timeEditInput = document.getElementById('time-edit-input');
             let timeValue = timeEditInput.value.trim();
+            
             // 숫자만 입력된 경우에만 자동 변환
             if (/^\d+$/.test(timeValue)) {
                 let val = timeValue;
@@ -801,13 +646,16 @@
                     timeValue = val.slice(0, val.length - 2).padStart(2, '0') + ':' + val.slice(-2);
                 }
             }
+            
             timeEditInput.value = timeValue;
+            
             // 00:00 형식 검증
             const timeRegex = /^([0-9]{2}):([0-9]{2})$/;
             if (!timeRegex.test(timeValue)) {
                 alert('올바른 시간 형식(00:00) 또는 숫자만 입력해주세요.');
                 return;
             }
+            
             // 분과 초 추출
             let [minutes, seconds] = timeValue.split(':').map(Number);
             
@@ -819,49 +667,93 @@
             
             if (minutes > 90) minutes = 90;
             if (seconds > 59) seconds = 59;
+            
             // 서버에 시간 변경 요청
             socket.emit('timer_control', {
                 matchId: matchId,
                 action: 'set',
-                minutes: minutes,
-                seconds: seconds
+                timeValue: { minutes: minutes, seconds: seconds }
             });
-        });
-
-        // 로컬 타이머 (호환성 지원)
-        function startLocalTimer() {
-            if (timerState.localTimer) {
-                clearInterval(timerState.localTimer);
-                timerState.localTimer = null;
+            
+            // 시간 수정 UI 숨기기
+            const timeEditContainer = document.getElementById('time-edit-container');
+            if (timeEditContainer) {
+                timeEditContainer.style.display = 'none';
             }
             
-            timerState.localTimer = setInterval(() => {
-                if (timerState.isRunning) {
-                    // 새로운 독립 타이머 시스템 지원
-                    if (timerState.startTime && timerState.pausedTime !== undefined) {
-                        // startTime이 0이면 pausedTime을 그대로 사용 (리셋된 상태)
-                        if (timerState.startTime === 0) {
-                            timerState.currentSeconds = Math.max(0, timerState.pausedTime);
-                        } else {
-                            const currentTime = Date.now();
-                            const elapsedTime = Math.floor((currentTime - timerState.startTime) / 1000);
-                            timerState.currentSeconds = Math.max(0, timerState.pausedTime + elapsedTime);
-                        }
-                    } else {
-                        // 기존 방식 호환성 지원
-                        const currentTime = Date.now();
-                        const timeDiff = Math.floor((currentTime - timerState.lastUpdateTime) / 1000);
-                        timerState.currentSeconds = Math.max(0, timerState.lastServerTime + timeDiff);
-                    }
+            console.log('시간 수정 요청:', { minutes, seconds });
+        });
+
+        // 로컬 타이머 (일반 컨트롤 페이지와 동일)
+        let timerInterval = null;
+        
+        function startLocalTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (isRunning) {
+                    currentTime++;
                     updateTimerDisplay();
                 }
             }, 1000);
+            console.log('로컬 타이머 시작');
         }
         
         function stopLocalTimer() {
-            if (timerState.localTimer) {
-                clearInterval(timerState.localTimer);
-                timerState.localTimer = null;
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            console.log('로컬 타이머 정지');
+        }
+
+        // 타이머 제어 함수들 (일반 컨트롤 페이지와 동일)
+        function startTimer() {
+            console.log('=== 타이머 시작 요청 ===');
+            console.log('matchId:', matchId);
+            socket.emit('timer_control', { matchId: matchId, action: 'start' });
+        }
+
+        function stopTimer() {
+            console.log('=== 타이머 정지 요청 ===');
+            console.log('matchId:', matchId, 'currentTime:', timerState.currentSeconds);
+            // 현재 로컬 타이머의 시간을 서버로 전송
+            const currentTime = timerState.currentSeconds;
+            socket.emit('timer_control', {
+                matchId: matchId,
+                action: 'stop',
+                currentTime: currentTime
+            });
+        }
+
+        function resetTimer() {
+            console.log('=== 타이머 리셋 요청 ===');
+            console.log('matchId:', matchId);
+            socket.emit('timer_control', {
+                matchId: matchId,
+                action: 'reset'
+            });
+        }
+
+        // 시간 수정 토글 (일반 컨트롤 페이지와 동일)
+        function toggleTimeEdit() {
+            const timeEditContainer = document.getElementById('time-edit-container');
+            const timeEditInput = document.getElementById('time-edit-input');
+            
+            if (!timeEditContainer || !timeEditInput) {
+                console.error('시간 수정 UI 요소를 찾을 수 없음');
+                return;
+            }
+            
+            const minutes = Math.floor(timerState.currentSeconds / 60);
+            const seconds = timerState.currentSeconds % 60;
+            timeEditInput.value = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            if (timeEditContainer.style.display === 'none') {
+                timeEditContainer.style.display = 'block';
+                timeEditInput.focus();
+                timeEditInput.select();
+            } else {
+                timeEditContainer.style.display = 'none';
             }
         }
 
