@@ -43,12 +43,14 @@ router.get('/:sportType', asyncHandler(async (req, res) => {
     const fs = require('fs');
     const path = require('path');
     
-    // 1. 데이터베이스에서 팀로고 조회
-    const dbTeamLogos = await TeamLogo.findAll({
-      where: { 
+    // 1. TeamInfo 테이블에서 팀로고 조회 (중복 제거)
+    const dbTeamLogos = await TeamInfo.findAll({
+      where: {
         sport_type: sportType.toUpperCase(),
-        is_active: true 
+        logo_path: { [Op.ne]: null } // logo_path가 null이 아닌 것만
       },
+      attributes: ['team_name', 'logo_path', 'logo_bg_color'],
+      group: ['team_name', 'logo_path', 'logo_bg_color'], // 중복 제거
       order: [['team_name', 'ASC']]
     });
     
@@ -113,25 +115,23 @@ router.get('/:sportType', asyncHandler(async (req, res) => {
   }
 }));
 
-// GET /api/matches/:matchId/team-logos - 경기별 팀로고 정보 조회
+// GET /api/matches/:matchId/team-logos - 경기별 팀로고 정보 조회 (TeamInfo 기반)
 router.get('/:matchId/team-logos', asyncHandler(async (req, res) => {
   try {
     const { matchId } = req.params;
     console.log(`🔧 경기별 팀로고 정보 조회: ${matchId}`);
     
-    const matchTeamLogos = await MatchTeamLogo.findAll({
+    // TeamInfo 테이블에서 경기별 팀 정보 조회
+    const teamInfos = await TeamInfo.findAll({
       where: { match_id: matchId },
-      include: [{
-        model: TeamLogo,
-        as: 'teamLogo'
-      }]
+      order: [['team_type', 'ASC']]
     });
     
-    const teamLogos = matchTeamLogos.map(mtl => ({
-      team_type: mtl.team_type,
-      logo_path: mtl.teamLogo.logo_path,
-      logo_bg_color: mtl.teamLogo.logo_bg_color,
-      team_name: mtl.teamLogo.team_name
+    const teamLogos = teamInfos.map(teamInfo => ({
+      team_type: teamInfo.team_type,
+      logo_path: teamInfo.logo_path,
+      logo_bg_color: teamInfo.logo_bg_color,
+      team_name: teamInfo.team_name
     }));
     
     console.log(`✅ 경기 ${matchId} 팀로고 ${teamLogos.length}개 조회 완료`);
@@ -146,7 +146,7 @@ router.get('/:matchId/team-logos', asyncHandler(async (req, res) => {
   }
 }));
 
-// POST /api/team-logos/:matchId/select - 경기 팀로고 선택
+// POST /api/team-logos/:matchId/select - 경기 팀로고 선택 (TeamInfo 기반)
 router.post('/:matchId/select', requireAuth, asyncHandler(async (req, res) => {
   try {
     const { matchId } = req.params;
@@ -162,43 +162,14 @@ router.post('/:matchId/select', requireAuth, asyncHandler(async (req, res) => {
       });
     }
     
-    // 팀로고 정보 찾기 또는 생성
-    let teamLogo = await TeamLogo.findOne({
-      where: {
-        logo_path: logoPath,
-        is_active: true
-      }
-    });
-    
-    // 데이터베이스에 없으면 새로 생성 (파일시스템에서만 존재하는 경우)
-    if (!teamLogo) {
-      console.log(`🔧 파일시스템 전용 로고를 DB에 등록: ${logoPath}`);
-      
-      // 파일시스템에서만 존재하는 로고를 DB에 등록
-      teamLogo = await TeamLogo.create({
-        sport_type: match.sport_type,
-        team_name: teamName,
-        logo_path: logoPath,
-        logo_bg_color: rgbToHex(bgColor),
-        is_active: true
-      });
-      
-      console.log(`✅ 파일시스템 로고 DB 등록 완료: ${teamLogo.id}`);
-    }
-    
-    // 기존 매핑 삭제
-    await MatchTeamLogo.destroy({
-      where: {
-        match_id: matchId,
-        team_type: teamType
-      }
-    });
-    
-    // 새 매핑 생성
-    await MatchTeamLogo.create({
+    // TeamInfo 테이블에 팀 정보 업서트 (upsert)
+    await TeamInfo.upsert({
       match_id: matchId,
+      sport_type: match.sport_type,
+      team_name: teamName,
       team_type: teamType,
-      team_logo_id: teamLogo.id
+      logo_path: logoPath,
+      logo_bg_color: rgbToHex(bgColor)
     });
     
     console.log(`✅ 경기 ${matchId} ${teamType}팀 로고 선택 완료: ${teamName}`);
@@ -222,51 +193,19 @@ router.post('/:matchId/select', requireAuth, asyncHandler(async (req, res) => {
   }
 }));
 
-// POST /api/team-logos - 새 팀로고 생성
+// POST /api/team-logos - 새 팀로고 생성 (더 이상 사용되지 않음)
 router.post('/', requireAuth, asyncHandler(async (req, res) => {
-  try {
-    const { sport_type, team_name, logo_path, logo_bg_color } = req.body;
-    console.log(`🔧 새 팀로고 생성: ${sport_type} - ${team_name}`);
-    
-    // 중복 확인
-    const existingLogo = await TeamLogo.findOne({
-      where: {
-        sport_type: sport_type.toUpperCase(),
-        team_name: team_name
-      }
-    });
-    
-    if (existingLogo) {
-      return res.status(400).json({
-        success: false,
-        message: '이미 존재하는 팀로고입니다.'
-      });
-    }
-    
-    const teamLogo = await TeamLogo.create({
-      sport_type: sport_type.toUpperCase(),
-      team_name,
-      logo_path,
-      logo_bg_color: logo_bg_color || '#ffffff'
-    });
-    
-    console.log(`✅ 팀로고 생성 완료: ID ${teamLogo.id}`);
-    res.json({ success: true, teamLogo });
-  } catch (error) {
-    console.error('팀로고 생성 실패:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: '팀로고 생성에 실패했습니다.',
-      error: error.message 
-    });
-  }
+  res.status(400).json({
+    success: false,
+    message: '이 API는 더 이상 사용되지 않습니다. TeamInfo 기반으로 변경되었습니다.'
+  });
 }));
 
-// PUT /api/matches/:matchId/team-logos - 경기 팀로고 설정
+// PUT /api/matches/:matchId/team-logos - 경기 팀로고 설정 (TeamInfo 기반)
 router.put('/:matchId/team-logos', requireAuth, asyncHandler(async (req, res) => {
   try {
     const { matchId } = req.params;
-    const { home_team_logo_id, away_team_logo_id } = req.body;
+    const { home_team_logo_path, away_team_logo_path, home_team_name, away_team_name, home_logo_bg_color, away_logo_bg_color } = req.body;
     console.log(`🔧 경기 팀로고 설정: ${matchId}`);
     
     // 경기 존재 확인
@@ -286,23 +225,27 @@ router.put('/:matchId/team-logos', requireAuth, asyncHandler(async (req, res) =>
       });
     }
     
-    // 기존 연결 삭제
-    await MatchTeamLogo.destroy({ where: { match_id: matchId } });
-    
-    // 새 연결 생성
-    if (home_team_logo_id) {
-      await MatchTeamLogo.create({
+    // 홈팀 정보 업서트
+    if (home_team_logo_path) {
+      await TeamInfo.upsert({
         match_id: matchId,
+        sport_type: match.sport_type,
+        team_name: home_team_name || match.home_team,
         team_type: 'home',
-        team_logo_id: home_team_logo_id
+        logo_path: home_team_logo_path,
+        logo_bg_color: home_logo_bg_color || '#ffffff'
       });
     }
     
-    if (away_team_logo_id) {
-      await MatchTeamLogo.create({
+    // 어웨이팀 정보 업서트
+    if (away_team_logo_path) {
+      await TeamInfo.upsert({
         match_id: matchId,
+        sport_type: match.sport_type,
+        team_name: away_team_name || match.away_team,
         team_type: 'away',
-        team_logo_id: away_team_logo_id
+        logo_path: away_team_logo_path,
+        logo_bg_color: away_logo_bg_color || '#ffffff'
       });
     }
     
@@ -318,40 +261,12 @@ router.put('/:matchId/team-logos', requireAuth, asyncHandler(async (req, res) =>
   }
 }));
 
-// DELETE /api/team-logos/:id - 팀로고 삭제
+// DELETE /api/team-logos/:id - 팀로고 삭제 (더 이상 사용되지 않음)
 router.delete('/:id', requireAuth, asyncHandler(async (req, res) => {
-  try {
-    const { id } = req.params;
-    console.log(`🔧 팀로고 삭제: ID ${id}`);
-    
-    const teamLogo = await TeamLogo.findByPk(id);
-    if (!teamLogo) {
-      return res.status(404).json({
-        success: false,
-        message: '팀로고를 찾을 수 없습니다.'
-      });
-    }
-    
-    // 권한 확인 (관리자만 삭제 가능)
-    if (req.session.userRole !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: '권한이 없습니다.'
-      });
-    }
-    
-    await teamLogo.destroy();
-    
-    console.log(`✅ 팀로고 삭제 완료: ID ${id}`);
-    res.json({ success: true });
-  } catch (error) {
-    console.error('팀로고 삭제 실패:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: '팀로고 삭제에 실패했습니다.',
-      error: error.message 
-    });
-  }
+  res.status(400).json({
+    success: false,
+    message: '이 API는 더 이상 사용되지 않습니다. TeamInfo 기반으로 변경되었습니다.'
+  });
 }));
 
 // GET /api/team-logos/config/:sportType - 종목별 설정 조회
