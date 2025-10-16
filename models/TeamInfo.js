@@ -51,7 +51,14 @@ const TeamInfo = (sequelize) => {
     timestamps: true,
     createdAt: 'created_at',
     updatedAt: 'updated_at',
-    tableName: 'TeamInfo'
+    tableName: 'TeamInfo',
+    indexes: [
+      {
+        unique: true,
+        fields: ['match_id', 'team_type'],
+        name: 'unique_match_team_type'
+      }
+    ]
   });
 };
 
