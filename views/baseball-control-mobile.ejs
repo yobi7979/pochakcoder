@@ -1639,18 +1639,37 @@
             console.log('데이터 matchId:', data.matchId);
             
             if (data.matchId === matchId) {
-                // 서버에서 계산된 총 점수 사용 (서버 값이 유효한 경우에만)
+                // 1. 먼저 서버에서 받은 이닝별 점수로 숨겨진 입력 필드 업데이트
+                if (data.innings) {
+                    console.log('서버에서 받은 이닝별 점수:', data.innings);
+                    
+                    for (let i = 1; i <= 9; i++) {
+                        const homeInningElement = document.getElementById(`home-inning-${i}`);
+                        const awayInningElement = document.getElementById(`away-inning-${i}`);
+                        
+                        if (homeInningElement && data.innings[`home_${i}`] !== undefined) {
+                            homeInningElement.value = data.innings[`home_${i}`] || 0;
+                            console.log(`홈팀 ${i}회 점수 업데이트: ${data.innings[`home_${i}`]}`);
+                        }
+                        if (awayInningElement && data.innings[`away_${i}`] !== undefined) {
+                            awayInningElement.value = data.innings[`away_${i}`] || 0;
+                            console.log(`원정팀 ${i}회 점수 업데이트: ${data.innings[`away_${i}`]}`);
+                        }
+                    }
+                }
+                
+                // 2. 서버에서 계산된 총 점수 사용
                 const serverHomeTotal = data.home_score;
                 const serverAwayTotal = data.away_score;
                 
-                console.log(`서버에서 받은 점수: 홈팀 ${serverHomeTotal}, 원정팀 ${serverAwayTotal}`);
+                console.log(`서버에서 받은 총 점수: 홈팀 ${serverHomeTotal}, 원정팀 ${serverAwayTotal}`);
                 
-                // 로컬에서 다시 계산한 점수 사용 (서버 값이 0이거나 undefined인 경우)
+                // 3. 서버 점수가 유효한 경우 사용, 그렇지 않으면 로컬 재계산
                 let homeTotal = serverHomeTotal;
                 let awayTotal = serverAwayTotal;
                 
                 if (serverHomeTotal === 0 || serverHomeTotal === undefined || serverAwayTotal === 0 || serverAwayTotal === undefined) {
-                    console.log('서버 점수가 유효하지 않음. 로컬 재계산 수행...');
+                    console.log('서버 총 점수가 유효하지 않음. 로컬 재계산 수행...');
                     
                     // 로컬에서 이닝별 점수 합계 재계산
                     let localHomeTotal = 0;

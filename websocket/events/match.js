@@ -282,7 +282,7 @@ const matchEvents = (socket, io) => {
       });
       
       // 6. 해당 방의 모든 클라이언트에게 야구 이닝 점수 업데이트 이벤트 전송
-      io.to(roomName).emit('baseball_inning_score_updated', {
+      const eventData = {
         matchId: matchId,
         team: team,
         inning: inning,
@@ -292,7 +292,15 @@ const matchEvents = (socket, io) => {
         innings: inningsData,
         home_score: homeTotal,
         away_score: awayTotal
-      });
+      };
+      
+      console.log(`=== 야구 이닝 점수 업데이트 이벤트 전송 데이터 ===`);
+      console.log(`방: ${roomName}`);
+      console.log(`전송 데이터:`, eventData);
+      console.log(`이닝별 데이터:`, inningsData);
+      console.log(`총 점수: 홈팀 ${homeTotal}, 원정팀 ${awayTotal}`);
+      
+      io.to(roomName).emit('baseball_inning_score_updated', eventData);
       
       console.log(`야구 이닝 점수 업데이트 이벤트를 방 ${roomName}에 전송함`);
     } catch (error) {
