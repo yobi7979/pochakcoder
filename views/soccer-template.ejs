@@ -507,17 +507,6 @@
             box-sizing: border-box;
         }
         
-        .vs-team-logo-placeholder {
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(45deg, #333, #555);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #ffffff;
-            font-size: 16px;
-            font-weight: bold;
-        }
         
         .vs-team-name {
             font-size: 38px;
@@ -1163,7 +1152,6 @@
                     <div class="vs-team-section home">
                         <div class="vs-team-logo">
                             <img id="vs-home-logo" src="" alt="홈팀 로고" style="display: none;">
-                            <div class="vs-team-logo-placeholder" id="vs-home-placeholder"></div>
                         </div>
                         <div class="vs-team-name" id="vs-home-name"><%= match.home_team || 'HOME' %></div>
                     </div>
@@ -1175,7 +1163,6 @@
                     <div class="vs-team-section away">
                         <div class="vs-team-logo">
                             <img id="vs-away-logo" src="" alt="어웨이팀 로고" style="display: none;">
-                            <div class="vs-team-logo-placeholder" id="vs-away-placeholder"></div>
                         </div>
                         <div class="vs-team-name" id="vs-away-name"><%= match.away_team || 'AWAY' %></div>
                     </div>
@@ -3327,19 +3314,6 @@
         document.addEventListener('DOMContentLoaded', async function() {
             
             try {
-                // VS 섹션 placeholder 초기 숨김 처리
-                const vsHomePlaceholder = document.getElementById('vs-home-placeholder');
-                const vsAwayPlaceholder = document.getElementById('vs-away-placeholder');
-                if (vsHomePlaceholder) {
-                    vsHomePlaceholder.style.display = 'none';
-                    vsHomePlaceholder.style.visibility = 'hidden';
-                    vsHomePlaceholder.textContent = '';
-                }
-                if (vsAwayPlaceholder) {
-                    vsAwayPlaceholder.style.display = 'none';
-                    vsAwayPlaceholder.style.visibility = 'hidden';
-                    vsAwayPlaceholder.textContent = '';
-                }
                 
                 // 초기 로고 로드 (팀 색상 적용 전에 먼저 실행)
                 await loadInitialLogos();
@@ -3770,28 +3744,20 @@
             // 홈팀 로고 업데이트
             const homeLogoContainer = document.querySelector('.vs-team-section.home .vs-team-logo');
             const homeLogoImg = document.getElementById('vs-home-logo');
-            const homePlaceholder = document.getElementById('vs-home-placeholder');
             
             if (logoState.home && logoState.home.path) {
                 console.log('홈팀 로고 설정:', logoState.home.path);
                 // 로고 이미지 설정
                 homeLogoImg.src = logoState.home.path;
                 homeLogoImg.style.display = 'block';
-                // placeholder 강제로 숨기기
-                homePlaceholder.style.display = 'none';
-                homePlaceholder.style.visibility = 'hidden';
-                homePlaceholder.textContent = ''; // 텍스트도 제거
                 // 로고 컨테이너에 배경색 적용
                 if (homeLogoContainer) {
                     homeLogoContainer.style.backgroundColor = logoState.home.bgColor || '#ffffff';
                 }
                 console.log('✅ 홈팀 로고 표시 완료');
             } else {
-                console.log('홈팀 로고 없음 - 플레이스홀더 표시');
+                console.log('홈팀 로고 없음 - 로고 숨김');
                 homeLogoImg.style.display = 'none';
-                homePlaceholder.style.display = 'flex';
-                homePlaceholder.style.visibility = 'visible';
-                homePlaceholder.textContent = 'HOME';
                 // 기본 배경색
                 if (homeLogoContainer) {
                     homeLogoContainer.style.backgroundColor = '#ffffff';
@@ -3801,28 +3767,20 @@
             // 어웨이팀 로고 업데이트
             const awayLogoContainer = document.querySelector('.vs-team-section.away .vs-team-logo');
             const awayLogoImg = document.getElementById('vs-away-logo');
-            const awayPlaceholder = document.getElementById('vs-away-placeholder');
             
             if (logoState.away && logoState.away.path) {
                 console.log('어웨이팀 로고 설정:', logoState.away.path);
                 // 로고 이미지 설정
                 awayLogoImg.src = logoState.away.path;
                 awayLogoImg.style.display = 'block';
-                // placeholder 강제로 숨기기
-                awayPlaceholder.style.display = 'none';
-                awayPlaceholder.style.visibility = 'hidden';
-                awayPlaceholder.textContent = ''; // 텍스트도 제거
                 // 로고 컨테이너에 배경색 적용
                 if (awayLogoContainer) {
                     awayLogoContainer.style.backgroundColor = logoState.away.bgColor || '#ffffff';
                 }
                 console.log('✅ 어웨이팀 로고 표시 완료');
             } else {
-                console.log('어웨이팀 로고 없음 - 플레이스홀더 표시');
+                console.log('어웨이팀 로고 없음 - 로고 숨김');
                 awayLogoImg.style.display = 'none';
-                awayPlaceholder.style.display = 'flex';
-                awayPlaceholder.style.visibility = 'visible';
-                awayPlaceholder.textContent = 'AWAY';
                 // 기본 배경색
                 if (awayLogoContainer) {
                     awayLogoContainer.style.backgroundColor = '#ffffff';
