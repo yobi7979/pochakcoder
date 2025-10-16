@@ -1675,11 +1675,40 @@
             console.log('데이터 matchId:', data.matchId);
             
             if (data.matchId === matchId) {
-                // 서버에서 계산된 총 점수 사용
-                const homeTotal = data.home_score || 0;
-                const awayTotal = data.away_score || 0;
+                // 서버에서 계산된 총 점수 사용 (서버 값이 유효한 경우에만)
+                const serverHomeTotal = data.home_score;
+                const serverAwayTotal = data.away_score;
                 
-                console.log(`서버에서 받은 점수: 홈팀 ${homeTotal}, 원정팀 ${awayTotal}`);
+                console.log(`서버에서 받은 점수: 홈팀 ${serverHomeTotal}, 원정팀 ${serverAwayTotal}`);
+                
+                // 로컬에서 다시 계산한 점수 사용 (서버 값이 0이거나 undefined인 경우)
+                let homeTotal = serverHomeTotal;
+                let awayTotal = serverAwayTotal;
+                
+                if (serverHomeTotal === 0 || serverHomeTotal === undefined || serverAwayTotal === 0 || serverAwayTotal === undefined) {
+                    console.log('서버 점수가 유효하지 않음. 로컬 재계산 수행...');
+                    
+                    // 로컬에서 이닝별 점수 합계 재계산
+                    let localHomeTotal = 0;
+                    let localAwayTotal = 0;
+                    
+                    for (let i = 1; i <= 9; i++) {
+                        const homeInningElement = document.getElementById(`home-inning-${i}`);
+                        const awayInningElement = document.getElementById(`away-inning-${i}`);
+                        
+                        if (homeInningElement) {
+                            localHomeTotal += parseInt(homeInningElement.value) || 0;
+                        }
+                        if (awayInningElement) {
+                            localAwayTotal += parseInt(awayInningElement.value) || 0;
+                        }
+                    }
+                    
+                    homeTotal = localHomeTotal;
+                    awayTotal = localAwayTotal;
+                    
+                    console.log(`로컬 재계산 결과: 홈팀 ${homeTotal}, 원정팀 ${awayTotal}`);
+                }
                 
                 // 총 점수 표시 업데이트
                 const homeScoreElement = document.getElementById('home-score');
@@ -1692,11 +1721,11 @@
                 
                 if (homeScoreElement) {
                     homeScoreElement.value = homeTotal;
-                    console.log(`홈팀 점수 업데이트: ${homeTotal}`);
+                    console.log(`홈팀 점수 최종 업데이트: ${homeTotal}`);
                 }
                 if (awayScoreElement) {
                     awayScoreElement.value = awayTotal;
-                    console.log(`원정팀 점수 업데이트: ${awayTotal}`);
+                    console.log(`원정팀 점수 최종 업데이트: ${awayTotal}`);
                 }
                 
                 console.log('업데이트 후 점수:', {
