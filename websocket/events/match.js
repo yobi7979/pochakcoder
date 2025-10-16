@@ -230,14 +230,68 @@ const matchEvents = (socket, io) => {
       
       console.log(`야구 이닝 점수 업데이트: matchId=${matchId}, team=${team}, inning=${inning}, score=${score}`);
       
-      // 해당 방의 모든 클라이언트에게 야구 이닝 점수 업데이트 이벤트 전송
+      // 1. 데이터베이스에서 현재 경기 데이터 가져오기
+      const { Match, BaseballScore } = require('../../models');
+      const match = await Match.findByPk(matchId);
+      
+      if (!match) {
+        console.error(`경기를 찾을 수 없습니다: ${matchId}`);
+        socket.emit('baseball_inning_update_error', { error: '경기를 찾을 수 없습니다.' });
+        return;
+      }
+      
+      // 2. BaseballScore 테이블에서 이닝 점수 업데이트/생성
+      const [baseballScore, created] = await BaseballScore.upsert({
+        match_id: matchId,
+        team_type: team,
+        inning: parseInt(inning),
+        score: parseInt(score)
+      });
+      
+      console.log(`야구 이닝 점수 ${created ? '생성' : '업데이트'} 완료: ${team}팀 ${inning}회 = ${score}`);
+      
+      // 3. 총 점수 계산 (BaseballScore 테이블에서 조회)
+      const homeScores = await BaseballScore.findAll({
+        where: { match_id: matchId, team_type: 'home' }
+      });
+      const awayScores = await BaseballScore.findAll({
+        where: { match_id: matchId, team_type: 'away' }
+      });
+      
+      const homeTotal = homeScores.reduce((sum, record) => sum + (record.score || 0), 0);
+      const awayTotal = awayScores.reduce((sum, record) => sum + (record.score || 0), 0);
+      
+      // 4. Match 테이블의 총 점수 업데이트
+      await match.update({
+        home_score: homeTotal,
+        away_score: awayTotal
+      });
+      
+      console.log(`야구 총 점수 업데이트 완료: 홈팀 ${homeTotal}, 원정팀 ${awayTotal}`);
+      
+      // 5. 이닝별 점수 데이터 구성 (BaseballScore 테이블에서)
+      const allScores = await BaseballScore.findAll({
+        where: { match_id: matchId },
+        order: [['team_type', 'ASC'], ['inning', 'ASC']]
+      });
+      
+      const innings = {};
+      allScores.forEach(scoreRecord => {
+        const key = `${scoreRecord.team_type}_${scoreRecord.inning}`;
+        innings[key] = scoreRecord.score;
+      });
+      
+      // 6. 해당 방의 모든 클라이언트에게 야구 이닝 점수 업데이트 이벤트 전송
       io.to(roomName).emit('baseball_inning_score_updated', {
         matchId: matchId,
         team: team,
         inning: inning,
         inningType: inningType,
         score: score,
-        change: change
+        change: change,
+        innings: innings,
+        home_score: homeTotal,
+        away_score: awayTotal
       });
       
       console.log(`야구 이닝 점수 업데이트 이벤트를 방 ${roomName}에 전송함`);
