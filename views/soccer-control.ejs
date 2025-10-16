@@ -3552,7 +3552,7 @@
             logoList.innerHTML = filteredLogos.map(logo => `
                 <div class="col-6 col-md-4">
                     <div class="card h-100 logo-card ${deleteMode ? 'delete-mode' : ''}" 
-                         onclick="${deleteMode ? `toggleLogoSelection('${logo.logo_path}')` : `selectLogo('${logo.logo_path}', '${logo.team_name}')`}" 
+                         onclick="${deleteMode ? `toggleLogoSelection('${logo.logo_path}')` : `selectLogo('${logo.logo_path}', '${logo.display_name || logo.team_name}')`}" 
                          style="cursor: pointer;">
                         ${deleteMode ? `
                             <div class="form-check position-absolute top-0 start-0 m-2">
@@ -3560,8 +3560,8 @@
                             </div>
                         ` : ''}
                         <div class="card-body text-center p-2">
-                            <img src="${logo.logo_path}" alt="${logo.team_name}" class="img-fluid mb-2" style="max-height: 60px; object-fit: contain;">
-                            <h6 class="card-title mb-0" style="font-size: 0.8rem;">${logo.team_name}</h6>
+                            <img src="${logo.logo_path}" alt="${logo.display_name || logo.team_name}" class="img-fluid mb-2" style="max-height: 60px; object-fit: contain;">
+                            <h6 class="card-title mb-0" style="font-size: 0.8rem;">${logo.display_name || logo.team_name}</h6>
                         </div>
                     </div>
                 </div>
@@ -3719,7 +3719,7 @@
                 searchInput.addEventListener('input', function() {
                     const searchTerm = this.value.toLowerCase();
                     filteredLogos = allLogos.filter(logo => 
-                        logo.team_name.toLowerCase().includes(searchTerm)
+                        (logo.display_name || logo.team_name).toLowerCase().includes(searchTerm)
                     );
                     displayLogos();
                 });

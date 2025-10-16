@@ -4039,8 +4039,8 @@
                     // TeamInfo 기반 로고 데이터를 모달용으로 변환
                     allLogos = data.teamLogos.map(logo => ({
                         path: logo.logo_path,
-                        displayName: logo.team_name,
-                        name: logo.team_name,
+                        displayName: logo.display_name || logo.team_name,
+                        name: logo.display_name || logo.team_name,
                         logo_bg_color: logo.logo_bg_color
                     }));
                     filteredLogos = [...allLogos];

@@ -53,6 +53,20 @@ router.get('/:sportType', asyncHandler(async (req, res) => {
       group: ['team_name', 'logo_path', 'logo_bg_color'], // 중복 제거
       order: [['team_name', 'ASC']]
     });
+
+    // 파일 이름 추출하여 표시용 이름 생성
+    const processedDbTeamLogos = dbTeamLogos.map(logo => {
+      // logo_path에서 파일 이름 추출
+      const pathParts = logo.logo_path.split('/');
+      const fileName = pathParts[pathParts.length - 1];
+      const displayName = path.parse(fileName).name; // 확장자 제거
+      
+      return {
+        ...logo,
+        display_name: displayName, // 표시용 이름 (파일 이름)
+        original_team_name: logo.team_name // 원본 팀 이름 보존
+      };
+    });
     
     // 2. 파일시스템에서 팀로고 조회
     const fileSystemLogos = [];
@@ -91,6 +105,7 @@ router.get('/:sportType', asyncHandler(async (req, res) => {
             id: `file_${fileName}`,
             sport_type: sportType.toUpperCase(),
             team_name: fileName,
+            display_name: fileName, // 표시용 이름 (파일 이름)
             logo_path: logoPath,
             logo_bg_color: '#ffffff',
             is_active: true,
@@ -101,7 +116,7 @@ router.get('/:sportType', asyncHandler(async (req, res) => {
     }
     
     // 3. 데이터베이스와 파일시스템 로고 합치기
-    const allTeamLogos = [...dbTeamLogos, ...fileSystemLogos];
+    const allTeamLogos = [...processedDbTeamLogos, ...fileSystemLogos];
     
     console.log(`✅ ${sportType} 팀로고 ${allTeamLogos.length}개 조회 완료 (DB: ${dbTeamLogos.length}, 파일: ${fileSystemLogos.length})`);
     res.json({ success: true, teamLogos: allTeamLogos });
