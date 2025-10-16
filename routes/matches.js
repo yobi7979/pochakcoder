@@ -4,7 +4,7 @@ const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errorHandler');
 
 // 모델들
-const { Match, User, Sport, Template, TeamInfo, Settings } = require('../models');
+const { Match, User, Sport, Template, TeamInfo, Settings, BaseballScore } = require('../models');
 const { Op } = require('sequelize');
 
 // 경기 관련 라우터
@@ -1040,5 +1040,55 @@ router.post('/:matchId/team-logo-display-mode', async (req, res) => {
     res.status(500).json({ error: '서버 오류가 발생했습니다.' });
   }
 });
+
+// GET /api/matches/:matchId/baseball-scores - 야구 이닝별 점수 조회
+router.get('/:matchId/baseball-scores', requireAuth, asyncHandler(async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    
+    console.log(`야구 이닝별 점수 조회 요청: matchId=${matchId}`);
+    
+    // BaseballScore 테이블에서 해당 경기의 이닝별 점수 조회
+    const baseballScore = await BaseballScore.findOne({
+      where: { match_id: matchId }
+    });
+    
+    if (!baseballScore) {
+      // BaseballScore 레코드가 없으면 기본값으로 생성
+      const newBaseballScore = await BaseballScore.create({
+        match_id: matchId,
+        innings: {
+          home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0},
+          away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0}
+        },
+        home_total: 0,
+        away_total: 0
+      });
+      
+      console.log(`새로운 야구 점수 레코드 생성: ${matchId}`);
+      
+      res.json({
+        success: true,
+        matchId: matchId,
+        innings: newBaseballScore.innings,
+        home_total: newBaseballScore.home_total,
+        away_total: newBaseballScore.away_total
+      });
+    } else {
+      console.log(`야구 이닝별 점수 조회 성공: ${matchId}`);
+      
+      res.json({
+        success: true,
+        matchId: matchId,
+        innings: baseballScore.innings,
+        home_total: baseballScore.home_total,
+        away_total: baseballScore.away_total
+      });
+    }
+  } catch (error) {
+    console.error('야구 이닝별 점수 조회 오류:', error);
+    res.status(500).json({ error: '야구 이닝별 점수 조회 중 오류가 발생했습니다.' });
+  }
+}));
 
 module.exports = router;

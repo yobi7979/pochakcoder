@@ -597,31 +597,12 @@
                 
                 updateMatchInfo();
                 
-                // 6. 서버에서 최신 점수 다시 가져와서 UI 업데이트 (Socket.IO 이벤트 실패 시 대비)
-                setTimeout(async () => {
-                    try {
-                        const response = await fetch(`/api/matches/${matchId}`);
-                        if (response.ok) {
-                            const matchData = await response.json();
-                            const homeScore = matchData.home_score || 0;
-                            const awayScore = matchData.away_score || 0;
-                            
-                            const homeScoreElement = document.getElementById('home-score');
-                            const awayScoreElement = document.getElementById('away-score');
-                            
-                            if (homeScoreElement) {
-                                homeScoreElement.value = homeScore;
-                                console.log(`홈팀 점수 최종 업데이트: ${homeScore}`);
-                            }
-                            if (awayScoreElement) {
-                                awayScoreElement.value = awayScore;
-                                console.log(`원정팀 점수 최종 업데이트: ${awayScore}`);
-                            }
-                        }
-                    } catch (error) {
-                        console.error('최신 점수 가져오기 실패:', error);
-                    }
-                }, 1000); // 1초 후 서버에서 최신 점수 가져오기 (Socket.IO 이벤트 실패 시 대비)
+                // 6. 로컬 계산값으로 최종 점수 확정 (서버 데이터보다 로컬 계산 우선)
+                setTimeout(() => {
+                    // 로컬에서 계산한 점수로 최종 업데이트
+                    updateTotalScores();
+                    console.log('로컬 계산값으로 최종 점수 확정 완료');
+                }, 1000); // 1초 후 로컬 계산값으로 최종 확정
                 
                 console.log(`=== 점수 증가 완료: ${team}팀 ${currentInning}회 ${newInningScore} ===`);
                 
@@ -725,31 +706,12 @@
                 
                 updateMatchInfo();
                 
-                // 서버에서 최신 점수 다시 가져와서 UI 업데이트 (Socket.IO 이벤트 실패 시 대비)
-                setTimeout(async () => {
-                    try {
-                        const response = await fetch(`/api/matches/${matchId}`);
-                        if (response.ok) {
-                            const matchData = await response.json();
-                            const homeScore = matchData.home_score || 0;
-                            const awayScore = matchData.away_score || 0;
-                            
-                            const homeScoreElement = document.getElementById('home-score');
-                            const awayScoreElement = document.getElementById('away-score');
-                            
-                            if (homeScoreElement) {
-                                homeScoreElement.value = homeScore;
-                                console.log(`홈팀 점수 최종 업데이트: ${homeScore}`);
-                            }
-                            if (awayScoreElement) {
-                                awayScoreElement.value = awayScore;
-                                console.log(`원정팀 점수 최종 업데이트: ${awayScore}`);
-                            }
-                        }
-                    } catch (error) {
-                        console.error('최신 점수 가져오기 실패:', error);
-                    }
-                }, 1000); // 1초 후 서버에서 최신 점수 가져오기 (Socket.IO 이벤트 실패 시 대비)
+                // 로컬 계산값으로 최종 점수 확정 (서버 데이터보다 로컬 계산 우선)
+                setTimeout(() => {
+                    // 로컬에서 계산한 점수로 최종 업데이트
+                    updateTotalScores();
+                    console.log('로컬 계산값으로 최종 점수 확정 완료 (감소)');
+                }, 1000); // 1초 후 로컬 계산값으로 최종 확정
                 
                 console.log(`=== 점수 감소 완료: ${team}팀 -${amount} ===`);
                 
@@ -1015,21 +977,23 @@
             }
         }
 
-        // 서버에서 최신 경기 데이터 로딩
+        // 서버에서 최신 경기 데이터 로딩 (BaseballScore 테이블 기반)
         async function loadCurrentMatchData() {
             try {
                 console.log('=== 서버에서 최신 경기 데이터 로딩 시작 ===');
-                const response = await fetch(`/api/matches/${matchId}`);
                 
-                if (response.ok) {
-                    const matchData = await response.json();
-                    console.log('서버에서 받은 경기 데이터:', matchData);
+                // 1. BaseballScore 테이블에서 이닝별 점수 조회
+                const baseballScoreResponse = await fetch(`/api/matches/${matchId}/baseball-scores`);
+                
+                if (baseballScoreResponse.ok) {
+                    const baseballScoreData = await baseballScoreResponse.json();
+                    console.log('BaseballScore 테이블에서 받은 데이터:', baseballScoreData);
                     
-                    // 서버에서 계산된 최신 점수 사용
-                    const homeScore = matchData.home_score || 0;
-                    const awayScore = matchData.away_score || 0;
+                    // BaseballScore 테이블의 총 점수 사용
+                    const homeScore = baseballScoreData.home_total || 0;
+                    const awayScore = baseballScoreData.away_total || 0;
                     
-                    console.log('서버 점수:', { homeScore, awayScore });
+                    console.log('BaseballScore 총 점수:', { homeScore, awayScore });
                     
                     // UI 업데이트
                     const homeScoreElement = document.getElementById('home-score');
@@ -1044,26 +1008,26 @@
                         console.log(`원정팀 점수 설정: ${awayScore}`);
                     }
                     
-                    // 이닝별 스코어 데이터 확인 (서버의 match_data.innings)
-                    const innings = matchData.match_data?.innings || {};
-                    console.log('서버 이닝별 스코어:', innings);
+                    // 이닝별 스코어 데이터 확인 (BaseballScore 테이블의 innings)
+                    const innings = baseballScoreData.innings || {};
+                    console.log('BaseballScore 이닝별 스코어:', innings);
                     
-                    // 이닝별 스코어 합계 계산하여 검증
-                    const homeTotal = Object.keys(innings)
-                        .filter(key => key.startsWith('home_'))
-                        .reduce((sum, key) => sum + (parseInt(innings[key]) || 0), 0);
-                    const awayTotal = Object.keys(innings)
-                        .filter(key => key.startsWith('away_'))
-                        .reduce((sum, key) => sum + (parseInt(innings[key]) || 0), 0);
+                    // 숨겨진 이닝별 점수 입력 필드 업데이트
+                    for (let i = 1; i <= 9; i++) {
+                        const homeInningElement = document.getElementById(`home-inning-${i}`);
+                        const awayInningElement = document.getElementById(`away-inning-${i}`);
+                        
+                        if (homeInningElement && innings.home && innings.home[i] !== undefined) {
+                            homeInningElement.value = innings.home[i];
+                        }
+                        if (awayInningElement && innings.away && innings.away[i] !== undefined) {
+                            awayInningElement.value = innings.away[i];
+                        }
+                    }
                     
-                    console.log('이닝별 스코어 합계:', { homeTotal, awayTotal });
-                    console.log('서버 총 점수:', { homeScore, awayScore });
-                    
-                    // 모바일 컨트롤 페이지에서는 총 점수만 관리하므로 불일치 감지 로직 제거
-                    
-                    console.log('=== 서버에서 최신 경기 데이터 로딩 완료 ===');
+                    console.log('=== BaseballScore 테이블에서 최신 경기 데이터 로딩 완료 ===');
                 } else {
-                    console.error('경기 데이터 가져오기 실패:', response.status);
+                    console.error('BaseballScore 데이터 가져오기 실패:', baseballScoreResponse.status);
                 }
             } catch (error) {
                 console.error('현재 경기 데이터 가져오기 오류:', error);
