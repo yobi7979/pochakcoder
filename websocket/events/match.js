@@ -229,6 +229,7 @@ const matchEvents = (socket, io) => {
       const roomName = `match_${matchId}`;
       
       console.log(`야구 이닝 점수 업데이트: matchId=${matchId}, team=${team}, inning=${inning}, score=${score}`);
+      console.log(`전체 데이터:`, data);
       
       // 1. 데이터베이스에서 현재 경기 데이터 가져오기
       const { Match, BaseballScore } = require('../../models');
@@ -261,11 +262,16 @@ const matchEvents = (socket, io) => {
       
       // 3. 이닝 점수 업데이트
       const innings = baseballScore.innings;
+      console.log(`업데이트 전 innings:`, innings);
+      console.log(`업데이트할 위치: ${team}[${parseInt(inning)}] = ${parseInt(score)}`);
+      
       innings[team][parseInt(inning)] = parseInt(score);
+      console.log(`업데이트 후 innings:`, innings);
       
       // 4. 총 점수 계산
       const homeTotal = Object.values(innings.home).reduce((sum, score) => sum + score, 0);
       const awayTotal = Object.values(innings.away).reduce((sum, score) => sum + score, 0);
+      console.log(`계산된 총 점수: 홈팀 ${homeTotal}, 원정팀 ${awayTotal}`);
       
       // 5. BaseballScore 테이블 업데이트
       await baseballScore.update({
