@@ -1282,4 +1282,73 @@ router.get('/TEAMLOGO/:sportType', async (req, res) => {
   }
 });
 
+// DELETE /api/overlay-images/delete-team-logo - 팀로고 삭제
+router.delete('/delete-team-logo', requireAuth, asyncHandler(async (req, res) => {
+  try {
+    const { logoPath } = req.body;
+    console.log(`🔧 팀로고 삭제 요청: ${logoPath}`);
+    
+    if (!logoPath) {
+      return res.status(400).json({
+        success: false,
+        message: '로고 경로가 필요합니다.'
+      });
+    }
+    
+    // 로고 경로에서 실제 파일 경로 추출
+    const pathParts = logoPath.split('/');
+    const sportType = pathParts[pathParts.length - 2];
+    const fileName = pathParts[pathParts.length - 1];
+    
+    // 실제 파일 경로 구성
+    const baseDir = process.env.VOLUME_STORAGE_PATH ? 
+      path.join(process.env.VOLUME_STORAGE_PATH, 'TEAMLOGO') : 
+      path.join(__dirname, '../public/TEAMLOGO');
+    const sportDir = path.join(baseDir, sportType);
+    const filePath = path.join(sportDir, fileName);
+    
+    console.log(`🔧 삭제할 파일 경로: ${filePath}`);
+    
+    // 파일 존재 확인
+    try {
+      await fs.access(filePath);
+    } catch (error) {
+      console.log(`⚠️ 파일이 존재하지 않음: ${filePath}`);
+      return res.status(404).json({
+        success: false,
+        message: '파일을 찾을 수 없습니다.'
+      });
+    }
+    
+    // 파일 삭제
+    await fs.unlink(filePath);
+    console.log(`✅ 팀로고 파일 삭제 완료: ${filePath}`);
+    
+    // TeamInfo 테이블에서 해당 로고 경로를 사용하는 레코드들의 logo_path를 null로 설정
+    try {
+      const { TeamInfo } = require('../models');
+      await TeamInfo.update(
+        { logo_path: null },
+        { where: { logo_path: logoPath } }
+      );
+      console.log(`✅ TeamInfo 테이블에서 로고 경로 제거 완료: ${logoPath}`);
+    } catch (dbError) {
+      console.warn(`⚠️ TeamInfo 테이블 업데이트 실패: ${dbError.message}`);
+    }
+    
+    res.json({
+      success: true,
+      message: '팀로고가 성공적으로 삭제되었습니다.'
+    });
+    
+  } catch (error) {
+    console.error('팀로고 삭제 실패:', error);
+    res.status(500).json({
+      success: false,
+      message: '팀로고 삭제에 실패했습니다.',
+      error: error.message
+    });
+  }
+}));
+
 module.exports = router;

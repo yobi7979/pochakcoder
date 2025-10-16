@@ -3926,6 +3926,19 @@
                         </div>
                     </div>
                     
+                    <!-- 삭제 기능 컨트롤 -->
+                    <div class="mb-3 d-flex justify-content-between align-items-center">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="deleteModeCheckbox">
+                            <label class="form-check-label" for="deleteModeCheckbox">
+                                삭제 모드
+                            </label>
+                        </div>
+                        <button type="button" class="btn btn-danger btn-sm" id="deleteSelectedLogos" style="display: none;">
+                            <i class="bi bi-trash"></i> 선택된 로고 삭제
+                        </button>
+                    </div>
+                    
                     <!-- 로고 목록 -->
                     <div id="logoList" class="row g-2">
                         <!-- 로고들이 여기에 동적으로 추가됩니다 -->
@@ -4057,6 +4070,7 @@
         // 로고 목록 렌더링
         function renderLogos() {
             const logoList = document.getElementById('logoList');
+            const deleteMode = document.getElementById('deleteModeCheckbox').checked;
             
             if (filteredLogos.length === 0) {
                 logoList.innerHTML = '<div class="col-12 text-center py-4"><p class="text-muted">검색 결과가 없습니다.</p></div>';
@@ -4065,7 +4079,13 @@
             
             logoList.innerHTML = filteredLogos.map(logo => `
                 <div class="col-md-3 col-sm-4 col-6">
-                    <div class="logo-item" onclick="selectLogo('${logo.path}', '${logo.displayName}')">
+                    <div class="logo-item ${deleteMode ? 'delete-mode' : ''}" 
+                         onclick="${deleteMode ? `toggleLogoSelection('${logo.path}')` : `selectLogo('${logo.path}', '${logo.displayName}')`}">
+                        ${deleteMode ? `
+                            <div class="form-check position-absolute top-0 start-0 m-2">
+                                <input class="form-check-input logo-checkbox" type="checkbox" value="${logo.path}" style="background-color: white;">
+                            </div>
+                        ` : ''}
                         <img src="${logo.path}" alt="${logo.displayName}" class="logo-image">
                         <div class="logo-name">${logo.displayName}</div>
                     </div>
@@ -4146,6 +4166,80 @@
             }
         }
         
+        // 삭제 모드 토글
+        function toggleDeleteMode() {
+            const deleteModeCheckbox = document.getElementById('deleteModeCheckbox');
+            const deleteButton = document.getElementById('deleteSelectedLogos');
+            
+            if (deleteModeCheckbox.checked) {
+                deleteButton.style.display = 'block';
+                // 모달 제목 변경
+                document.getElementById('teamLogoModalLabel').textContent = '팀 로고 삭제';
+            } else {
+                deleteButton.style.display = 'none';
+                // 모달 제목 복원
+                document.getElementById('teamLogoModalLabel').textContent = '팀 로고 선택';
+            }
+            renderLogos();
+        }
+        
+        // 로고 선택 토글 (삭제 모드에서)
+        function toggleLogoSelection(logoPath) {
+            const checkbox = document.querySelector(`input[value="${logoPath}"]`);
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+            }
+        }
+        
+        // 선택된 로고들 삭제
+        async function deleteSelectedLogos() {
+            const checkboxes = document.querySelectorAll('.logo-checkbox:checked');
+            if (checkboxes.length === 0) {
+                alert('삭제할 로고를 선택해주세요.');
+                return;
+            }
+            
+            if (!confirm(`선택된 ${checkboxes.length}개의 로고를 삭제하시겠습니까?`)) {
+                return;
+            }
+            
+            const deletePromises = Array.from(checkboxes).map(async (checkbox) => {
+                const logoPath = checkbox.value;
+                try {
+                    // 서버에서 로고 파일 삭제 API 호출
+                    const response = await fetch('/api/overlay-images/delete-team-logo', {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ logoPath: logoPath })
+                    });
+                    
+                    if (response.ok) {
+                        console.log(`로고 삭제 성공: ${logoPath}`);
+                        return true;
+                    } else {
+                        console.error(`로고 삭제 실패: ${logoPath}`);
+                        return false;
+                    }
+                } catch (error) {
+                    console.error(`로고 삭제 오류: ${logoPath}`, error);
+                    return false;
+                }
+            });
+            
+            const results = await Promise.all(deletePromises);
+            const successCount = results.filter(r => r).length;
+            
+            if (successCount > 0) {
+                alert(`${successCount}개의 로고가 삭제되었습니다.`);
+                // 로고 목록 새로고침
+                loadTeamLogos();
+            } else {
+                alert('로고 삭제에 실패했습니다.');
+            }
+        }
+        
         // 검색 기능
         document.getElementById('logoSearchInput').addEventListener('input', function() {
             const searchTerm = this.value.toLowerCase();
@@ -4154,6 +4248,12 @@
             );
             renderLogos();
         });
+        
+        // 삭제 모드 체크박스 이벤트
+        document.getElementById('deleteModeCheckbox').addEventListener('change', toggleDeleteMode);
+        
+        // 삭제 버튼 이벤트
+        document.getElementById('deleteSelectedLogos').addEventListener('click', deleteSelectedLogos);
         
         // 파일 크기 포맷팅 함수
         function formatFileSize(bytes) {

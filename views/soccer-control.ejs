@@ -2445,8 +2445,10 @@
                         logoPreview.style.backgroundColor = currentBgColor;
                     }
                     
-                    // 파일 입력 초기화
-                    fileInput.value = '';
+                    // 파일 입력 초기화 (주석 처리 - fileInput 변수 스코프 문제 해결)
+                    // fileInput.value = '';
+                    const fileInput = document.getElementById(`${team}-team-logo`);
+                    if (fileInput) fileInput.value = '';
                     
                     // TeamInfo 테이블에 팀로고 정보 저장
                     try {
@@ -3137,10 +3139,143 @@
             }
         });
         
+        // 홈팀 로고 업로드 (야구와 동일한 방식)
+        document.getElementById('home-team-logo').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // 파일명 검증 (문제가 있는 경우에만 경고)
+                const fileName = file.name;
+                const invalidChars = /[<>:"/\\|?*]/;
+                const controlChars = /[\x00-\x1f\x80-\x9f]/;
+                
+                if (invalidChars.test(fileName) || controlChars.test(fileName)) {
+                    const confirmUpload = confirm(`⚠️ 파일명 경고\n\n파일명에 사용할 수 없는 문자가 포함되어 있습니다.\n\n사용 불가능한 문자: < > : " / \\ | ? *\n또는 제어 문자\n\n현재 파일명: ${fileName}\n\n그래도 업로드하시겠습니까?\n(서버에서 자동으로 처리됩니다)`);
+                    
+                    if (!confirmUpload) {
+                        e.target.value = ''; // 파일 선택 초기화
+                        return;
+                    }
+                }
+                
+                // 파일 크기 검증 (5MB 제한)
+                const maxSize = 5 * 1024 * 1024; // 5MB
+                if (file.size > maxSize) {
+                    alert(`❌ 파일 크기 초과\n\n파일 크기가 5MB를 초과합니다.\n\n현재 파일 크기: ${(file.size / 1024 / 1024).toFixed(2)}MB\n\n더 작은 파일을 선택해주세요.`);
+                    e.target.value = ''; // 파일 선택 초기화
+                    return;
+                }
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('logo', file);
+                    formData.append('teamType', 'home');
+                    formData.append('sportType', 'SOCCER');
+                    formData.append('matchId', '<%= match.id %>');
+                    formData.append('teamName', '<%= match.home_team %>');
+                    formData.append('originalFilename', file.name);
+                    
+                    const response = await fetch(`/api/overlay-images/TEAMLOGO/<%= match.sport_type %>`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        // 미리보기 업데이트
+                        const logoPreview = document.getElementById('home-team-logo-preview');
+                        if (logoPreview) {
+                            logoPreview.innerHTML = `<img src="${data.logoPath}" alt="홈팀 로고" class="img-fluid">`;
+                            logoPreview.style.backgroundColor = document.getElementById('home-team-logo-bg').value || '#ffffff';
+                        }
+                        
+                        showToast('홈팀 로고가 성공적으로 업로드되었습니다.', 'success');
+                        
+                        // WebSocket 이벤트는 서버에서 자동으로 전송됨 (중복 제거)
+                    } else {
+                        showToast(data.message || '로고 업로드에 실패했습니다', 'error');
+                    }
+                } catch (error) {
+                    console.error('홈팀 로고 업로드 실패:', error);
+                    showToast('로고 업로드에 실패했습니다: ' + error.message, 'error');
+                }
+            }
+        });
+
+        // 원정팀 로고 업로드 (야구와 동일한 방식)
+        document.getElementById('away-team-logo').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // 파일명 검증 (문제가 있는 경우에만 경고)
+                const fileName = file.name;
+                const invalidChars = /[<>:"/\\|?*]/;
+                const controlChars = /[\x00-\x1f\x80-\x9f]/;
+                
+                if (invalidChars.test(fileName) || controlChars.test(fileName)) {
+                    const confirmUpload = confirm(`⚠️ 파일명 경고\n\n파일명에 사용할 수 없는 문자가 포함되어 있습니다.\n\n사용 불가능한 문자: < > : " / \\ | ? *\n또는 제어 문자\n\n현재 파일명: ${fileName}\n\n그래도 업로드하시겠습니까?\n(서버에서 자동으로 처리됩니다)`);
+                    
+                    if (!confirmUpload) {
+                        e.target.value = ''; // 파일 선택 초기화
+                        return;
+                    }
+                }
+                
+                // 파일 크기 검증 (5MB 제한)
+                const maxSize = 5 * 1024 * 1024; // 5MB
+                if (file.size > maxSize) {
+                    alert(`❌ 파일 크기 초과\n\n파일 크기가 5MB를 초과합니다.\n\n현재 파일 크기: ${(file.size / 1024 / 1024).toFixed(2)}MB\n\n더 작은 파일을 선택해주세요.`);
+                    e.target.value = ''; // 파일 선택 초기화
+                    return;
+                }
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('logo', file);
+                    formData.append('teamType', 'away');
+                    formData.append('sportType', 'SOCCER');
+                    formData.append('matchId', '<%= match.id %>');
+                    formData.append('teamName', '<%= match.away_team %>');
+                    formData.append('originalFilename', file.name);
+                    
+                    const response = await fetch(`/api/overlay-images/TEAMLOGO/<%= match.sport_type %>`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        // 미리보기 업데이트
+                        const logoPreview = document.getElementById('away-team-logo-preview');
+                        if (logoPreview) {
+                            logoPreview.innerHTML = `<img src="${data.logoPath}" alt="원정팀 로고" class="img-fluid">`;
+                            logoPreview.style.backgroundColor = document.getElementById('away-team-logo-bg').value || '#ffffff';
+                        }
+                        
+                        showToast('원정팀 로고가 성공적으로 업로드되었습니다.', 'success');
+                        
+                        // WebSocket 이벤트는 서버에서 자동으로 전송됨 (중복 제거)
+                    } else {
+                        showToast(data.message || '로고 업로드에 실패했습니다', 'error');
+                    }
+                } catch (error) {
+                    console.error('원정팀 로고 업로드 실패:', error);
+                    showToast('로고 업로드에 실패했습니다: ' + error.message, 'error');
+                }
+            }
+        });
+
+        // 기존 저장 버튼은 모달에서 선택한 로고 저장용으로 유지
         document.querySelectorAll('.save-team-logo').forEach(button => {
             button.addEventListener('click', function() {
                 const team = this.getAttribute('data-team');
-                console.log(`=== ${team}팀 로고 저장 버튼 클릭 ===`);
+                console.log(`=== ${team}팀 로고 저장 버튼 클릭 (모달 선택 로고) ===`);
                 saveTeamLogo(team);
             });
         });
@@ -3412,9 +3547,18 @@
         // 로고 목록 표시
         function displayLogos() {
             const logoList = document.getElementById('logoList');
+            const deleteMode = document.getElementById('deleteModeCheckbox').checked;
+            
             logoList.innerHTML = filteredLogos.map(logo => `
                 <div class="col-6 col-md-4">
-                    <div class="card h-100 logo-card" onclick="selectLogo('${logo.logo_path}', '${logo.team_name}')" style="cursor: pointer;">
+                    <div class="card h-100 logo-card ${deleteMode ? 'delete-mode' : ''}" 
+                         onclick="${deleteMode ? `toggleLogoSelection('${logo.logo_path}')` : `selectLogo('${logo.logo_path}', '${logo.team_name}')`}" 
+                         style="cursor: pointer;">
+                        ${deleteMode ? `
+                            <div class="form-check position-absolute top-0 start-0 m-2">
+                                <input class="form-check-input logo-checkbox" type="checkbox" value="${logo.logo_path}" style="background-color: white;">
+                            </div>
+                        ` : ''}
                         <div class="card-body text-center p-2">
                             <img src="${logo.logo_path}" alt="${logo.team_name}" class="img-fluid mb-2" style="max-height: 60px; object-fit: contain;">
                             <h6 class="card-title mb-0" style="font-size: 0.8rem;">${logo.team_name}</h6>
@@ -3494,6 +3638,80 @@
             }
         }
         
+        // 삭제 모드 토글
+        function toggleDeleteMode() {
+            const deleteModeCheckbox = document.getElementById('deleteModeCheckbox');
+            const deleteButton = document.getElementById('deleteSelectedLogos');
+            
+            if (deleteModeCheckbox.checked) {
+                deleteButton.style.display = 'block';
+                // 모달 제목 변경
+                document.getElementById('teamLogoModalLabel').textContent = '팀 로고 삭제';
+            } else {
+                deleteButton.style.display = 'none';
+                // 모달 제목 복원
+                document.getElementById('teamLogoModalLabel').textContent = '팀 로고 선택';
+            }
+            displayLogos();
+        }
+        
+        // 로고 선택 토글 (삭제 모드에서)
+        function toggleLogoSelection(logoPath) {
+            const checkbox = document.querySelector(`input[value="${logoPath}"]`);
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+            }
+        }
+        
+        // 선택된 로고들 삭제
+        async function deleteSelectedLogos() {
+            const checkboxes = document.querySelectorAll('.logo-checkbox:checked');
+            if (checkboxes.length === 0) {
+                alert('삭제할 로고를 선택해주세요.');
+                return;
+            }
+            
+            if (!confirm(`선택된 ${checkboxes.length}개의 로고를 삭제하시겠습니까?`)) {
+                return;
+            }
+            
+            const deletePromises = Array.from(checkboxes).map(async (checkbox) => {
+                const logoPath = checkbox.value;
+                try {
+                    // 서버에서 로고 파일 삭제 API 호출
+                    const response = await fetch('/api/overlay-images/delete-team-logo', {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ logoPath: logoPath })
+                    });
+                    
+                    if (response.ok) {
+                        console.log(`로고 삭제 성공: ${logoPath}`);
+                        return true;
+                    } else {
+                        console.error(`로고 삭제 실패: ${logoPath}`);
+                        return false;
+                    }
+                } catch (error) {
+                    console.error(`로고 삭제 오류: ${logoPath}`, error);
+                    return false;
+                }
+            });
+            
+            const results = await Promise.all(deletePromises);
+            const successCount = results.filter(r => r).length;
+            
+            if (successCount > 0) {
+                alert(`${successCount}개의 로고가 삭제되었습니다.`);
+                // 로고 목록 새로고침
+                loadTeamLogoList();
+            } else {
+                alert('로고 삭제에 실패했습니다.');
+            }
+        }
+        
         // 검색 기능
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.getElementById('logoSearchInput');
@@ -3505,6 +3723,18 @@
                     );
                     displayLogos();
                 });
+            }
+            
+            // 삭제 모드 체크박스 이벤트
+            const deleteModeCheckbox = document.getElementById('deleteModeCheckbox');
+            if (deleteModeCheckbox) {
+                deleteModeCheckbox.addEventListener('change', toggleDeleteMode);
+            }
+            
+            // 삭제 버튼 이벤트
+            const deleteButton = document.getElementById('deleteSelectedLogos');
+            if (deleteButton) {
+                deleteButton.addEventListener('click', deleteSelectedLogos);
             }
         });
     </script>
@@ -3524,6 +3754,19 @@
                             <span class="input-group-text"><i class="bi bi-search"></i></span>
                             <input type="text" class="form-control" id="logoSearchInput" placeholder="로고 이름으로 검색...">
                         </div>
+                    </div>
+                    
+                    <!-- 삭제 기능 컨트롤 -->
+                    <div class="mb-3 d-flex justify-content-between align-items-center">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="deleteModeCheckbox">
+                            <label class="form-check-label" for="deleteModeCheckbox">
+                                삭제 모드
+                            </label>
+                        </div>
+                        <button type="button" class="btn btn-danger btn-sm" id="deleteSelectedLogos" style="display: none;">
+                            <i class="bi bi-trash"></i> 선택된 로고 삭제
+                        </button>
                     </div>
                     
                     <!-- 로고 목록 -->
