@@ -1627,11 +1627,18 @@
                         awayTeamSection.style.backgroundColor = awayTeamInfo.team_color;
                         console.log(`🔧 원정팀 컬러 적용 (초기 로드): ${awayTeamName} -> ${awayTeamInfo.team_color}`);
                     }
+                    
+                    // 팀 컬러 적용 후 패널 타이틀 초기화
+                    setTimeout(() => {
+                        const inningType = document.querySelector('.inning-indicator')?.classList.contains('bottom') ? 'bottom' : 'top';
+                        updatePanelTitles(inningType);
+                        console.log('🔧 초기 로드 후 패널 타이틀 업데이트 완료');
+                    }, 100);
+                } else {
+                    // 팀 로고 정보가 없는 경우에도 패널 타이틀 초기화
+                    const inningType = document.querySelector('.inning-indicator')?.classList.contains('bottom') ? 'bottom' : 'top';
+                    updatePanelTitles(inningType);
                 }
-
-                // 패널 타이틀 초기화 (팀 컬러 적용)
-                const inningType = document.querySelector('.inning-indicator')?.classList.contains('bottom') ? 'bottom' : 'top';
-                updatePanelTitles(inningType);
                 
             } catch (error) {
                 console.error('팀 로고 정보 로드 중 오류 발생:', error);
@@ -1788,8 +1795,13 @@
                     return;
                 }
                 
-                const homeTeamColor = homeTeamSection.style.backgroundColor || null;
-                const awayTeamColor = awayTeamSection.style.backgroundColor || null;
+                // 팀 컬러 가져오기 (style에서 가져오되, 없으면 computed style에서 가져오기)
+                const homeTeamColor = homeTeamSection.style.backgroundColor || 
+                                     window.getComputedStyle(homeTeamSection).backgroundColor || 
+                                     null;
+                const awayTeamColor = awayTeamSection.style.backgroundColor || 
+                                     window.getComputedStyle(awayTeamSection).backgroundColor || 
+                                     null;
                 
                 console.log('패널 타이틀 업데이트:', {
                     inningType,
@@ -2052,6 +2064,13 @@
                 
                 if (homeTotalElement) homeTotalElement.textContent = homeTotal;
                 if (awayTotalElement) awayTotalElement.textContent = awayTotal;
+                
+                // 메인 스코어보드 업데이트
+                const homeScoreElement = document.querySelector('.home-team .team-score');
+                const awayScoreElement = document.querySelector('.away-team .team-score');
+                
+                if (homeScoreElement) homeScoreElement.textContent = homeTotal;
+                if (awayScoreElement) awayScoreElement.textContent = awayTotal;
                 
                 console.log(`총 점수 업데이트: 홈팀 ${homeTotal}, 원정팀 ${awayTotal}`);
                 console.log('=== 야구 이닝 스코어 업데이트 처리 완료 (오버레이) ===');
