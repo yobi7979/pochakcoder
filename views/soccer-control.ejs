@@ -3436,15 +3436,15 @@
             modal.hide();
         }
         
-        // 팀 로고 업데이트 (UI만 업데이트, DB 저장은 저장 버튼에서 처리)
+        // 팀 로고 업데이트 (UI 업데이트 + DB 저장)
         async function updateTeamLogo(teamType, logoPath, logoName) {
             try {
-                console.log(`팀 로고 UI 업데이트: ${teamType}팀, 로고: ${logoName}`);
+                console.log(`팀 로고 업데이트: ${teamType}팀, 로고: ${logoName}`);
                 
                 // 현재 팀의 배경색 가져오기
                 const currentBgColor = document.getElementById(`${teamType}-team-logo-preview`).style.backgroundColor || '#ffffff';
                 
-                // UI 업데이트만 수행 (DB 저장은 저장 버튼에서 처리)
+                // 1. UI 업데이트
                 const logoPreview = document.getElementById(`${teamType}-team-logo-preview`);
                 if (logoPreview) {
                     logoPreview.innerHTML = `<img src="${logoPath}" alt="${teamType}팀 로고" class="img-fluid">`;
@@ -3452,11 +3452,45 @@
                     console.log(`${teamType}팀 로고 UI 업데이트 완료`);
                 }
                 
-                // DB 저장은 저장 버튼 클릭 시에만 수행
-                console.log(`${teamType}팀 로고 미리보기 업데이트 완료 - 저장 버튼을 클릭하여 DB에 저장하세요`);
+                // 2. DB에 팀로고 정보 업데이트 (기존 레코드 수정)
+                try {
+                    const response = await fetch(`/api/matches/${matchId}/team-logos`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            homeLogoPath: teamType === 'home' ? logoPath : null,
+                            awayLogoPath: teamType === 'away' ? logoPath : null,
+                            homeTeamName: teamType === 'home' ? '<%= match.home_team %>' : null,
+                            awayTeamName: teamType === 'away' ? '<%= match.away_team %>' : null,
+                            homeTeamColor: teamType === 'home' ? document.getElementById('home-team-color').value : null,
+                            awayTeamColor: teamType === 'away' ? document.getElementById('away-team-color').value : null,
+                            homeTeamColorBg: teamType === 'home' ? currentBgColor : null,
+                            awayTeamColorBg: teamType === 'away' ? currentBgColor : null
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        console.log(`${teamType}팀 로고 DB 저장 성공`);
+                        
+                        // WebSocket 이벤트로 DB 정보 업데이트 알림
+                        if (socket.connected) {
+                            socket.emit('dataChanged', {
+                                matchId: matchId,
+                                type: 'teamLogo',
+                                teamType: teamType
+                            });
+                            console.log('✅ dataChanged 이벤트 전송 완료');
+                        }
+                    } else {
+                        console.error(`${teamType}팀 로고 DB 저장 실패: ${response.status}`);
+                    }
+                } catch (dbError) {
+                    console.error(`${teamType}팀 로고 DB 저장 오류:`, dbError);
+                }
+                
             } catch (error) {
-                console.error('팀 로고 UI 업데이트 중 오류:', error);
-                alert('로고 UI 업데이트 중 오류가 발생했습니다.');
+                console.error('팀 로고 업데이트 중 오류:', error);
+                alert('로고 업데이트 중 오류가 발생했습니다.');
             }
         }
         

@@ -3,8 +3,8 @@ const router = express.Router();
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errorHandler');
 
-// 모델들
-const { TeamLogo, MatchTeamLogo, Match, SportTeamLogoConfig, Op } = require('../models');
+// 모델들 - TeamInfo 기반으로 변경
+const { TeamInfo, Match, Op } = require('../models');
 
 // RGB를 HEX로 변환하는 함수
 function rgbToHex(rgb) {
@@ -360,21 +360,15 @@ router.get('/config/:sportType', asyncHandler(async (req, res) => {
     const { sportType } = req.params;
     console.log(`🔧 종목별 설정 조회: ${sportType}`);
     
-    let config = await SportTeamLogoConfig.findOne({
-      where: { sport_type: sportType.toUpperCase() }
-    });
+    // TeamInfo 기반으로 변경되어 기본 설정값 반환
+    const config = {
+      sport_type: sportType.toUpperCase(),
+      default_logo_size: '40px',
+      default_bg_color: '#ffffff',
+      logo_upload_path: '/TEAMLOGO'
+    };
     
-    // 설정이 없으면 기본값으로 생성
-    if (!config) {
-      config = await SportTeamLogoConfig.create({
-        sport_type: sportType.toUpperCase(),
-        default_logo_size: '40px',
-        default_bg_color: '#ffffff',
-        logo_upload_path: '/TEAMLOGO'
-      });
-    }
-    
-    console.log(`✅ ${sportType} 설정 조회 완료`);
+    console.log(`✅ ${sportType} 설정 조회 완료 (기본값)`);
     res.json({ success: true, config });
   } catch (error) {
     console.error('종목별 설정 조회 실패:', error);

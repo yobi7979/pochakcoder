@@ -720,36 +720,7 @@ const MatchTeamLogo = sequelize.define('MatchTeamLogo', {
   ]
 });
 
-// SportTeamLogoConfig 모델 정의 (종목별 설정)
-const SportTeamLogoConfig = sequelize.define('SportTeamLogoConfig', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
-  sport_type: {
-    type: DataTypes.STRING(50),
-    allowNull: false,
-    unique: true
-  },
-  default_logo_size: {
-    type: DataTypes.STRING(20),
-    defaultValue: '40px'
-  },
-  default_bg_color: {
-    type: DataTypes.STRING(7),
-    defaultValue: '#ffffff'
-  },
-  logo_upload_path: {
-    type: DataTypes.STRING(200),
-    defaultValue: '/TEAMLOGO'
-  }
-}, {
-  timestamps: true,
-  createdAt: 'created_at',
-  updatedAt: 'updated_at',
-  tableName: 'SportTeamLogoConfigs'
-});
+// SportTeamLogoConfig 모델 제거됨 (사용되지 않음)
 
 // 관계 설정
 TeamLogo.hasMany(MatchTeamLogo, { foreignKey: 'team_logo_id', as: 'matchTeamLogos' });
@@ -796,6 +767,5 @@ module.exports = {
   TeamInfo,
   TeamLogo,
   MatchTeamLogo,
-  SportTeamLogoConfig,
   Op
 }; 

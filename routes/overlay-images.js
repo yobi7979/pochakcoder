@@ -1003,15 +1003,17 @@ router.get('/TEAMLOGO/:sportType', async (req, res) => {
     
     console.log(`팀로고 목록 조회: ${sportTypeUpper}`);
     
-    // 새로운 통합 API로 리다이렉트
+    // TeamInfo 기반으로 변경
     try {
-      const { TeamLogo } = require('../models');
+      const { TeamInfo, Op } = require('../models');
       
-      const teamLogos = await TeamLogo.findAll({
+      const teamLogos = await TeamInfo.findAll({
         where: { 
           sport_type: sportTypeUpper,
-          is_active: true 
+          logo_path: { [Op.ne]: null } // logo_path가 null이 아닌 것만
         },
+        attributes: ['team_name', 'logo_path', 'logo_bg_color'],
+        group: ['team_name', 'logo_path', 'logo_bg_color'], // 중복 제거
         order: [['team_name', 'ASC']]
       });
       
@@ -1024,16 +1026,16 @@ router.get('/TEAMLOGO/:sportType', async (req, res) => {
         };
       });
       
-      console.log(`✅ 팀로고 맵 변환 완료: ${Object.keys(teamLogoMap).length}개 팀`);
+      console.log(`✅ 팀로고 맵 변환 완료 (TeamInfo 기반): ${Object.keys(teamLogoMap).length}개 팀`);
       res.json({ teamLogoMap });
       
-    } catch (teamLogoError) {
-      console.log('TeamLogo 테이블 조회 실패:', teamLogoError.message);
+    } catch (teamInfoError) {
+      console.log('TeamInfo 테이블 조회 실패:', teamInfoError.message);
       res.json({
         success: true,
         sportType: sportTypeUpper,
         teamLogos: [],
-        message: 'TeamLogo 테이블을 조회할 수 없습니다.'
+        message: 'TeamInfo 테이블을 조회할 수 없습니다.'
       });
       return; // 함수 종료
     }
