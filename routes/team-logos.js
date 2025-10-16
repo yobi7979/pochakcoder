@@ -45,9 +45,15 @@ router.get('/:sportType', asyncHandler(async (req, res) => {
     
     // 1. TeamInfo 테이블에서 팀로고 조회 (중복 제거)
     const dbTeamLogos = await TeamInfo.findAll({
-      where: {
+      where: { 
         sport_type: sportType.toUpperCase(),
-        logo_path: { [Op.ne]: null } // logo_path가 null이 아닌 것만
+        logo_path: { 
+          [Op.and]: [
+            { [Op.ne]: null },
+            { [Op.ne]: '' },
+            { [Op.ne]: undefined }
+          ]
+        }
       },
       attributes: ['team_name', 'logo_path', 'logo_bg_color'],
       group: ['team_name', 'logo_path', 'logo_bg_color'], // 중복 제거
@@ -55,18 +61,20 @@ router.get('/:sportType', asyncHandler(async (req, res) => {
     });
 
     // 파일 이름 추출하여 표시용 이름 생성
-    const processedDbTeamLogos = dbTeamLogos.map(logo => {
-      // logo_path에서 파일 이름 추출
-      const pathParts = logo.logo_path.split('/');
-      const fileName = pathParts[pathParts.length - 1];
-      const displayName = path.parse(fileName).name; // 확장자 제거
-      
-      return {
-        ...logo,
-        display_name: displayName, // 표시용 이름 (파일 이름)
-        original_team_name: logo.team_name // 원본 팀 이름 보존
-      };
-    });
+    const processedDbTeamLogos = dbTeamLogos
+      .filter(logo => logo.logo_path && logo.logo_path.trim() !== '') // logo_path가 유효한 것만 필터링
+      .map(logo => {
+        // logo_path에서 파일 이름 추출
+        const pathParts = logo.logo_path.split('/');
+        const fileName = pathParts[pathParts.length - 1];
+        const displayName = path.parse(fileName).name; // 확장자 제거
+        
+        return {
+          ...logo,
+          display_name: displayName, // 표시용 이름 (파일 이름)
+          original_team_name: logo.team_name // 원본 팀 이름 보존
+        };
+      });
     
     // 2. 파일시스템에서 팀로고 조회
     const fileSystemLogos = [];

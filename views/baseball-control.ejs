@@ -4045,6 +4045,12 @@
                         const logoPath = logo.logo_path;
                         const displayName = logo.display_name || logo.team_name;
                         
+                        // logo_path가 유효한지 확인
+                        if (!logoPath || logoPath === 'undefined' || logoPath.trim() === '') {
+                            console.log('🔧 유효하지 않은 logo_path 제거 (야구):', { logoPath, displayName });
+                            return; // 이 로고는 건너뛰기
+                        }
+                        
                         // logo_path와 display_name 모두 중복 체크
                         if (!seenPaths.has(logoPath) && !seenNames.has(displayName)) {
                             seenPaths.add(logoPath);
