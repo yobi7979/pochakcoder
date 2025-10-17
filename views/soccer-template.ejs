@@ -4619,15 +4619,24 @@
             console.log('🔧 라인업 토글 요청 수신:', data);
             if (data.matchId === matchId) {
                 if (data.visible) {
-                    // 라인업 표시
+                    // 라인업 표시 - DB에서 최신 데이터 로드
+                    console.log(`💾 DB에서 라인업 데이터 로드 시작: ${data.teamType}팀`);
                     await loadLineup();
+                    
                     if (data.teamType) {
                         // 특정 팀의 라인업만 표시
                         const lineupData = currentLineupData || {home: [], away: []};
                         displayLineup(lineupData, data.teamType);
+                        console.log(`✅ DB에서 로드된 라인업 표시: ${data.teamType}팀`, lineupData);
+                    } else {
+                        // 전체 라인업 표시
+                        const lineupData = currentLineupData || {home: [], away: []};
+                        displayLineup(lineupData, 'home');
+                        console.log(`✅ DB에서 로드된 전체 라인업 표시`, lineupData);
                     }
+                    
                     showLineup();
-                    console.log(`✅ 라인업 표시: ${data.teamType}팀`);
+                    console.log(`✅ 라인업 표시 완료: ${data.teamType}팀 (DB 데이터 사용)`);
                 } else {
                     // 라인업 숨김
                     hideLineup();
