@@ -1,0 +1,10 @@
+{
+  "teamType": "home",
+  "lineup": [
+    {
+      "number": "1",
+      "name": "테스트선수",
+      "position": "GK"
+    }
+  ]
+}

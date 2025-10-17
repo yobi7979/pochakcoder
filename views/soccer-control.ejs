@@ -1042,13 +1042,13 @@
                             </h6>
                             <div class="row">
                                 <div class="col-6 mb-2">
-                                    <button class="btn btn-primary btn-sm w-100" onclick="showLineup('home')">
-                                        <i class="bi bi-house"></i> 홈팀 라인업
+                                    <button class="btn btn-outline-secondary btn-sm w-100" id="toggle-home-lineup" onclick="toggleLineup('home')">
+                                        <i class="bi bi-eye-slash"></i> 홈팀 라인업
                                     </button>
                                 </div>
                                 <div class="col-6 mb-2">
-                                    <button class="btn btn-success btn-sm w-100" onclick="showLineup('away')">
-                                        <i class="bi bi-arrow-right"></i> 어웨이팀 라인업
+                                    <button class="btn btn-outline-secondary btn-sm w-100" id="toggle-away-lineup" onclick="toggleLineup('away')">
+                                        <i class="bi bi-eye-slash"></i> 어웨이팀 라인업
                                     </button>
                                 </div>
                             </div>
@@ -3850,17 +3850,51 @@
             }
         });
         
-        // 라인업 표시 함수
-        function showLineup(teamType) {
-            if (teamType === 'home') {
-                // 홈팀 라인업만 표시
-                socket.emit('show_lineup', { matchId: matchId, teamType: 'home' });
-                console.log('홈팀 라인업 표시 요청');
-            } else if (teamType === 'away') {
-                // 어웨이팀 라인업만 표시
-                socket.emit('show_lineup', { matchId: matchId, teamType: 'away' });
-                console.log('어웨이팀 라인업 표시 요청');
+        // 라인업 토글 함수
+        function toggleLineup(teamType) {
+            console.log(`=== 라인업 토글: ${teamType}팀 ===`);
+            
+            // 버튼 ID 매핑
+            const buttonId = teamType === 'home' ? 'toggle-home-lineup' : 'toggle-away-lineup';
+            const button = document.getElementById(buttonId);
+            
+            if (!button) {
+                console.error(`버튼을 찾을 수 없습니다: ${buttonId}`);
+                return;
             }
+            
+            const isVisible = button.classList.contains('btn-success');
+            const newState = !isVisible;
+            
+            console.log('현재 상태:', isVisible ? '표시' : '숨김');
+            console.log('새로운 상태:', newState ? '표시' : '숨김');
+            
+            // 버튼 상태 업데이트
+            if (newState) {
+                button.classList.remove('btn-outline-secondary');
+                button.classList.add('btn-success');
+                button.innerHTML = `<i class="bi bi-eye"></i> ${teamType === 'home' ? '홈팀' : '어웨이팀'} 라인업`;
+            } else {
+                button.classList.remove('btn-success');
+                button.classList.add('btn-outline-secondary');
+                button.innerHTML = `<i class="bi bi-eye-slash"></i> ${teamType === 'home' ? '홈팀' : '어웨이팀'} 라인업`;
+            }
+            
+            // WebSocket 이벤트 전송
+            const eventData = {
+                matchId: matchId,
+                teamType: teamType,
+                visible: newState
+            };
+            
+            console.log('=== 컨트롤: WebSocket 이벤트 전송 ===');
+            console.log('socket.connected:', socket.connected);
+            console.log('전송할 데이터:', eventData);
+            console.log('이벤트 전송 시간:', new Date().toISOString());
+            
+            socket.emit('toggleLineup', eventData);
+            
+            console.log(`✅ 컨트롤: 라인업 토글 이벤트 전송 완료: ${teamType}팀 = ${newState}`);
         }
         
         // 라인업 저장 함수들
@@ -3939,14 +3973,16 @@
         
         async function saveLineupToServer(teamType, lineup) {
             try {
-                console.log(`🔍 saveLineupToServer 호출: ${teamType}`, lineup);
+                console.log(`🚨 RAILWAY saveLineupToServer 호출: ${teamType}`, lineup);
+                
+                // 모든 요청을 동일한 URL로 통일
                 const url = teamType === 'all' ? '/api/matches/save-lineup' : `/api/matches/${matchId}/save-lineup`;
                 const data = teamType === 'all' ? 
                     { matchId: matchId, lineup: lineup } : 
                     { matchId: matchId, teamType: teamType, lineup: lineup };
                 
-                console.log(`🔍 API URL: ${url}`);
-                console.log(`🔍 전송할 데이터:`, data);
+                console.log(`🚨 RAILWAY API URL: ${url}`);
+                console.log(`🚨 RAILWAY 전송할 데이터:`, data);
                 
                 const response = await fetch(url, {
                     method: 'POST',
@@ -3956,9 +3992,9 @@
                     body: JSON.stringify(data)
                 });
                 
-                console.log(`🔍 응답 상태: ${response.status}`);
+                console.log(`🚨 RAILWAY 응답 상태: ${response.status}`);
                 const result = await response.json();
-                console.log(`🔍 응답 결과:`, result);
+                console.log(`🚨 RAILWAY 응답 결과:`, result);
                 
                 if (result.success) {
                     alert(`${teamType === 'all' ? '전체' : (teamType === 'home' ? '홈팀' : '어웨이팀')} 라인업이 저장되었습니다.`);
@@ -3966,7 +4002,7 @@
                     alert('라인업 저장에 실패했습니다.');
                 }
             } catch (error) {
-                console.error('라인업 저장 오류:', error);
+                console.error('🚨 RAILWAY 라인업 저장 오류:', error);
                 alert('라인업 저장 중 오류가 발생했습니다.');
             }
         }

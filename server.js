@@ -1468,23 +1468,7 @@ app.post('/api/upload-player-csv', requireAuth, async (req, res) => {
   }
 });
 
-// POST /api/save-lineup - 라인업 저장
-app.post('/api/save-lineup', requireAuth, async (req, res) => {
-  try {
-    const { matchId, lineup } = req.body;
-    
-    // 라인업 저장 로직 (placeholder)
-    console.log(`라인업 저장: ${matchId}`);
-    res.json({ 
-      success: true, 
-      message: '라인업이 저장되었습니다.',
-      matchId
-    });
-  } catch (error) {
-    console.error('라인업 저장 실패:', error);
-    res.status(500).json({ error: '라인업 저장에 실패했습니다.' });
-  }
-});
+// 🚨 중복 API 제거됨 - routes/matches.js의 라인업 저장 API 사용
 
 // GET /api/team-logo - 팀 로고 조회
 app.get('/api/team-logo', requireAuth, async (req, res) => {

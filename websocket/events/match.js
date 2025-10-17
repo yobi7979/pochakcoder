@@ -435,6 +435,28 @@ const matchEvents = (socket, io) => {
     }
   });
 
+  // 라인업 토글 이벤트 처리
+  socket.on('toggleLineup', (data) => {
+    try {
+      const { matchId, teamType, visible } = data;
+      const roomName = `match_${matchId}`;
+      
+      console.log(`🔧 라인업 토글 요청: matchId=${matchId}, teamType=${teamType}, visible=${visible}`);
+      
+      // 해당 방의 모든 클라이언트에게 라인업 토글 이벤트 전송
+      io.to(roomName).emit('toggleLineup', {
+        matchId: matchId,
+        teamType: teamType,
+        visible: visible
+      });
+      
+      console.log(`✅ 라인업 토글 이벤트를 방 ${roomName}에 전송함: ${teamType}팀 = ${visible}`);
+    } catch (error) {
+      console.error('라인업 토글 처리 중 오류 발생:', error);
+      socket.emit('toggleLineup_error', { error: '라인업 토글에 실패했습니다.' });
+    }
+  });
+
   console.log('경기 이벤트 설정 완료:', socket.id);
 };
 

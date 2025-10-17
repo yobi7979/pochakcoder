@@ -98,7 +98,7 @@ const Match = sequelize.define('Match', {
     defaultValue: 'pending'
   },
   match_data: {
-    type: DataTypes.JSON,
+    type: DataTypes.JSONB,  // PostgreSQL JSONB 타입으로 변경
     defaultValue: {}
   },
   created_by: {
