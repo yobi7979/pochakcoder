@@ -4872,27 +4872,47 @@
         // 하이브리드 타이머 시스템 초기화
         let hybridTimer = null;
         
+        // 기본 타이머 초기화 함수
+        function initializeBasicTimer() {
+            console.log('🔧 기본 타이머 초기화 시작');
+            
+            // 기본 타이머 상태 요청
+            if (socket && socket.connected) {
+                socket.emit('requestTimerState', { matchId: window.matchId });
+                console.log('✅ 기본 타이머 상태 요청 전송');
+            } else {
+                console.log('⚠️ WebSocket 연결 없음 - 기본 타이머 사용');
+            }
+        }
+        
         // DOM 로드 완료 후 하이브리드 타이머 시스템 초기화
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🔧 하이브리드 타이머 시스템 초기화 시작');
 
-            // 하이브리드 타이머 시스템 생성
-            hybridTimer = new HybridTimerSystem({
-                matchId: window.matchId,
-                socket: socket,
-                onTimerUpdate: function(currentSeconds, isRunning) {
-                    // 타이머 표시 업데이트
-                    updateTimerDisplay(currentSeconds);
-                },
-                onServerDisconnect: function() {
-                    console.log('🔌 서버 연결 끊김 - 로컬 타이머로 전환됨');
-                },
-                onServerReconnect: function() {
-                    console.log('🔌 서버 재연결 - 원래 상태로 복원됨');
-                }
-            });
+            // HybridTimerSystem이 정의되어 있는지 확인
+            if (typeof HybridTimerSystem !== 'undefined') {
+                // 하이브리드 타이머 시스템 생성
+                hybridTimer = new HybridTimerSystem({
+                    matchId: window.matchId,
+                    socket: socket,
+                    onTimerUpdate: function(currentSeconds, isRunning) {
+                        // 타이머 표시 업데이트
+                        updateTimerDisplay(currentSeconds);
+                    },
+                    onServerDisconnect: function() {
+                        console.log('🔌 서버 연결 끊김 - 로컬 타이머로 전환됨');
+                    },
+                    onServerReconnect: function() {
+                        console.log('🔌 서버 재연결 - 원래 상태로 복원됨');
+                    }
+                });
 
-            console.log('✅ 하이브리드 타이머 시스템 초기화 완료');
+                console.log('✅ 하이브리드 타이머 시스템 초기화 완료');
+            } else {
+                console.log('⚠️ HybridTimerSystem이 정의되지 않음 - 기본 타이머 사용');
+                // 기본 타이머 초기화
+                initializeBasicTimer();
+            }
         });
         
     </script>
