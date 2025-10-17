@@ -1038,6 +1038,75 @@
                 </div>
             </div>
             
+            <!-- 라인업 관리 섹션 -->
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="bi bi-people-fill"></i> 라인업 관리
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- 홈팀 라인업 (좌측) -->
+                            <div class="col-md-6">
+                                <div class="lineup-section">
+                                    <h6 class="text-primary mb-3">
+                                        <i class="bi bi-house"></i> 홈팀 라인업
+                                    </h6>
+                                    
+                                    <!-- 라인업 입력 폼 -->
+                                    <div class="lineup-input-form mb-3">
+                                        <label class="form-label">라인업 입력 (번호 이름 포지션)</label>
+                                        <textarea class="form-control" id="homeLineupInput" rows="8" 
+                                                  placeholder="1 이승엽 GK&#10;2 김철수 DF&#10;3 박민수 MF&#10;4 정우진 FW"></textarea>
+                                        <small class="form-text text-muted">
+                                            각 줄마다 "번호 이름 포지션" 형식으로 입력하세요.
+                                        </small>
+                                    </div>
+                                    
+                                    <!-- 라인업 저장 버튼 -->
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="saveLineup('home')">
+                                        <i class="bi bi-save"></i> 홈팀 라인업 저장
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- 어웨이팀 라인업 (우측) -->
+                            <div class="col-md-6">
+                                <div class="lineup-section">
+                                    <h6 class="text-success mb-3">
+                                        <i class="bi bi-arrow-right"></i> 어웨이팀 라인업
+                                    </h6>
+                                    
+                                    <!-- 라인업 입력 폼 -->
+                                    <div class="lineup-input-form mb-3">
+                                        <label class="form-label">라인업 입력 (번호 이름 포지션)</label>
+                                        <textarea class="form-control" id="awayLineupInput" rows="8" 
+                                                  placeholder="1 김골키 GK&#10;2 이수비 DF&#10;3 박미드 MF&#10;4 정공격 FW"></textarea>
+                                        <small class="form-text text-muted">
+                                            각 줄마다 "번호 이름 포지션" 형식으로 입력하세요.
+                                        </small>
+                                    </div>
+                                    
+                                    <!-- 라인업 저장 버튼 -->
+                                    <button type="button" class="btn btn-success btn-sm" onclick="saveLineup('away')">
+                                        <i class="bi bi-save"></i> 어웨이팀 라인업 저장
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 전체 라인업 저장 버튼 -->
+                        <div class="text-center mt-3">
+                            <button type="button" class="btn btn-warning" onclick="saveAllLineup()">
+                                <i class="bi bi-save2"></i> 전체 라인업 저장
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- 득점 정보 입력 섹션 -->
             <div class="col-md-12">
                 <div class="card">
@@ -3761,6 +3830,103 @@
                 deleteButton.addEventListener('click', deleteSelectedLogos);
             }
         });
+        
+        // 라인업 저장 함수들
+        function saveLineup(teamType) {
+            const inputId = teamType === 'home' ? 'homeLineupInput' : 'awayLineupInput';
+            const input = document.getElementById(inputId);
+            const lineupText = input.value.trim();
+            
+            if (!lineupText) {
+                alert(`${teamType === 'home' ? '홈팀' : '어웨이팀'} 라인업을 입력해주세요.`);
+                return;
+            }
+            
+            // 텍스트를 파싱하여 라인업 배열 생성
+            const lineup = parseLineupText(lineupText);
+            
+            if (lineup.length === 0) {
+                alert('올바른 형식으로 라인업을 입력해주세요. (번호 이름 포지션)');
+                return;
+            }
+            
+            // 서버에 저장
+            saveLineupToServer(teamType, lineup);
+        }
+        
+        function saveAllLineup() {
+            const homeInput = document.getElementById('homeLineupInput');
+            const awayInput = document.getElementById('awayLineupInput');
+            
+            const homeLineupText = homeInput.value.trim();
+            const awayLineupText = awayInput.value.trim();
+            
+            if (!homeLineupText && !awayLineupText) {
+                alert('라인업을 입력해주세요.');
+                return;
+            }
+            
+            const homeLineup = homeLineupText ? parseLineupText(homeLineupText) : [];
+            const awayLineup = awayLineupText ? parseLineupText(awayLineupText) : [];
+            
+            const lineup = {
+                home: homeLineup,
+                away: awayLineup
+            };
+            
+            // 서버에 저장
+            saveLineupToServer('all', lineup);
+        }
+        
+        function parseLineupText(text) {
+            const lines = text.split('\n').filter(line => line.trim());
+            const lineup = [];
+            
+            lines.forEach(line => {
+                const parts = line.trim().split(/\s+/);
+                if (parts.length >= 3) {
+                    const number = parts[0];
+                    const name = parts[1];
+                    const position = parts[2];
+                    
+                    lineup.push({
+                        number: number,
+                        name: name,
+                        position: position
+                    });
+                }
+            });
+            
+            return lineup;
+        }
+        
+        async function saveLineupToServer(teamType, lineup) {
+            try {
+                const url = teamType === 'all' ? '/api/matches/save-lineup' : `/api/matches/${matchId}/save-lineup`;
+                const data = teamType === 'all' ? 
+                    { matchId: matchId, lineup: lineup } : 
+                    { matchId: matchId, teamType: teamType, lineup: lineup };
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`${teamType === 'all' ? '전체' : (teamType === 'home' ? '홈팀' : '어웨이팀')} 라인업이 저장되었습니다.`);
+                } else {
+                    alert('라인업 저장에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('라인업 저장 오류:', error);
+                alert('라인업 저장 중 오류가 발생했습니다.');
+            }
+        }
     </script>
 
     <!-- 팀 로고 선택 모달 -->

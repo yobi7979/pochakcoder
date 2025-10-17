@@ -876,6 +876,35 @@ router.post('/save-lineup', async (req, res) => {
   }
 });
 
+// POST /api/matches/:matchId/save-lineup - 개별 팀 라인업 저장
+router.post('/:matchId/save-lineup', async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { teamType, lineup } = req.body;
+    console.log(`${teamType}팀 라인업 저장: ${matchId}`);
+    
+    const match = await Match.findByPk(matchId);
+    if (!match) {
+      return res.status(404).json({ error: '경기를 찾을 수 없습니다.' });
+    }
+    
+    const matchData = match.match_data || {};
+    if (!matchData.lineup) {
+      matchData.lineup = { home: [], away: [] };
+    }
+    
+    matchData.lineup[teamType] = lineup;
+    
+    await match.update({ match_data: matchData });
+    
+    console.log(`${teamType}팀 라인업 저장 완료: ${matchId}`);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('라인업 저장 실패:', error);
+    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+  }
+});
+
 // PUT /api/matches/:matchId - 경기 정보 업데이트
 router.put('/:matchId', async (req, res) => {
   try {
