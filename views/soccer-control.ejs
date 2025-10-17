@@ -3997,7 +3997,9 @@
                 console.log(`🚨 RAILWAY 응답 결과:`, result);
                 
                 if (result.success) {
-                    alert(`${teamType === 'all' ? '전체' : (teamType === 'home' ? '홈팀' : '어웨이팀')} 라인업이 저장되었습니다.`);
+                    const teamName = teamType === 'all' ? '전체' : (teamType === 'home' ? '홈팀' : '어웨이팀');
+                    alert(`${teamName} 라인업이 저장되었습니다.\n오버레이 페이지에 즉시 반영됩니다.`);
+                    console.log(`✅ ${teamName} 라인업 저장 완료 - 오버레이 페이지 자동 업데이트됨`);
                 } else {
                     alert('라인업 저장에 실패했습니다.');
                 }

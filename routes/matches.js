@@ -7,6 +7,14 @@ const { asyncHandler } = require('../middleware/errorHandler');
 const { Match, User, Sport, Template, TeamInfo, Settings } = require('../models');
 const { Op } = require('sequelize');
 
+// WebSocket 모듈 가져오기
+let io;
+try {
+  io = require('../websocket').getIO();
+} catch (error) {
+  console.log('WebSocket 모듈을 가져올 수 없습니다:', error.message);
+}
+
 // 경기 관련 라우터
 // 이 파일은 server.js에서 분리된 경기 관련 API들을 포함합니다.
 
@@ -884,6 +892,18 @@ router.post('/save-lineup', async (req, res) => {
     const updatedMatch = await Match.findByPk(matchId);
     console.log('🚨 RAILWAY 저장 후 확인:', JSON.stringify(updatedMatch.match_data, null, 2));
     
+    // WebSocket으로 오버레이 페이지에 라인업 업데이트 알림
+    if (io) {
+      const roomName = `match_${matchId}`;
+      console.log(`🔧 라인업 저장 완료 - WebSocket 이벤트 전송: ${roomName}`);
+      io.to(roomName).emit('lineupUpdated', {
+        matchId: matchId,
+        lineup: lineup,
+        timestamp: new Date().toISOString()
+      });
+      console.log(`✅ 라인업 업데이트 이벤트 전송 완료: ${matchId}`);
+    }
+    
     console.log(`🚨 RAILWAY 전체 라인업 저장 완료: ${matchId}`, lineup);
     res.json({ success: true });
   } catch (error) {
@@ -924,6 +944,19 @@ router.post('/:matchId/save-lineup', async (req, res) => {
     // 저장 후 확인
     const updatedMatch = await Match.findByPk(matchId);
     console.log('🚨 RAILWAY 저장 후 확인:', JSON.stringify(updatedMatch.match_data, null, 2));
+    
+    // WebSocket으로 오버레이 페이지에 라인업 업데이트 알림
+    if (io) {
+      const roomName = `match_${matchId}`;
+      console.log(`🔧 ${teamType}팀 라인업 저장 완료 - WebSocket 이벤트 전송: ${roomName}`);
+      io.to(roomName).emit('lineupUpdated', {
+        matchId: matchId,
+        teamType: teamType,
+        lineup: matchData.lineup,
+        timestamp: new Date().toISOString()
+      });
+      console.log(`✅ ${teamType}팀 라인업 업데이트 이벤트 전송 완료: ${matchId}`);
+    }
     
     console.log(`🚨 RAILWAY ${teamType}팀 라인업 저장 완료: ${matchId}`, lineup);
     res.json({ success: true });

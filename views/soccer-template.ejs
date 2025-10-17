@@ -4619,6 +4619,32 @@
                 }
             }
         });
+
+        // lineupUpdated WebSocket 이벤트 리스너 - 라인업 저장 시 자동 업데이트
+        socket.on('lineupUpdated', async function(data) {
+            console.log('🔧 라인업 업데이트 이벤트 수신:', data);
+            if (data.matchId === matchId) {
+                // 현재 라인업 데이터 업데이트
+                currentLineupData = data.lineup;
+                console.log('✅ 라인업 데이터 업데이트 완료:', currentLineupData);
+                
+                // 현재 라인업이 표시 중이라면 새 데이터로 다시 표시
+                const lineupOverlay = document.getElementById('lineupOverlay');
+                if (lineupOverlay && lineupOverlay.style.display !== 'none') {
+                    console.log('🔧 라인업이 표시 중 - 새 데이터로 업데이트');
+                    
+                    if (data.teamType) {
+                        // 특정 팀의 라인업만 업데이트
+                        displayLineup(currentLineupData, data.teamType);
+                    } else {
+                        // 전체 라인업 업데이트 (기본적으로 홈팀 표시)
+                        displayLineup(currentLineupData, 'home');
+                    }
+                }
+                
+                console.log(`✅ 라인업 자동 업데이트 완료: ${data.teamType || '전체'}`);
+            }
+        });
         
         // 키보드 이벤트 리스너 (라인업 L키 단축키 제거됨)
         
