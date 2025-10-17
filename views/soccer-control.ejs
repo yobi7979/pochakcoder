@@ -1034,74 +1034,24 @@
                                 </button>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 라인업 관리 섹션 -->
-            <div class="col-md-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h6 class="mb-0">
-                            <i class="bi bi-people-fill"></i> 라인업 관리
-                        </h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <!-- 홈팀 라인업 (좌측) -->
-                            <div class="col-md-6">
-                                <div class="lineup-section">
-                                    <h6 class="text-primary mb-3">
-                                        <i class="bi bi-house"></i> 홈팀 라인업
-                                    </h6>
-                                    
-                                    <!-- 라인업 입력 폼 -->
-                                    <div class="lineup-input-form mb-3">
-                                        <label class="form-label">라인업 입력 (번호 이름 포지션)</label>
-                                        <textarea class="form-control" id="homeLineupInput" rows="8" 
-                                                  placeholder="1 이승엽 GK&#10;2 김철수 DF&#10;3 박민수 MF&#10;4 정우진 FW"></textarea>
-                                        <small class="form-text text-muted">
-                                            각 줄마다 "번호 이름 포지션" 형식으로 입력하세요.
-                                        </small>
-                                    </div>
-                                    
-                                    <!-- 라인업 저장 버튼 -->
-                                    <button type="button" class="btn btn-primary btn-sm" onclick="saveLineup('home')">
-                                        <i class="bi bi-save"></i> 홈팀 라인업 저장
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <!-- 어웨이팀 라인업 (우측) -->
-                            <div class="col-md-6">
-                                <div class="lineup-section">
-                                    <h6 class="text-success mb-3">
-                                        <i class="bi bi-arrow-right"></i> 어웨이팀 라인업
-                                    </h6>
-                                    
-                                    <!-- 라인업 입력 폼 -->
-                                    <div class="lineup-input-form mb-3">
-                                        <label class="form-label">라인업 입력 (번호 이름 포지션)</label>
-                                        <textarea class="form-control" id="awayLineupInput" rows="8" 
-                                                  placeholder="1 김골키 GK&#10;2 이수비 DF&#10;3 박미드 MF&#10;4 정공격 FW"></textarea>
-                                        <small class="form-text text-muted">
-                                            각 줄마다 "번호 이름 포지션" 형식으로 입력하세요.
-                                        </small>
-                                    </div>
-                                    
-                                    <!-- 라인업 저장 버튼 -->
-                                    <button type="button" class="btn btn-success btn-sm" onclick="saveLineup('away')">
-                                        <i class="bi bi-save"></i> 어웨이팀 라인업 저장
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
                         
-                        <!-- 전체 라인업 저장 버튼 -->
-                        <div class="text-center mt-3">
-                            <button type="button" class="btn btn-warning" onclick="saveAllLineup()">
-                                <i class="bi bi-save2"></i> 전체 라인업 저장
-                            </button>
+                        <!-- 라인업 표시 버튼 -->
+                        <div class="mt-3">
+                            <h6 class="text-muted mb-2">
+                                <i class="bi bi-people"></i> 라인업 표시
+                            </h6>
+                            <div class="row">
+                                <div class="col-6 mb-2">
+                                    <button class="btn btn-primary btn-sm w-100" onclick="showLineup('home')">
+                                        <i class="bi bi-house"></i> 홈팀 라인업
+                                    </button>
+                                </div>
+                                <div class="col-6 mb-2">
+                                    <button class="btn btn-success btn-sm w-100" onclick="showLineup('away')">
+                                        <i class="bi bi-arrow-right"></i> 어웨이팀 라인업
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1180,6 +1130,75 @@
                             </div>
                         </div>
                         
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 라인업 관리 섹션 -->
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="bi bi-people-fill"></i> 라인업 관리
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- 홈팀 라인업 (좌측) -->
+                            <div class="col-md-6">
+                                <div class="lineup-section">
+                                    <h6 class="text-primary mb-3">
+                                        <i class="bi bi-house"></i> 홈팀 라인업
+                                    </h6>
+                                    
+                                    <!-- 라인업 입력 폼 -->
+                                    <div class="lineup-input-form mb-3">
+                                        <label class="form-label">라인업 입력 (번호 이름 포지션)</label>
+                                        <textarea class="form-control" id="homeLineupInput" rows="8" 
+                                                  placeholder="1 이승엽 GK&#10;2 김철수 DF&#10;3 박민수 MF&#10;4 정우진 FW"></textarea>
+                                        <small class="form-text text-muted">
+                                            각 줄마다 "번호 이름 포지션" 형식으로 입력하세요.
+                                        </small>
+                                    </div>
+                                    
+                                    <!-- 라인업 저장 버튼 -->
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="saveLineup('home')">
+                                        <i class="bi bi-save"></i> 홈팀 라인업 저장
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- 어웨이팀 라인업 (우측) -->
+                            <div class="col-md-6">
+                                <div class="lineup-section">
+                                    <h6 class="text-success mb-3">
+                                        <i class="bi bi-arrow-right"></i> 어웨이팀 라인업
+                                    </h6>
+                                    
+                                    <!-- 라인업 입력 폼 -->
+                                    <div class="lineup-input-form mb-3">
+                                        <label class="form-label">라인업 입력 (번호 이름 포지션)</label>
+                                        <textarea class="form-control" id="awayLineupInput" rows="8" 
+                                                  placeholder="1 김골키 GK&#10;2 이수비 DF&#10;3 박미드 MF&#10;4 정공격 FW"></textarea>
+                                        <small class="form-text text-muted">
+                                            각 줄마다 "번호 이름 포지션" 형식으로 입력하세요.
+                                        </small>
+                                    </div>
+                                    
+                                    <!-- 라인업 저장 버튼 -->
+                                    <button type="button" class="btn btn-success btn-sm" onclick="saveLineup('away')">
+                                        <i class="bi bi-save"></i> 어웨이팀 라인업 저장
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 전체 라인업 저장 버튼 -->
+                        <div class="text-center mt-3">
+                            <button type="button" class="btn btn-warning" onclick="saveAllLineup()">
+                                <i class="bi bi-save2"></i> 전체 라인업 저장
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -3830,6 +3849,19 @@
                 deleteButton.addEventListener('click', deleteSelectedLogos);
             }
         });
+        
+        // 라인업 표시 함수
+        function showLineup(teamType) {
+            if (teamType === 'home') {
+                // 홈팀 라인업만 표시
+                socket.emit('show_lineup', { matchId: matchId, teamType: 'home' });
+                console.log('홈팀 라인업 표시 요청');
+            } else if (teamType === 'away') {
+                // 어웨이팀 라인업만 표시
+                socket.emit('show_lineup', { matchId: matchId, teamType: 'away' });
+                console.log('어웨이팀 라인업 표시 요청');
+            }
+        }
         
         // 라인업 저장 함수들
         function saveLineup(teamType) {
