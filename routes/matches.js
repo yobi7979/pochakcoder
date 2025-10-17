@@ -844,7 +844,13 @@ router.get('/:matchId/load-lineup', async (req, res) => {
       return res.status(404).json({ error: '경기를 찾을 수 없습니다.' });
     }
     
-    const lineup = match.match_data?.lineup || { home: [], away: [] };
+    // match_data.lineup에서 라인업 데이터 조회
+    const lineup = match.match_data?.lineup || { 
+      home: [], 
+      away: [] 
+    };
+    
+    console.log(`라인업 조회 완료: ${matchId}`, lineup);
     res.json({ success: true, lineup });
   } catch (error) {
     console.error('라인업 조회 실패:', error);
@@ -852,23 +858,24 @@ router.get('/:matchId/load-lineup', async (req, res) => {
   }
 });
 
-// POST /api/matches/save-lineup - 라인업 저장
+// POST /api/matches/save-lineup - 전체 라인업 저장
 router.post('/save-lineup', async (req, res) => {
   try {
     const { matchId, lineup } = req.body;
-    console.log(`라인업 저장: ${matchId}`);
+    console.log(`전체 라인업 저장: ${matchId}`);
     
     const match = await Match.findByPk(matchId);
     if (!match) {
       return res.status(404).json({ error: '경기를 찾을 수 없습니다.' });
     }
     
+    // match_data에 라인업 데이터 저장
     const matchData = match.match_data || {};
     matchData.lineup = lineup;
     
     await match.update({ match_data: matchData });
     
-    console.log(`라인업 저장 완료: ${matchId}`);
+    console.log(`전체 라인업 저장 완료: ${matchId}`, lineup);
     res.json({ success: true });
   } catch (error) {
     console.error('라인업 저장 실패:', error);
@@ -888,16 +895,18 @@ router.post('/:matchId/save-lineup', async (req, res) => {
       return res.status(404).json({ error: '경기를 찾을 수 없습니다.' });
     }
     
+    // match_data에 라인업 데이터 저장
     const matchData = match.match_data || {};
     if (!matchData.lineup) {
       matchData.lineup = { home: [], away: [] };
     }
     
+    // 특정 팀의 라인업만 업데이트
     matchData.lineup[teamType] = lineup;
     
     await match.update({ match_data: matchData });
     
-    console.log(`${teamType}팀 라인업 저장 완료: ${matchId}`);
+    console.log(`${teamType}팀 라인업 저장 완료: ${matchId}`, lineup);
     res.json({ success: true });
   } catch (error) {
     console.error('라인업 저장 실패:', error);
