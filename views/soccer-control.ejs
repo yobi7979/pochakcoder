@@ -3865,9 +3865,12 @@
         
         // 라인업 저장 함수들
         function saveLineup(teamType) {
+            console.log(`🔍 라인업 저장 시작: ${teamType}팀`);
             const inputId = teamType === 'home' ? 'homeLineupInput' : 'awayLineupInput';
             const input = document.getElementById(inputId);
             const lineupText = input.value.trim();
+            
+            console.log(`🔍 입력된 텍스트: ${lineupText}`);
             
             if (!lineupText) {
                 alert(`${teamType === 'home' ? '홈팀' : '어웨이팀'} 라인업을 입력해주세요.`);
@@ -3876,6 +3879,7 @@
             
             // 텍스트를 파싱하여 라인업 배열 생성
             const lineup = parseLineupText(lineupText);
+            console.log(`🔍 파싱된 라인업:`, lineup);
             
             if (lineup.length === 0) {
                 alert('올바른 형식으로 라인업을 입력해주세요. (번호 이름 포지션)');
@@ -3883,6 +3887,7 @@
             }
             
             // 서버에 저장
+            console.log(`🔍 서버에 저장 요청: ${teamType}팀`, lineup);
             saveLineupToServer(teamType, lineup);
         }
         
@@ -3934,10 +3939,14 @@
         
         async function saveLineupToServer(teamType, lineup) {
             try {
+                console.log(`🔍 saveLineupToServer 호출: ${teamType}`, lineup);
                 const url = teamType === 'all' ? '/api/matches/save-lineup' : `/api/matches/${matchId}/save-lineup`;
                 const data = teamType === 'all' ? 
                     { matchId: matchId, lineup: lineup } : 
                     { matchId: matchId, teamType: teamType, lineup: lineup };
+                
+                console.log(`🔍 API URL: ${url}`);
+                console.log(`🔍 전송할 데이터:`, data);
                 
                 const response = await fetch(url, {
                     method: 'POST',
@@ -3947,7 +3956,9 @@
                     body: JSON.stringify(data)
                 });
                 
+                console.log(`🔍 응답 상태: ${response.status}`);
                 const result = await response.json();
+                console.log(`🔍 응답 결과:`, result);
                 
                 if (result.success) {
                     alert(`${teamType === 'all' ? '전체' : (teamType === 'home' ? '홈팀' : '어웨이팀')} 라인업이 저장되었습니다.`);
