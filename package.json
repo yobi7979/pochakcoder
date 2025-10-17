@@ -8,7 +8,8 @@
     "dev": "nodemon server.js",
     "railway-deploy": "node railway-deploy.js && node server.js",
     "delete-table": "node delete-table.js",
-    "safe-delete-tables": "node safe-delete-tables.js"
+    "safe-delete-tables": "node safe-delete-tables.js",
+    "railway-lineup-migration": "node railway-lineup-migration.js"
   },
   "keywords": [
     "sports",
