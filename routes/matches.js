@@ -896,36 +896,38 @@ router.post('/:matchId/save-lineup', async (req, res) => {
   try {
     const { matchId } = req.params;
     const { teamType, lineup } = req.body;
-    console.log(`${teamType}팀 라인업 저장: ${matchId}`);
+    console.log(`🚨 RAILWAY 라인업 저장 API 호출됨: ${teamType}팀 라인업 저장: ${matchId}`);
+    console.log('🚨 RAILWAY 요청 바디:', JSON.stringify(req.body, null, 2));
     
     const match = await Match.findByPk(matchId);
     if (!match) {
+      console.log('🚨 RAILWAY 경기를 찾을 수 없음:', matchId);
       return res.status(404).json({ error: '경기를 찾을 수 없습니다.' });
     }
     
     // match_data에 라인업 데이터 저장
     const matchData = match.match_data || {};
-    console.log('🔍 저장 전 match_data:', JSON.stringify(matchData, null, 2));
+    console.log('🚨 RAILWAY 저장 전 match_data:', JSON.stringify(matchData, null, 2));
     
     if (!matchData.lineup) {
       matchData.lineup = { home: [], away: [] };
-      console.log('🔍 lineup 초기화:', matchData.lineup);
+      console.log('🚨 RAILWAY lineup 초기화:', matchData.lineup);
     }
     
     // 특정 팀의 라인업만 업데이트
     matchData.lineup[teamType] = lineup;
-    console.log('🔍 업데이트 후 match_data:', JSON.stringify(matchData, null, 2));
+    console.log('🚨 RAILWAY 업데이트 후 match_data:', JSON.stringify(matchData, null, 2));
     
     await match.update({ match_data: matchData });
     
     // 저장 후 확인
     const updatedMatch = await Match.findByPk(matchId);
-    console.log('🔍 저장 후 확인:', JSON.stringify(updatedMatch.match_data, null, 2));
+    console.log('🚨 RAILWAY 저장 후 확인:', JSON.stringify(updatedMatch.match_data, null, 2));
     
-    console.log(`${teamType}팀 라인업 저장 완료: ${matchId}`, lineup);
+    console.log(`🚨 RAILWAY ${teamType}팀 라인업 저장 완료: ${matchId}`, lineup);
     res.json({ success: true });
   } catch (error) {
-    console.error('라인업 저장 실패:', error);
+    console.error('🚨 RAILWAY 라인업 저장 실패:', error);
     res.status(500).json({ error: '서버 오류가 발생했습니다.' });
   }
 });
