@@ -3973,7 +3973,14 @@
         
         async function saveLineupToServer(teamType, lineup) {
             try {
-                console.log(`⚽ WebSocket 기반 라인업 저장: ${teamType}`, lineup);
+                console.log(`⚽ 라인업 저장 시도: ${teamType}`, lineup);
+                
+                // WebSocket 연결 상태 확인
+                if (!socket || !socket.connected) {
+                    console.log('⚠️ WebSocket 연결 없음 - REST API 사용');
+                    await saveLineupViaRESTAPI(teamType, lineup);
+                    return;
+                }
                 
                 if (teamType === 'all') {
                     // 전체 라인업 저장 - 홈팀과 어웨이팀을 각각 저장
@@ -4011,7 +4018,45 @@
                     console.log(`✅ ${teamName} 라인업 저장 완료 - WebSocket 기반 실시간 업데이트`);
                 }
             } catch (error) {
-                console.error('⚽ WebSocket 라인업 저장 오류:', error);
+                console.error('⚽ 라인업 저장 오류:', error);
+                // WebSocket 실패 시 REST API로 폴백
+                console.log('🔄 WebSocket 실패 - REST API로 재시도');
+                await saveLineupViaRESTAPI(teamType, lineup);
+            }
+        }
+        
+        // REST API를 통한 라인업 저장 (폴백)
+        async function saveLineupViaRESTAPI(teamType, lineup) {
+            try {
+                console.log(`🔄 REST API 라인업 저장: ${teamType}`, lineup);
+                
+                const url = `/api/matches/${matchId}/save-lineup`;
+                const data = { teamType: teamType, lineup: lineup };
+                
+                console.log(`🔄 API URL: ${url}`);
+                console.log(`🔄 전송할 데이터:`, data);
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                console.log(`🔄 응답 상태: ${response.status}`);
+                const result = await response.json();
+                console.log(`🔄 응답 결과:`, result);
+                
+                if (result.success) {
+                    const teamName = teamType === 'home' ? '홈팀' : '어웨이팀';
+                    alert(`${teamName} 라인업이 저장되었습니다.\n(REST API 사용)`);
+                    console.log(`✅ ${teamName} 라인업 저장 완료 - REST API 사용`);
+                } else {
+                    alert('라인업 저장에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('🔄 REST API 라인업 저장 오류:', error);
                 alert('라인업 저장 중 오류가 발생했습니다.');
             }
         }
