@@ -749,73 +749,64 @@
             display: block;
         }
         
-        /* 라인업 오버레이 스타일 */
+        /* 라인업 오버레이 스타일 - 새로운 디자인 */
         .lineup-overlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 1920px;
-            height: 1080px;
-            background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.8));
+            top: 200px; /* 스코어보드 아래 200px */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.9));
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
             z-index: 1500;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: none;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        .lineup-overlay.show {
+            display: block;
         }
         
         .lineup-container {
-            display: flex;
-            gap: 100px;
-            max-width: 1600px;
             width: 100%;
-        }
-        
-        .lineup-team {
-            flex: 1;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 30px;
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .lineup-team.home {
-            border-left: 5px solid #007bff;
-        }
-        
-        .lineup-team.away {
-            border-left: 5px solid #28a745;
         }
         
         .lineup-header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 15px;
         }
         
         .lineup-title {
-            color: white;
-            font-size: 32px;
+            color: #fff;
+            font-size: 24px;
             font-weight: 900;
             margin: 0 0 10px 0;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            letter-spacing: 2px;
         }
         
         .lineup-team-name {
-            color: #ccc;
+            color: #007bff;
             font-size: 20px;
-            font-weight: 600;
+            font-weight: 700;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
         }
         
         .lineup-players {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
         
         .lineup-player {
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 12px;
-            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px 15px;
             display: flex;
             align-items: center;
             gap: 15px;
@@ -824,54 +815,56 @@
         }
         
         .lineup-player:hover {
-            background: rgba(255, 255, 255, 0.25);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(5px);
         }
         
         .player-number {
             background: linear-gradient(45deg, #007bff, #0056b3);
             color: white;
-            width: 40px;
-            height: 40px;
+            width: 35px;
+            height: 35px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 900;
-            font-size: 18px;
-            box-shadow: 0 3px 10px rgba(0, 123, 255, 0.3);
-        }
-        
-        .lineup-team.away .player-number {
-            background: linear-gradient(45deg, #28a745, #1e7e34);
-            box-shadow: 0 3px 10px rgba(40, 167, 69, 0.3);
+            font-size: 16px;
+            box-shadow: 0 3px 8px rgba(0, 123, 255, 0.4);
+            flex-shrink: 0;
         }
         
         .player-info {
             flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 20px;
         }
         
         .player-name {
             color: white;
             font-size: 18px;
             font-weight: 700;
-            margin: 0 0 5px 0;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            min-width: 120px;
         }
         
         .player-position {
             color: #ccc;
-            font-size: 14px;
-            font-weight: 500;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 4px 8px;
-            border-radius: 6px;
-            display: inline-block;
+            font-size: 16px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 6px 12px;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 60px;
         }
         
-        .lineup-overlay.show {
-            display: flex;
+        .no-players {
+            color: #ccc;
+            text-align: center;
+            font-style: italic;
+            padding: 20px;
         }
 
         /* 경기 상태 표시 */
@@ -1231,29 +1224,15 @@
             <!-- 이미지는 JavaScript로 동적으로 로드됩니다 -->
         </div>
         
-        <!-- 라인업 오버레이 -->
+        <!-- 라인업 오버레이 - 한팀씩 표시 -->
         <div class="lineup-overlay" id="lineupOverlay" style="display: none;">
             <div class="lineup-container">
-                <!-- 홈팀 라인업 -->
-                <div class="lineup-team home">
-                    <div class="lineup-header">
-                        <h3 class="lineup-title">HOME</h3>
-                        <div class="lineup-team-name" id="lineupHomeTeamName"><%= match.home_team || 'HOME' %></div>
-                    </div>
-                    <div class="lineup-players" id="homeLineupPlayers">
-                        <!-- 홈팀 선수들이 여기에 동적으로 로드됩니다 -->
-                    </div>
+                <div class="lineup-header">
+                    <h3 class="lineup-title">STARTING LINE UP</h3>
+                    <div class="lineup-team-name" id="lineupTeamName">팀명</div>
                 </div>
-                
-                <!-- 어웨이팀 라인업 -->
-                <div class="lineup-team away">
-                    <div class="lineup-header">
-                        <h3 class="lineup-title">AWAY</h3>
-                        <div class="lineup-team-name" id="lineupAwayTeamName"><%= match.away_team || 'AWAY' %></div>
-                    </div>
-                    <div class="lineup-players" id="awayLineupPlayers">
-                        <!-- 어웨이팀 선수들이 여기에 동적으로 로드됩니다 -->
-                    </div>
+                <div class="lineup-players" id="lineupPlayers">
+                    <!-- 선택된 팀의 선수들이 여기에 동적으로 로드됩니다 -->
                 </div>
             </div>
         </div>
@@ -2521,7 +2500,7 @@
                 // 라인업 업데이트
                 if (data.match_data && data.match_data.lineup) {
                     console.log('🔧 라인업 업데이트 수신:', data.match_data.lineup);
-                    displayLineup(data.match_data.lineup);
+                    displayLineup(data.match_data.lineup, 'home'); // 기본적으로 홈팀 표시
                 }
                 
                 // 점수 업데이트 - 강화된 실시간 업데이트
@@ -4517,6 +4496,9 @@
             }
         }
         
+        // 전역 변수 - 현재 라인업 데이터
+        let currentLineupData = null;
+        
         // 라인업 로드 함수
         async function loadLineup() {
             try {
@@ -4526,45 +4508,40 @@
                 
                 if (data.success && data.lineup) {
                     console.log('✅ 라인업 로드 성공:', data.lineup);
-                    displayLineup(data.lineup);
+                    currentLineupData = data.lineup; // 전역 변수에 저장
+                    displayLineup(data.lineup, 'home'); // 기본적으로 홈팀 표시
                 } else {
                     console.log('⚠️ 라인업 데이터가 없습니다.');
+                    currentLineupData = null;
                     displayEmptyLineup();
                 }
             } catch (error) {
                 console.error('❌ 라인업 로드 실패:', error);
+                currentLineupData = null;
                 displayEmptyLineup();
             }
         }
         
-        // 라인업 표시 함수
-        function displayLineup(lineup) {
-            const homePlayersContainer = document.getElementById('homeLineupPlayers');
-            const awayPlayersContainer = document.getElementById('awayLineupPlayers');
+        // 라인업 표시 함수 - 한팀씩 표시
+        function displayLineup(lineup, teamType = 'home') {
+            const playersContainer = document.getElementById('lineupPlayers');
+            const teamNameElement = document.getElementById('lineupTeamName');
             
-            if (!homePlayersContainer || !awayPlayersContainer) {
+            if (!playersContainer || !teamNameElement) {
                 console.error('❌ 라인업 컨테이너를 찾을 수 없습니다.');
                 return;
             }
             
-            // 홈팀 라인업 표시
-            if (lineup.home && lineup.home.length > 0) {
-                homePlayersContainer.innerHTML = lineup.home.map(player => `
-                    <div class="lineup-player">
-                        <div class="player-number">${player.number}</div>
-                        <div class="player-info">
-                            <div class="player-name">${player.name}</div>
-                            <div class="player-position">${player.position}</div>
-                        </div>
-                    </div>
-                `).join('');
-            } else {
-                homePlayersContainer.innerHTML = '<div class="no-players">라인업 데이터가 없습니다.</div>';
-            }
+            // 팀명 설정
+            const teamName = teamType === 'home' ? 
+                (document.getElementById('homeTeamName')?.textContent || 'HOME') : 
+                (document.getElementById('awayTeamName')?.textContent || 'AWAY');
+            teamNameElement.textContent = teamName;
             
-            // 어웨이팀 라인업 표시
-            if (lineup.away && lineup.away.length > 0) {
-                awayPlayersContainer.innerHTML = lineup.away.map(player => `
+            // 선택된 팀의 라인업 표시
+            const teamLineup = lineup[teamType] || [];
+            if (teamLineup.length > 0) {
+                playersContainer.innerHTML = teamLineup.map(player => `
                     <div class="lineup-player">
                         <div class="player-number">${player.number}</div>
                         <div class="player-info">
@@ -4574,20 +4551,20 @@
                     </div>
                 `).join('');
             } else {
-                awayPlayersContainer.innerHTML = '<div class="no-players">라인업 데이터가 없습니다.</div>';
+                playersContainer.innerHTML = '<div class="no-players">라인업 데이터가 없습니다.</div>';
             }
         }
         
         // 빈 라인업 표시 함수
         function displayEmptyLineup() {
-            const homePlayersContainer = document.getElementById('homeLineupPlayers');
-            const awayPlayersContainer = document.getElementById('awayLineupPlayers');
+            const playersContainer = document.getElementById('lineupPlayers');
+            const teamNameElement = document.getElementById('lineupTeamName');
             
-            if (homePlayersContainer) {
-                homePlayersContainer.innerHTML = '<div class="no-players">라인업 데이터가 없습니다.</div>';
+            if (playersContainer) {
+                playersContainer.innerHTML = '<div class="no-players">라인업 데이터가 없습니다.</div>';
             }
-            if (awayPlayersContainer) {
-                awayPlayersContainer.innerHTML = '<div class="no-players">라인업 데이터가 없습니다.</div>';
+            if (teamNameElement) {
+                teamNameElement.textContent = '팀명';
             }
         }
         
@@ -4610,20 +4587,23 @@
             }
         }
         
-        // 키보드 이벤트 리스너
-        document.addEventListener('keydown', function(event) {
-            // L 키로 라인업 표시/숨김
-            if (event.key === 'l' || event.key === 'L') {
-                const lineupOverlay = document.getElementById('lineupOverlay');
-                if (lineupOverlay) {
-                    if (lineupOverlay.style.display === 'none' || lineupOverlay.style.display === '') {
-                        showLineup();
-                    } else {
-                        hideLineup();
+        // show_lineup WebSocket 이벤트 리스너 - 컨트롤 페이지에서 라인업 호출
+        socket.on('show_lineup', function(data) {
+            console.log('🔧 라인업 표시 요청 수신:', data);
+            if (data.matchId === matchId) {
+                // 라인업 데이터 로드 후 표시
+                loadLineup().then(() => {
+                    if (data.teamType) {
+                        // 특정 팀의 라인업만 표시
+                        const lineupData = currentLineupData || {home: [], away: []};
+                        displayLineup(lineupData, data.teamType);
                     }
-                }
+                    showLineup();
+                });
             }
         });
+        
+        // 키보드 이벤트 리스너 (라인업 L키 단축키 제거됨)
         
         // 그래픽별 팀로고 로드 함수
         async function loadTeamLogosForGraphic(graphicType) {
