@@ -4521,15 +4521,31 @@
                     console.log('✅ 라인업 로드 성공:', data.lineup);
                     currentLineupData = data.lineup; // 전역 변수에 저장
                     displayLineup(data.lineup, 'home'); // 기본적으로 홈팀 표시
+                    return data.lineup; // 라인업 데이터 반환
                 } else {
                     console.log('⚠️ 라인업 데이터가 없습니다.');
                     currentLineupData = null;
                     displayEmptyLineup();
+                    return null;
                 }
             } catch (error) {
                 console.error('❌ 라인업 로드 실패:', error);
                 currentLineupData = null;
                 displayEmptyLineup();
+                return null;
+            }
+        }
+        
+        // 빈 라인업 표시 함수
+        function displayEmptyLineup() {
+            const playersContainer = document.getElementById('lineupPlayers');
+            const teamNameElement = document.getElementById('lineupTeamName');
+            
+            if (playersContainer) {
+                playersContainer.innerHTML = '<p class="text-muted">라인업 정보가 없습니다.</p>';
+            }
+            if (teamNameElement) {
+                teamNameElement.textContent = '라인업 없음';
             }
         }
         
@@ -4620,7 +4636,35 @@
             }
         });
 
-        // lineupUpdated WebSocket 이벤트 리스너 - 라인업 저장 시 자동 업데이트
+        // soccer_lineup_updated WebSocket 이벤트 리스너 - 야구 이닝점수 방식 적용
+        socket.on('soccer_lineup_updated', async function(data) {
+            console.log('⚽ 축구 라인업 업데이트 수신 (야구 방식):', data);
+            if (data.matchId === matchId) {
+                // 1. 전역 라인업 데이터 업데이트
+                if (data.lineup) {
+                    currentLineupData = data.lineup;
+                    console.log('⚽ 전역 라인업 데이터 업데이트 완료:', currentLineupData);
+                }
+                
+                // 2. 현재 라인업이 표시 중이라면 업데이트된 데이터로 다시 표시
+                const lineupOverlay = document.getElementById('lineupOverlay');
+                if (lineupOverlay && lineupOverlay.style.display !== 'none') {
+                    console.log('⚽ 라인업이 표시 중 - 새 데이터로 업데이트');
+                    
+                    if (data.teamType) {
+                        // 특정 팀의 라인업만 업데이트
+                        displayLineup(currentLineupData, data.teamType);
+                    } else {
+                        // 전체 라인업 업데이트
+                        displayLineup(currentLineupData, 'home');
+                    }
+                } else {
+                    console.log('⚽ 라인업 데이터 업데이트 완료 (오버레이는 숨김 상태)');
+                }
+            }
+        });
+
+        // lineupUpdated WebSocket 이벤트 리스너 - 기존 방식 (호환성 유지)
         socket.on('lineupUpdated', async function(data) {
             console.log('🔧 라인업 업데이트 이벤트 수신:', data);
             if (data.matchId === matchId) {

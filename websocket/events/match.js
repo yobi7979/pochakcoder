@@ -435,6 +435,62 @@ const matchEvents = (socket, io) => {
     }
   });
 
+  // 축구 라인업 업데이트 이벤트 처리 (야구 이닝점수 방식 적용)
+  socket.on('soccer_lineup_update', async (data) => {
+    try {
+      const { matchId, teamType, lineup } = data;
+      const roomName = `match_${matchId}`;
+      
+      console.log(`⚽ 축구 라인업 업데이트: matchId=${matchId}, teamType=${teamType}`);
+      console.log(`전체 데이터:`, data);
+      
+      // 1. 데이터베이스에서 현재 경기 데이터 가져오기
+      const { Match } = require('../../models');
+      const match = await Match.findByPk(matchId);
+      
+      if (!match) {
+        console.error(`경기를 찾을 수 없습니다: ${matchId}`);
+        socket.emit('soccer_lineup_update_error', { error: '경기를 찾을 수 없습니다.' });
+        return;
+      }
+      
+      // 2. match_data에서 라인업 데이터 업데이트
+      let matchData = match.match_data || {};
+      if (!matchData.lineup) {
+        matchData.lineup = { home: [], away: [] };
+        console.log(`라인업 초기화 완료:`, matchData.lineup);
+      }
+      
+      console.log(`업데이트 전 라인업:`, matchData.lineup);
+      console.log(`업데이트할 팀: ${teamType}팀`);
+      
+      // 특정 팀의 라인업만 업데이트
+      matchData.lineup[teamType] = lineup;
+      console.log(`업데이트 후 라인업:`, matchData.lineup);
+      
+      // 3. Match 테이블의 match_data 업데이트
+      await match.update({
+        match_data: matchData
+      });
+      
+      console.log(`⚽ 축구 라인업 업데이트 완료: ${teamType}팀`);
+      
+      // 4. 해당 방의 모든 클라이언트에게 라인업 업데이트 이벤트 전송
+      io.to(roomName).emit('soccer_lineup_updated', {
+        matchId: matchId,
+        teamType: teamType,
+        lineup: matchData.lineup,
+        timestamp: new Date().toISOString()
+      });
+      
+      console.log(`✅ 축구 라인업 업데이트 이벤트를 방 ${roomName}에 전송함: ${teamType}팀`);
+      
+    } catch (error) {
+      console.error('축구 라인업 업데이트 처리 중 오류 발생:', error);
+      socket.emit('soccer_lineup_update_error', { error: '라인업 업데이트에 실패했습니다.' });
+    }
+  });
+
   // 라인업 토글 이벤트 처리
   socket.on('toggleLineup', (data) => {
     try {

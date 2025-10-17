@@ -3973,38 +3973,45 @@
         
         async function saveLineupToServer(teamType, lineup) {
             try {
-                console.log(`🚨 RAILWAY saveLineupToServer 호출: ${teamType}`, lineup);
+                console.log(`⚽ WebSocket 기반 라인업 저장: ${teamType}`, lineup);
                 
-                // 모든 요청을 동일한 URL로 통일
-                const url = teamType === 'all' ? '/api/matches/save-lineup' : `/api/matches/${matchId}/save-lineup`;
-                const data = teamType === 'all' ? 
-                    { matchId: matchId, lineup: lineup } : 
-                    { matchId: matchId, teamType: teamType, lineup: lineup };
-                
-                console.log(`🚨 RAILWAY API URL: ${url}`);
-                console.log(`🚨 RAILWAY 전송할 데이터:`, data);
-                
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-                
-                console.log(`🚨 RAILWAY 응답 상태: ${response.status}`);
-                const result = await response.json();
-                console.log(`🚨 RAILWAY 응답 결과:`, result);
-                
-                if (result.success) {
-                    const teamName = teamType === 'all' ? '전체' : (teamType === 'home' ? '홈팀' : '어웨이팀');
+                if (teamType === 'all') {
+                    // 전체 라인업 저장 - 홈팀과 어웨이팀을 각각 저장
+                    if (lineup.home && lineup.home.length > 0) {
+                        socket.emit('soccer_lineup_update', {
+                            matchId: matchId,
+                            teamType: 'home',
+                            lineup: lineup.home
+                        });
+                        console.log(`⚽ 홈팀 라인업 WebSocket 전송 완료`);
+                    }
+                    
+                    if (lineup.away && lineup.away.length > 0) {
+                        socket.emit('soccer_lineup_update', {
+                            matchId: matchId,
+                            teamType: 'away',
+                            lineup: lineup.away
+                        });
+                        console.log(`⚽ 어웨이팀 라인업 WebSocket 전송 완료`);
+                    }
+                    
+                    const teamName = '전체';
                     alert(`${teamName} 라인업이 저장되었습니다.\n오버레이 페이지에 즉시 반영됩니다.`);
-                    console.log(`✅ ${teamName} 라인업 저장 완료 - 오버레이 페이지 자동 업데이트됨`);
+                    console.log(`✅ ${teamName} 라인업 저장 완료 - WebSocket 기반 실시간 업데이트`);
                 } else {
-                    alert('라인업 저장에 실패했습니다.');
+                    // 개별 팀 라인업 저장
+                    socket.emit('soccer_lineup_update', {
+                        matchId: matchId,
+                        teamType: teamType,
+                        lineup: lineup
+                    });
+                    
+                    const teamName = teamType === 'home' ? '홈팀' : '어웨이팀';
+                    alert(`${teamName} 라인업이 저장되었습니다.\n오버레이 페이지에 즉시 반영됩니다.`);
+                    console.log(`✅ ${teamName} 라인업 저장 완료 - WebSocket 기반 실시간 업데이트`);
                 }
             } catch (error) {
-                console.error('🚨 RAILWAY 라인업 저장 오류:', error);
+                console.error('⚽ WebSocket 라인업 저장 오류:', error);
                 alert('라인업 저장 중 오류가 발생했습니다.');
             }
         }
