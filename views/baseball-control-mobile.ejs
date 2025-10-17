@@ -1266,9 +1266,15 @@
                     body: JSON.stringify(formData)
                 });
                 
+                // 총 점수 계산
+                const homeScore = parseInt(document.getElementById('home-score').value) || 0;
+                const awayScore = parseInt(document.getElementById('away-score').value) || 0;
+                
                 // 실시간 업데이트를 위한 WebSocket 이벤트 발생 (match_updated로 통일)
                 socket.emit('match_updated', {
                     matchId: matchId,
+                    home_score: homeScore,
+                    away_score: awayScore,
                     match_data: formData.match_data
                 });
                 
