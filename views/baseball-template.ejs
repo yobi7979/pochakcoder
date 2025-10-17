@@ -788,42 +788,50 @@
                     console.log('종목 변경됨:', currentSportType);
                 }
                 
+                // 점수 업데이트 (우선순위: 직접 전송된 점수 > 이닝별 점수 합계)
+                let homeTotalScore = 0;
+                let awayTotalScore = 0;
+                
+                // 1. 직접 전송된 점수가 있으면 우선 사용
+                if (data.home_score !== undefined && data.away_score !== undefined) {
+                    homeTotalScore = data.home_score;
+                    awayTotalScore = data.away_score;
+                    console.log('🔥 직접 전송된 점수 사용:', { home: homeTotalScore, away: awayTotalScore });
+                } else if (data.match_data?.innings) {
+                    // 2. 이닝별 점수 합계 계산
+                    console.log('🔥 이닝별 점수 합계 계산');
+                    if (data.match_data.innings.home && data.match_data.innings.away) {
+                        // 새로운 구조: innings.home[1], innings.away[1]
+                        for (let i = 1; i <= 9; i++) {
+                            homeTotalScore += parseInt(data.match_data.innings.home[i] || '0');
+                            awayTotalScore += parseInt(data.match_data.innings.away[i] || '0');
+                        }
+                    } else {
+                        // 기존 구조: innings.home_1, innings.away_1
+                        for (let i = 1; i <= 9; i++) {
+                            homeTotalScore += parseInt(data.match_data.innings[`home_${i}`] || '0');
+                            awayTotalScore += parseInt(data.match_data.innings[`away_${i}`] || '0');
+                        }
+                    }
+                } else {
+                    // 3. 기본값 사용
+                    homeTotalScore = 0;
+                    awayTotalScore = 0;
+                }
+                
+                const homeScoreEl = document.querySelector('.home-team .team-score');
+                if (homeScoreEl) homeScoreEl.textContent = homeTotalScore;
+                const awayScoreEl = document.querySelector('.away-team .team-score');
+                if (awayScoreEl) awayScoreEl.textContent = awayTotalScore;
+                
+                console.log('🔥 최종 점수 업데이트:', { home: homeTotalScore, away: awayTotalScore });
+                
                 // 야구 특화 데이터 업데이트 (match_data가 있는 경우)
                 if (data.match_data) {
                     console.log('🔥 야구 match_updated 이벤트 수신:', data.match_data);
                     console.log('🔥 이닝:', data.match_data.current_inning, '타입:', data.match_data.inning_type);
                     console.log('🔥 베이스 상태:', data.match_data.first_base, data.match_data.second_base, data.match_data.third_base);
                     console.log('🔥 볼카운트:', data.match_data.balls, '스트라이크:', data.match_data.strikes, '아웃:', data.match_data.outs);
-                    
-                    // 점수 업데이트 (이닝별 점수 합계로 계산)
-                    let homeTotalScore = 0;
-                    let awayTotalScore = 0;
-                    
-                    if (data.match_data?.innings) {
-                        // 이닝별 점수 합계 계산 (새로운 구조 지원)
-                        if (data.match_data.innings.home && data.match_data.innings.away) {
-                            // 새로운 구조: innings.home[1], innings.away[1]
-                            for (let i = 1; i <= 9; i++) {
-                                homeTotalScore += parseInt(data.match_data.innings.home[i] || '0');
-                                awayTotalScore += parseInt(data.match_data.innings.away[i] || '0');
-                            }
-                        } else {
-                            // 기존 구조: innings.home_1, innings.away_1
-                            for (let i = 1; i <= 9; i++) {
-                                homeTotalScore += parseInt(data.match_data.innings[`home_${i}`] || '0');
-                                awayTotalScore += parseInt(data.match_data.innings[`away_${i}`] || '0');
-                            }
-                        }
-                    } else {
-                        // 이닝 데이터가 없으면 서버 점수 사용
-                        homeTotalScore = data.home_score || 0;
-                        awayTotalScore = data.away_score || 0;
-                    }
-                    
-                    const homeScoreEl = document.querySelector('.home-team .team-score');
-                    if (homeScoreEl) homeScoreEl.textContent = homeTotalScore;
-                    const awayScoreEl = document.querySelector('.away-team .team-score');
-                    if (awayScoreEl) awayScoreEl.textContent = awayTotalScore;
                 } else {
                     // match_data가 없는 경우 서버 점수 사용
                     const homeScoreElement = document.querySelector('.home-team .team-score');
