@@ -800,10 +800,19 @@
                     let awayTotalScore = 0;
                     
                     if (data.match_data?.innings) {
-                        // 이닝별 점수 합계 계산
-                        for (let i = 1; i <= 9; i++) {
-                            homeTotalScore += parseInt(data.match_data.innings[`home_${i}`] || '0');
-                            awayTotalScore += parseInt(data.match_data.innings[`away_${i}`] || '0');
+                        // 이닝별 점수 합계 계산 (새로운 구조 지원)
+                        if (data.match_data.innings.home && data.match_data.innings.away) {
+                            // 새로운 구조: innings.home[1], innings.away[1]
+                            for (let i = 1; i <= 9; i++) {
+                                homeTotalScore += parseInt(data.match_data.innings.home[i] || '0');
+                                awayTotalScore += parseInt(data.match_data.innings.away[i] || '0');
+                            }
+                        } else {
+                            // 기존 구조: innings.home_1, innings.away_1
+                            for (let i = 1; i <= 9; i++) {
+                                homeTotalScore += parseInt(data.match_data.innings[`home_${i}`] || '0');
+                                awayTotalScore += parseInt(data.match_data.innings[`away_${i}`] || '0');
+                            }
                         }
                     } else {
                         // 이닝 데이터가 없으면 서버 점수 사용
