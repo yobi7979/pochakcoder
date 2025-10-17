@@ -897,14 +897,22 @@ router.post('/:matchId/save-lineup', async (req, res) => {
     
     // match_data에 라인업 데이터 저장
     const matchData = match.match_data || {};
+    console.log('🔍 저장 전 match_data:', JSON.stringify(matchData, null, 2));
+    
     if (!matchData.lineup) {
       matchData.lineup = { home: [], away: [] };
+      console.log('🔍 lineup 초기화:', matchData.lineup);
     }
     
     // 특정 팀의 라인업만 업데이트
     matchData.lineup[teamType] = lineup;
+    console.log('🔍 업데이트 후 match_data:', JSON.stringify(matchData, null, 2));
     
     await match.update({ match_data: matchData });
+    
+    // 저장 후 확인
+    const updatedMatch = await Match.findByPk(matchId);
+    console.log('🔍 저장 후 확인:', JSON.stringify(updatedMatch.match_data, null, 2));
     
     console.log(`${teamType}팀 라인업 저장 완료: ${matchId}`, lineup);
     res.json({ success: true });
