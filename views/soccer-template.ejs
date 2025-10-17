@@ -4588,18 +4588,17 @@
         }
         
         // show_lineup WebSocket 이벤트 리스너 - 컨트롤 페이지에서 라인업 호출
-        socket.on('show_lineup', function(data) {
+        socket.on('show_lineup', async function(data) {
             console.log('🔧 라인업 표시 요청 수신:', data);
             if (data.matchId === matchId) {
                 // 라인업 데이터 로드 후 표시
-                loadLineup().then(() => {
-                    if (data.teamType) {
-                        // 특정 팀의 라인업만 표시
-                        const lineupData = currentLineupData || {home: [], away: []};
-                        displayLineup(lineupData, data.teamType);
-                    }
-                    showLineup();
-                });
+                await loadLineup();
+                if (data.teamType) {
+                    // 특정 팀의 라인업만 표시
+                    const lineupData = currentLineupData || {home: [], away: []};
+                    displayLineup(lineupData, data.teamType);
+                }
+                showLineup();
             }
         });
         
