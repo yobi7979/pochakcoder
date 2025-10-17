@@ -886,7 +886,10 @@ router.post('/save-lineup', async (req, res) => {
     matchData.lineup = lineup;
     console.log('🚨 RAILWAY 업데이트 후 match_data:', JSON.stringify(matchData, null, 2));
     
-    await match.update({ match_data: matchData });
+    // JSONB 필드 업데이트를 위해 changed() 호출
+    match.match_data = matchData;
+    match.changed('match_data', true);
+    await match.save();
     
     // 저장 후 확인
     const updatedMatch = await Match.findByPk(matchId);
@@ -939,7 +942,10 @@ router.post('/:matchId/save-lineup', async (req, res) => {
     matchData.lineup[teamType] = lineup;
     console.log('🚨 RAILWAY 업데이트 후 match_data:', JSON.stringify(matchData, null, 2));
     
-    await match.update({ match_data: matchData });
+    // JSONB 필드 업데이트를 위해 changed() 호출
+    match.match_data = matchData;
+    match.changed('match_data', true);
+    await match.save();
     
     // 저장 후 확인
     const updatedMatch = await Match.findByPk(matchId);
