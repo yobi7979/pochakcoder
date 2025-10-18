@@ -1372,21 +1372,28 @@
             // 연결 상태 업데이트
             updateConnectionStatus(true);
             
+            // 온라인 시 로컬 타이머 중지
+            stopLocalTimer();
+            
             // 연결 시 현재 타이머 상태 요청 (재연결 시 정확한 동기화)
             console.log('=== 타이머 상태 요청 ===');
             console.log('요청할 matchId:', matchId);
             socket.emit('request_timer_state', { matchId: matchId });
             
-            // 추가: 페이지 로드 시에도 타이머 상태 요청
-            setTimeout(() => {
-                console.log('=== 추가 타이머 상태 요청 (3초 후) ===');
-                socket.emit('request_timer_state', { matchId: matchId });
-            }, 3000);
+            // 추가 요청 제거 - 서버 이벤트만 수신
+            // setTimeout(() => {
+            //     console.log('=== 추가 타이머 상태 요청 (3초 후) ===');
+            //     socket.emit('request_timer_state', { matchId: matchId });
+            // }, 3000);
         });
 
         socket.on('disconnect', function() {
+            console.log('🔌 서버 연결 끊김 - 로컬 타이머 시작');
             console.log('서버와의 연결이 끊어졌습니다.');
             updateConnectionStatus(false);
+            
+            // 오프라인 시 로컬 타이머 시작
+            startLocalTimer();
         });
         
         // 득점 정보 로드 응답 이벤트

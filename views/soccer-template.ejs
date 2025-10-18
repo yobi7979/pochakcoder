@@ -2196,7 +2196,9 @@
         });
 
         socket.on('disconnect', () => {
+            console.log('🔌 서버 연결 끊김 - 로컬 타이머 시작');
             timerState.lastUpdateTime = Date.now();
+            updateConnectionStatus(false);
             startLocalTimer();
         });
         
@@ -2928,10 +2930,15 @@
 
         // 오버레이 페이지에서 서버 타이머 상태 요청
         socket.on('connect', function() {
+            console.log('🔌 서버 연결 복구 - 로컬 타이머 중지');
             console.log('=== 오버레이 페이지 소켓 연결됨 ===');
             console.log('matchId:', matchId);
             
-            // 타이머 상태 요청을 최우선으로 처리
+            // 온라인 시 로컬 타이머 중지
+            stopLocalTimer();
+            updateConnectionStatus(true);
+            
+            // 타이머 상태 요청을 최우선으로 처리 (한 번만)
             socket.emit('request_timer_state', { matchId: matchId });
             console.log('=== 타이머 상태 요청 (최우선) ===');
             
@@ -4268,13 +4275,13 @@
                 timerState.localTimer = null;
             }
             
-            timerState.localTimer = setInterval(() => {
-                if (timerState.isRunning) {
-                    // 서버에서 주기적으로 상태 요청 (로컬 계산 제거)
-                    socket.emit('request_timer_state', { matchId: matchId });
-                    console.log('서버 타이머 상태 요청 (주기적):', matchId);
-                }
-            }, 1000);
+            // 주기적 서버 요청 제거 - 서버 이벤트만 수신
+            // timerState.localTimer = setInterval(() => {
+            //     if (timerState.isRunning) {
+            //         socket.emit('request_timer_state', { matchId: matchId });
+            //         console.log('서버 타이머 상태 요청 (주기적):', matchId);
+            //     }
+            // }, 1000);
             
             }
         
