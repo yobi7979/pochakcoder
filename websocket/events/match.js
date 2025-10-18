@@ -525,6 +525,86 @@ const matchEvents = (socket, io) => {
     }
   });
 
+  // 대회명 업데이트 이벤트 처리
+  socket.on('updateTournamentText', async (data) => {
+    try {
+      const { matchId, tournamentText } = data;
+      const roomName = `match_${matchId}`;
+      
+      console.log(`대회명 업데이트 요청: matchId=${matchId}, tournamentText=${tournamentText}`);
+      
+      // DB에서 경기 데이터 가져오기
+      const match = await Match.findByPk(matchId);
+      if (!match) {
+        console.error(`경기를 찾을 수 없습니다: ${matchId}`);
+        socket.emit('updateTournamentText_error', { error: '경기를 찾을 수 없습니다.' });
+        return;
+      }
+      
+      // match_data에서 tournament_text 업데이트
+      let matchData = match.match_data || {};
+      matchData.tournament_text = tournamentText;
+      
+      // Match 테이블의 match_data 업데이트
+      await match.update({
+        match_data: matchData
+      });
+      
+      console.log(`대회명 업데이트 완료: ${tournamentText}`);
+      
+      // 해당 방의 모든 클라이언트에게 대회명 업데이트 이벤트 전송
+      io.to(roomName).emit('tournamentTextUpdated', {
+        matchId: matchId,
+        tournamentText: tournamentText,
+        timestamp: new Date().toISOString()
+      });
+      
+      console.log(`✅ 대회명 업데이트 이벤트를 방 ${roomName}에 전송함: ${tournamentText}`);
+      
+    } catch (error) {
+      console.error('대회명 업데이트 처리 중 오류 발생:', error);
+      socket.emit('updateTournamentText_error', { error: '대회명 업데이트에 실패했습니다.' });
+    }
+  });
+
+  // 경기 상황 업데이트 이벤트 처리
+  socket.on('updateMatchState', async (data) => {
+    try {
+      const { matchId, matchState } = data;
+      const roomName = `match_${matchId}`;
+      
+      console.log(`경기 상황 업데이트 요청: matchId=${matchId}, matchState=${matchState}`);
+      
+      // DB에서 경기 데이터 가져오기
+      const match = await Match.findByPk(matchId);
+      if (!match) {
+        console.error(`경기를 찾을 수 없습니다: ${matchId}`);
+        socket.emit('updateMatchState_error', { error: '경기를 찾을 수 없습니다.' });
+        return;
+      }
+      
+      // 경기 상태 업데이트
+      await match.update({
+        status: matchState
+      });
+      
+      console.log(`경기 상황 업데이트 완료: ${matchState}`);
+      
+      // 해당 방의 모든 클라이언트에게 경기 상황 업데이트 이벤트 전송
+      io.to(roomName).emit('matchStateUpdated', {
+        matchId: matchId,
+        matchState: matchState,
+        timestamp: new Date().toISOString()
+      });
+      
+      console.log(`✅ 경기 상황 업데이트 이벤트를 방 ${roomName}에 전송함: ${matchState}`);
+      
+    } catch (error) {
+      console.error('경기 상황 업데이트 처리 중 오류 발생:', error);
+      socket.emit('updateMatchState_error', { error: '경기 상황 업데이트에 실패했습니다.' });
+    }
+  });
+
   console.log('경기 이벤트 설정 완료:', socket.id);
 };
 

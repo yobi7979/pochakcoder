@@ -1017,6 +1017,55 @@
                             </div>
                         </div>
                         
+                        <!-- 경기 상황 선택 섹션 -->
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="bi bi-clock-history"></i> 경기 상황
+                            </label>
+                            <div class="row g-2">
+                                <div class="col-6 col-md-3">
+                                    <button class="btn btn-outline-success btn-sm w-100" onclick="updateMatchState('전반')">
+                                        전반
+                                    </button>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <button class="btn btn-outline-warning btn-sm w-100" onclick="updateMatchState('전반종료')">
+                                        전반종료
+                                    </button>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <button class="btn btn-outline-success btn-sm w-100" onclick="updateMatchState('후반')">
+                                        후반
+                                    </button>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <button class="btn btn-outline-warning btn-sm w-100" onclick="updateMatchState('후반종료')">
+                                        후반종료
+                                    </button>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <button class="btn btn-outline-info btn-sm w-100" onclick="updateMatchState('연장')">
+                                        연장
+                                    </button>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <button class="btn btn-outline-warning btn-sm w-100" onclick="updateMatchState('연장종료')">
+                                        연장종료
+                                    </button>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <button class="btn btn-outline-danger btn-sm w-100" onclick="updateMatchState('경기종료')">
+                                        경기종료
+                                    </button>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <button class="btn btn-outline-secondary btn-sm w-100" onclick="updateMatchState('승부차기')">
+                                        승부차기
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="row">
                             <div class="col-12 mb-2">
                                 <button class="btn btn-success btn-sm w-100" id="toggle-top-scoreboard" onclick="toggleGraphic('top-scoreboard')">
@@ -2136,6 +2185,36 @@
             } else {
                 console.log('대회명이 비어있어 자동 적용하지 않음');
             }
+        }
+        
+        // 경기 상황 업데이트 함수
+        function updateMatchState(state) {
+            console.log('=== 경기 상황 업데이트 ===');
+            console.log('선택된 경기 상황:', state);
+            console.log('matchId:', matchId);
+            
+            // WebSocket을 통해 경기 상황 업데이트 이벤트 전송
+            socket.emit('updateMatchState', {
+                matchId: matchId,
+                matchState: state
+            });
+            
+            console.log('✅ 경기 상황 업데이트 이벤트 전송 완료:', state);
+            
+            // 사용자에게 피드백 제공
+            const stateNames = {
+                '전반': '전반',
+                '전반종료': '전반 종료',
+                '후반': '후반',
+                '후반종료': '후반 종료',
+                '연장': '연장전',
+                '연장종료': '연장전 종료',
+                '경기종료': '경기 종료',
+                '승부차기': '승부차기'
+            };
+            
+            const displayName = stateNames[state] || state;
+            alert(`경기 상황이 "${displayName}"으로 변경되었습니다.`);
         }
 
         // 중복된 타이머 업데이트 루프 제거됨 - startLocalTimer()에서 처리

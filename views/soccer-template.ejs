@@ -755,7 +755,7 @@
             top: 180px; /* 스코어보드 아래 100px에서 300px 위로 이동 */
             left: 80px; /* 스코어보드와 동일한 좌측 위치 */
             width: 420px; /* 스코어보드와 동일한 너비 */
-            background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.9));
+            background: linear-gradient(135deg, rgba(0, 0, 0, 1), rgba(0, 0, 0, 0.95));
             border-radius: 15px;
             padding: 20px;
             backdrop-filter: blur(10px);
@@ -888,7 +888,7 @@
             top: 65px;
             left: 230px;
             width: 150px;
-            background-color: rgba(0, 0, 0, 1.0);
+            background-color: rgba(0, 0, 0, 0.0);
             border-radius: 6px;
             color: white;
             padding: 2px 0;
@@ -2548,6 +2548,22 @@
                 if (awayScoreElement && data.away_score !== undefined) {
                     awayScoreElement.textContent = data.away_score;
                     }
+            }
+        });
+
+        // 경기 상황 업데이트 이벤트 처리
+        socket.on('matchStateUpdated', (data) => {
+            if (data.matchId === matchId) {
+                console.log('🔧 경기 상황 업데이트 수신:', data.matchState);
+                
+                // 경기 상황 표시 업데이트
+                const matchStateElement = document.querySelector('.match-state');
+                if (matchStateElement) {
+                    matchStateElement.textContent = data.matchState;
+                    console.log('✅ 경기 상황 업데이트 완료:', data.matchState);
+                } else {
+                    console.log('⚠️ 경기 상황 표시 요소를 찾을 수 없습니다.');
+                }
             }
         });
 
