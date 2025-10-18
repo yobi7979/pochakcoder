@@ -2897,6 +2897,12 @@
             }
             
             if (timerState.isRunning) {
+                console.log('오버레이 로컬 타이머 시작:', {
+                    isRunning: timerState.isRunning,
+                    startTime: timerState.startTime,
+                    currentSeconds: timerState.currentSeconds
+                });
+                
                 localTimerInterval = setInterval(() => {
                     if (timerState.isRunning) {
                         // startTime이 있으면 정확한 계산, 없으면 단순 증가
@@ -3016,6 +3022,11 @@
                 
                 // 서버 타이머가 실행 중이면 로컬 타이머 시작 (서버 동기화)
                 if (timerState.isRunning) {
+                    console.log('오버레이 로컬 타이머 시작 요청:', {
+                        isRunning: timerState.isRunning,
+                        startTime: timerState.startTime,
+                        currentSeconds: timerState.currentSeconds
+                    });
                     startLocalTimer();
                 } else {
                     stopLocalTimer();
