@@ -248,6 +248,27 @@
             margin-top: 10px;
         }
         
+        /* 경기 상황 버튼 스타일 */
+        .match-state-btn {
+            transition: all 0.3s ease;
+            border: 1px solid #6c757d;
+            color: #6c757d;
+            background: transparent;
+        }
+        
+        .match-state-btn:hover {
+            border-color: #ffc107;
+            color: #ffc107;
+            background: rgba(255, 193, 7, 0.1);
+        }
+        
+        .match-state-btn.active {
+            background-color: #ffc107;
+            border-color: #ffc107;
+            color: #000;
+            font-weight: 600;
+        }
+        
         .logo-controls {
             display: flex;
             align-items: center;
@@ -978,42 +999,42 @@
                             </label>
                             <div class="row g-2">
                                 <div class="col-6">
-                                    <button class="btn btn-outline-success btn-sm w-100" onclick="updateMatchState('전반')">
+                                    <button class="btn btn-outline-secondary btn-sm w-100 match-state-btn" data-state="전반" onclick="updateMatchState('전반')">
                                         전반
                                     </button>
                                 </div>
                                 <div class="col-6">
-                                    <button class="btn btn-outline-warning btn-sm w-100" onclick="updateMatchState('전반종료')">
+                                    <button class="btn btn-outline-secondary btn-sm w-100 match-state-btn" data-state="전반종료" onclick="updateMatchState('전반종료')">
                                         전반종료
                                     </button>
                                 </div>
                                 <div class="col-6">
-                                    <button class="btn btn-outline-success btn-sm w-100" onclick="updateMatchState('후반')">
+                                    <button class="btn btn-outline-secondary btn-sm w-100 match-state-btn" data-state="후반" onclick="updateMatchState('후반')">
                                         후반
                                     </button>
                                 </div>
                                 <div class="col-6">
-                                    <button class="btn btn-outline-warning btn-sm w-100" onclick="updateMatchState('후반종료')">
+                                    <button class="btn btn-outline-secondary btn-sm w-100 match-state-btn" data-state="후반종료" onclick="updateMatchState('후반종료')">
                                         후반종료
                                     </button>
                                 </div>
                                 <div class="col-6">
-                                    <button class="btn btn-outline-info btn-sm w-100" onclick="updateMatchState('연장')">
+                                    <button class="btn btn-outline-secondary btn-sm w-100 match-state-btn" data-state="연장" onclick="updateMatchState('연장')">
                                         연장
                                     </button>
                                 </div>
                                 <div class="col-6">
-                                    <button class="btn btn-outline-warning btn-sm w-100" onclick="updateMatchState('연장종료')">
+                                    <button class="btn btn-outline-secondary btn-sm w-100 match-state-btn" data-state="연장종료" onclick="updateMatchState('연장종료')">
                                         연장종료
                                     </button>
                                 </div>
                                 <div class="col-6">
-                                    <button class="btn btn-outline-danger btn-sm w-100" onclick="updateMatchState('경기종료')">
+                                    <button class="btn btn-outline-secondary btn-sm w-100 match-state-btn" data-state="경기종료" onclick="updateMatchState('경기종료')">
                                         경기종료
                                     </button>
                                 </div>
                                 <div class="col-6">
-                                    <button class="btn btn-outline-secondary btn-sm w-100" onclick="updateMatchState('승부차기')">
+                                    <button class="btn btn-outline-secondary btn-sm w-100 match-state-btn" data-state="승부차기" onclick="updateMatchState('승부차기')">
                                         승부차기
                                     </button>
                                 </div>
@@ -2210,11 +2231,63 @@
             }
         }
         
+        // 현재 경기 상황 로드 및 버튼 상태 설정
+        async function loadCurrentMatchState() {
+            try {
+                console.log('🔍 현재 경기 상황 로드 시작');
+                const response = await fetch(`/api/matches/${matchId}`);
+                const matchData = await response.json();
+                
+                if (matchData && matchData.status) {
+                    console.log('✅ 현재 경기 상황:', matchData.status);
+                    
+                    // 해당 버튼에 active 클래스 추가
+                    const currentStateBtn = document.querySelector(`[data-state="${matchData.status}"]`);
+                    if (currentStateBtn) {
+                        // 모든 버튼에서 active 클래스 제거
+                        document.querySelectorAll('.match-state-btn').forEach(btn => {
+                            btn.classList.remove('active');
+                        });
+                        
+                        // 현재 상태 버튼에 active 클래스 추가
+                        currentStateBtn.classList.add('active');
+                        console.log('✅ 경기 상황 버튼 활성화:', matchData.status);
+                    }
+                } else {
+                    console.log('ℹ️ 저장된 경기 상황이 없습니다. 기본값: 전반');
+                    // 기본값으로 전반 버튼 활성화
+                    const defaultBtn = document.querySelector('[data-state="전반"]');
+                    if (defaultBtn) {
+                        defaultBtn.classList.add('active');
+                    }
+                }
+            } catch (error) {
+                console.error('❌ 경기 상황 로드 실패:', error);
+                // 오류 시 기본값으로 전반 버튼 활성화
+                const defaultBtn = document.querySelector('[data-state="전반"]');
+                if (defaultBtn) {
+                    defaultBtn.classList.add('active');
+                }
+            }
+        }
+        
         // 경기 상황 업데이트 함수
         function updateMatchState(state) {
             console.log('=== 경기 상황 업데이트 ===');
             console.log('선택된 경기 상황:', state);
             console.log('matchId:', matchId);
+            
+            // 모든 경기 상황 버튼에서 active 클래스 제거
+            document.querySelectorAll('.match-state-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // 선택된 버튼에 active 클래스 추가
+            const selectedBtn = document.querySelector(`[data-state="${state}"]`);
+            if (selectedBtn) {
+                selectedBtn.classList.add('active');
+                console.log('✅ 경기 상황 버튼 활성화:', state);
+            }
             
             // WebSocket을 통해 경기 상황 업데이트 이벤트 전송
             socket.emit('updateMatchState', {
@@ -3088,6 +3161,9 @@
             
             // 팀로고 정보 로드 (DB에서)
             await loadTeamLogoInfo();
+            
+            // 현재 경기 상황 로드 및 버튼 상태 설정
+            await loadCurrentMatchState();
             
             // 페이지 로드 시 타이머 상태 요청
             console.log('=== 페이지 로드 시 타이머 상태 요청 ===');
