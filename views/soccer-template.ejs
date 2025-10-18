@@ -2898,10 +2898,16 @@
             
             if (timerState.isRunning) {
                 localTimerInterval = setInterval(() => {
-                    if (timerState.isRunning && timerState.startTime) {
-                        const now = Date.now();
-                        const elapsed = Math.floor((now - timerState.startTime) / 1000);
-                        timerState.currentSeconds = timerState.pausedTime + elapsed;
+                    if (timerState.isRunning) {
+                        // startTime이 있으면 정확한 계산, 없으면 단순 증가
+                        if (timerState.startTime) {
+                            const now = Date.now();
+                            const elapsed = Math.floor((now - timerState.startTime) / 1000);
+                            timerState.currentSeconds = timerState.pausedTime + elapsed;
+                        } else {
+                            // startTime이 없으면 1초씩 증가
+                            timerState.currentSeconds += 1;
+                        }
                         updateTimerDisplay();
                         console.log('오버레이 로컬 타이머 업데이트:', timerState.currentSeconds);
                     }
@@ -2990,6 +2996,12 @@
                 timerState.startTime = data.startTime || null;
                 timerState.pausedTime = data.pausedTime || 0;
                 timerState.lastServerTime = data.serverTime || Date.now(); // 서버 시간 저장
+                
+                // 서버 타이머가 실행 중이지만 startTime이 없으면 현재 시간으로 설정
+                if (timerState.isRunning && !timerState.startTime) {
+                    timerState.startTime = Date.now() - (timerState.currentSeconds * 1000);
+                    console.log('오버레이 startTime 설정:', timerState.startTime);
+                }
                 
                 console.log('서버 타이머 상태 업데이트 (오버레이):', {
                     currentSeconds: timerState.currentSeconds,
