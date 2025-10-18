@@ -1151,6 +1151,13 @@
                                         <i class="bi bi-house"></i> 홈팀 라인업
                                     </h6>
                                     
+                                    <!-- 감독 정보 입력 -->
+                                    <div class="coach-input-form mb-3">
+                                        <label class="form-label">감독 이름</label>
+                                        <input type="text" class="form-control" id="homeCoachInput" 
+                                               placeholder="홈팀 감독 이름을 입력하세요">
+                                    </div>
+                                    
                                     <!-- 라인업 입력 폼 -->
                                     <div class="lineup-input-form mb-3">
                                         <label class="form-label">라인업 입력 (번호 이름 포지션)</label>
@@ -1174,6 +1181,13 @@
                                     <h6 class="text-success mb-3">
                                         <i class="bi bi-arrow-right"></i> 어웨이팀 라인업
                                     </h6>
+                                    
+                                    <!-- 감독 정보 입력 -->
+                                    <div class="coach-input-form mb-3">
+                                        <label class="form-label">감독 이름</label>
+                                        <input type="text" class="form-control" id="awayCoachInput" 
+                                               placeholder="어웨이팀 감독 이름을 입력하세요">
+                                    </div>
                                     
                                     <!-- 라인업 입력 폼 -->
                                     <div class="lineup-input-form mb-3">
@@ -3929,6 +3943,18 @@
                         console.log('✅ 어웨이팀 라인업 로드 완료:', awayText);
                     }
                     
+                    // 감독 정보 표시
+                    if (result.lineup.coaches) {
+                        if (result.lineup.coaches.home) {
+                            document.getElementById('homeCoachInput').value = result.lineup.coaches.home;
+                            console.log('✅ 홈팀 감독 로드 완료:', result.lineup.coaches.home);
+                        }
+                        if (result.lineup.coaches.away) {
+                            document.getElementById('awayCoachInput').value = result.lineup.coaches.away;
+                            console.log('✅ 어웨이팀 감독 로드 완료:', result.lineup.coaches.away);
+                        }
+                    }
+                    
                     console.log('✅ 라인업 데이터 로드 완료');
                 } else {
                     console.log('ℹ️ 저장된 라인업 데이터가 없습니다.');
@@ -3942,10 +3968,14 @@
         function saveLineup(teamType) {
             console.log(`🔍 라인업 저장 시작: ${teamType}팀`);
             const inputId = teamType === 'home' ? 'homeLineupInput' : 'awayLineupInput';
+            const coachId = teamType === 'home' ? 'homeCoachInput' : 'awayCoachInput';
             const input = document.getElementById(inputId);
+            const coachInput = document.getElementById(coachId);
             const lineupText = input.value.trim();
+            const coachName = coachInput.value.trim();
             
             console.log(`🔍 입력된 텍스트: ${lineupText}`);
+            console.log(`🔍 입력된 감독: ${coachName}`);
             
             if (!lineupText) {
                 alert(`${teamType === 'home' ? '홈팀' : '어웨이팀'} 라인업을 입력해주세요.`);
@@ -3961,17 +3991,27 @@
                 return;
             }
             
+            // 감독 정보와 함께 저장
+            const lineupData = {
+                lineup: lineup,
+                coach: coachName
+            };
+            
             // 서버에 저장
-            console.log(`🔍 서버에 저장 요청: ${teamType}팀`, lineup);
-            saveLineupToServer(teamType, lineup);
+            console.log(`🔍 서버에 저장 요청: ${teamType}팀`, lineupData);
+            saveLineupToServer(teamType, lineupData);
         }
         
         function saveAllLineup() {
             const homeInput = document.getElementById('homeLineupInput');
             const awayInput = document.getElementById('awayLineupInput');
+            const homeCoachInput = document.getElementById('homeCoachInput');
+            const awayCoachInput = document.getElementById('awayCoachInput');
             
             const homeLineupText = homeInput.value.trim();
             const awayLineupText = awayInput.value.trim();
+            const homeCoachName = homeCoachInput.value.trim();
+            const awayCoachName = awayCoachInput.value.trim();
             
             if (!homeLineupText && !awayLineupText) {
                 alert('라인업을 입력해주세요.');
@@ -3983,7 +4023,11 @@
             
             const lineup = {
                 home: homeLineup,
-                away: awayLineup
+                away: awayLineup,
+                coaches: {
+                    home: homeCoachName,
+                    away: awayCoachName
+                }
             };
             
             // 서버에 저장
@@ -4031,7 +4075,8 @@
                             socket.emit('soccer_lineup_update', {
                                 matchId: matchId,
                                 teamType: 'home',
-                                lineup: lineup.home
+                                lineup: lineup.home,
+                                coach: lineup.coaches?.home
                             });
                             console.log(`⚽ 홈팀 라인업 WebSocket 전송 완료`);
                         }
@@ -4040,7 +4085,8 @@
                             socket.emit('soccer_lineup_update', {
                                 matchId: matchId,
                                 teamType: 'away',
-                                lineup: lineup.away
+                                lineup: lineup.away,
+                                coach: lineup.coaches?.away
                             });
                             console.log(`⚽ 어웨이팀 라인업 WebSocket 전송 완료`);
                         }
@@ -4051,7 +4097,8 @@
                         socket.emit('soccer_lineup_update', {
                             matchId: matchId,
                             teamType: teamType,
-                            lineup: lineup
+                            lineup: lineup.lineup,
+                            coach: lineup.coach
                         });
                         
                         console.log(`✅ ${teamType}팀 라인업 WebSocket 업데이트 완료`);
@@ -4071,12 +4118,28 @@
         }
         
         // REST API를 통한 라인업 저장 (폴백)
-        async function saveLineupViaRESTAPI(teamType, lineup) {
+        async function saveLineupViaRESTAPI(teamType, lineupData) {
             try {
-                console.log(`🔄 REST API 라인업 저장: ${teamType}`, lineup);
+                console.log(`🔄 REST API 라인업 저장: ${teamType}`, lineupData);
                 
                 const url = `/api/matches/${matchId}/save-lineup`;
-                const data = { teamType: teamType, lineup: lineup };
+                
+                // 데이터 구조 처리
+                let data;
+                if (teamType === 'all') {
+                    // 전체 라인업 저장
+                    data = {
+                        teamType: 'all',
+                        lineup: lineupData
+                    };
+                } else {
+                    // 개별 팀 라인업 저장
+                    data = {
+                        teamType: teamType,
+                        lineup: lineupData.lineup,
+                        coach: lineupData.coach
+                    };
+                }
                 
                 console.log(`🔄 API URL: ${url}`);
                 console.log(`🔄 전송할 데이터:`, data);

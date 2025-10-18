@@ -438,7 +438,7 @@ const matchEvents = (socket, io) => {
   // 축구 라인업 업데이트 이벤트 처리 (야구 이닝점수 방식 적용)
   socket.on('soccer_lineup_update', async (data) => {
     try {
-      const { matchId, teamType, lineup } = data;
+      const { matchId, teamType, lineup, coach } = data;
       const roomName = `match_${matchId}`;
       
       console.log(`⚽ 축구 라인업 업데이트: matchId=${matchId}, teamType=${teamType}`);
@@ -461,11 +461,23 @@ const matchEvents = (socket, io) => {
         console.log(`라인업 초기화 완료:`, matchData.lineup);
       }
       
+      // 감독 정보 초기화
+      if (!matchData.lineup.coaches) {
+        matchData.lineup.coaches = { home: '', away: '' };
+      }
+      
       console.log(`업데이트 전 라인업:`, matchData.lineup);
       console.log(`업데이트할 팀: ${teamType}팀`);
       
       // 특정 팀의 라인업만 업데이트
       matchData.lineup[teamType] = lineup;
+      
+      // 감독 정보 업데이트
+      if (coach !== undefined) {
+        matchData.lineup.coaches[teamType] = coach;
+        console.log(`⚽ ${teamType}팀 감독 업데이트: ${coach}`);
+      }
+      
       console.log(`업데이트 후 라인업:`, matchData.lineup);
       
       // 3. Match 테이블의 match_data 업데이트

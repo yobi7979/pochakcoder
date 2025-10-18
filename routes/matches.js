@@ -919,7 +919,7 @@ router.post('/save-lineup', async (req, res) => {
 router.post('/:matchId/save-lineup', async (req, res) => {
   try {
     const { matchId } = req.params;
-    const { teamType, lineup } = req.body;
+    const { teamType, lineup, coach } = req.body;
     console.log(`🚨 RAILWAY 라인업 저장 API 호출됨: ${teamType}팀 라인업 저장: ${matchId}`);
     console.log('🚨 RAILWAY 요청 바디:', JSON.stringify(req.body, null, 2));
     
@@ -938,8 +938,20 @@ router.post('/:matchId/save-lineup', async (req, res) => {
       console.log('🚨 RAILWAY lineup 초기화:', matchData.lineup);
     }
     
+    // 감독 정보 초기화
+    if (!matchData.lineup.coaches) {
+      matchData.lineup.coaches = { home: '', away: '' };
+    }
+    
     // 특정 팀의 라인업만 업데이트
     matchData.lineup[teamType] = lineup;
+    
+    // 감독 정보 저장
+    if (coach !== undefined) {
+      matchData.lineup.coaches[teamType] = coach;
+      console.log(`🚨 RAILWAY ${teamType}팀 감독 저장: ${coach}`);
+    }
+    
     console.log('🚨 RAILWAY 업데이트 후 match_data:', JSON.stringify(matchData, null, 2));
     
     // JSONB 필드 업데이트를 위해 changed() 호출

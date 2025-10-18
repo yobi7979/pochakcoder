@@ -752,7 +752,7 @@
         /* 라인업 오버레이 스타일 - 상단 스코어보드 좌측 기준 */
         .lineup-overlay {
             position: absolute;
-            top: 420px; /* 스코어보드 아래 100px */
+            top: 180px; /* 스코어보드 아래 100px에서 300px 위로 이동 */
             left: 80px; /* 스코어보드와 동일한 좌측 위치 */
             width: 420px; /* 스코어보드와 동일한 너비 */
             background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.9));
@@ -791,8 +791,16 @@
         
         .lineup-team-name {
             color: #007bff;
-            font-size: 20px;
+            font-size: 30px;
             font-weight: 700;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        }
+        
+        .lineup-coach {
+            color: #ffc107;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 5px 0 0 0;
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
         }
         
@@ -803,15 +811,17 @@
         }
         
         .lineup-player {
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.8);
             border-radius: 4px;
-            padding: 4px 8px;
+            padding: 2px 8px;
             display: flex;
             align-items: center;
-            gap: 4px;
+            justify-content: space-between;
+            gap: 8px;
             transition: all 0.3s ease;
             border: 1px solid rgba(255, 255, 255, 0.3);
             margin-bottom: 1px;
+            min-height: 24px;
         }
         
         .lineup-player:hover {
@@ -821,42 +831,48 @@
         
         .player-number {
             color: #007bff;
-            font-size: 14px;
-            font-weight: 700;
-            font-family: 'Noto Sans KR', Arial, sans-serif;
-            flex-shrink: 0;
-            width: 20px;
-            text-align: center;
-        }
-        
-        .player-info {
-            flex: 1;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 14px;
-            font-family: 'Noto Sans KR', Arial, sans-serif;
-            width: 100%;
-            flex-direction: row !important;
-        }
-        
-        .player-name {
-            color: white;
             font-size: 16px;
             font-weight: 600;
             font-family: 'Noto Sans KR', Arial, sans-serif;
+            flex-shrink: 0;
+            width: 18px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            line-height: 1;
+        }
+        
+        
+        .player-name {
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+            font-family: 'Noto Sans KR', Arial, sans-serif;
             flex: 1;
-            margin-right: 4px;
+            text-align: left;
+            margin: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100%;
+            line-height: 1;
         }
         
         .player-position {
             color: #007bff;
-            font-size: 12px;
+            font-size: 18px;
             font-weight: 600;
             font-family: 'Noto Sans KR', Arial, sans-serif;
             flex-shrink: 0;
             width: 20px;
             text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            line-height: 1;
         }
         
         .no-players {
@@ -936,11 +952,6 @@
         }
         .away .player-header {
             background-color: rgba(0, 204, 51, 0.4);
-        }
-        .player-number {
-            font-size: 36px;
-            font-weight: bold;
-            margin-bottom: 5px;
         }
         .player-position {
             font-size: 14px;
@@ -1229,6 +1240,7 @@
                 <div class="lineup-header">
                     <h3 class="lineup-title">STARTING LINE UP</h3>
                     <div class="lineup-team-name" id="lineupTeamName">팀명</div>
+                    <div class="lineup-coach" id="lineupCoach">감독 : 감독이름</div>
                 </div>
                 <div class="lineup-players" id="lineupPlayers">
                     <!-- 선택된 팀의 선수들이 여기에 동적으로 로드됩니다 -->
@@ -4541,8 +4553,9 @@
         function displayLineup(lineup, teamType = 'home') {
             const playersContainer = document.getElementById('lineupPlayers');
             const teamNameElement = document.getElementById('lineupTeamName');
+            const coachElement = document.getElementById('lineupCoach');
             
-            if (!playersContainer || !teamNameElement) {
+            if (!playersContainer || !teamNameElement || !coachElement) {
                 console.error('❌ 라인업 컨테이너를 찾을 수 없습니다.');
                 return;
             }
@@ -4553,16 +4566,23 @@
             const teamName = teamType === 'home' ? homeTeamName : awayTeamName;
             teamNameElement.textContent = teamName;
             
+            // 감독 정보 표시
+            const coachName = lineup.coaches && lineup.coaches[teamType] ? lineup.coaches[teamType] : '';
+            if (coachName) {
+                coachElement.textContent = `감독 : ${coachName}`;
+                coachElement.style.display = 'block';
+            } else {
+                coachElement.style.display = 'none';
+            }
+            
             // 선택된 팀의 라인업 표시
             const teamLineup = lineup[teamType] || [];
             if (teamLineup.length > 0) {
                 playersContainer.innerHTML = teamLineup.map(player => `
                     <div class="lineup-player">
-                        <div class="player-number">${player.number}</div>
-                        <div class="player-info">
-                            <span class="player-name">${player.name}</span>
-                            <span class="player-position">${player.position}</span>
-                        </div>
+                        <span class="player-number">${player.number}</span>
+                        <span class="player-name">${player.name}</span>
+                        <span class="player-position">${player.position}</span>
                     </div>
                 `).join('');
             } else {
