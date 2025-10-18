@@ -2150,6 +2150,14 @@
             // 새 방에 참가
             socket.emit('join', matchId);
             
+            // 타이머 상태 요청 (최우선)
+            socket.emit('request_timer_state', { matchId: matchId });
+            console.log('🔧 타이머 상태 요청 전송');
+            
+            // 타이머 모드 상태 요청
+            socket.emit('request_timer_mode', { matchId: matchId });
+            console.log('🔧 타이머 모드 상태 요청 전송');
+            
             // 경기 데이터 로드 후 종목별 Room에 참여 요청
             const matchData = await loadMatchData();
             if (matchData) {
@@ -2928,28 +2936,8 @@
             }
         }
 
-        // 오버레이 페이지에서 서버 타이머 상태 요청
-        socket.on('connect', function() {
-            console.log('🔌 서버 연결 복구 - 로컬 타이머 중지');
-            console.log('=== 오버레이 페이지 소켓 연결됨 ===');
-            console.log('matchId:', matchId);
-            
-            // 온라인 시 로컬 타이머 중지
-            stopLocalTimer();
-            updateConnectionStatus(true);
-            
-            // 타이머 상태 요청을 최우선으로 처리 (한 번만)
-            socket.emit('request_timer_state', { matchId: matchId });
-            console.log('=== 타이머 상태 요청 (최우선) ===');
-            
-            // 경기별 Room에 참여
-            socket.emit('join', `match_${matchId}`);
-            console.log('=== 경기별 Room 참여 요청 ===');
-            
-            // 타이머 모드 상태 요청
-            socket.emit('request_timer_mode', { matchId: matchId });
-            console.log('=== 타이머 모드 상태 요청 전송 ===');
-        });
+        // 오버레이 페이지에서 서버 타이머 상태 요청 (중복 제거됨)
+        // socket.on('connect') 이벤트는 위에서 이미 처리됨
 
         // 경기 상태 표시 설정 변경 이벤트 처리
         socket.on('soccer_match_state_visibility_changed', function(data) {
