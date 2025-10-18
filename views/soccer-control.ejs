@@ -947,9 +947,10 @@
             </div>
         </div>
 
-        <!-- 대회명 & 경기 상황 섹션 -->
+        <!-- 대회명 & 경기 상황 섹션과 그래픽 표시 섹션 (좌우 배치) -->
         <div class="row mb-3">
-            <div class="col-12">
+            <!-- 대회명 & 경기 상황 섹션 (좌측) -->
+            <div class="col-md-6">
                 <div class="card">
                     <div class="card-header">
                         <h6 class="mb-0">
@@ -976,42 +977,42 @@
                                 <i class="bi bi-clock-history"></i> 경기 상황
                             </label>
                             <div class="row g-2">
-                                <div class="col-6 col-md-3">
+                                <div class="col-6">
                                     <button class="btn btn-outline-success btn-sm w-100" onclick="updateMatchState('전반')">
                                         전반
                                     </button>
                                 </div>
-                                <div class="col-6 col-md-3">
+                                <div class="col-6">
                                     <button class="btn btn-outline-warning btn-sm w-100" onclick="updateMatchState('전반종료')">
                                         전반종료
                                     </button>
                                 </div>
-                                <div class="col-6 col-md-3">
+                                <div class="col-6">
                                     <button class="btn btn-outline-success btn-sm w-100" onclick="updateMatchState('후반')">
                                         후반
                                     </button>
                                 </div>
-                                <div class="col-6 col-md-3">
+                                <div class="col-6">
                                     <button class="btn btn-outline-warning btn-sm w-100" onclick="updateMatchState('후반종료')">
                                         후반종료
                                     </button>
                                 </div>
-                                <div class="col-6 col-md-3">
+                                <div class="col-6">
                                     <button class="btn btn-outline-info btn-sm w-100" onclick="updateMatchState('연장')">
                                         연장
                                     </button>
                                 </div>
-                                <div class="col-6 col-md-3">
+                                <div class="col-6">
                                     <button class="btn btn-outline-warning btn-sm w-100" onclick="updateMatchState('연장종료')">
                                         연장종료
                                     </button>
                                 </div>
-                                <div class="col-6 col-md-3">
+                                <div class="col-6">
                                     <button class="btn btn-outline-danger btn-sm w-100" onclick="updateMatchState('경기종료')">
                                         경기종료
                                     </button>
                                 </div>
-                                <div class="col-6 col-md-3">
+                                <div class="col-6">
                                     <button class="btn btn-outline-secondary btn-sm w-100" onclick="updateMatchState('승부차기')">
                                         승부차기
                                     </button>
@@ -1021,11 +1022,9 @@
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- 그래픽 토글 섹션 -->
-        <div class="row mb-3">
-            <div class="col-12">
+            
+            <!-- 그래픽 표시 섹션 (우측) -->
+            <div class="col-md-6">
                 <div class="card">
                     <div class="card-header">
                         <h6 class="mb-0">
