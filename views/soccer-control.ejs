@@ -2133,6 +2133,15 @@
                             };
                         }
                         
+                        // 경기 상황 정보 추가
+                        if (matchData && matchData.status) {
+                            eventData.matchState = matchData.status;
+                            console.log('✅ 하단 스트립에 경기 상황 추가:', matchData.status);
+                        } else {
+                            eventData.matchState = '전반';
+                            console.log('✅ 하단 스트립에 기본 경기 상황 설정: 전반');
+                        }
+                        
                         console.log('하단 스트립과 함께 전송할 데이터:', eventData);
                         
                         // WebSocket 이벤트 전송
