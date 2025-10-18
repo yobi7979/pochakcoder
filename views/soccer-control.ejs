@@ -3148,8 +3148,13 @@
         // 페이지 로드 시 URL 설정
         document.addEventListener('DOMContentLoaded', async function() {
             const baseUrl = window.location.origin;
-            document.getElementById('mobile-url').value = `${baseUrl}/soccer/${matchId}/control-mobile`;
-            document.getElementById('overlay-url').value = `${baseUrl}/soccer/${matchId}/overlay`;
+            // 현재 URL에서 종목 코드 추출
+            const currentPath = window.location.pathname;
+            const pathParts = currentPath.split('/');
+            const sportCode = pathParts[1]; // /soccer_league/10195455/control -> soccer_league
+            
+            document.getElementById('mobile-url').value = `${baseUrl}/${sportCode}/${matchId}/control-mobile`;
+            document.getElementById('overlay-url').value = `${baseUrl}/${sportCode}/${matchId}/overlay`;
             
             // 팀로고 정보 로드 (DB에서)
             await loadTeamLogoInfo();
