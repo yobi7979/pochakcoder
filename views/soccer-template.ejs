@@ -2570,8 +2570,13 @@
                 if (stripMatchState) {
                     stripMatchState.textContent = data.matchState;
                     console.log('✅ 하단 스트립 경기 상황 업데이트 완료:', data.matchState);
+                    console.log('🔍 strip-match-state 요소 확인:', stripMatchState);
+                    console.log('🔍 현재 텍스트 내용:', stripMatchState.textContent);
                 } else {
                     console.log('⚠️ 하단 스트립 경기 상황 요소를 찾을 수 없습니다.');
+                    console.log('🔍 DOM에서 strip-match-state 검색 시도...');
+                    const allElements = document.querySelectorAll('[id*="strip"]');
+                    console.log('🔍 strip 관련 모든 요소:', allElements);
                 }
             }
         });
