@@ -756,7 +756,18 @@
         
         socket.on('disconnect', () => {
             console.log('=== Socket.IO 연결 끊어짐 (오버레이) ===');
+            updateConnectionStatus(false);
         });
+
+        // 연결 상태 업데이트 함수
+        function updateConnectionStatus(connected) {
+            // 오버레이 페이지에서는 연결 상태 표시가 없으므로 콘솔 로그만 출력
+            if (connected) {
+                console.log('✅ 야구 오버레이 페이지 서버 연결됨');
+            } else {
+                console.log('❌ 야구 오버레이 페이지 서버 연결 끊김');
+            }
+        }
         
         socket.on('connect_error', (error) => {
             console.error('=== Socket.IO 연결 오류 (오버레이) ===', error);
@@ -765,19 +776,23 @@
         // 야구 오버레이 페이지 재연결 이벤트 처리
         socket.on('reconnect_attempt', (attemptNumber) => {
             console.log(`🔄 야구 오버레이 페이지 소켓 재연결 시도 중... (${attemptNumber}번째)`);
+            updateConnectionStatus(false);
         });
 
         socket.on('reconnect_error', (error) => {
             console.error('❌ 야구 오버레이 페이지 소켓 재연결 실패:', error);
+            updateConnectionStatus(false);
         });
 
         socket.on('reconnect_failed', () => {
             console.error('❌ 야구 오버레이 페이지 소켓 재연결 완전 실패');
+            updateConnectionStatus(false);
         });
 
         // 소켓 재연결 이벤트
         socket.on('reconnect', (attemptNumber) => {
             console.log(`🔄 야구 오버레이 페이지 소켓 재연결 성공 (시도 ${attemptNumber}번째)`);
+            updateConnectionStatus(true);
             
             // 재연결 시 종목별 룸 재조인
             if (window.matchData?.sport_type) {

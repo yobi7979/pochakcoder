@@ -2252,6 +2252,16 @@
             updateConnectionStatus(false);
             startLocalTimer();
         });
+
+        // 연결 상태 업데이트 함수
+        function updateConnectionStatus(connected) {
+            // 오버레이 페이지에서는 연결 상태 표시가 없으므로 콘솔 로그만 출력
+            if (connected) {
+                console.log('✅ 오버레이 페이지 서버 연결됨');
+            } else {
+                console.log('❌ 오버레이 페이지 서버 연결 끊김');
+            }
+        }
         
         // 페이지 언로드 시 방에서 나가기
         window.addEventListener('beforeunload', () => {
