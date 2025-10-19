@@ -2903,6 +2903,17 @@
                     currentSeconds: timerState.currentSeconds
                 });
                 
+                // 즉시 한 번 실행
+                if (timerState.startTime) {
+                    const now = Date.now();
+                    const elapsed = Math.floor((now - timerState.startTime) / 1000);
+                    timerState.currentSeconds = timerState.pausedTime + elapsed;
+                } else {
+                    timerState.currentSeconds += 1;
+                }
+                updateTimerDisplay();
+                console.log('오버레이 로컬 타이머 즉시 업데이트:', timerState.currentSeconds);
+                
                 localTimerInterval = setInterval(() => {
                     if (timerState.isRunning) {
                         // startTime이 있으면 정확한 계산, 없으면 단순 증가
