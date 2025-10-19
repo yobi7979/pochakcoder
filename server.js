@@ -264,6 +264,272 @@ io.on('connection', (socket) => {
     console.log(`✅ tournament_text_updated 이벤트를 방 ${roomName}에 전송함`);
   });
   
+  // 배구 컨트롤 이벤트 처리
+  socket.on('volleyball_control', async (data) => {
+    console.log('🏐 배구 컨트롤 이벤트 수신:', data);
+    console.log('🏐 액션:', data.action);
+    
+    try {
+      const { matchId, action, servingTeam } = data;
+      
+      if (action === 'change_serve') {
+        // 서브권 변경 처리
+        const match = await Match.findByPk(matchId);
+        if (match) {
+          const matchData = match.match_data || {};
+          matchData.servingTeam = servingTeam;
+          
+          await match.update({ match_data: matchData });
+          
+          // 모든 클라이언트에 서브권 변경 알림
+          const roomName = `match_${matchId}`;
+          io.to(roomName).emit('match_updated', {
+            matchId: matchId,
+            match_data: {
+              servingTeam: servingTeam
+            }
+          });
+          
+          console.log(`✅ 서브권 변경 완료: ${servingTeam}`);
+        }
+      } else if (action === 'next_set') {
+        // 다음 세트 처리
+        console.log('🔍 다음 세트 처리 시작:', matchId);
+        const match = await Match.findByPk(matchId);
+        if (match) {
+          const matchData = match.match_data || {};
+          const currentSet = matchData.current_set || 1;
+          const setFormat = matchData.setFormat || 3; // 기본값 3세트제
+          const maxSets = setFormat;
+          
+          console.log('🔍 현재 상태:', {
+            currentSet,
+            setFormat,
+            maxSets,
+            matchData: matchData,
+            matchStatus: match.status
+          });
+          
+          // match.status에서도 현재 세트 정보 확인
+          const statusMatch = match.status ? match.status.match(/(\d+)세트/) : null;
+          const statusSet = statusMatch ? parseInt(statusMatch[1]) : currentSet;
+          
+          console.log('🔍 상태 분석:', {
+            matchStatus: match.status,
+            statusSet: statusSet,
+            finalCurrentSet: Math.max(currentSet, statusSet)
+          });
+          
+          // 실제 현재 세트 결정 (match_data와 match.status 중 더 높은 값 사용)
+          const actualCurrentSet = Math.max(currentSet, statusSet);
+          
+          console.log('🔍 실제 현재 세트:', actualCurrentSet);
+          
+          // 최대 세트 확인 (다음 세트가 최대 세트를 초과하는 경우)
+          if (actualCurrentSet + 1 > maxSets) {
+            console.log(`최대 세트(${maxSets}세트)에 도달했습니다. 더 이상 다음 세트로 진행할 수 없습니다.`);
+            // 경기 종료는 사용자가 직접 결정하도록 함
+            console.log(`사용자가 "경기종료" 버튼을 클릭할 때까지 대기`);
+            return;
+          }
+          
+          const nextSet = actualCurrentSet + 1;
+          
+          // 현재 세트 점수를 세트 점수에 저장
+          const homeScore = matchData.home_score || 0;
+          const awayScore = matchData.away_score || 0;
+          
+          // 세트 점수 저장
+          if (!matchData.set_scores) {
+            matchData.set_scores = { home: {}, away: {} };
+          }
+          matchData.set_scores.home[actualCurrentSet] = homeScore;
+          matchData.set_scores.away[actualCurrentSet] = awayScore;
+          
+          // 세트 승리 계산 (기존 승리 수 유지)
+          let homeWins = matchData.home_wins || 0;
+          let awayWins = matchData.away_wins || 0;
+          
+          console.log('🔍 기존 세트 승리:', { homeWins, awayWins });
+          
+          // 다음 세트로 변경
+          matchData.current_set = nextSet;
+          
+          // 현재 세트 점수 초기화
+          matchData.home_score = 0;
+          matchData.away_score = 0;
+          
+          // 세트 승리 정보 저장
+          matchData.home_wins = homeWins;
+          matchData.away_wins = awayWins;
+          
+          // 경기 상황 저장 (현재 세트)
+          matchData.status = nextSet + '세트';
+          
+          console.log('🔍 저장할 데이터:', {
+            current_set: nextSet,
+            home_score: 0,
+            away_score: 0,
+            set_scores: matchData.set_scores,
+            home_wins: homeWins,
+            away_wins: awayWins,
+            status: nextSet + '세트'
+          });
+          
+          await match.update({ 
+            match_data: matchData,
+            status: nextSet + '세트'  // match.status도 함께 업데이트
+          });
+          
+          // 모든 클라이언트에 세트 변경 알림
+          const roomName = `match_${matchId}`;
+          io.to(roomName).emit('match_updated', {
+            matchId: matchId,
+            match_data: {
+              current_set: nextSet,
+              home_score: 0,
+              away_score: 0,
+              set_scores: matchData.set_scores,
+              home_wins: homeWins,
+              away_wins: awayWins
+            }
+          });
+          
+          console.log(`✅ 다음 세트로 변경: ${actualCurrentSet}세트 → ${nextSet}세트`);
+          console.log(`세트 점수 저장: 홈팀 ${homeScore}, 어웨이팀 ${awayScore}`);
+          console.log(`세트 승리: 홈팀 ${homeWins}승, 어웨이팀 ${awayWins}승`);
+        }
+      } else if (action === 'reset_match') {
+        // 경기 초기화 처리
+        console.log('🔍 경기 초기화 처리 시작:', matchId);
+        const match = await Match.findByPk(matchId);
+        if (match) {
+          const matchData = match.match_data || {};
+          
+          // 모든 데이터 초기화
+          matchData.current_set = 1;
+          matchData.home_score = 0;
+          matchData.away_score = 0;
+          matchData.set_scores = { home: {}, away: {} };
+          matchData.home_wins = 0;
+          matchData.away_wins = 0;
+          matchData.status = '1세트';
+          matchData.servingTeam = 'home'; // 기본 서브권은 홈팀
+          
+          console.log('🔍 초기화할 데이터:', matchData);
+          
+          await match.update({ 
+            match_data: matchData,
+            status: '1세트',
+            home_score: 0,
+            away_score: 0
+          });
+          
+          // 모든 클라이언트에 초기화 알림
+          const roomName = `match_${matchId}`;
+          io.to(roomName).emit('match_updated', {
+            matchId: matchId,
+            match_data: {
+              current_set: 1,
+              home_score: 0,
+              away_score: 0,
+              set_scores: { home: {}, away: {} },
+              home_wins: 0,
+              away_wins: 0,
+              servingTeam: 'home'
+            }
+          });
+          
+          console.log(`✅ 경기 초기화 완료: 1세트 0-0으로 리셋`);
+        }
+      } else if (action === 'set_format_change') {
+        // 세트 구성 변경 처리
+        console.log('🔍 세트제 변경 디버깅:');
+        console.log('matchId:', matchId);
+        console.log('data.setFormat:', data.setFormat);
+        
+        const match = await Match.findByPk(matchId);
+        if (match) {
+          const matchData = match.match_data || {};
+          console.log('기존 matchData:', matchData);
+          
+          matchData.setFormat = data.setFormat;
+          console.log('새로운 matchData:', matchData);
+          
+          await match.update({ match_data: matchData });
+          console.log('✅ 세트제 데이터베이스 저장 완료');
+          
+          // 저장 후 확인
+          const updatedMatch = await Match.findByPk(matchId);
+          console.log('저장 후 확인:', updatedMatch.match_data);
+          
+          // 모든 클라이언트에 세트 구성 변경 알림
+          const roomName = `match_${matchId}`;
+          io.to(roomName).emit('match_updated', {
+            matchId: matchId,
+            match_data: {
+              setFormat: data.setFormat
+            }
+          });
+          
+          console.log(`✅ 세트 구성 변경: ${data.setFormat}세트제`);
+        } else {
+          console.log('❌ 경기를 찾을 수 없음:', matchId);
+        }
+      } else if (action === 'navigate_to_set') {
+        // 세트 이동 처리
+        const match = await Match.findByPk(matchId);
+        if (match) {
+          const matchData = match.match_data || {};
+          const targetSet = data.targetSet;
+          const resetScores = data.resetScores;
+          
+          console.log(`✅ 세트 이동 요청: ${targetSet}세트, 점수 초기화: ${resetScores}`);
+          
+          // 현재 세트 변경
+          matchData.current_set = targetSet;
+          
+          // 점수 초기화 옵션에 따른 처리
+          if (resetScores) {
+            // 현재 세트 점수 초기화
+            matchData.home_score = 0;
+            matchData.away_score = 0;
+            
+            // 이후 세트들의 점수 초기화
+            if (!matchData.set_scores) {
+              matchData.set_scores = { home: {}, away: {} };
+            }
+            
+            for (let set = targetSet + 1; set <= 5; set++) {
+              matchData.set_scores.home[set] = 0;
+              matchData.set_scores.away[set] = 0;
+            }
+            
+            console.log(`✅ ${targetSet}세트 이후 점수 초기화 완료`);
+          }
+          
+          await match.update({ match_data: matchData });
+          
+          // 모든 클라이언트에 세트 이동 알림
+          const roomName = `match_${matchId}`;
+          io.to(roomName).emit('match_updated', {
+            matchId: matchId,
+            match_data: {
+              current_set: targetSet,
+              home_score: matchData.home_score,
+              away_score: matchData.away_score,
+              set_scores: matchData.set_scores
+            }
+          });
+          
+          console.log(`✅ 세트 이동 완료: ${targetSet}세트`);
+        }
+      }
+    } catch (error) {
+      console.error('❌ 배구 컨트롤 처리 오류:', error);
+    }
+  });
+  
   // 연결 해제
   socket.on('disconnect', () => {
     console.log('❌ 클라이언트 연결 해제:', socket.id);
@@ -568,6 +834,27 @@ app.delete('/api/matches/all', requireAuth, async (req, res) => {
 });
 
 // 일반적인 경기 목록 조회 API (나중에 등록)
+// GET /api/matches/:id - 개별 경기 조회
+app.get('/api/matches/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log(`[DEBUG] 개별 경기 조회 요청: ID=${id}`);
+    
+    const match = await Match.findByPk(id);
+    
+    if (!match) {
+      return res.status(404).json({ error: '경기를 찾을 수 없습니다.' });
+    }
+    
+    const username = req.session?.username || 'overlay';
+    console.log(`[DEBUG] 경기 조회 성공: ${id} (사용자: ${username})`);
+    res.json(match);
+  } catch (error) {
+    console.error('[DEBUG] 개별 경기 조회 실패:', error);
+    res.status(500).json({ error: '경기 조회 중 오류가 발생했습니다.' });
+  }
+});
+
 app.get('/api/matches', requireAuth, async (req, res) => {
   try {
     console.log('[DEBUG] 경기 목록 조회 요청 받음');
@@ -3550,6 +3837,14 @@ server.listen(PORT, async () => {
         code: 'BASEBALL',
         template: 'baseball',
         description: 'Baseball sport',
+        is_active: true,
+        is_default: true
+      },
+      {
+        name: 'Volleyball',
+        code: 'VOLLEYBALL',
+        template: 'volleyball',
+        description: 'Volleyball sport',
         is_active: true,
         is_default: true
       }
