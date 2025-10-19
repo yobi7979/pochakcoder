@@ -762,6 +762,40 @@
             console.error('=== Socket.IO 연결 오류 (오버레이) ===', error);
         });
 
+        // 야구 오버레이 페이지 재연결 이벤트 처리
+        socket.on('reconnect_attempt', (attemptNumber) => {
+            console.log(`🔄 야구 오버레이 페이지 소켓 재연결 시도 중... (${attemptNumber}번째)`);
+        });
+
+        socket.on('reconnect_error', (error) => {
+            console.error('❌ 야구 오버레이 페이지 소켓 재연결 실패:', error);
+        });
+
+        socket.on('reconnect_failed', () => {
+            console.error('❌ 야구 오버레이 페이지 소켓 재연결 완전 실패');
+        });
+
+        // 소켓 재연결 이벤트
+        socket.on('reconnect', (attemptNumber) => {
+            console.log(`🔄 야구 오버레이 페이지 소켓 재연결 성공 (시도 ${attemptNumber}번째)`);
+            
+            // 재연결 시 종목별 룸 재조인
+            if (window.matchData?.sport_type) {
+                console.log('🔧 야구 재연결 후 종목별 룸 재조인:', window.matchData.sport_type);
+                socket.emit('join_sport_room', window.matchData.sport_type);
+            }
+            
+            // 🔄 재연결 시 오버레이 페이지 자동 새로고침 (서버 리셋 후 컨트롤 페이지 내용 반영)
+            console.log('🔄 야구 재연결 감지 - 오버레이 페이지 자동 새로고침 실행');
+            console.log('🔄 새로고침 이유: 서버 재연결 후 컨트롤 페이지 내용 동기화');
+            
+            // DB 저장 완료를 위해 1초 지연 후 페이지 새로고침
+            setTimeout(() => {
+                console.log('🔄 1초 지연 후 야구 재연결 새로고침 실행');
+                location.reload();
+            }, 1000);
+        });
+
                 // match_update 이벤트 제거됨 - match_updated 이벤트로 통합
 
 // 경기 수정 이벤트
