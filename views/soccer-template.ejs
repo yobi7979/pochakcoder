@@ -2914,7 +2914,14 @@
                 updateTimerDisplay();
                 console.log('오버레이 로컬 타이머 즉시 업데이트:', timerState.currentSeconds);
                 
+                // 1초마다 반복 실행
                 localTimerInterval = setInterval(() => {
+                    console.log('오버레이 로컬 타이머 반복 실행:', {
+                        isRunning: timerState.isRunning,
+                        startTime: timerState.startTime,
+                        currentSeconds: timerState.currentSeconds
+                    });
+                    
                     if (timerState.isRunning) {
                         // startTime이 있으면 정확한 계산, 없으면 단순 증가
                         if (timerState.startTime) {
@@ -2927,13 +2934,18 @@
                         }
                         updateTimerDisplay();
                         console.log('오버레이 로컬 타이머 업데이트:', timerState.currentSeconds);
+                    } else {
+                        console.log('타이머가 실행 중이 아니므로 로컬 타이머 정지');
+                        clearInterval(localTimerInterval);
+                        localTimerInterval = null;
                     }
                 }, 1000);
                 
                 console.log('오버레이 로컬 타이머 시작됨:', {
                     startTime: timerState.startTime,
                     pausedTime: timerState.pausedTime,
-                    isRunning: timerState.isRunning
+                    isRunning: timerState.isRunning,
+                    intervalId: localTimerInterval
                 });
             } else {
                 console.log('타이머가 실행 중이 아니므로 로컬 타이머 시작하지 않음');
