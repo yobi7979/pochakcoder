@@ -2197,10 +2197,43 @@
 
         // 소켓 연결 실패 이벤트
         socket.on('connect_error', (error) => {
-            });
+            console.error('❌ 오버레이 페이지 소켓 연결 오류:', error);
+            updateConnectionStatus(false);
+        });
+
+        // 재연결 시도 이벤트
+        socket.on('reconnect_attempt', (attemptNumber) => {
+            console.log(`🔄 오버레이 페이지 소켓 재연결 시도 중... (${attemptNumber}번째)`);
+            updateConnectionStatus(false);
+        });
+
+        // 재연결 실패 이벤트
+        socket.on('reconnect_error', (error) => {
+            console.error('❌ 오버레이 페이지 소켓 재연결 실패:', error);
+            updateConnectionStatus(false);
+        });
+
+        // 재연결 완전 실패 이벤트
+        socket.on('reconnect_failed', () => {
+            console.error('❌ 오버레이 페이지 소켓 재연결 완전 실패');
+            updateConnectionStatus(false);
+        });
 
         // 소켓 재연결 이벤트
         socket.on('reconnect', (attemptNumber) => {
+            console.log(`🔄 오버레이 페이지 소켓 재연결 성공 (시도 ${attemptNumber}번째)`);
+            updateConnectionStatus(true);
+            
+            // 재연결 시 종목별 룸 재조인
+            if (window.matchData?.sport_type) {
+                console.log('🔧 재연결 후 종목별 룸 재조인:', window.matchData.sport_type);
+                socket.emit('join_sport_room', window.matchData.sport_type);
+            }
+            
+            // 재연결 시 타이머 상태 요청
+            console.log('🔧 재연결 후 타이머 상태 요청');
+            socket.emit('request_timer_state', { matchId: matchId });
+            socket.emit('request_timer_mode', { matchId: matchId });
         });
 
         socket.on('disconnect', () => {
