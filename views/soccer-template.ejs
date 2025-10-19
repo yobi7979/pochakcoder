@@ -3050,7 +3050,12 @@
                         startTime: timerState.startTime,
                         currentSeconds: timerState.currentSeconds
                     });
-                    startLocalTimer();
+                    try {
+                        startLocalTimer();
+                        console.log('✅ startLocalTimer() 호출 성공');
+                    } catch (error) {
+                        console.error('❌ startLocalTimer() 호출 실패:', error);
+                    }
                 } else {
                     stopLocalTimer();
                 }
@@ -4302,22 +4307,7 @@
             socket.emit('request_timer_state', { matchId: matchId });
         }
 
-        // 로컬 타이머 시작 (서버 직접 동기화)
-        function startLocalTimer() {
-            if (timerState.localTimer) {
-                clearInterval(timerState.localTimer);
-                timerState.localTimer = null;
-            }
-            
-            // 주기적 서버 요청 제거 - 서버 이벤트만 수신
-            // timerState.localTimer = setInterval(() => {
-            //     if (timerState.isRunning) {
-            //         socket.emit('request_timer_state', { matchId: matchId });
-            //         console.log('서버 타이머 상태 요청 (주기적):', matchId);
-            //     }
-            // }, 1000);
-            
-            }
+        // 중복 함수 제거됨 - 2885번째 줄의 함수 사용
         
                 // 로컬 타이머 중지
         function stopLocalTimer() {
