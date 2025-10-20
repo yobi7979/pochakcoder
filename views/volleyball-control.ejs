@@ -685,10 +685,10 @@
                                     <div class="d-flex flex-column">
                                         <button class="btn btn-success btn-sm mb-1" onclick="updateScore('home', 1)" style="width: 110px; height: 37px; font-size: 18px; display: flex; align-items: center; justify-content: center;">
                                             <i class="bi bi-plus"></i>
-                                        </button>
+                        </button>
                                         <button class="btn btn-danger btn-sm" onclick="updateScore('home', -1)" style="width: 110px; height: 37px; font-size: 18px; display: flex; align-items: center; justify-content: center;">
                                             <i class="bi bi-dash"></i>
-                                        </button>
+                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -713,18 +713,18 @@
                                 <div class="d-flex gap-2">
                                     <button class="btn btn-primary btn-sm" id="serveToggle" onclick="toggleServe()">
                                         <i class="bi bi-arrow-left-right"></i> 서브권 변경
-                                    </button>
+                        </button>
                                     <button class="btn btn-warning btn-sm" onclick="swapTeams()">
                                         <i class="bi bi-arrow-left-right"></i> 팀 위치 변경
-                                    </button>
+                        </button>
                                     <button class="btn btn-success btn-sm" onclick="nextSet()">
                                         <i class="bi bi-arrow-right"></i> 다음 세트
                                     </button>
                                 </div>
                             </div>
-                            
+                        
                             <!-- 어웨이팀 섹션 -->
-                            <div class="d-flex align-items-center">
+                        <div class="d-flex align-items-center">
                                 <div class="d-flex align-items-center">
                                     <div class="d-flex flex-column me-2">
                                         <button class="btn btn-success btn-sm mb-1" onclick="updateScore('away', 1)" style="width: 110px; height: 37px; font-size: 18px; display: flex; align-items: center; justify-content: center;">
@@ -732,17 +732,17 @@
                                         </button>
                                         <button class="btn btn-danger btn-sm" onclick="updateScore('away', -1)" style="width: 110px; height: 37px; font-size: 18px; display: flex; align-items: center; justify-content: center;">
                                             <i class="bi bi-dash"></i>
-                                        </button>
-                                    </div>
+                                </button>
+                        </div>
                                     <input type="number" id="away-score" class="score-input text-center" value="<%= match.away_score || 0 %>" readonly style="width: 62px; height: 50px; font-size: 22px; font-weight: bold;">
                                 </div>
                                 <span class="fw-bold ms-3" id="away-team-display" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;"><%= match.away_team %></span>
                             </div>
                             </div>
-                        </div>
                     </div>
                 </div>
-                
+            </div>
+
                 <!-- 세트 구성 선택 -->
                 <div class="row mb-3">
                     <div class="col-12">
@@ -842,16 +842,16 @@
                 </div>
                 
                 <!-- 세트 점수 저장 버튼 -->
-                <div class="text-center mt-3">
+            <div class="text-center mt-3">
                     <button class="btn btn-success" onclick="saveSetScores()">
                         <i class="bi bi-save"></i> 세트 점수 저장
-                    </button>
+                            </button>
                     <button class="btn btn-danger" onclick="resetMatch()">
                         <i class="bi bi-arrow-clockwise"></i> 초기화
                     </button>
                 </div>
+                        </div>
             </div>
-        </div>
             
         <!-- 홈팀 섹션 -->
         <div class="row">
@@ -1658,7 +1658,7 @@
             console.log('세트 점수 저장:', setScores);
             
             socket.emit('volleyball_control', {
-                matchId: matchId,
+                        matchId: matchId,
                 action: 'save_set_scores',
                 setScores: setScores,
                 setFormat: setFormat
@@ -1782,7 +1782,7 @@
                         previousInput.checked = true;
                     }
                     console.log('세트 구성 변경 취소됨');
-                    return;
+                return;
                 }
             }
             
@@ -1798,11 +1798,16 @@
                 action: 'set_format_change',
                 setFormat: setFormat
             });
+            console.log('🔍 소켓 연결 상태:', socket.connected);
+            console.log('🔍 소켓 ID:', socket.id);
+            
             socket.emit('volleyball_control', {
                 matchId: matchId,
                 action: 'set_format_change',
                 setFormat: setFormat
             });
+            
+            console.log('🔍 volleyball_control 이벤트 전송 완료');
             
             // 처리 완료 후 플래그 해제
             setTimeout(() => {
@@ -2153,34 +2158,34 @@
                 
                 // 서버에서 데이터를 받은 후 토글 이벤트 전송
                 socket.once('matchDataLoaded', function(matchData) {
-                    console.log('=== 서버에서 최신 데이터 수신 완료 ===');
-                    console.log('경기 데이터:', matchData);
+                        console.log('=== 서버에서 최신 데이터 수신 완료 ===');
+                        console.log('경기 데이터:', matchData);
                     // 배구는 득점 선수 입력이 없으므로 득점 관련 처리 제거
-                    
-                    // 최신 스코어 정보 추가
-                    if (matchData) {
-                        eventData.score = {
-                            home: matchData.home_score || 0,
-                            away: matchData.away_score || 0
-                        };
-                    }
-                    
+                        
+                        // 최신 스코어 정보 추가
+                        if (matchData) {
+                            eventData.score = {
+                                home: matchData.home_score || 0,
+                                away: matchData.away_score || 0
+                            };
+                        }
+                        
                     // 배구는 득점 선수 입력이 없으므로 득점 관련 코드 제거
-                    
-                    // 경기 상황 정보 추가
-                    if (matchData && matchData.status) {
-                        eventData.matchState = matchData.status;
-                        console.log('✅ 하단 스트립에 경기 상황 추가:', matchData.status);
-                    } else {
+                        
+                        // 경기 상황 정보 추가
+                        if (matchData && matchData.status) {
+                            eventData.matchState = matchData.status;
+                            console.log('✅ 하단 스트립에 경기 상황 추가:', matchData.status);
+                        } else {
                         eventData.matchState = '1세트';
                         console.log('✅ 하단 스트립에 기본 경기 상황 설정: 1세트');
-                    }
-                    
-                    console.log('하단 스트립과 함께 전송할 데이터:', eventData);
-                    
-                    // WebSocket 이벤트 전송
-                    socket.emit('toggleGraphic', eventData);
-                    console.log(`✅ 컨트롤: 그래픽 토글 이벤트 전송 완료: ${graphicType} = ${newState}`);
+                        }
+                        
+                        console.log('하단 스트립과 함께 전송할 데이터:', eventData);
+                        
+                        // WebSocket 이벤트 전송
+                        socket.emit('toggleGraphic', eventData);
+                        console.log(`✅ 컨트롤: 그래픽 토글 이벤트 전송 완료: ${graphicType} = ${newState}`);
                 });
                 return; // 여기서 함수 종료
             }
@@ -2389,12 +2394,12 @@
             
         // 세트 점수 자동 업데이트
         updateSetScoreFromCurrentScore();
-        
-        // 기존 방식과 동일하게 emitScoreUpdate 함수 사용
-        emitScoreUpdate();
-        
-        console.log(`${team}팀 점수 업데이트 완료: ${newScore}`);
-    }
+            
+            // 기존 방식과 동일하게 emitScoreUpdate 함수 사용
+            emitScoreUpdate();
+            
+            console.log(`${team}팀 점수 업데이트 완료: ${newScore}`);
+        }
 
     // 현재 세트 점수를 세트 점수 표에 자동 업데이트
     function updateSetScoreFromCurrentScore() {
@@ -3393,7 +3398,7 @@
                 document.getElementById('time-edit-container').style.display = 'none';
                 
                 console.log('시간 설정 완료:', `${minutes}:${seconds}`);
-                });
+            });
             }
             
             // 팀명 저장 버튼 이벤트 리스너
@@ -3618,7 +3623,7 @@
                 if (data.away_team) {
                     document.getElementById('away-team-name').value = data.away_team;
                     console.log('어웨이팀 이름 업데이트:', data.away_team);
-                }
+                    }
                 
                 // 서브권 표시 업데이트 (화살표로 표시)
                 if (data.match_data && data.match_data.servingTeam) {
