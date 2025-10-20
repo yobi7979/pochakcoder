@@ -350,11 +350,13 @@ io.on('connection', (socket) => {
           let homeWins = matchData.home_wins || 0;
           let awayWins = matchData.away_wins || 0;
           
-          // 현재 세트 승리 계산
-          if (homeScore > awayScore) {
-            homeWins++;
-          } else if (awayScore > homeScore) {
-            awayWins++;
+          // 현재 세트 승리 계산 (점수가 있는 경우만)
+          if (homeScore > 0 || awayScore > 0) {
+            if (homeScore > awayScore) {
+              homeWins++;
+            } else if (awayScore > homeScore) {
+              awayWins++;
+            }
           }
           
           console.log('🔍 세트 승리 계산:', { homeWins, awayWins, homeScore, awayScore });
@@ -394,13 +396,16 @@ io.on('connection', (socket) => {
           const roomName = `match_${matchId}`;
           io.to(roomName).emit('match_updated', {
             matchId: matchId,
+            home_score: homeWins,  // 토탈 세트 승리 수
+            away_score: awayWins,  // 토탈 세트 승리 수
             match_data: {
               current_set: nextSet,
-              home_score: 0,
-              away_score: 0,
+              home_score: 0,  // 현재 세트 점수 (다음 세트)
+              away_score: 0,  // 현재 세트 점수 (다음 세트)
               set_scores: matchData.set_scores,
               home_wins: homeWins,
-              away_wins: awayWins
+              away_wins: awayWins,
+              setFormat: matchData.setFormat
             }
           });
           
@@ -438,14 +443,17 @@ io.on('connection', (socket) => {
           const roomName = `match_${matchId}`;
           io.to(roomName).emit('match_updated', {
             matchId: matchId,
+            home_score: 0,  // 토탈 세트 승리 수
+            away_score: 0,  // 토탈 세트 승리 수
             match_data: {
               current_set: 1,
-              home_score: 0,
-              away_score: 0,
+              home_score: 0,  // 현재 세트 점수
+              away_score: 0,  // 현재 세트 점수
               set_scores: { home: {}, away: {} },
               home_wins: 0,
               away_wins: 0,
-              servingTeam: 'home'
+              servingTeam: 'home',
+              setFormat: matchData.setFormat
             }
           });
           
@@ -476,8 +484,16 @@ io.on('connection', (socket) => {
           const roomName = `match_${matchId}`;
           io.to(roomName).emit('match_updated', {
             matchId: matchId,
+            home_score: match.home_score,  // 토탈 세트 승리 수
+            away_score: match.away_score,  // 토탈 세트 승리 수
             match_data: {
-              setFormat: data.setFormat
+              setFormat: data.setFormat,
+              current_set: matchData.current_set,
+              home_score: matchData.home_score,
+              away_score: matchData.away_score,
+              set_scores: matchData.set_scores,
+              home_wins: matchData.home_wins,
+              away_wins: matchData.away_wins
             }
           });
           
@@ -541,11 +557,16 @@ io.on('connection', (socket) => {
           const roomName = `match_${matchId}`;
           io.to(roomName).emit('match_updated', {
             matchId: matchId,
+            home_score: homeWins,  // 토탈 세트 승리 수
+            away_score: awayWins,  // 토탈 세트 승리 수
             match_data: {
               set_scores: data.setScores,
               setFormat: data.setFormat,
               home_wins: homeWins,
-              away_wins: awayWins
+              away_wins: awayWins,
+              current_set: matchData.current_set,
+              home_score: matchData.home_score,
+              away_score: matchData.away_score
             }
           });
           
@@ -564,16 +585,21 @@ io.on('connection', (socket) => {
         if (match) {
           const matchData = match.match_data || {};
           
-          // 현재 세트 점수 업데이트
+          // 현재 세트 점수 업데이트 (match_data에만 저장)
           matchData.home_score = data.home_score;
           matchData.away_score = data.away_score;
           
+          // 토탈 세트 승리 수 계산 (기존 승리 수 유지)
+          let homeWins = matchData.home_wins || 0;
+          let awayWins = matchData.away_wins || 0;
+          
           console.log('새로운 matchData:', matchData);
+          console.log('토탈 세트 승리 수:', { homeWins, awayWins });
           
           await match.update({ 
             match_data: matchData,
-            home_score: data.home_score,  // 현재 세트 점수
-            away_score: data.away_score   // 현재 세트 점수
+            home_score: homeWins,  // 토탈 세트 승리 수
+            away_score: awayWins   // 토탈 세트 승리 수
           });
           console.log('✅ 현재 세트 점수 데이터베이스 저장 완료');
           
@@ -581,13 +607,16 @@ io.on('connection', (socket) => {
           const roomName = `match_${matchId}`;
           io.to(roomName).emit('match_updated', {
             matchId: matchId,
+            home_score: homeWins,  // 토탈 세트 승리 수
+            away_score: awayWins,  // 토탈 세트 승리 수
             match_data: {
-              home_score: data.home_score,
-              away_score: data.away_score
+              home_score: data.home_score,  // 현재 세트 점수
+              away_score: data.away_score   // 현재 세트 점수
             }
           });
           
           console.log(`✅ 현재 세트 점수 업데이트: ${data.home_score}-${data.away_score}`);
+          console.log(`✅ 토탈 세트 승리 수: ${homeWins}-${awayWins}`);
         } else {
           console.log('❌ 경기를 찾을 수 없음:', matchId);
         }

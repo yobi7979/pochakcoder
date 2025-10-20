@@ -1255,14 +1255,64 @@
             console.log('수신된 경기 데이터:', data);
             
             if (data) {
-                // 점수 정보 업데이트
-                if (data.home_score !== undefined) {
-                    document.getElementById('home-score').value = data.home_score;
-                    console.log('홈팀 점수 로드:', data.home_score);
+                // data.home_score와 data.away_score는 토탈 세트 승리 수
+                // data.match_data.home_score와 data.match_data.away_score는 현재 세트 점수
+                
+                // 현재 세트 점수 로드
+                if (data.match_data && data.match_data.home_score !== undefined) {
+                    document.getElementById('home-score').value = data.match_data.home_score;
+                    console.log('홈팀 현재 세트 점수 로드:', data.match_data.home_score);
                 }
-                if (data.away_score !== undefined) {
-                    document.getElementById('away-score').value = data.away_score;
-                    console.log('어웨이팀 점수 로드:', data.away_score);
+                if (data.match_data && data.match_data.away_score !== undefined) {
+                    document.getElementById('away-score').value = data.match_data.away_score;
+                    console.log('어웨이팀 현재 세트 점수 로드:', data.match_data.away_score);
+                }
+                
+                // 토탈 세트 승리 수 로드 (원형 표시)
+                if (data.home_score !== undefined || data.away_score !== undefined) {
+                    console.log('토탈 세트 승리 수 로드:', data.home_score, data.away_score);
+                    updateSetWinsFromServer(data.home_score || 0, data.away_score || 0);
+                }
+                
+                // 세트제 정보 복원
+                if (data.match_data && data.match_data.setFormat) {
+                    console.log('세트제 복원:', data.match_data.setFormat);
+                    setFormat = data.match_data.setFormat;
+                    
+                    // 세트제 라디오 버튼 설정
+                    const setFormatInput = document.querySelector(`input[name="setFormat"][value="${setFormat}"]`);
+                    if (setFormatInput) {
+                        setFormatInput.checked = true;
+                        console.log('세트제 라디오 버튼 설정:', setFormat + '세트제');
+                    }
+                    
+                    // UI 업데이트
+                    updateSetFormatUI();
+                }
+                
+                // 현재 세트 정보 복원
+                if (data.match_data && data.match_data.current_set) {
+                    console.log('현재 세트 복원:', data.match_data.current_set);
+                    updateCurrentSetDisplay(data.match_data.current_set);
+                }
+                
+                // 세트 점수 복원
+                if (data.match_data && data.match_data.set_scores) {
+                    console.log('세트 점수 복원:', data.match_data.set_scores);
+                    updateSetScoresFromServer(data.match_data.set_scores);
+                }
+                
+                // 서브권 복원
+                if (data.match_data && data.match_data.servingTeam) {
+                    console.log('서브권 복원:', data.match_data.servingTeam);
+                    const serveIndicator = document.getElementById('serve-indicator');
+                    if (serveIndicator) {
+                        if (data.match_data.servingTeam === 'home') {
+                            serveIndicator.textContent = '▶';
+                        } else if (data.match_data.servingTeam === 'away') {
+                            serveIndicator.textContent = '◀';
+                        }
+                    }
                 }
                 
                 // 팀명 정보 업데이트
@@ -3642,13 +3692,23 @@
             console.log('받은 데이터:', data);
             
             if (data.matchId === matchId) {
-                if (data.home_score !== undefined) {
-                    document.getElementById('home-score').value = data.home_score;
-                    console.log('홈팀 점수 업데이트:', data.home_score);
+                // data.home_score와 data.away_score는 토탈 세트 승리 수
+                // data.match_data.home_score와 data.match_data.away_score는 현재 세트 점수
+                
+                // 현재 세트 점수 업데이트
+                if (data.match_data && data.match_data.home_score !== undefined) {
+                    document.getElementById('home-score').value = data.match_data.home_score;
+                    console.log('홈팀 현재 세트 점수 업데이트:', data.match_data.home_score);
                 }
-                if (data.away_score !== undefined) {
-                    document.getElementById('away-score').value = data.away_score;
-                    console.log('어웨이팀 점수 업데이트:', data.away_score);
+                if (data.match_data && data.match_data.away_score !== undefined) {
+                    document.getElementById('away-score').value = data.match_data.away_score;
+                    console.log('어웨이팀 현재 세트 점수 업데이트:', data.match_data.away_score);
+                }
+                
+                // 토탈 세트 승리 수 업데이트 (원형 표시)
+                if (data.home_score !== undefined || data.away_score !== undefined) {
+                    console.log('토탈 세트 승리 수 업데이트:', data.home_score, data.away_score);
+                    updateSetWinsFromServer(data.home_score || 0, data.away_score || 0);
                 }
                 if (data.home_team) {
                     document.getElementById('home-team-name').value = data.home_team;

@@ -114,13 +114,7 @@
         .current-score {
             font-size: 1.8em;
             font-weight: bold;
-            color: #fff;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-            background: linear-gradient(45deg, #4ecdc4, #6ee7e7);
-            border-radius: 8px;
-            padding: 8px 16px;
-            min-width: 50px;
-            text-align: center;
+            color: #fff;            
         }
 
         /* 세트 정보 행 (하단) */
@@ -2886,22 +2880,14 @@
                     }
                 
                 
-                // 배구 스코어보드 점수 업데이트 (토탈 스코어는 하단 원형 표시로)
-                const stripHomeScore = document.getElementById('strip-home-score');
-                const stripAwayScore = document.getElementById('strip-away-score');
+                // 배구 스코어보드 점수 업데이트 (토탈 세트 승리 수는 원형 표시로)
+                // data.home_score와 data.away_score는 토탈 세트 승리 수
+                // data.match_data.home_score와 data.match_data.away_score는 현재 세트 점수
                 
-                if (data.home_score !== undefined) {
-                    // 하단 스트립 점수 업데이트 (토탈 스코어)
-                    if (stripHomeScore) {
-                        stripHomeScore.textContent = data.home_score;
-                    }
-                }
-                
-                if (data.away_score !== undefined) {
-                    // 하단 스트립 점수 업데이트 (토탈 스코어)
-                    if (stripAwayScore) {
-                        stripAwayScore.textContent = data.away_score;
-                    }
+                // 토탈 세트 승리 수 업데이트 (원형 표시)
+                if (data.home_score !== undefined || data.away_score !== undefined) {
+                    console.log('🔧 토탈 세트 승리 수 업데이트:', data.home_score, data.away_score);
+                    updateSetWinsCircles(data.home_score || 0, data.away_score || 0);
                 }
                 
                 // 서브권 업데이트
