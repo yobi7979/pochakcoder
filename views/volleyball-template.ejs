@@ -90,6 +90,38 @@
             font-weight: bold;
             gap: 5px;
         }
+        
+        .total-score-section, .current-score-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 10px;
+        }
+        
+        .total-score {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+            border-radius: 10px;
+            padding: 10px 20px;
+            margin-bottom: 5px;
+            min-width: 60px;
+            text-align: center;
+        }
+        
+        .current-score {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            background: linear-gradient(45deg, #4ecdc4, #6ee7e7);
+            border-radius: 8px;
+            padding: 8px 16px;
+            min-width: 50px;
+            text-align: center;
+        }
 
         /* 세트 정보 행 (하단) */
         .set-info-row {
@@ -1536,21 +1568,21 @@
 
         <!-- 배구 스코어보드 (2줄 구조) -->
         <div class="volleyball-scoreboard-container" id="volleyballScoreboard">
-            <!-- 상단: 팀명 | 점수 | ◀ | 점수 | 팀명 -->
+            <!-- 상단: 팀명 | 현재세트점수 | ◀ | 현재세트점수 | 팀명 -->
             <div class="main-scoreboard">
                 <div class="team-section home">
                     <div class="team-name"><%= match.home_team || 'HOME' %></div>
                 </div>
-                <div class="score-section">
-                    <span class="team-score"><%= match.home_score || 0 %></span>
+                <div class="current-score-section">
+                    <span class="current-score" id="home-current-score">0</span>
                 </div>
                 <div class="serve-section">
                     <div class="serve-indicator" id="serveIndicator">
                         <div class="serve-triangle home"></div>
                     </div>
                 </div>
-                <div class="score-section">
-                    <span class="team-score"><%= match.away_score || 0 %></span>
+                <div class="current-score-section">
+                    <span class="current-score" id="away-current-score">0</span>
                 </div>
                 <div class="team-section away">
                     <div class="team-name"><%= match.away_team || 'AWAY' %></div>
@@ -1564,6 +1596,8 @@
                         <div class="set-wins-circle home"></div>
                         <div class="set-wins-circle home"></div>
                         <div class="set-wins-circle home"></div>
+                        <div class="set-wins-circle home" style="display: none;"></div>
+                        <div class="set-wins-circle home" style="display: none;"></div>
                     </div>
                 </div>
                 <div class="set-info-section">
@@ -1574,6 +1608,8 @@
                         <div class="set-wins-circle away"></div>
                         <div class="set-wins-circle away"></div>
                         <div class="set-wins-circle away"></div>
+                        <div class="set-wins-circle away" style="display: none;"></div>
+                        <div class="set-wins-circle away" style="display: none;"></div>
                     </div>
                 </div>
             </div>
@@ -2083,6 +2119,58 @@
                             element.textContent = matchData.away_team;
                         });
                         console.log('🔧 어웨이팀명 업데이트:', matchData.away_team);
+                    }
+                    
+                    // 배구 데이터 복원
+                    if (matchData.match_data) {
+                        console.log('🔧 배구 데이터 복원 시작:', matchData.match_data);
+                        
+                        // 세트제 복원
+                        if (matchData.match_data.setFormat) {
+                            console.log('🔧 세트제 복원:', matchData.match_data.setFormat);
+                            updateSetFormatCircles(matchData.match_data.setFormat);
+                        }
+                        
+                        // 현재 세트 복원
+                        if (matchData.match_data.current_set) {
+                            console.log('🔧 현재 세트 복원:', matchData.match_data.current_set);
+                            updateCurrentSetDisplay(matchData.match_data.current_set);
+                        }
+                        
+                        // 세트 승리 복원
+                        if (matchData.match_data.home_wins !== undefined || matchData.match_data.away_wins !== undefined) {
+                            console.log('🔧 세트 승리 복원:', matchData.match_data.home_wins, matchData.match_data.away_wins);
+                            updateSetWinsCircles(matchData.match_data.home_wins || 0, matchData.match_data.away_wins || 0);
+                        }
+                        
+                        // 현재 세트 점수 복원
+                        if (matchData.match_data.home_score !== undefined && matchData.match_data.away_score !== undefined) {
+                            console.log('🔧 현재 세트 점수 복원:', matchData.match_data.home_score, matchData.match_data.away_score);
+                            
+                            const homeCurrentScore = document.getElementById('home-current-score');
+                            const awayCurrentScore = document.getElementById('away-current-score');
+                            
+                            if (homeCurrentScore) {
+                                homeCurrentScore.textContent = matchData.match_data.home_score;
+                            }
+                            if (awayCurrentScore) {
+                                awayCurrentScore.textContent = matchData.match_data.away_score;
+                            }
+                        }
+                        
+                        // 서브권 복원
+                        if (matchData.match_data.servingTeam) {
+                            console.log('🔧 서브권 복원:', matchData.match_data.servingTeam);
+                            updateServeIndicator(matchData.match_data.servingTeam);
+                        }
+                        
+                        // 세트 점수 복원
+                        if (matchData.match_data.set_scores) {
+                            console.log('🔧 세트 점수 복원:', matchData.match_data.set_scores);
+                            updateSetScoresDisplay(matchData.match_data.set_scores);
+                        }
+                        
+                        console.log('✅ 배구 데이터 복원 완료');
                     }
                 }
                 
@@ -2798,28 +2886,19 @@
                     }
                 
                 
-                // 배구 스코어보드 점수 업데이트
-                const homeScoreElements = document.querySelectorAll('.team-score');
+                // 배구 스코어보드 점수 업데이트 (토탈 스코어는 하단 원형 표시로)
                 const stripHomeScore = document.getElementById('strip-home-score');
                 const stripAwayScore = document.getElementById('strip-away-score');
                 
                 if (data.home_score !== undefined) {
-                    // 상단 스코어보드 점수 업데이트 (첫 번째 team-score는 홈팀)
-                    if (homeScoreElements.length > 0) {
-                        homeScoreElements[0].textContent = data.home_score;
-                    }
-                    // 하단 스트립 점수 업데이트
+                    // 하단 스트립 점수 업데이트 (토탈 스코어)
                     if (stripHomeScore) {
                         stripHomeScore.textContent = data.home_score;
                     }
                 }
                 
                 if (data.away_score !== undefined) {
-                    // 상단 스코어보드 점수 업데이트 (두 번째 team-score는 어웨이팀)
-                    if (homeScoreElements.length > 1) {
-                        homeScoreElements[1].textContent = data.away_score;
-                    }
-                    // 하단 스트립 점수 업데이트
+                    // 하단 스트립 점수 업데이트 (토탈 스코어)
                     if (stripAwayScore) {
                         stripAwayScore.textContent = data.away_score;
                     }
@@ -2845,10 +2924,34 @@
                     updateSetScoresDisplay(data.match_data.set_scores);
                 }
                 
-                // 세트 승리 업데이트
+                // 세트 승리 업데이트 (원형 표시)
                 if (data.match_data && (data.match_data.home_wins !== undefined || data.match_data.away_wins !== undefined)) {
                     console.log('🔧 세트 승리 업데이트 수신:', data.match_data.home_wins, data.match_data.away_wins);
-                    updateSetWinsDisplay(data.match_data.home_wins, data.match_data.away_wins);
+                    updateSetWinsCircles(data.match_data.home_wins, data.match_data.away_wins);
+                }
+                
+                // 세트제 변경 시 원형 표시 개수 조정
+                if (data.match_data && data.match_data.setFormat) {
+                    console.log('🔧 세트제 변경 수신:', data.match_data.setFormat);
+                    updateSetFormatCircles(data.match_data.setFormat);
+                }
+                
+                // 현재 세트 점수 업데이트
+                if (data.match_data && data.match_data.home_score !== undefined && data.match_data.away_score !== undefined) {
+                    console.log('🔧 현재 세트 점수 업데이트 수신:', data.match_data.home_score, data.match_data.away_score);
+                    
+                    // 현재 세트 점수 업데이트
+                    const homeCurrentScore = document.getElementById('home-current-score');
+                    const awayCurrentScore = document.getElementById('away-current-score');
+                    
+                    if (homeCurrentScore) {
+                        homeCurrentScore.textContent = data.match_data.home_score;
+                    }
+                    if (awayCurrentScore) {
+                        awayCurrentScore.textContent = data.match_data.away_score;
+                    }
+                    
+                    console.log('✅ 현재 세트 점수 업데이트 완료:', data.match_data.home_score, data.match_data.away_score);
                 }
             }
         });
@@ -2977,15 +3080,23 @@
 
         // 세트 득점 동그라미 업데이트
         function updateSetWinsCircles(homeWins, awayWins) {
+            console.log('=== updateSetWinsCircles 함수 호출 ===');
+            console.log('homeWins:', homeWins, 'awayWins:', awayWins);
+            
             const homeCircles = document.querySelectorAll('#home-set-wins-circles .set-wins-circle');
             const awayCircles = document.querySelectorAll('#away-set-wins-circles .set-wins-circle');
+            
+            console.log('홈팀 원형 개수:', homeCircles.length);
+            console.log('어웨이팀 원형 개수:', awayCircles.length);
             
             // 홈팀 세트 득점 업데이트
             homeCircles.forEach((circle, index) => {
                 if (index < homeWins) {
                     circle.classList.add('filled');
+                    console.log(`홈팀 ${index + 1}번째 원 채움`);
                 } else {
                     circle.classList.remove('filled');
+                    console.log(`홈팀 ${index + 1}번째 원 비움`);
                 }
             });
             
@@ -2993,10 +3104,39 @@
             awayCircles.forEach((circle, index) => {
                 if (index < awayWins) {
                     circle.classList.add('filled');
+                    console.log(`어웨이팀 ${index + 1}번째 원 채움`);
                 } else {
                     circle.classList.remove('filled');
+                    console.log(`어웨이팀 ${index + 1}번째 원 비움`);
                 }
             });
+            
+            console.log('✅ 세트 승리 원형 표시 업데이트 완료');
+        }
+        
+        // 세트제에 따른 원형 표시 개수 조정
+        function updateSetFormatCircles(setFormat) {
+            console.log('=== updateSetFormatCircles 함수 호출 ===');
+            console.log('setFormat:', setFormat);
+            
+            const homeCircles = document.querySelectorAll('#home-set-wins-circles .set-wins-circle');
+            const awayCircles = document.querySelectorAll('#away-set-wins-circles .set-wins-circle');
+            
+            // 모든 원을 숨김
+            homeCircles.forEach(circle => circle.style.display = 'none');
+            awayCircles.forEach(circle => circle.style.display = 'none');
+            
+            // 세트제에 따라 원 표시
+            for (let i = 0; i < setFormat; i++) {
+                if (homeCircles[i]) {
+                    homeCircles[i].style.display = 'inline-block';
+                }
+                if (awayCircles[i]) {
+                    awayCircles[i].style.display = 'inline-block';
+                }
+            }
+            
+            console.log(`✅ ${setFormat}세트제에 맞게 원형 표시 조정 완료`);
         }
         
         function updateSetScoresHistory(setScores) {
