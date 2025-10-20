@@ -673,6 +673,33 @@ io.on('connection', (socket) => {
       console.error('❌ 배구 컨트롤 처리 오류:', error);
     }
   });
+
+  // 초기 경기 데이터 로드 (컨트롤/오버레이 페이지 복원용)
+  socket.on('loadMatchData', async (payload) => {
+    try {
+      const { matchId } = payload || {};
+      if (!matchId) return;
+
+      const match = await Match.findByPk(matchId);
+      if (!match) return;
+
+      // 접속한 소켓에게만 초기 데이터 반환
+      socket.emit('matchDataLoaded', {
+        id: match.id,
+        sport_type: match.sport_type,
+        home_team: match.home_team,
+        away_team: match.away_team,
+        home_team_color: match.home_team_color,
+        away_team_color: match.away_team_color,
+        home_score: match.home_score, // 토탈 세트 승리 수
+        away_score: match.away_score, // 토탈 세트 승리 수
+        status: match.status,
+        match_data: match.match_data || {}
+      });
+    } catch (err) {
+      console.error('❌ loadMatchData 처리 오류:', err);
+    }
+  });
   
   // 연결 해제
   socket.on('disconnect', () => {

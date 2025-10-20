@@ -1456,33 +1456,34 @@
                 }
             }
             
-            // 토탈 점수 업데이트
+            // 토탈 점수 텍스트 UI 업데이트(참고용)
             document.getElementById('home-total').textContent = homeWins;
             document.getElementById('away-total').textContent = awayWins;
-            
             console.log(`세트 승리 업데이트: 홈팀 ${homeWins}승, 어웨이팀 ${awayWins}승`);
-            
-            // 서버에 세트 승리 정보 전송
+
+            // 1) 세트 점수와 포맷을 DB에 저장 (토탈 승수는 서버가 계산/반영)
             socket.emit('volleyball_control', {
                 matchId: matchId,
-                action: 'update_set_wins',
-                homeWins: homeWins,
-                awayWins: awayWins,
-                setScores: setScores
+                action: 'save_set_scores',
+                setScores: setScores,
+                setFormat: setFormat
             });
-            
-            // 현재 세트 점수 초기화 (다음 세트를 위해)
-            document.getElementById('home-score').value = 0;
-            document.getElementById('away-score').value = 0;
-            
-            // 경기 상황 업데이트
-            updateMatchState(nextSetNumber);
-            
-            // 서버에 다음 세트 요청
-            socket.emit('volleyball_control', { 
-                matchId: matchId, 
-                action: 'next_set' 
-            });
+
+            // 2) 약간의 지연 후 다음 세트로 전환 요청 (저장이 먼저 반영되도록)
+            setTimeout(() => {
+                // 현재 세트 점수 초기화 (다음 세트를 위해)
+                document.getElementById('home-score').value = 0;
+                document.getElementById('away-score').value = 0;
+
+                // 경기 상황 업데이트
+                updateMatchState(nextSetNumber);
+
+                // 서버에 다음 세트 요청
+                socket.emit('volleyball_control', { 
+                    matchId: matchId, 
+                    action: 'next_set' 
+                });
+            }, 200);
         }
 
         // 경기 초기화 함수 (전체 초기화)
@@ -1861,6 +1862,14 @@
             });
             
             console.log('🔍 volleyball_control 이벤트 전송 완료');
+            
+            // 포맷 변경이 DB에 확실히 반영되도록 현 setScores와 함께 저장도 수행
+            socket.emit('volleyball_control', {
+                matchId: matchId,
+                action: 'save_set_scores',
+                setScores: setScores,
+                setFormat: setFormat
+            });
             
             // 처리 완료 후 플래그 해제 (더 안전한 방법)
             setTimeout(() => {
