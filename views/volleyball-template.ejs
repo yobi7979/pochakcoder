@@ -4129,6 +4129,10 @@
                 // 3. UI 초기화
                 initializeOverlayUI();
                 
+                // 4. 새로고침 시 데이터 동기화를 위한 추가 로딩
+                console.log('🔧 새로고침 시 데이터 동기화 시작');
+                await refreshOverlayDataFromDB();
+                
                 console.log('🔧 오버레이 통합 초기화 완료');
             } catch (error) {
                 console.error('❌ 오버레이 초기화 실패:', error);
@@ -4180,6 +4184,83 @@
                 console.log('🔧 오버레이 UI 초기화 완료');
             } catch (error) {
                 console.error('❌ 오버레이 UI 초기화 실패:', error);
+            }
+        }
+
+        // 새로고침 시 오버레이 데이터 동기화 함수
+        async function refreshOverlayDataFromDB() {
+            try {
+                console.log('🔧 새로고침 시 오버레이 데이터 동기화 시작');
+                
+                // 1. REST API로 최신 경기 데이터 로드
+                const response = await fetch(`/api/matches/${matchId}`);
+                if (response.ok) {
+                    const matchData = await response.json();
+                    console.log('🔧 DB에서 최신 경기 데이터 로드 완료:', matchData);
+                    
+                    // 2. 현재 세트 점수 복원
+                    if (matchData.match_data && matchData.match_data.current_set) {
+                        const currentSet = matchData.match_data.current_set;
+                        const homeScore = matchData.match_data.home_score || 0;
+                        const awayScore = matchData.match_data.away_score || 0;
+                        
+                        // 상단 스코어보드 업데이트
+                        const homeScoreElement = document.querySelector('#home-score');
+                        const awayScoreElement = document.querySelector('#away-score');
+                        if (homeScoreElement) homeScoreElement.textContent = homeScore;
+                        if (awayScoreElement) awayScoreElement.textContent = awayScore;
+                        
+                        // 하단 스트립 스코어 업데이트
+                        updateBottomStripScore(homeScore, awayScore);
+                        
+                        console.log(`🔧 현재 세트 ${currentSet} 점수 복원: 홈팀 ${homeScore}, 어웨이팀 ${awayScore}`);
+                    }
+                    
+                    // 3. 매치 점수(세트 승리) 복원
+                    if (matchData.match_data && (matchData.match_data.home_wins !== undefined || matchData.match_data.away_wins !== undefined)) {
+                        const homeWins = matchData.match_data.home_wins || 0;
+                        const awayWins = matchData.match_data.away_wins || 0;
+                        
+                        // 세트 승리 표시 업데이트
+                        updateSetWinsDisplay(homeWins, awayWins);
+                        
+                        console.log('🔧 매치 점수(세트 승리) 복원 완료:', { homeWins, awayWins });
+                    }
+                    
+                    // 4. 팀 색상 복원
+                    if (matchData.home_team_color && matchData.away_team_color) {
+                        homeTeamColor = matchData.home_team_color;
+                        awayTeamColor = matchData.away_team_color;
+                        updateTeamColors(homeTeamColor, awayTeamColor);
+                        console.log('🔧 팀 색상 복원 완료:', { homeTeamColor, awayTeamColor });
+                    }
+                    
+                    // 5. 팀명 복원
+                    if (matchData.home_team) {
+                        const homeTeamElements = document.querySelectorAll('.team-section.home .team-name');
+                        homeTeamElements.forEach(el => el.textContent = matchData.home_team);
+                    }
+                    if (matchData.away_team) {
+                        const awayTeamElements = document.querySelectorAll('.team-section.away .team-name');
+                        awayTeamElements.forEach(el => el.textContent = matchData.away_team);
+                    }
+                    
+                    console.log('🔧 팀명 복원 완료');
+                    
+                    // 6. 세트제 복원
+                    if (matchData.match_data && matchData.match_data.setFormat) {
+                        const setFormat = parseInt(matchData.match_data.setFormat);
+                        updateSetFormatCircles(setFormat);
+                        console.log('🔧 세트제 복원 완료:', setFormat);
+                    }
+                    
+                } else {
+                    console.error('❌ DB에서 경기 데이터 로드 실패:', response.status);
+                }
+                
+                console.log('🔧 새로고침 시 오버레이 데이터 동기화 완료');
+            } catch (error) {
+                console.error('❌ 새로고침 시 오버레이 데이터 동기화 실패:', error);
             }
         }
 

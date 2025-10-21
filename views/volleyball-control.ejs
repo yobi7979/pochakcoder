@@ -1293,13 +1293,13 @@
                         setFormatInput.checked = true;
                         console.log('✅ 세트제 라디오 버튼 설정:', setFormat + '세트제');
                         console.log('🔍 라디오 버튼 체크 상태:', setFormatInput.checked);
-            } else {
+                        
+                        // UI 업데이트
+                        updateSetFormatUI();
+                        console.log('🔍 updateSetFormatUI 호출 완료');
+                    } else {
                         console.log('❌ 세트제 라디오 버튼을 찾을 수 없음:', setFormat);
                     }
-                    
-                    // UI 업데이트
-                    updateSetFormatUI();
-                    console.log('🔍 updateSetFormatUI 호출 완료');
                 } else {
                     console.log('⚠️ 세트제 정보가 없습니다. 기본값 유지:', setFormat);
                     console.log('🔍 data.match_data:', data.match_data);
@@ -1438,7 +1438,7 @@
                 };
             }
             
-            // 세트 점수 저장
+            // 세트 점수 저장 (현재 세트의 최종 점수)
             setScores.home[currentSetNumber] = homeScore;
             setScores.away[currentSetNumber] = awayScore;
             
@@ -1449,7 +1449,11 @@
             if (homeInput) homeInput.value = homeScore;
             if (awayInput) awayInput.value = awayScore;
             
+            // 세트 이동 시 매치 점수(세트 승리) 계산
+            updateSetWins();
+            
             console.log('다음 세트로 전송할 setScores:', setScores);
+            console.log(`세트 ${currentSetNumber} 완료 - 홈팀 ${homeScore}, 어웨이팀 ${awayScore}`);
             
             // 서버에 세트 점수 저장 및 다음 세트로 이동 요청
             socket.emit('volleyball_control', {
@@ -1516,7 +1520,7 @@
                 }
             }
             
-            // 합계 초기화
+            // 매치 점수(세트 승리) 초기화
             document.getElementById('home-total').textContent = 0;
             document.getElementById('away-total').textContent = 0;
             
@@ -1607,38 +1611,44 @@
             });
         }
 
-        // 세트 점수 업데이트
+        // 세트 점수 업데이트 (세트 점수만 업데이트, 매치 점수는 세트 이동 시에만 계산)
         function updateSetScore(input) {
             const team = input.getAttribute('data-team');
             const set = parseInt(input.getAttribute('data-set'));
             const score = parseInt(input.value) || 0;
             
             setScores[team][set] = score;
-            updateSetWins();
+            // updateSetWins(); // 제거됨 - 세트 이동 시에만 호출
+            console.log(`세트 ${set} ${team}팀 점수 수동 입력: ${score}`);
         }
 
         // updateTotals 함수 제거 - updateSetWins와 중복됨
 
-        // 세트 승리 계산 (단순화)
+        // 세트 승리 계산 (매치 점수) - 세트 이동 시에만 호출
         function updateSetWins() {
             let homeWins = 0;
             let awayWins = 0;
             
-            // 모든 세트의 승리 계산
+            // 모든 세트의 승리 계산 (세트 점수가 0이 아닌 세트만 계산)
             for (let set = 1; set <= 5; set++) {
                 const homeScore = setScores.home[set] || 0;
                 const awayScore = setScores.away[set] || 0;
                 
-                if (homeScore > awayScore) {
-                    homeWins++;
-                } else if (awayScore > homeScore) {
-                    awayWins++;
+                // 세트 점수가 모두 0이 아닌 경우에만 승리 계산
+                if (homeScore > 0 || awayScore > 0) {
+                    if (homeScore > awayScore) {
+                        homeWins++;
+                    } else if (awayScore > homeScore) {
+                        awayWins++;
+                    }
                 }
             }
             
-            // UI 업데이트
+            // UI 업데이트 (매치 점수 = 세트 승리 수)
             document.getElementById('home-total').textContent = homeWins;
             document.getElementById('away-total').textContent = awayWins;
+            
+            console.log('매치 점수 업데이트:', { homeWins, awayWins });
         }
 
         // 세트 점수 저장 (단순화)
@@ -1666,6 +1676,9 @@
             
             console.log('저장할 setScores:', setScores);
             
+            // 세트 점수 저장 시 매치 점수(세트 승리) 계산
+            updateSetWins();
+            
             socket.emit('volleyball_control', {
                 matchId: matchId,
                 action: 'save_set_scores',
@@ -1692,6 +1705,7 @@
                 input.value = 0;
             });
             
+            // 세트 점수 초기화 시 매치 점수(세트 승리) 계산
             updateSetWins();
             
             console.log('세트 점수 초기화 완료');
@@ -1995,6 +2009,91 @@
                 console.log('✅ 페이지별 특화 데이터 로드 완료');
             } catch (error) {
                 console.error('❌ 페이지별 특화 데이터 로드 실패:', error);
+            }
+        }
+
+        // 새로고침 시 DB에서 최신 데이터 동기화 함수
+        async function refreshDataFromDB() {
+            try {
+                console.log('=== 새로고침 시 DB 데이터 동기화 시작 ===');
+                
+                // 1. REST API로 최신 경기 데이터 로드
+                const response = await fetch(`/api/matches/${matchId}`);
+                if (response.ok) {
+                    const matchData = await response.json();
+                    console.log('✅ DB에서 최신 경기 데이터 로드 완료:', matchData);
+                    
+                    // 2. 현재 세트 점수 복원
+                    if (matchData.match_data && matchData.match_data.current_set) {
+                        const currentSet = matchData.match_data.current_set;
+                        const homeScore = matchData.match_data.home_score || 0;
+                        const awayScore = matchData.match_data.away_score || 0;
+                        
+                        // 현재 세트 점수 입력 필드 업데이트
+                        document.getElementById('home-score').value = homeScore;
+                        document.getElementById('away-score').value = awayScore;
+                        
+                        // 현재 세트 표시 업데이트
+                        updateCurrentSetDisplay(currentSet);
+                        
+                        console.log(`✅ 현재 세트 ${currentSet} 점수 복원: 홈팀 ${homeScore}, 어웨이팀 ${awayScore}`);
+                    }
+                    
+                    // 3. 세트 점수 표 복원
+                    if (matchData.match_data && matchData.match_data.set_scores) {
+                        updateSetScoresFromServer(matchData.match_data.set_scores);
+                        console.log('✅ 세트 점수 표 복원 완료');
+                    }
+                    
+                    // 4. 매치 점수(세트 승리) 복원
+                    if (matchData.match_data && (matchData.match_data.home_wins !== undefined || matchData.match_data.away_wins !== undefined)) {
+                        updateSetWinsFromServer(matchData.match_data.home_wins, matchData.match_data.away_wins);
+                        console.log('✅ 매치 점수(세트 승리) 복원 완료');
+                    }
+                    
+                    // 5. 세트제 복원
+                    if (matchData.match_data && matchData.match_data.setFormat) {
+                        setFormat = parseInt(matchData.match_data.setFormat);
+                        const setFormatInput = document.querySelector(`input[name="setFormat"][value="${setFormat}"]`);
+                        if (setFormatInput) {
+                            setFormatInput.checked = true;
+                            updateSetFormatUI();
+                        }
+                        console.log('✅ 세트제 복원 완료:', setFormat);
+                    }
+                    
+                    // 6. 서브권 복원
+                    if (matchData.match_data && matchData.match_data.servingTeam) {
+                        const serveIndicator = document.getElementById('serve-indicator');
+                        if (serveIndicator) {
+                            if (matchData.match_data.servingTeam === 'home') {
+                                serveIndicator.textContent = '▶';
+                            } else if (matchData.match_data.servingTeam === 'away') {
+                                serveIndicator.textContent = '◀';
+                            }
+                        }
+                        console.log('✅ 서브권 복원 완료:', matchData.match_data.servingTeam);
+                    }
+                    
+                    // 7. 경기 상황 복원
+                    if (matchData.status) {
+                        const currentStateBtn = document.querySelector(`[data-state="${matchData.status}"]`);
+                        if (currentStateBtn) {
+                            document.querySelectorAll('.match-state-btn').forEach(btn => {
+                                btn.classList.remove('active');
+                            });
+                            currentStateBtn.classList.add('active');
+                        }
+                        console.log('✅ 경기 상황 복원 완료:', matchData.status);
+                    }
+                    
+                } else {
+                    console.error('❌ DB에서 경기 데이터 로드 실패:', response.status);
+                }
+                
+                console.log('✅ 새로고침 시 DB 데이터 동기화 완료');
+            } catch (error) {
+                console.error('❌ 새로고침 시 DB 데이터 동기화 실패:', error);
             }
         }
 
@@ -2340,12 +2439,13 @@
                     if (setFormatInput) {
                         setFormatInput.checked = true;
                         console.log('✅ 세트제 라디오 버튼 설정:', setFormat + '세트제');
+                        
+                        // UI 업데이트
+                        updateSetFormatUI();
+                        console.log('🔍 updateSetFormatUI 호출 완료');
                     } else {
                         console.log('❌ 세트제 라디오 버튼을 찾을 수 없음:', setFormat);
                     }
-                    
-                    // UI 업데이트
-                    updateSetFormatUI();
                 } else {
                     console.log('ℹ️ 저장된 세트제 정보가 없습니다. 기본값: 3세트제');
                     console.log('현재 setFormat 전역 변수:', setFormat);
@@ -2447,7 +2547,7 @@
             console.log(`${team}팀 점수 업데이트 완료: ${newScore}`);
         }
 
-    // 현재 세트 점수를 세트 점수 표에 자동 업데이트
+    // 현재 세트 점수를 세트 점수 표에 자동 업데이트 (세트 점수만 업데이트)
     function updateSetScoreFromCurrentScore() {
         const currentSetDisplay = document.getElementById('current-set-display');
         const currentSet = currentSetDisplay ? currentSetDisplay.textContent : '1세트';
@@ -2456,7 +2556,7 @@
         const homeScore = parseInt(document.getElementById('home-score').value) || 0;
         const awayScore = parseInt(document.getElementById('away-score').value) || 0;
         
-        // 세트 점수 표에 현재 세트 점수 입력
+        // 세트 점수 표에 현재 세트 점수 입력 (세트 점수만 업데이트)
         const homeInput = document.querySelector(`input[data-team="home"][data-set="${currentSetNumber}"]`);
         const awayInput = document.querySelector(`input[data-team="away"][data-set="${currentSetNumber}"]`);
         
@@ -2469,8 +2569,8 @@
             setScores.away[currentSetNumber] = awayScore;
         }
         
-        // 세트 승리 자동 계산
-        updateSetWins();
+        // 매치 점수(세트 승리)는 세트 이동 시에만 계산하므로 여기서는 제거
+        // updateSetWins(); // 제거됨 - 세트 이동 시에만 호출
         
         console.log(`세트 ${currentSetNumber} 점수 업데이트: 홈팀 ${homeScore}, 어웨이팀 ${awayScore}`);
     }
@@ -3312,13 +3412,17 @@
             validateAndInitializeSetScores();
             
             // 1. WebSocket으로 모든 경기 데이터 로드 (우선순위)
-        loadMatchData();
+            loadMatchData();
             
             // 2. 페이지별 특화 데이터 로드 (REST API)
             await loadPageSpecificData();
             
             // 3. UI 초기화
             initializeUI();
+            
+            // 4. 새로고침 시 데이터 동기화를 위한 추가 로딩
+            console.log('=== 새로고침 시 데이터 동기화 시작 ===');
+            await refreshDataFromDB();
             
             // 팀명 저장 버튼 이벤트 리스너
             document.querySelectorAll('.save-team-name').forEach(button => {
