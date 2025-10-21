@@ -698,9 +698,7 @@ io.on('connection', (socket) => {
           console.log('🔍 세트 정보:', { currentSet, homeScore, awayScore, setFormat });
           
           // 세트 점수 저장
-          if (!matchData.set_scores) {
-            matchData.set_scores = { home: {}, away: {} };
-          }
+          matchData.set_scores = setScores;
           matchData.set_scores.home[currentSet] = homeScore;
           matchData.set_scores.away[currentSet] = awayScore;
           
