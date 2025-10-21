@@ -655,15 +655,23 @@ io.on('connection', (socket) => {
           matchData.set_scores.home[currentSet] = homeScore;
           matchData.set_scores.away[currentSet] = awayScore;
           
-          // 세트 승리 계산
-          let homeWins = matchData.home_wins || 0;
-          let awayWins = matchData.away_wins || 0;
+          // 세트 승리 계산 (모든 세트 기준으로 재계산)
+          let homeWins = 0;
+          let awayWins = 0;
           
-          if (homeScore > awayScore) {
-            homeWins++;
-          } else if (awayScore > homeScore) {
-            awayWins++;
+          // 모든 세트의 승리 계산
+          for (let set = 1; set <= 5; set++) {
+            const setHomeScore = matchData.set_scores.home[set] || 0;
+            const setAwayScore = matchData.set_scores.away[set] || 0;
+            
+            if (setHomeScore > setAwayScore) {
+              homeWins++;
+            } else if (setAwayScore > setHomeScore) {
+              awayWins++;
+            }
           }
+          
+          console.log('🔍 세트 승리 재계산:', { homeWins, awayWins, setScores: matchData.set_scores });
           
           // 다음 세트로 변경
           const nextSet = currentSet + 1;
