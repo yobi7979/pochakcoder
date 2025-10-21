@@ -1555,47 +1555,21 @@
         
         // 세트 이동 함수
         function navigateToSet(targetSet) {
-            console.log('=== 세트 이동 요청 ===');
-            console.log('이동할 세트:', targetSet);
-            
-            // 세트제에 따른 최대 세트 확인
             if (targetSet > setFormat) {
-                console.log(`세트제 제한: ${setFormat}세트제에서는 ${targetSet}세트로 이동할 수 없습니다.`);
                 alert(`${setFormat}세트제에서는 ${targetSet}세트로 이동할 수 없습니다.`);
                 return;
             }
             
-            // 현재 세트 확인
-            const currentSetDisplay = document.getElementById('current-set-display');
-            const currentSet = currentSetDisplay ? parseInt(currentSetDisplay.textContent.replace('세트', '')) : 1;
-            
-            console.log('현재 세트:', currentSet);
-            
-            // 같은 세트로 이동하는 경우 무시
-            if (targetSet === currentSet) {
-                console.log('이미 해당 세트입니다.');
+            if (!confirm(`${targetSet}세트로 이동하시겠습니까?`)) {
                 return;
             }
-            
-            // 세트 이동 확인 팝업
-            const confirmMessage = `${targetSet}세트로 이동하시겠습니까?`;
-            if (!confirm(confirmMessage)) {
-                console.log('세트 이동 취소됨');
-                return;
-            }
-            
-            // 점수 초기화 옵션 확인
-            const resetMessage = `${targetSet}세트 이후의 점수를 초기화하시겠습니까?\n\n예: ${targetSet}세트까지만 점수 유지, 이후 세트는 0으로 초기화\n아니오: 세트만 이동, 기존 점수는 모두 유지`;
-            const shouldResetScores = confirm(resetMessage);
-            
-            console.log('점수 초기화 여부:', shouldResetScores);
             
             // 서버에 세트 이동 요청
             socket.emit('volleyball_control', {
                 matchId: matchId,
                 action: 'navigate_to_set',
                 targetSet: targetSet,
-                resetScores: shouldResetScores
+                resetScores: true
             });
         }
 
@@ -1611,47 +1585,36 @@
 
         // updateTotals 함수 제거 - updateSetWins와 중복됨
 
-        // 세트 승리 계산 및 업데이트 (단순화)
+        // 세트 승리 계산 (단순화)
         function updateSetWins() {
             let homeWins = 0;
             let awayWins = 0;
             
-            // 현재 세트까지의 승리만 계산
-            const currentSetDisplay = document.getElementById('current-set-display');
-            const currentSet = currentSetDisplay ? parseInt(currentSetDisplay.textContent.replace('세트', '')) : 1;
-            
-            for (let set = 1; set <= currentSet; set++) {
+            // 모든 세트의 승리 계산
+            for (let set = 1; set <= 5; set++) {
                 const homeScore = setScores.home[set] || 0;
                 const awayScore = setScores.away[set] || 0;
                 
-                // 세트가 진행된 경우만 승리 계산 (단순 비교)
-                if (homeScore > 0 || awayScore > 0) {
-                    if (homeScore > awayScore) {
-                        homeWins++;
-                    } else if (awayScore > homeScore) {
-                        awayWins++;
-                    }
+                if (homeScore > awayScore) {
+                    homeWins++;
+                } else if (awayScore > homeScore) {
+                    awayWins++;
                 }
             }
             
             // UI 업데이트
             document.getElementById('home-total').textContent = homeWins;
             document.getElementById('away-total').textContent = awayWins;
-            
-            // 세트 승리 계산 완료
         }
 
-        // 세트 점수 저장
+        // 세트 점수 저장 (단순화)
         function saveSetScores() {
-            console.log('세트 점수 저장:', setScores);
-            
             socket.emit('volleyball_control', {
-                        matchId: matchId,
+                matchId: matchId,
                 action: 'save_set_scores',
                 setScores: setScores,
                 setFormat: setFormat
             });
-            
             alert('세트 점수가 저장되었습니다.');
         }
 
@@ -1739,78 +1702,32 @@
             });
         }
         
-        // 세트 구성 변경 처리 함수
+        // 세트 구성 변경 처리 함수 (단순화)
         function handleSetFormatChange(newFormat) {
-            console.log('=== handleSetFormatChange 함수 호출 ===');
-            console.log('새로운 포맷:', newFormat);
-            console.log('현재 setFormat:', setFormat);
-            
-            // 중복 처리 방지 (더 관대한 조건)
-            if (isProcessingFormatChange) {
-                console.log('이미 처리 중이므로 무시');
-                return;
-            }
-            
-            // 동일한 포맷으로 변경 시 무시
             if (setFormat === newFormat) {
-                console.log('동일한 세트제로 변경 시도, 무시');
                 return;
             }
             
-            // 플래그 설정 (서버 응답 대기)
-            isProcessingFormatChange = true;
-            console.log('🔍 세트제 변경 처리 시작, 플래그 설정됨');
-            
-            // 이전 선택값을 전역 변수에서 가져오기
-            const oldFormat = setFormat;
-            
-            console.log('세트 구성 변경 감지:', oldFormat, '→', newFormat);
-            console.log('현재 setFormat 전역 변수:', setFormat);
-            
-            // 5세트제에서 3세트제로 변경 시 경고문
-            if (oldFormat === 5 && newFormat === 3) {
-                console.log('5세트제에서 3세트제로 변경 경고문 표시');
+            // 5세트제에서 3세트제로 변경 시 경고
+            if (setFormat === 5 && newFormat === 3) {
                 if (!confirm('5세트제에서 3세트제로 변경하면 4세트, 5세트 정보가 사라집니다. 계속하시겠습니까?')) {
-                    // 취소 시 이전 선택으로 되돌리기
-                    const previousInput = document.querySelector(`input[name="setFormat"][value="${oldFormat}"]`);
+                    const previousInput = document.querySelector(`input[name="setFormat"][value="${setFormat}"]`);
                     if (previousInput) {
                         previousInput.checked = true;
                     }
-                    console.log('세트 구성 변경 취소됨');
-                    // 플래그 해제
-                    isProcessingFormatChange = false;
-                return;
+                    return;
                 }
             }
             
             setFormat = newFormat;
-            console.log('세트 구성 변경:', setFormat + '세트제');
-            
-            // UI 업데이트
             updateSetFormatUI();
             
             // 서버에 세트 구성 변경 알림
-            console.log('🔍 서버에 세트 구성 변경 전송:', {
-                matchId: matchId,
-                action: 'set_format_change',
-                setFormat: setFormat
-            });
-            console.log('🔍 소켓 연결 상태:', socket.connected);
-            console.log('🔍 소켓 ID:', socket.id);
-            
             socket.emit('volleyball_control', {
                 matchId: matchId,
                 action: 'set_format_change',
-                setFormat: parseInt(setFormat)  // 명시적으로 정수로 변환
+                setFormat: parseInt(setFormat)
             });
-            
-            console.log('🔍 volleyball_control 이벤트 전송 완료');
-            
-            // 포맷 변경만 수행 (중복 저장 방지)
-            console.log('🔍 세트제 변경만 수행, 중복 저장 방지');
-            
-            // 서버 응답 후 플래그 해제 (match_updated 이벤트 수신 시)
-            // 플래그는 match_updated 이벤트 수신 시 해제됨
         }
 
         // 세트 구성에 따른 UI 업데이트
