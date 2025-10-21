@@ -335,31 +335,41 @@ io.on('connection', (socket) => {
           
           const nextSet = actualCurrentSet + 1;
           
-          // 현재 세트 점수를 세트 점수에 저장
+          // 현재 세트 점수를 세트 점수에 저장 (이미 save_set_scores에서 저장되었을 수 있음)
           const homeScore = matchData.home_score || 0;
           const awayScore = matchData.away_score || 0;
           
-          // 세트 점수 저장
+          // 세트 점수 저장 (이미 저장되지 않은 경우만)
           if (!matchData.set_scores) {
             matchData.set_scores = { home: {}, away: {} };
           }
-          matchData.set_scores.home[actualCurrentSet] = homeScore;
-          matchData.set_scores.away[actualCurrentSet] = awayScore;
+          
+          // 현재 세트 점수가 아직 저장되지 않은 경우에만 저장
+          if (matchData.set_scores.home[actualCurrentSet] === undefined) {
+            matchData.set_scores.home[actualCurrentSet] = homeScore;
+            matchData.set_scores.away[actualCurrentSet] = awayScore;
+            console.log(`🔍 세트 ${actualCurrentSet} 점수 저장: 홈팀 ${homeScore}, 어웨이팀 ${awayScore}`);
+          } else {
+            console.log(`🔍 세트 ${actualCurrentSet} 점수는 이미 저장됨: 홈팀 ${matchData.set_scores.home[actualCurrentSet]}, 어웨이팀 ${matchData.set_scores.away[actualCurrentSet]}`);
+          }
           
           // 세트 승리 계산 (기존 승리 수 유지)
           let homeWins = matchData.home_wins || 0;
           let awayWins = matchData.away_wins || 0;
           
-          // 현재 세트 승리 계산 (점수가 있는 경우만)
-          if (homeScore > 0 || awayScore > 0) {
-            if (homeScore > awayScore) {
+          // 현재 세트 승리 계산 (저장된 세트 점수 기반)
+          const savedHomeScore = matchData.set_scores.home[actualCurrentSet] || 0;
+          const savedAwayScore = matchData.set_scores.away[actualCurrentSet] || 0;
+          
+          if (savedHomeScore > 0 || savedAwayScore > 0) {
+            if (savedHomeScore > savedAwayScore) {
               homeWins++;
-            } else if (awayScore > homeScore) {
+            } else if (savedAwayScore > savedHomeScore) {
               awayWins++;
             }
           }
           
-          console.log('🔍 세트 승리 계산:', { homeWins, awayWins, homeScore, awayScore });
+          console.log('🔍 세트 승리 계산:', { homeWins, awayWins, savedHomeScore, savedAwayScore });
           
           // 다음 세트로 변경
           matchData.current_set = nextSet;
