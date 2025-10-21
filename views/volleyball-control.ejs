@@ -1283,8 +1283,9 @@
                 
                 if (data.match_data && data.match_data.setFormat) {
                     console.log('✅ 세트제 복원:', data.match_data.setFormat);
-                    setFormat = data.match_data.setFormat;
-                    console.log('🔍 setFormat 전역 변수 업데이트 후:', setFormat);
+                    console.log('🔍 복원된 setFormat 타입:', typeof data.match_data.setFormat);
+                    setFormat = parseInt(data.match_data.setFormat);  // 명시적으로 정수로 변환
+                    console.log('🔍 setFormat 전역 변수 업데이트 후:', setFormat, typeof setFormat);
                     
                     // 세트제 라디오 버튼 설정
                     const setFormatInput = document.querySelector(`input[name="setFormat"][value="${setFormat}"]`);
@@ -1825,7 +1826,7 @@
             socket.emit('volleyball_control', {
                 matchId: matchId,
                 action: 'set_format_change',
-                setFormat: setFormat
+                setFormat: parseInt(setFormat)  // 명시적으로 정수로 변환
             });
             
             console.log('🔍 volleyball_control 이벤트 전송 완료');
@@ -2361,7 +2362,8 @@
                 
                 if (matchData && matchData.match_data && matchData.match_data.setFormat) {
                     console.log('✅ 저장된 세트제 복원:', matchData.match_data.setFormat);
-                    setFormat = matchData.match_data.setFormat;
+                    console.log('🔍 저장된 setFormat 타입:', typeof matchData.match_data.setFormat);
+                    setFormat = parseInt(matchData.match_data.setFormat);  // 명시적으로 정수로 변환
                     
                     // 세트제 라디오 버튼 설정
                     const setFormatInput = document.querySelector(`input[name="setFormat"][value="${setFormat}"]`);

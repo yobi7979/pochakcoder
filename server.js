@@ -464,14 +464,17 @@ io.on('connection', (socket) => {
         console.log('🔍 세트제 변경 디버깅:');
         console.log('matchId:', matchId);
         console.log('data.setFormat:', data.setFormat);
+        console.log('data.setFormat 타입:', typeof data.setFormat);
         
         const match = await Match.findByPk(matchId);
         if (match) {
           const matchData = match.match_data || {};
           console.log('기존 matchData:', matchData);
           
-          matchData.setFormat = data.setFormat;
+          // 명시적으로 정수로 변환하여 저장
+          matchData.setFormat = parseInt(data.setFormat);
           console.log('새로운 matchData:', matchData);
+          console.log('저장할 setFormat:', matchData.setFormat, typeof matchData.setFormat);
           
           await match.update({ match_data: matchData });
           console.log('✅ 세트제 데이터베이스 저장 완료');
