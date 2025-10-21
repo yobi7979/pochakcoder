@@ -4386,19 +4386,31 @@
             }
         }
         
-        // 현재 세트 표시 업데이트 함수
+        // 현재 세트 표시 업데이트 함수 (모든 UI 업데이트 포함)
         function updateCurrentSetDisplay(currentSet) {
             console.log('=== updateCurrentSetDisplay 함수 호출 ===');
             console.log('currentSet:', currentSet);
             
+            // 1. 현재 세트 표시 업데이트
             const currentSetDisplay = document.getElementById('current-set-display');
             if (currentSetDisplay) {
                 currentSetDisplay.textContent = currentSet + '세트';
                 console.log('현재 세트 표시 업데이트:', currentSet + '세트');
             }
             
-            // 세트 네비게이션 버튼 상태 업데이트
+            // 2. 세트 네비게이션 버튼 상태 업데이트
             updateSetNavigationButtons(currentSet);
+            
+            // 3. 현재 세트의 점수 표시 업데이트
+            updateCurrentSetScores(currentSet);
+            
+            // 4. 세트 승리 계산 업데이트
+            updateSetWins();
+            
+            // 5. 경기 상황 업데이트 (서버에 전송)
+            updateMatchState(currentSet + '세트');
+            
+            console.log('✅ 모든 UI 업데이트 완료');
         }
         
         // 세트 네비게이션 버튼 상태 업데이트
@@ -4424,6 +4436,29 @@
             console.log('세트 네비게이션 버튼 상태 업데이트 완료');
         }
         
+        // 현재 세트의 점수 표시 업데이트
+        function updateCurrentSetScores(currentSet) {
+            console.log('=== updateCurrentSetScores 함수 호출 ===');
+            console.log('currentSet:', currentSet);
+            
+            // 현재 세트의 점수를 세트 점수 표에서 가져와서 현재 점수 표시에 반영
+            const homeScore = setScores.home[currentSet] || 0;
+            const awayScore = setScores.away[currentSet] || 0;
+            
+            // 현재 세트 점수 입력 필드 업데이트
+            const homeScoreInput = document.getElementById('home-score');
+            const awayScoreInput = document.getElementById('away-score');
+            
+            if (homeScoreInput) {
+                homeScoreInput.value = homeScore;
+            }
+            if (awayScoreInput) {
+                awayScoreInput.value = awayScore;
+            }
+            
+            console.log(`현재 세트 ${currentSet} 점수 업데이트: 홈팀 ${homeScore}, 어웨이팀 ${awayScore}`);
+        }
+
         // 세트 승리 업데이트 함수 (서버에서 받은 값으로 UI만 업데이트)
         function updateSetWinsFromServer(homeWins, awayWins) {
             document.getElementById('home-total').textContent = homeWins || 0;

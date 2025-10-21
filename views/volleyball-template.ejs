@@ -2996,16 +2996,30 @@
             if (awayWinsElement) awayWinsElement.textContent = awayWins;
         }
         
-        // 현재 세트 표시 업데이트 함수
+        // 현재 세트 표시 업데이트 함수 (오버레이 페이지용)
         function updateCurrentSetDisplay(currentSet) {
-            console.log('=== updateCurrentSetDisplay 함수 호출 ===');
+            console.log('=== updateCurrentSetDisplay 함수 호출 (오버레이) ===');
             console.log('currentSet:', currentSet);
             
+            // 1. 현재 세트 표시 업데이트
             const currentSetElement = document.getElementById('current-set');
             if (currentSetElement) {
                 currentSetElement.textContent = currentSet + '세트';
                 console.log('현재 세트 표시 업데이트:', currentSet + '세트');
             }
+            
+            // 2. 현재 세트 점수 초기화 (새 세트 시작 시)
+            const homeCurrentScore = document.getElementById('home-current-score');
+            const awayCurrentScore = document.getElementById('away-current-score');
+            
+            if (homeCurrentScore) {
+                homeCurrentScore.textContent = '0';
+            }
+            if (awayCurrentScore) {
+                awayCurrentScore.textContent = '0';
+            }
+            
+            console.log('✅ 오버레이 세트 변경 UI 업데이트 완료');
         }
         
         // 세트 점수 표시 업데이트 함수
