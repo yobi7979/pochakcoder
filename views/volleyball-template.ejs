@@ -4115,28 +4115,57 @@
             }
         }
 
-        // 단일 DOMContentLoaded 이벤트 리스너
-        document.addEventListener('DOMContentLoaded', async function() {
-            
+        // 통합된 오버레이 초기화 함수
+        async function initializeOverlay() {
             try {
+                console.log('🔧 오버레이 통합 초기화 시작');
                 
-                // 초기 로고 로드 (팀 색상 적용 전에 먼저 실행)
-                await loadInitialLogos();
-                
-                // 로고 표시 상태 로드 및 적용
-                loadAndApplyLogoDisplayStates();
-                
-                // 팀로고 표시 모드 상태 로드 및 적용
-                await loadAndApplyLogoDisplayMode();
-                
-                // 초기 팀 컬러 로드 (DB에서 가져오기)
+                // 1. 경기 데이터 로드 (REST API 우선)
                 await reloadAllDataFromDB();
                 
-                // 팀 색상 적용 (DB에서 로드된 값으로)
+                // 2. 오버레이 전용 데이터 로드
+                await loadOverlaySpecificData();
+                
+                // 3. UI 초기화
+                initializeOverlayUI();
+                
+                console.log('🔧 오버레이 통합 초기화 완료');
+            } catch (error) {
+                console.error('❌ 오버레이 초기화 실패:', error);
+            }
+        }
+
+        // 오버레이 전용 데이터 로드 함수
+        async function loadOverlaySpecificData() {
+            try {
+                console.log('🔧 오버레이 전용 데이터 로드 시작');
+                
+                // 오버레이 페이지 전용 데이터만 로드
+                await Promise.all([
+                    loadInitialLogos(),                    // 팀로고
+                    loadOverlayImage(),                   // 오버레이 이미지
+                    loadAndApplyLogoDisplayStates(),      // 로고 표시 상태
+                    loadAndApplyLogoDisplayMode()         // 로고 표시 모드
+                ]);
+                
+                console.log('🔧 오버레이 전용 데이터 로드 완료');
+            } catch (error) {
+                console.error('❌ 오버레이 전용 데이터 로드 실패:', error);
+            }
+        }
+
+        // 오버레이 UI 초기화 함수
+        function initializeOverlayUI() {
+            try {
+                console.log('🔧 오버레이 UI 초기화 시작');
+                
+                // 팀 색상 적용
                 if (homeTeamColor && awayTeamColor) {
                     updateTeamColors(homeTeamColor, awayTeamColor);
                     console.log('🔧 초기 팀 컬러 적용 완료:', { homeTeamColor, awayTeamColor });
                 }
+                
+                // 팀명 폰트 크기 조정
                 document.querySelectorAll('.team-name').forEach(function(el) {
                     if (el.textContent.trim().length >= 8) {
                         el.classList.add('small-font');
@@ -4145,33 +4174,18 @@
                     }
                 });
                 
-                // 팀로고 사용 상태 불러오기 및 적용
-                await loadTeamLogoVisibility();
-                
-                // 팀로고 표시 모드 상태 불러오기 및 적용
-                await loadTeamLogoDisplayMode();
-                
-                // 배구는 승부차기가 없으므로 승부차기 관련 코드 제거
-                
-                // 타이머 초기화
-                const matchData = {
-                    currentSeconds: Math.max(0, <%= match.match_data?.currentSeconds || match.match_data?.timer || 0 %>),
-                    isRunning: <%= match.match_data?.isRunning || false %>
-                };
-                syncTimerWithMatch(matchData);
-                
-                // 서버에 타이머 상태 요청
-                requestTimerStateFromServer(matchId);
-                
-                // 오버레이 이미지 로드
-                await loadOverlayImage();
-                
-                // 하단 스트립 초기 스코어 설정
+                // 하단 스트립 초기화
                 initializeBottomStripScore();
                 
+                console.log('🔧 오버레이 UI 초기화 완료');
             } catch (error) {
-                console.error('초기화 중 오류가 발생했습니다:', error);
+                console.error('❌ 오버레이 UI 초기화 실패:', error);
             }
+        }
+
+        // 단일 DOMContentLoaded 이벤트 리스너
+        document.addEventListener('DOMContentLoaded', async function() {
+            await initializeOverlay();
         });
 
         // 서버로부터 팀 색상 변경 이벤트 수신 (teamColorChanged)

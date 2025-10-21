@@ -2008,6 +2008,50 @@
         // 배구는 타이머가 없으므로 시간 수정 관련 함수 제거됨
         
 
+        // 통합된 페이지별 특화 데이터 로드 함수
+        async function loadPageSpecificData() {
+            try {
+                console.log('=== 페이지별 특화 데이터 로드 시작 ===');
+                
+                // 컨트롤 페이지 전용 데이터만 로드
+                await Promise.all([
+                    loadTournamentText(),      // 대회명
+                    loadLineupData(),          // 라인업 데이터
+                    loadTeamLogoInfo(),        // 팀로고 정보
+                    loadCurrentMatchState()    // 경기 상황
+                ]);
+                
+                console.log('✅ 페이지별 특화 데이터 로드 완료');
+            } catch (error) {
+                console.error('❌ 페이지별 특화 데이터 로드 실패:', error);
+            }
+        }
+
+        // 통합된 UI 초기화 함수
+        function initializeUI() {
+            try {
+                console.log('=== UI 초기화 시작 ===');
+                
+                // 세트제 초기 설정
+                if (!setFormat || setFormat === 0) {
+                    setFormat = 3; // 기본값: 3세트제
+                    console.log('세트제 정보 없음, 기본값 설정:', setFormat);
+                }
+                
+                // 이벤트 리스너 설정
+                setupSetScoreListeners();
+                setupSetNavigationListeners();
+                setupSetFormatListeners();
+                
+                // UI 업데이트
+                updateSetFormatUI();
+                
+                console.log('✅ UI 초기화 완료');
+            } catch (error) {
+                console.error('❌ UI 초기화 실패:', error);
+            }
+        }
+
         // 경기 데이터 로드 함수 (WebSocket 방식)
         function loadMatchData() {
             try {
@@ -3289,82 +3333,17 @@
             document.getElementById('mobile-url').value = `${baseUrl}/${sportCode}/${matchId}/control-mobile`;
             document.getElementById('overlay-url').value = `${baseUrl}/${sportCode}/${matchId}/overlay`;
             
-            // 팀로고 정보 로드 (DB에서)
-            await loadTeamLogoInfo();
+            // 통합된 초기 데이터 로딩 (WebSocket 우선)
+            console.log('=== 통합된 초기 데이터 로딩 시작 ===');
             
-            // 현재 경기 상황 로드 및 버튼 상태 설정
-            await loadCurrentMatchState();
-            
-            // 배구는 타이머가 없으므로 타이머 관련 요청 제거
-            
-        // 페이지 로드 시 타이머 상태 복원 (백업 폴더의 예전 방식 - 서버타이머와 완전 독립)
-        console.log('=== 페이지 로드 시 타이머 상태 복원 (독립 모드) ===');
-        
-        // 배구는 타이머가 없으므로 타이머 관련 모든 코드 제거
-        
-        // 배구는 타이머가 없으므로 타이머 관련 요청들 제거
-            
-        // 배구는 타이머가 없으므로 타이머 관련 소켓 이벤트들 제거
-
-        // 페이지 로드 시 경기 데이터 로드
+            // 1. WebSocket으로 모든 경기 데이터 로드 (우선순위)
         loadMatchData();
-        
-        // 배구 세트제 초기 확인 및 설정
-        console.log('=== 배구 세트제 초기 확인 ===');
-        console.log('현재 setFormat:', setFormat);
-        
-        // 세트제 정보가 없으면 기본값 설정
-        if (!setFormat || setFormat === 0) {
-            setFormat = 3; // 기본값: 3세트제
-            console.log('세트제 정보 없음, 기본값 설정:', setFormat);
-        }
-        
-        // 세트제 UI 즉시 업데이트
-        updateSetFormatUI();
             
-            // 배구는 승부차기가 없으므로 승부차기 관련 코드 제거
+            // 2. 페이지별 특화 데이터 로드 (REST API)
+            await loadPageSpecificData();
             
-            // 페이지 로드 시 대회명 로드
-            console.log('=== 페이지 로드 시 대회명 로드 호출 ===');
-            loadTournamentText();
-            
-            // 배구는 득점 선수 입력이 없으므로 득점 관련 코드 제거
-            
-            // 배구는 득점 선수 입력이 없으므로 득점 관련 리스트 초기화 제거
-            
-            // 페이지 로드 시 라인업 데이터 로드
-            console.log('=== 페이지 로드 시 라인업 데이터 로드 ===');
-            loadLineupData();
-            
-            // 페이지 로드 시 세트 점수 관련 초기화
-            console.log('=== 페이지 로드 시 세트 점수 초기화 ===');
-            setupSetScoreListeners();
-            setupSetNavigationListeners();
-            setupSetFormatListeners();
-            loadSetScores();
-            
-            // 초기 UI 설정
-            console.log('=== 페이지 로드 시 초기 UI 설정 ===');
-            console.log('현재 setFormat:', setFormat);
-            updateSetFormatUI();
-            
-            // 추가로 DOM이 완전히 로드된 후에도 한 번 더 실행
-            setTimeout(() => {
-                console.log('=== DOM 로드 후 UI 재설정 ===');
-                updateSetFormatUI();
-            }, 500);
-            
-            // 팀로고 정보는 이미 위에서 로드했으므로 중복 호출 제거
-            
-        // 페이지 로드 시 타이머 모드 상태는 서버에서 받아옴 (request_timer_mode 이벤트로 처리)
-            
-            // 페이지 로드 시 팀로고 사용 상태 로드 (먼저 실행)
-            await loadTeamLogoVisibility();
-            
-            // 페이지 로드 시 팀로고 표시 모드 상태 로드 (나중에 실행)
-            await loadTeamLogoDisplayMode();
-            
-            // 배구는 타이머가 없으므로 타이머 관련 코드 제거됨
+            // 3. UI 초기화
+            initializeUI();
             
             // 팀명 저장 버튼 이벤트 리스너
             document.querySelectorAll('.save-team-name').forEach(button => {
