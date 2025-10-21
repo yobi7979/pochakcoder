@@ -1769,7 +1769,7 @@
             console.log('새로운 포맷:', newFormat);
             console.log('현재 setFormat:', setFormat);
             
-            // 중복 처리 방지
+            // 중복 처리 방지 (더 관대한 조건)
             if (isProcessingFormatChange) {
                 console.log('이미 처리 중이므로 무시');
                 return;
@@ -1781,8 +1781,9 @@
                 return;
             }
             
+            // 플래그 설정 (서버 응답 대기)
             isProcessingFormatChange = true;
-            console.log('🔍 isProcessingFormatChange 플래그 설정됨');
+            console.log('🔍 세트제 변경 처리 시작, 플래그 설정됨');
             
             // 이전 선택값을 전역 변수에서 가져오기
             const oldFormat = setFormat;
@@ -1832,19 +1833,8 @@
             // 포맷 변경만 수행 (중복 저장 방지)
             console.log('🔍 세트제 변경만 수행, 중복 저장 방지');
             
-            // 처리 완료 후 플래그 해제 (더 안전한 방법)
-            setTimeout(() => {
-                isProcessingFormatChange = false;
-                console.log('🔍 isProcessingFormatChange 플래그 해제됨');
-            }, 500);
-            
-            // 추가 안전장치: 1초 후 강제 해제
-            setTimeout(() => {
-                if (isProcessingFormatChange) {
-                    isProcessingFormatChange = false;
-                    console.log('🔍 강제 플래그 해제됨');
-                }
-            }, 1000);
+            // 서버 응답 후 플래그 해제 (match_updated 이벤트 수신 시)
+            // 플래그는 match_updated 이벤트 수신 시 해제됨
         }
 
         // 세트 구성에 따른 UI 업데이트
@@ -3639,6 +3629,15 @@
                 if (data.match_data && (data.match_data.home_wins !== undefined || data.match_data.away_wins !== undefined)) {
                     console.log('세트 승리 업데이트:', data.match_data.home_wins, data.match_data.away_wins);
                     updateSetWinsFromServer(data.match_data.home_wins, data.match_data.away_wins);
+                }
+                
+                // 세트제 변경 시 플래그 해제
+                if (data.match_data && data.match_data.setFormat) {
+                    console.log('세트제 변경 수신:', data.match_data.setFormat);
+                    if (isProcessingFormatChange) {
+                        isProcessingFormatChange = false;
+                        console.log('🔍 세트제 변경 완료, 플래그 해제됨');
+                    }
                 }
                 
                 // 경기 초기화 처리
