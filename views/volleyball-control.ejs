@@ -1249,80 +1249,47 @@
         
         // 배구는 득점 선수 입력이 없으므로 득점 관련 소켓 이벤트 제거
         
-        // 경기 데이터 로드 응답 이벤트
+        // 경기 데이터 로드 응답 이벤트 (최적화된 버전)
         socket.on('matchDataLoaded', function(data) {
-            console.log('=== 서버에서 경기 데이터 수신 ===');
+            console.log('=== 서버에서 경기 데이터 수신 (최적화) ===');
             console.log('수신된 경기 데이터:', data);
-            console.log('🔍 setFormat 확인:', data.match_data?.setFormat);
-            console.log('🔍 현재 전역 setFormat:', setFormat);
             
             if (data) {
-                // data.home_score와 data.away_score는 토탈 세트 승리 수
-                // data.match_data.home_score와 data.match_data.away_score는 현재 세트 점수
-                
-                // 현재 세트 점수 로드
+                // 현재 세트 점수만 업데이트 (중복 제거)
                 if (data.match_data && data.match_data.home_score !== undefined) {
                     document.getElementById('home-score').value = data.match_data.home_score;
-                    console.log('홈팀 현재 세트 점수 로드:', data.match_data.home_score);
                 }
                 if (data.match_data && data.match_data.away_score !== undefined) {
                     document.getElementById('away-score').value = data.match_data.away_score;
-                    console.log('어웨이팀 현재 세트 점수 로드:', data.match_data.away_score);
                 }
                 
-                // 토탈 세트 승리 수 로드 (원형 표시)
+                // 토탈 세트 승리 수만 업데이트 (중복 제거)
                 if (data.home_score !== undefined || data.away_score !== undefined) {
-                    console.log('토탈 세트 승리 수 로드:', data.home_score, data.away_score);
                     updateSetWinsFromServer(data.home_score || 0, data.away_score || 0);
                 }
                 
-                // 세트제 정보 복원 (강화된 로직)
-                console.log('=== 세트제 복원 확인 ===');
-                console.log('data.match_data:', data.match_data);
-                console.log('data.match_data.setFormat:', data.match_data?.setFormat);
-                
-                if (data.match_data && data.match_data.setFormat) {
-                    console.log('✅ 세트제 복원:', data.match_data.setFormat);
-                    console.log('🔍 복원된 setFormat 타입:', typeof data.match_data.setFormat);
-                    setFormat = parseInt(data.match_data.setFormat);  // 명시적으로 정수로 변환
-                    console.log('🔍 setFormat 전역 변수 업데이트 후:', setFormat, typeof setFormat);
-                    
-                    // 세트제 라디오 버튼 설정
+                // 세트제 정보는 이미 로딩되었으므로 중복 처리 제거
+                if (data.match_data && data.match_data.setFormat && data.match_data.setFormat !== setFormat) {
+                    setFormat = parseInt(data.match_data.setFormat);
                     const setFormatInput = document.querySelector(`input[name="setFormat"][value="${setFormat}"]`);
                     if (setFormatInput) {
                         setFormatInput.checked = true;
-                        console.log('✅ 세트제 라디오 버튼 설정:', setFormat + '세트제');
-                        console.log('🔍 라디오 버튼 체크 상태:', setFormatInput.checked);
-                        
-                        // UI 업데이트
                         updateSetFormatUI();
-                        console.log('🔍 updateSetFormatUI 호출 완료');
-                    } else {
-                        console.log('❌ 세트제 라디오 버튼을 찾을 수 없음:', setFormat);
                     }
-                } else {
-                    console.log('⚠️ 세트제 정보가 없습니다. 기본값 유지:', setFormat);
-                    console.log('🔍 data.match_data:', data.match_data);
-                    console.log('🔍 data.match_data.setFormat:', data.match_data?.setFormat);
-                    // 기본값으로 UI 업데이트
-                    updateSetFormatUI();
                 }
                 
-                // 현재 세트 정보 복원
+                // 현재 세트 정보만 업데이트 (중복 제거)
                 if (data.match_data && data.match_data.current_set) {
-                    console.log('현재 세트 복원:', data.match_data.current_set);
                     updateCurrentSetDisplay(data.match_data.current_set);
                 }
                 
-                // 세트 점수 복원
+                // 세트 점수는 이미 로딩되었으므로 중복 처리 제거
                 if (data.match_data && data.match_data.set_scores) {
-                    console.log('세트 점수 복원:', data.match_data.set_scores);
                     updateSetScoresFromServer(data.match_data.set_scores);
                 }
                 
-                // 서브권 복원
+                // 서브권만 업데이트 (중복 제거)
                 if (data.match_data && data.match_data.servingTeam) {
-                    console.log('서브권 복원:', data.match_data.servingTeam);
                     const serveIndicator = document.getElementById('serve-indicator');
                     if (serveIndicator) {
                         if (data.match_data.servingTeam === 'home') {
@@ -1333,27 +1300,7 @@
                     }
                 }
                 
-                // 팀명 정보 업데이트
-                if (data.home_team) {
-                    document.getElementById('home-team-name').value = data.home_team;
-                    console.log('홈팀 이름 로드:', data.home_team);
-                }
-                if (data.away_team) {
-                    document.getElementById('away-team-name').value = data.away_team;
-                    console.log('어웨이팀 이름 로드:', data.away_team);
-                }
-                
-                // 팀 컬러 정보 업데이트
-                if (data.home_team_color) {
-                    document.getElementById('home-team-color').value = data.home_team_color;
-                    console.log('홈팀 컬러 로드:', data.home_team_color);
-                }
-                if (data.away_team_color) {
-                    document.getElementById('away-team-color').value = data.away_team_color;
-                    console.log('어웨이팀 컬러 로드:', data.away_team_color);
-                }
-                
-                console.log('✅ 경기 데이터 UI 업데이트 완료');
+                console.log('✅ 경기 데이터 UI 업데이트 완료 (최적화)');
             } else {
                 console.log('경기 데이터가 없습니다.');
             }
@@ -1651,33 +1598,38 @@
             console.log('매치 점수 업데이트:', { homeWins, awayWins });
         }
 
-        // 세트 점수 저장 (단순화)
+        // 세트 점수 저장 (개선된 버전)
         function saveSetScores() {
-            // setScores 데이터 검증 및 초기화
-            if (!setScores || !setScores.home || !setScores.away) {
-                console.log('setScores 초기화 필요');
-                setScores = {
-                    home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
-                    away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
-                };
+            console.log('=== 세트 점수 저장 시작 ===');
+            
+            // 현재 세트 점수 표에서 데이터 수집
+            const currentSetScores = {
+                home: {},
+                away: {}
+            };
+            
+            // 세트 점수 표에서 현재 입력된 값들을 수집
+            for (let set = 1; set <= 5; set++) {
+                const homeInput = document.querySelector(`input[data-team="home"][data-set="${set}"]`);
+                const awayInput = document.querySelector(`input[data-team="away"][data-set="${set}"]`);
+                
+                if (homeInput) {
+                    currentSetScores.home[set] = parseInt(homeInput.value) || 0;
+                }
+                if (awayInput) {
+                    currentSetScores.away[set] = parseInt(awayInput.value) || 0;
+                }
             }
             
-            // 빈 객체 체크 및 기본값 설정
-            Object.keys(setScores.home).forEach(set => {
-                if (setScores.home[set] === undefined || setScores.home[set] === null) {
-                    setScores.home[set] = 0;
-                }
-            });
-            Object.keys(setScores.away).forEach(set => {
-                if (setScores.away[set] === undefined || setScores.away[set] === null) {
-                    setScores.away[set] = 0;
-                }
-            });
+            console.log('수집된 세트 점수:', currentSetScores);
             
-            console.log('저장할 setScores:', setScores);
+            // setScores 업데이트
+            setScores = currentSetScores;
             
             // 세트 점수 저장 시 매치 점수(세트 승리) 계산
             updateSetWins();
+            
+            console.log('저장할 setScores:', setScores);
             
             socket.emit('volleyball_control', {
                 matchId: matchId,
@@ -1685,6 +1637,8 @@
                 setScores: setScores,
                 setFormat: setFormat
             });
+            
+            console.log('✅ 세트 점수 저장 요청 전송 완료');
             alert('세트 점수가 저장되었습니다.');
         }
 
@@ -1923,9 +1877,9 @@
             });
         }
 
-        // 세트 데이터 업데이트 (서버에서 받은 데이터로 UI 업데이트)
+        // 세트 데이터 업데이트 (서버에서 받은 데이터로 UI 업데이트) - 수정된 버전
         function updateSetScoresFromServer(data) {
-            console.log('=== updateSetScoresFromServer 함수 호출 ===');
+            console.log('=== updateSetScoresFromServer 함수 호출 (수정된 버전) ===');
             console.log('받은 데이터:', data);
             
             if (data && (data.home || data.away)) {
@@ -1941,7 +1895,7 @@
                 return;
             }
             
-            // setScores 데이터 검증 및 초기화
+            // setScores 데이터 검증 및 초기화 (저장된 데이터가 있는 경우에만)
             if (!setScores || !setScores.home || !setScores.away) {
                 console.log('setScores 초기화 필요');
                 setScores = {
@@ -1950,13 +1904,20 @@
                 };
             }
             
-            // 빈 객체 체크 및 기본값 설정
+            // 빈 객체 체크 및 기본값 설정 (저장된 데이터가 있는 경우에만)
             for (let set = 1; set <= 5; set++) {
+                // 저장된 데이터가 있는 경우에만 기본값 설정
                 if (setScores.home[set] === undefined || setScores.home[set] === null) {
-                    setScores.home[set] = 0;
+                    // DB에서 로드된 데이터가 없는 경우에만 0으로 설정
+                    if (Object.keys(data).length === 0 || (data.home && Object.keys(data.home).length === 0)) {
+                        setScores.home[set] = 0;
+                    }
                 }
                 if (setScores.away[set] === undefined || setScores.away[set] === null) {
-                    setScores.away[set] = 0;
+                    // DB에서 로드된 데이터가 없는 경우에만 0으로 설정
+                    if (Object.keys(data).length === 0 || (data.away && Object.keys(data.away).length === 0)) {
+                        setScores.away[set] = 0;
+                    }
                 }
             }
             
@@ -3420,9 +3381,9 @@
             // 3. UI 초기화
             initializeUI();
             
-            // 4. 새로고침 시 데이터 동기화를 위한 추가 로딩
-            console.log('=== 새로고침 시 데이터 동기화 시작 ===');
-            await refreshDataFromDB();
+            // 4. 새로고침 시 데이터 동기화는 실제 새로고침 시에만 실행
+            // 초기 로딩 시에는 WebSocket과 REST API로 이미 충분히 로딩됨
+            console.log('=== 초기 로딩 완료 - 새로고침 시 동기화는 실제 새로고침 시에만 실행 ===');
             
             // 팀명 저장 버튼 이벤트 리스너
             document.querySelectorAll('.save-team-name').forEach(button => {
