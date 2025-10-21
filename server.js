@@ -634,6 +634,82 @@ io.on('connection', (socket) => {
         } else {
           console.log('❌ 경기를 찾을 수 없음:', matchId);
         }
+      } else if (action === 'next_set_simple') {
+        // 단순한 다음 세트 처리
+        console.log('🔍 단순한 다음 세트 처리:', matchId);
+        const match = await Match.findByPk(matchId);
+        if (match) {
+          const matchData = match.match_data || {};
+          const currentSet = data.currentSet;
+          const homeScore = data.homeScore;
+          const awayScore = data.awayScore;
+          const setScores = data.setScores;
+          const setFormat = data.setFormat;
+          
+          console.log('🔍 세트 정보:', { currentSet, homeScore, awayScore, setFormat });
+          
+          // 세트 점수 저장
+          if (!matchData.set_scores) {
+            matchData.set_scores = { home: {}, away: {} };
+          }
+          matchData.set_scores.home[currentSet] = homeScore;
+          matchData.set_scores.away[currentSet] = awayScore;
+          
+          // 세트 승리 계산
+          let homeWins = matchData.home_wins || 0;
+          let awayWins = matchData.away_wins || 0;
+          
+          if (homeScore > awayScore) {
+            homeWins++;
+          } else if (awayScore > homeScore) {
+            awayWins++;
+          }
+          
+          // 다음 세트로 변경
+          const nextSet = currentSet + 1;
+          matchData.current_set = nextSet;
+          matchData.home_score = 0;  // 현재 세트 점수 초기화
+          matchData.away_score = 0;  // 현재 세트 점수 초기화
+          matchData.home_wins = homeWins;
+          matchData.away_wins = awayWins;
+          matchData.setFormat = setFormat;
+          matchData.status = nextSet + '세트';
+          
+          console.log('🔍 저장할 데이터:', {
+            current_set: nextSet,
+            home_wins: homeWins,
+            away_wins: awayWins,
+            set_scores: matchData.set_scores
+          });
+          
+          await match.update({ 
+            match_data: matchData,
+            status: nextSet + '세트',
+            home_score: homeWins,  // 토탈 세트 승리 수
+            away_score: awayWins   // 토탈 세트 승리 수
+          });
+          
+          // 모든 클라이언트에 업데이트 알림
+          const roomName = `match_${matchId}`;
+          io.to(roomName).emit('match_updated', {
+            matchId: matchId,
+            home_score: homeWins,  // 토탈 세트 승리 수
+            away_score: awayWins,  // 토탈 세트 승리 수
+            match_data: {
+              current_set: nextSet,
+              home_score: 0,  // 현재 세트 점수 (초기화됨)
+              away_score: 0,  // 현재 세트 점수 (초기화됨)
+              set_scores: matchData.set_scores,
+              home_wins: homeWins,
+              away_wins: awayWins,
+              setFormat: setFormat
+            }
+          });
+          
+          console.log(`✅ 다음 세트로 이동 완료: ${nextSet}세트, 토탈: ${homeWins}-${awayWins}`);
+        } else {
+          console.log('❌ 경기를 찾을 수 없음:', matchId);
+        }
       } else if (action === 'navigate_to_set') {
         // 세트 이동 처리
         const match = await Match.findByPk(matchId);

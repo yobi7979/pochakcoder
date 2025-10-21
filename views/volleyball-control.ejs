@@ -1410,73 +1410,48 @@
         function nextSet() {
             console.log('다음 세트 요청');
             
-            // 현재 세트 확인 및 다음 세트로 자동 변경
+            // 현재 세트 확인
             const currentSetDisplay = document.getElementById('current-set-display');
             const currentSet = currentSetDisplay ? currentSetDisplay.textContent : '1세트';
-            
-            let nextSetNumber;
             const currentSetNumber = parseInt(currentSet.replace('세트', ''));
             
             // 세트제에 따른 최대 세트 확인
-            const maxSets = setFormat; // 3세트제 또는 5세트제
+            const maxSets = setFormat;
             
             if (currentSetNumber >= maxSets) {
-                // 최대 세트에 도달한 경우 경고 메시지
                 alert(`${maxSets}세트제에서는 ${maxSets}세트가 마지막입니다.\n경기 종료를 원하시면 "경기종료" 버튼을 클릭하세요.`);
-                console.log(`최대 세트(${maxSets}세트)에 도달했습니다. 경기종료 버튼을 사용하세요.`);
                 return;
-            } else {
-                // 다음 세트로 진행
-                nextSetNumber = (currentSetNumber + 1) + '세트';
             }
             
-            console.log('다음 세트로 변경:', currentSet, '→', nextSetNumber);
-            
-            // 현재 세트의 점수를 세트 점수 표에 자동 입력
+            // 현재 세트의 점수 가져오기
             const homeScore = parseInt(document.getElementById('home-score').value) || 0;
             const awayScore = parseInt(document.getElementById('away-score').value) || 0;
             
-            // 세트 점수 표에 현재 세트 점수 입력
+            console.log(`세트 ${currentSetNumber} 점수: 홈팀 ${homeScore}, 어웨이팀 ${awayScore}`);
+            
+            // 세트 점수 저장
+            setScores.home[currentSetNumber] = homeScore;
+            setScores.away[currentSetNumber] = awayScore;
+            
+            // 세트 점수 표에 입력
             const homeInput = document.querySelector(`input[data-team="home"][data-set="${currentSetNumber}"]`);
             const awayInput = document.querySelector(`input[data-team="away"][data-set="${currentSetNumber}"]`);
             
-            if (homeInput) {
-                homeInput.value = homeScore;
-                setScores.home[currentSetNumber] = homeScore;
-            }
-            if (awayInput) {
-                awayInput.value = awayScore;
-                setScores.away[currentSetNumber] = awayScore;
-            }
+            if (homeInput) homeInput.value = homeScore;
+            if (awayInput) awayInput.value = awayScore;
             
-            console.log(`세트 ${currentSetNumber} 점수 저장: 홈팀 ${homeScore}, 어웨이팀 ${awayScore}`);
-
-            // 1) 세트 점수와 포맷을 DB에 저장 (토탈 승수는 서버가 계산/반영)
+            // 서버에 세트 점수 저장 및 다음 세트로 이동 요청
             socket.emit('volleyball_control', {
                 matchId: matchId,
-                action: 'save_set_scores',
+                action: 'next_set_simple',
+                currentSet: currentSetNumber,
+                homeScore: homeScore,
+                awayScore: awayScore,
                 setScores: setScores,
                 setFormat: setFormat
             });
-
-            // 2) 약간의 지연 후 다음 세트로 전환 요청
-            setTimeout(() => {
-                // 현재 세트 점수 초기화 (다음 세트를 위해)
-                document.getElementById('home-score').value = 0;
-                document.getElementById('away-score').value = 0;
-
-                // 다음 세트로 전환
-                const nextSetNumber = (currentSetNumber + 1) + '세트';
-                updateMatchState(nextSetNumber);
-
-                // 서버에 다음 세트 요청
-                socket.emit('volleyball_control', { 
-                matchId: matchId,
-                    action: 'next_set' 
-                });
-                
-                console.log(`다음 세트로 전환: ${currentSet} → ${nextSetNumber}`);
-            }, 200);
+            
+            console.log(`다음 세트로 이동: ${currentSet} → ${currentSetNumber + 1}세트`);
         }
 
         // 경기 초기화 함수 (전체 초기화)
