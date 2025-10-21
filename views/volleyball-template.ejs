@@ -2884,10 +2884,15 @@
                 // data.home_score와 data.away_score는 토탈 세트 승리 수
                 // data.match_data.home_score와 data.match_data.away_score는 현재 세트 점수
                 
-                // 토탈 세트 승리 수 업데이트 (원형 표시)
+                // 토탈 세트 승리 수 업데이트 (원형 표시) - 0이 아닌 경우에만 업데이트
                 if (data.home_score !== undefined || data.away_score !== undefined) {
                     console.log('🔧 토탈 세트 승리 수 업데이트:', data.home_score, data.away_score);
-                    updateSetWinsCircles(data.home_score || 0, data.away_score || 0);
+                    // 서버에서 받은 데이터가 유효한 경우에만 업데이트 (0이 아닌 경우)
+                    if (data.home_score > 0 || data.away_score > 0) {
+                        updateSetWinsCircles(data.home_score || 0, data.away_score || 0);
+                    } else {
+                        console.log('🔧 서버에서 받은 매치 점수가 0이므로 업데이트하지 않음');
+                    }
                 }
                 
                 // 서브권 업데이트
