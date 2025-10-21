@@ -2369,12 +2369,9 @@
             const homeLogoSectionAlt = document.getElementById('home-team-logo-container');
             const awayLogoSectionAlt = document.getElementById('away-team-logo-container');
             
-            // 홈팀과 어웨이팀 팀명 섹션
-            const homeTeamName = document.querySelector('.team-section.home .team-name');
-            const awayTeamName = document.querySelector('.team-section.away .team-name');
             
             if (useLogos) {
-                // 팀로고 사용: 로고 표시, 팀명 위치 조정
+                // 팀로고 사용: 로고 표시
                 if (homeLogoSection) {
                     homeLogoSection.style.opacity = '1';
                     } else if (homeLogoSectionAlt) {
@@ -2386,16 +2383,8 @@
                     awayLogoSectionAlt.style.opacity = '1';
                     }
                 
-                // 팀명 위치 조정
-                if (homeTeamName) {
-                    homeTeamName.style.transform = 'translateX(20px)'; // 홈팀 우측으로 100px 이동
-                    }
-                if (awayTeamName) {
-                    awayTeamName.style.transform = 'translateX(-20px)'; // 어웨이팀 좌측으로 100px 이동
-                    }
-                
                 } else {
-                // 팀로고 사용 안함: 로고 숨김, 팀명 원래 위치
+                // 팀로고 사용 안함: 로고 숨김
                 if (homeLogoSection) {
                     homeLogoSection.style.opacity = '0';
                     } else if (homeLogoSectionAlt) {
@@ -2405,14 +2394,6 @@
                     awayLogoSection.style.opacity = '0';
                     } else if (awayLogoSectionAlt) {
                     awayLogoSectionAlt.style.opacity = '0';
-                    }
-                
-                // 팀명 원래 위치로 복원
-                if (homeTeamName) {
-                    homeTeamName.style.transform = 'translateX(0)';
-                    }
-                if (awayTeamName) {
-                    awayTeamName.style.transform = 'translateX(0)';
                     }
                 
                 }
@@ -3975,17 +3956,6 @@
                     }
                     if (logoImage) logoImage.style.display = 'block';
                     
-                    // 팀명 위치는 항상 고정 (20px 안쪽으로 이동)
-                    if (teamName) {
-                        // 팀명을 20px 안쪽으로 고정 이동
-                        if (teamType === 'home') {
-                            teamName.style.transform = 'translateX(20px)';
-                        } else {
-                            teamName.style.transform = 'translateX(-20px)';
-                        }
-                    } else {
-                        }
-                    
                     } else {
                     // 배경색만 표시: 폭 25%
                     logoContainer.style.width = '25%';
@@ -3993,17 +3963,6 @@
                         logoContainer.style.marginLeft = 'auto'; // 어웨이팀 오른쪽 정렬
                     }
                     if (logoImage) logoImage.style.display = 'none';
-                    
-                    // 팀명 위치는 항상 고정 (20px 안쪽으로 이동)
-                    if (teamName) {
-                        // 팀명을 20px 안쪽으로 고정 이동
-                        if (teamType === 'home') {
-                            teamName.style.transform = 'translateX(20px)';
-                        } else {
-                            teamName.style.transform = 'translateX(-20px)';
-                        }
-                    } else {
-                        }
                     
                     }
             } else {
