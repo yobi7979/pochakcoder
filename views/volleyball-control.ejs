@@ -1292,7 +1292,7 @@
                         setFormatInput.checked = true;
                         console.log('✅ 세트제 라디오 버튼 설정:', setFormat + '세트제');
                         console.log('🔍 라디오 버튼 체크 상태:', setFormatInput.checked);
-                    } else {
+            } else {
                         console.log('❌ 세트제 라디오 버튼을 찾을 수 없음:', setFormat);
                     }
                     
@@ -1470,7 +1470,7 @@
 
                 // 서버에 다음 세트 요청
                 socket.emit('volleyball_control', { 
-                    matchId: matchId, 
+                matchId: matchId,
                     action: 'next_set' 
                 });
                 
@@ -1630,42 +1630,12 @@
             const score = parseInt(input.value) || 0;
             
             setScores[team][set] = score;
-            updateTotals();
             updateSetWins();
         }
 
-        // 합계 업데이트 (1세트부터 현재 세트까지의 승리 수로 계산)
-        function updateTotals() {
-            // 불필요한 계산 방지: 세트 점수가 실제로 변경된 경우만 계산
-            console.log('🔍 updateTotals 호출 - 세트 승리 계산');
-            
-            let homeWins = 0;
-            let awayWins = 0;
-            
-            // 현재 세트까지의 승리만 계산
-            const currentSetDisplay = document.getElementById('current-set-display');
-            const currentSet = currentSetDisplay ? parseInt(currentSetDisplay.textContent.replace('세트', '')) : 1;
-            
-            for (let set = 1; set <= currentSet; set++) {
-                const homeScore = setScores.home[set] || 0;
-                const awayScore = setScores.away[set] || 0;
-                
-                if (homeScore > 0 || awayScore > 0) { // 세트가 진행된 경우만
-                    if (homeScore > awayScore) {
-                        homeWins++;
-                    } else if (awayScore > homeScore) {
-                        awayWins++;
-                    }
-                }
-            }
-            
-            document.getElementById('home-total').textContent = homeWins;
-            document.getElementById('away-total').textContent = awayWins;
-            
-            console.log('세트 승리 합계 (1세트부터 현재 세트까지):', { homeWins, awayWins, currentSet });
-        }
+        // updateTotals 함수 제거 - updateSetWins와 중복됨
 
-        // 세트 승리 계산 및 업데이트 (1세트부터 현재 세트까지만 계산)
+        // 세트 승리 계산 및 업데이트 (단순화)
         function updateSetWins() {
             let homeWins = 0;
             let awayWins = 0;
@@ -1678,7 +1648,8 @@
                 const homeScore = setScores.home[set] || 0;
                 const awayScore = setScores.away[set] || 0;
                 
-                if (homeScore > 0 || awayScore > 0) { // 세트가 진행된 경우만
+                // 세트가 진행된 경우만 승리 계산 (단순 비교)
+                if (homeScore > 0 || awayScore > 0) {
                     if (homeScore > awayScore) {
                         homeWins++;
                     } else if (awayScore > homeScore) {
@@ -1687,16 +1658,11 @@
                 }
             }
             
-            console.log('세트 승리 (1세트부터 현재 세트까지):', { homeWins, awayWins, currentSet });
+            // UI 업데이트
+            document.getElementById('home-total').textContent = homeWins;
+            document.getElementById('away-total').textContent = awayWins;
             
-            // 오버레이에 세트 승리 정보 전송
-            socket.emit('volleyball_control', {
-                matchId: matchId,
-                action: 'update_set_wins',
-                homeWins: homeWins,
-                awayWins: awayWins,
-                setScores: setScores
-            });
+            // 세트 승리 계산 완료
         }
 
         // 세트 점수 저장
@@ -1730,7 +1696,6 @@
                 input.value = 0;
             });
             
-            updateTotals();
             updateSetWins();
             
             console.log('세트 점수 초기화 완료');
@@ -1837,7 +1802,7 @@
                     console.log('세트 구성 변경 취소됨');
                     // 플래그 해제
                     isProcessingFormatChange = false;
-                    return;
+                return;
                 }
             }
             
@@ -2038,7 +2003,6 @@
                     }
                 });
                 
-                updateTotals();
                 updateSetWins();
                 console.log('✅ 세트 점수 UI 업데이트 완료');
             }
@@ -2499,8 +2463,7 @@
             setScores.away[currentSetNumber] = awayScore;
         }
         
-        // 합계 및 세트 승리 자동 계산
-        updateTotals();
+        // 세트 승리 자동 계산
         updateSetWins();
         
         console.log(`세트 ${currentSetNumber} 점수 업데이트: 홈팀 ${homeScore}, 어웨이팀 ${awayScore}`);
@@ -2518,7 +2481,7 @@
             
             // volleyball_control 이벤트로 점수 업데이트 전송
             socket.emit('volleyball_control', {
-                matchId: matchId,
+                    matchId: matchId,
                 action: 'update_score',
                 home_score: parseInt(homeScore),
                 away_score: parseInt(awayScore)
@@ -3708,7 +3671,7 @@
                     }
                     
                     console.log('경기 초기화 완료');
-                }
+                    }
                 }
             });
             
@@ -4461,23 +4424,11 @@
             console.log('세트 네비게이션 버튼 상태 업데이트 완료');
         }
         
-        // 세트 승리 업데이트 함수
+        // 세트 승리 업데이트 함수 (서버에서 받은 값으로 UI만 업데이트)
         function updateSetWinsFromServer(homeWins, awayWins) {
-            console.log('=== updateSetWinsFromServer 함수 호출 ===');
-            console.log('homeWins:', homeWins, 'awayWins:', awayWins);
-            
-            const homeTotal = document.getElementById('home-total');
-            const awayTotal = document.getElementById('away-total');
-            
-            if (homeTotal && homeWins !== undefined) {
-                homeTotal.textContent = homeWins;
-                console.log('홈팀 세트 승리 업데이트:', homeWins);
-            }
-            
-            if (awayTotal && awayWins !== undefined) {
-                awayTotal.textContent = awayWins;
-                console.log('어웨이팀 세트 승리 업데이트:', awayWins);
-            }
+            document.getElementById('home-total').textContent = homeWins || 0;
+            document.getElementById('away-total').textContent = awayWins || 0;
+            console.log('세트 승리 업데이트:', { homeWins, awayWins });
         }
     </script>
 
