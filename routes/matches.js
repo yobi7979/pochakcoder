@@ -349,12 +349,26 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
       matchDataObj.use_team_logos = use_team_logos;
     }
 
-    // 배구 경기 생성 시 기본 setFormat 설정
+    // 배구 경기 생성 시 완전한 초기화
     if (sport_type === 'VOLLEYBALL') {
       if (!matchDataObj.setFormat) {
         matchDataObj.setFormat = 3; // 기본값: 3세트제
-        console.log('배구 경기 생성 시 기본 setFormat 설정: 3세트제');
       }
+      
+      // 배구 관련 모든 필드 초기화
+      matchDataObj.current_set = 1;
+      matchDataObj.home_score = 0; // 현재 세트 점수
+      matchDataObj.away_score = 0; // 현재 세트 점수
+      matchDataObj.set_scores = {
+        home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+        away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+      };
+      matchDataObj.home_wins = 0;
+      matchDataObj.away_wins = 0;
+      matchDataObj.servingTeam = 'home';
+      matchDataObj.status = '1세트';
+      
+      console.log('배구 경기 생성 시 완전한 초기화 완료:', matchDataObj);
     }
 
     const match = await Match.create({

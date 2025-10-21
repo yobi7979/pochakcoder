@@ -434,7 +434,10 @@ io.on('connection', (socket) => {
           matchData.current_set = 1;
           matchData.home_score = 0;
           matchData.away_score = 0;
-          matchData.set_scores = { home: {}, away: {} };
+          matchData.set_scores = {
+            home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+            away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+          };
           matchData.home_wins = 0;
           matchData.away_wins = 0;
           matchData.status = '1세트';
@@ -459,7 +462,10 @@ io.on('connection', (socket) => {
               current_set: 1,
               home_score: 0,  // 현재 세트 점수
               away_score: 0,  // 현재 세트 점수
-              set_scores: { home: {}, away: {} },
+              set_scores: {
+                home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+                away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+              },
               home_wins: 0,
               away_wins: 0,
               servingTeam: 'home',
@@ -526,8 +532,30 @@ io.on('connection', (socket) => {
           const matchData = match.match_data || {};
           console.log('기존 matchData:', matchData);
           
+          // setScores 데이터 검증 및 초기화
+          let setScores = data.setScores;
+          if (!setScores || !setScores.home || !setScores.away) {
+            console.log('setScores 초기화 필요');
+            setScores = {
+              home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+              away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+            };
+          }
+          
+          // 빈 객체 체크 및 기본값 설정
+          for (let set = 1; set <= 5; set++) {
+            if (setScores.home[set] === undefined || setScores.home[set] === null) {
+              setScores.home[set] = 0;
+            }
+            if (setScores.away[set] === undefined || setScores.away[set] === null) {
+              setScores.away[set] = 0;
+            }
+          }
+          
+          console.log('검증된 setScores:', setScores);
+          
           // 세트 점수 저장
-          matchData.set_scores = data.setScores;
+          matchData.set_scores = setScores;
           matchData.setFormat = data.setFormat;
           
           // 세트 승리 계산 (단순 점수 비교)
@@ -634,17 +662,38 @@ io.on('connection', (socket) => {
         } else {
           console.log('❌ 경기를 찾을 수 없음:', matchId);
         }
-      } else if (action === 'next_set_simple') {
-        // 단순한 다음 세트 처리
-        console.log('🔍 단순한 다음 세트 처리:', matchId);
-        const match = await Match.findByPk(matchId);
-        if (match) {
-          const matchData = match.match_data || {};
-          const currentSet = data.currentSet;
-          const homeScore = data.homeScore;
-          const awayScore = data.awayScore;
-          const setScores = data.setScores;
-          const setFormat = data.setFormat;
+        } else if (action === 'next_set_simple') {
+          // 단순한 다음 세트 처리
+          console.log('🔍 단순한 다음 세트 처리:', matchId);
+          const match = await Match.findByPk(matchId);
+          if (match) {
+            const matchData = match.match_data || {};
+            const currentSet = data.currentSet;
+            const homeScore = data.homeScore;
+            const awayScore = data.awayScore;
+            let setScores = data.setScores;
+            const setFormat = data.setFormat;
+            
+            // setScores 데이터 검증 및 초기화
+            if (!setScores || !setScores.home || !setScores.away) {
+              console.log('setScores 초기화 필요');
+              setScores = {
+                home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+                away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+              };
+            }
+            
+            // 빈 객체 체크 및 기본값 설정
+            for (let set = 1; set <= 5; set++) {
+              if (setScores.home[set] === undefined || setScores.home[set] === null) {
+                setScores.home[set] = 0;
+              }
+              if (setScores.away[set] === undefined || setScores.away[set] === null) {
+                setScores.away[set] = 0;
+              }
+            }
+            
+            console.log('검증된 setScores:', setScores);
           
           console.log('🔍 세트 정보:', { currentSet, homeScore, awayScore, setFormat });
           

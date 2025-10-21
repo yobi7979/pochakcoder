@@ -1429,6 +1429,15 @@
             
             console.log(`세트 ${currentSetNumber} 점수: 홈팀 ${homeScore}, 어웨이팀 ${awayScore}`);
             
+            // setScores 데이터 검증 및 초기화
+            if (!setScores || !setScores.home || !setScores.away) {
+                console.log('setScores 초기화 필요');
+                setScores = {
+                    home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+                    away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+                };
+            }
+            
             // 세트 점수 저장
             setScores.home[currentSetNumber] = homeScore;
             setScores.away[currentSetNumber] = awayScore;
@@ -1439,6 +1448,8 @@
             
             if (homeInput) homeInput.value = homeScore;
             if (awayInput) awayInput.value = awayScore;
+            
+            console.log('다음 세트로 전송할 setScores:', setScores);
             
             // 서버에 세트 점수 저장 및 다음 세트로 이동 요청
             socket.emit('volleyball_control', {
@@ -1531,6 +1542,29 @@
         };
         let setFormat = 3; // 기본값: 3세트제
         let isProcessingFormatChange = false; // 중복 처리 방지
+        
+        // setScores 데이터 검증 및 초기화 함수
+        function validateAndInitializeSetScores() {
+            if (!setScores || !setScores.home || !setScores.away) {
+                console.log('setScores 초기화 필요');
+                setScores = {
+                    home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+                    away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+                };
+            }
+            
+            // 빈 객체 체크 및 기본값 설정
+            for (let set = 1; set <= 5; set++) {
+                if (setScores.home[set] === undefined || setScores.home[set] === null) {
+                    setScores.home[set] = 0;
+                }
+                if (setScores.away[set] === undefined || setScores.away[set] === null) {
+                    setScores.away[set] = 0;
+                }
+            }
+            
+            console.log('검증된 setScores:', setScores);
+        }
 
         // 세트 점수 입력 이벤트 리스너 설정
         function setupSetScoreListeners() {
@@ -1609,6 +1643,29 @@
 
         // 세트 점수 저장 (단순화)
         function saveSetScores() {
+            // setScores 데이터 검증 및 초기화
+            if (!setScores || !setScores.home || !setScores.away) {
+                console.log('setScores 초기화 필요');
+                setScores = {
+                    home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+                    away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+                };
+            }
+            
+            // 빈 객체 체크 및 기본값 설정
+            Object.keys(setScores.home).forEach(set => {
+                if (setScores.home[set] === undefined || setScores.home[set] === null) {
+                    setScores.home[set] = 0;
+                }
+            });
+            Object.keys(setScores.away).forEach(set => {
+                if (setScores.away[set] === undefined || setScores.away[set] === null) {
+                    setScores.away[set] = 0;
+                }
+            });
+            
+            console.log('저장할 setScores:', setScores);
+            
             socket.emit('volleyball_control', {
                 matchId: matchId,
                 action: 'save_set_scores',
@@ -1869,6 +1926,27 @@
                 console.log('유효한 세트 점수 데이터가 없음');
                 return;
             }
+            
+            // setScores 데이터 검증 및 초기화
+            if (!setScores || !setScores.home || !setScores.away) {
+                console.log('setScores 초기화 필요');
+                setScores = {
+                    home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+                    away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+                };
+            }
+            
+            // 빈 객체 체크 및 기본값 설정
+            for (let set = 1; set <= 5; set++) {
+                if (setScores.home[set] === undefined || setScores.home[set] === null) {
+                    setScores.home[set] = 0;
+                }
+                if (setScores.away[set] === undefined || setScores.away[set] === null) {
+                    setScores.away[set] = 0;
+                }
+            }
+            
+            console.log('검증된 setScores:', setScores);
             
             // UI 업데이트
             if (setScores.home && setScores.away) {
@@ -3229,6 +3307,9 @@
             
             // 통합된 초기 데이터 로딩 (WebSocket 우선)
             console.log('=== 통합된 초기 데이터 로딩 시작 ===');
+            
+            // setScores 데이터 검증 및 초기화
+            validateAndInitializeSetScores();
             
             // 1. WebSocket으로 모든 경기 데이터 로드 (우선순위)
         loadMatchData();
