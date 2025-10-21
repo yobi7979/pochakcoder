@@ -349,6 +349,14 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
       matchDataObj.use_team_logos = use_team_logos;
     }
 
+    // 배구 경기 생성 시 기본 setFormat 설정
+    if (sport_type === 'VOLLEYBALL') {
+      if (!matchDataObj.setFormat) {
+        matchDataObj.setFormat = 3; // 기본값: 3세트제
+        console.log('배구 경기 생성 시 기본 setFormat 설정: 3세트제');
+      }
+    }
+
     const match = await Match.create({
       sport_type,
       home_team,

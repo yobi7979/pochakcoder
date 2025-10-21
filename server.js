@@ -684,6 +684,12 @@ io.on('connection', (socket) => {
       const match = await Match.findByPk(matchId);
       if (!match) return;
 
+      // 디버깅: match_data 내용 확인
+      console.log('🔍 loadMatchData 디버깅:');
+      console.log('matchId:', matchId);
+      console.log('match.match_data:', match.match_data);
+      console.log('match.match_data.setFormat:', match.match_data?.setFormat);
+      
       // 접속한 소켓에게만 초기 데이터 반환
       socket.emit('matchDataLoaded', {
         id: match.id,
