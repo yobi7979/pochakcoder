@@ -1431,35 +1431,7 @@
                 setScores.away[currentSetNumber] = awayScore;
             }
             
-            // 세트 승리 계산 및 토탈 점수 업데이트
-            let homeWins = 0;
-            let awayWins = 0;
-            
-            // 현재 세트 승리 계산
-            if (homeScore > awayScore) {
-                homeWins = 1;
-                awayWins = 0;
-            } else if (awayScore > homeScore) {
-                homeWins = 0;
-                awayWins = 1;
-            }
-            
-            // 기존 세트 승리와 합산
-            for (let set = 1; set < currentSetNumber; set++) {
-                const existingHomeScore = setScores.home[set] || 0;
-                const existingAwayScore = setScores.away[set] || 0;
-                
-                if (existingHomeScore > existingAwayScore) {
-                    homeWins++;
-                } else if (existingAwayScore > existingHomeScore) {
-                    awayWins++;
-                }
-            }
-            
-            // 토탈 점수 텍스트 UI 업데이트(참고용)
-            document.getElementById('home-total').textContent = homeWins;
-            document.getElementById('away-total').textContent = awayWins;
-            console.log(`세트 승리 업데이트: 홈팀 ${homeWins}승, 어웨이팀 ${awayWins}승`);
+            console.log(`세트 ${currentSetNumber} 점수 저장: 홈팀 ${homeScore}, 어웨이팀 ${awayScore}`);
 
             // 1) 세트 점수와 포맷을 DB에 저장 (토탈 승수는 서버가 계산/반영)
             socket.emit('volleyball_control', {
@@ -1469,13 +1441,14 @@
                 setFormat: setFormat
             });
 
-            // 2) 약간의 지연 후 다음 세트로 전환 요청 (저장이 먼저 반영되도록)
+            // 2) 약간의 지연 후 다음 세트로 전환 요청
             setTimeout(() => {
                 // 현재 세트 점수 초기화 (다음 세트를 위해)
                 document.getElementById('home-score').value = 0;
                 document.getElementById('away-score').value = 0;
 
-                // 경기 상황 업데이트
+                // 다음 세트로 전환
+                const nextSetNumber = (currentSetNumber + 1) + '세트';
                 updateMatchState(nextSetNumber);
 
                 // 서버에 다음 세트 요청
@@ -1483,6 +1456,8 @@
                     matchId: matchId, 
                     action: 'next_set' 
                 });
+                
+                console.log(`다음 세트로 전환: ${currentSet} → ${nextSetNumber}`);
             }, 200);
         }
 

@@ -517,7 +517,7 @@ io.on('connection', (socket) => {
           matchData.set_scores = data.setScores;
           matchData.setFormat = data.setFormat;
           
-          // 세트 승리 계산 (토탈 스코어)
+          // 세트 승리 계산 (단순 점수 비교)
           let homeWins = 0;
           let awayWins = 0;
           
@@ -526,7 +526,8 @@ io.on('connection', (socket) => {
             const homeScore = matchData.set_scores.home[set] || 0;
             const awayScore = matchData.set_scores.away[set] || 0;
             
-            if (homeScore > 0 || awayScore > 0) { // 세트가 진행된 경우만
+            // 세트가 진행된 경우만 승리 계산 (단순 점수 비교)
+            if (homeScore > 0 || awayScore > 0) {
               if (homeScore > awayScore) {
                 homeWins++;
               } else if (awayScore > homeScore) {
