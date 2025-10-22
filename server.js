@@ -1280,6 +1280,46 @@ app.get('/api/matches/:id', async (req, res) => {
   }
 });
 
+// 경기 정보 업데이트 엔드포인트 (야구 방식의 updateMatchInfo용)
+app.post('/api/matches/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    
+    console.log(`[DEBUG] 경기 정보 업데이트 요청: ID=${id}`);
+    console.log('[DEBUG] 업데이트 데이터:', updateData);
+    
+    const match = await Match.findByPk(id);
+    
+    if (!match) {
+      return res.status(404).json({ error: '경기를 찾을 수 없습니다.' });
+    }
+    
+    // match_data를 명시적으로 설정하여 JSONB 필드 업데이트 보장
+    if (updateData.match_data) {
+      match.match_data = updateData.match_data;
+      await match.save();
+    }
+    
+    // 기본 필드 업데이트
+    const updateFields = {};
+    if (updateData.home_team !== undefined) updateFields.home_team = updateData.home_team;
+    if (updateData.away_team !== undefined) updateFields.away_team = updateData.away_team;
+    if (updateData.home_score !== undefined) updateFields.home_score = updateData.home_score;
+    if (updateData.away_score !== undefined) updateFields.away_score = updateData.away_score;
+    
+    if (Object.keys(updateFields).length > 0) {
+      await match.update(updateFields);
+    }
+    
+    console.log(`[DEBUG] 경기 정보 업데이트 성공: ${id}`);
+    res.json(match);
+  } catch (error) {
+    console.error('[DEBUG] 경기 정보 업데이트 실패:', error);
+    res.status(500).json({ error: '경기 정보 업데이트 중 오류가 발생했습니다.' });
+  }
+});
+
 // 야구 방식의 통합 초기 데이터 엔드포인트 (배구용)
 app.get('/api/matches/:matchId/initial-data', async (req, res) => {
   try {

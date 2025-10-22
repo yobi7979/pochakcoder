@@ -659,7 +659,7 @@
                             <div class="d-flex align-items-center">
                                 <span class="fw-bold me-3" id="home-team-display" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;"><%= match.home_team %></span>
                                 <div class="d-flex align-items-center">
-                                    <input type="number" id="home-score" class="score-input text-center me-2" value="<%= match.home_score || 0 %>" readonly style="width: 62px; height: 50px; font-size: 22px; font-weight: bold;">
+                                    <input type="number" id="home-score" class="score-input text-center me-2" value="<%= match.match_data?.home_score || 0 %>" readonly style="width: 62px; height: 50px; font-size: 22px; font-weight: bold;">
                                     <div class="d-flex flex-column">
                                         <button class="btn btn-success btn-sm mb-1" onclick="updateScore('home', 1)" style="width: 110px; height: 37px; font-size: 18px; display: flex; align-items: center; justify-content: center;">
                                             <i class="bi bi-plus"></i>
@@ -712,7 +712,7 @@
                                             <i class="bi bi-dash"></i>
                                 </button>
                         </div>
-                                    <input type="number" id="away-score" class="score-input text-center" value="<%= match.away_score || 0 %>" readonly style="width: 62px; height: 50px; font-size: 22px; font-weight: bold;">
+                                    <input type="number" id="away-score" class="score-input text-center" value="<%= match.match_data?.away_score || 0 %>" readonly style="width: 62px; height: 50px; font-size: 22px; font-weight: bold;">
                                 </div>
                                 <span class="fw-bold ms-3" id="away-team-display" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;"><%= match.away_team %></span>
                             </div>
@@ -2007,6 +2007,22 @@
                     updateSetFormatUI();
                 }
             }
+            
+            // 현재 세트 점수 복원 (중요: match_data.home_score/away_score 사용)
+            if (matchData.match_data) {
+                const homeScore = matchData.match_data.home_score || 0;
+                const awayScore = matchData.match_data.away_score || 0;
+                const currentSet = matchData.match_data.current_set || 1;
+                
+                // 현재 세트 점수 입력 필드 업데이트
+                document.getElementById('home-score').value = homeScore;
+                document.getElementById('away-score').value = awayScore;
+                
+                // 현재 세트 표시 업데이트
+                updateCurrentSetDisplay(currentSet);
+                
+                console.log(`✅ 현재 세트 ${currentSet} 점수 복원: 홈팀 ${homeScore}, 어웨이팀 ${awayScore}`);
+            }
         }
         
         // 팀로고 데이터 처리
@@ -2746,6 +2762,7 @@
         // 경기 정보 업데이트 함수 (기존 코드와 동일)
         async function updateMatchInfo() {
             try {
+                console.log('🚀🚀🚀 updateMatchInfo 함수 호출됨! 🚀🚀🚀');
                 console.log('=== 배구 경기 정보 업데이트 시작 (야구 방식) ===');
                 
                 // 기본 경기 정보 수집
