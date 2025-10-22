@@ -702,6 +702,9 @@ io.on('connection', (socket) => {
         console.log('matchId:', matchId);
         console.log('data.home_score:', data.home_score);
         console.log('data.away_score:', data.away_score);
+        console.log('🔍 data.setScores:', data.setScores);
+        console.log('🔍 data.setScores 타입:', typeof data.setScores);
+        console.log('🔍 data.setScores 존재 여부:', !!data.setScores);
         
         const match = await Match.findByPk(matchId);
         if (match) {
