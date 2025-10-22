@@ -821,9 +821,7 @@
                 
                 <!-- 세트 점수 저장 버튼 -->
             <div class="text-center mt-3">
-                    <button class="btn btn-success" onclick="saveSetScores()">
-                        <i class="bi bi-save"></i> 세트 점수 저장
-                            </button>
+                    <!-- 세트 점수 저장 버튼 제거 (야구 방식의 updateMatchInfo()로 대체) -->
                     <button class="btn btn-danger" onclick="resetMatch()">
                         <i class="bi bi-arrow-clockwise"></i> 초기화
                     </button>
@@ -1630,48 +1628,7 @@
         }
 
         // 세트 점수 저장 (개선된 버전)
-        function saveSetScores() {
-            console.log('=== 세트 점수 저장 시작 ===');
-            
-            // 현재 세트 점수 표에서 데이터 수집 (올바른 초기화)
-            const currentSetScores = {
-                home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
-                away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
-            };
-            
-            // 세트 점수 표에서 현재 입력된 값들을 수집
-            for (let set = 1; set <= 5; set++) {
-                const homeInput = document.querySelector(`input[data-team="home"][data-set="${set}"]`);
-                const awayInput = document.querySelector(`input[data-team="away"][data-set="${set}"]`);
-                
-                if (homeInput) {
-                    currentSetScores.home[set] = parseInt(homeInput.value) || 0;
-                }
-                if (awayInput) {
-                    currentSetScores.away[set] = parseInt(awayInput.value) || 0;
-                }
-            }
-            
-            console.log('수집된 세트 점수:', currentSetScores);
-            
-            // setScores 업데이트
-            setScores = currentSetScores;
-            
-            // 세트 점수 저장 시 매치 점수(세트 승리) 계산
-            updateSetWins();
-            
-            console.log('저장할 setScores:', setScores);
-            
-            socket.emit('volleyball_control', {
-                matchId: matchId,
-                action: 'save_set_scores',
-                setScores: setScores,
-                setFormat: setFormat
-            });
-            
-            console.log('✅ 세트 점수 저장 요청 전송 완료');
-            alert('세트 점수가 저장되었습니다.');
-        }
+        // saveSetScores 함수 제거 (야구 방식의 updateMatchInfo()로 대체됨)
 
         // 세트 점수 초기화
         function resetSetScores() {
@@ -3909,36 +3866,7 @@
             });
             
         // 세트 점수 로드 응답 처리
-        socket.on('set_scores_loaded', function(data) {
-            console.log('=== 세트 점수 로드 응답 수신 ===');
-            console.log('받은 데이터:', data);
-            
-            if (data.matchId === matchId) {
-                // 세트 점수 복원
-                if (data.setScores) {
-                    setScores = data.setScores;
-                    console.log('복원된 세트 점수:', setScores);
-                    
-                    // UI 업데이트
-                    updateSetScoresFromServer(setScores);
-                }
-                
-                // 세트제 복원
-                if (data.setFormat) {
-                    setFormat = data.setFormat;
-                    console.log('복원된 세트제:', setFormat);
-                    updateSetFormatUI();
-                }
-                
-                // 매치 점수 복원
-                if (data.homeWins !== undefined && data.awayWins !== undefined) {
-                    console.log('복원된 매치 점수:', { homeWins: data.homeWins, awayWins: data.awayWins });
-                    updateSetWinsFromServer(data.homeWins, data.awayWins);
-                }
-                
-                console.log('✅ 세트 점수 로드 완료');
-            }
-        });
+        // set_scores_loaded 이벤트 제거 (야구 방식의 통합 API로 대체됨)
             
         // 팀 컬러 업데이트 응답 처리
         socket.on('teamColorUpdated', function(response) {

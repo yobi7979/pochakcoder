@@ -596,110 +596,7 @@ io.on('connection', (socket) => {
         } else {
           console.log('❌ 경기를 찾을 수 없음:', matchId);
         }
-      } else if (action === 'save_set_scores') {
-        // 세트 점수 저장 처리
-        console.log('🔍 세트 점수 저장 디버깅:');
-        console.log('matchId:', matchId);
-        console.log('data.setScores:', data.setScores);
-        console.log('data.setFormat:', data.setFormat);
-        
-        const match = await Match.findByPk(matchId);
-        if (match) {
-          const matchData = match.match_data || {};
-          console.log('기존 matchData:', matchData);
-          
-          // setScores 데이터 검증 및 초기화
-          let setScores = data.setScores;
-          if (!setScores || !setScores.home || !setScores.away) {
-            console.log('setScores 초기화 필요');
-            setScores = {
-              home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
-              away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
-            };
-          }
-          
-          // 빈 객체 체크 및 기본값 설정
-          for (let set = 1; set <= 5; set++) {
-            if (setScores.home[set] === undefined || setScores.home[set] === null) {
-              setScores.home[set] = 0;
-            }
-            if (setScores.away[set] === undefined || setScores.away[set] === null) {
-              setScores.away[set] = 0;
-            }
-          }
-          
-          console.log('검증된 setScores:', setScores);
-          
-          // 세트 점수 저장
-          matchData.set_scores = setScores;
-          matchData.setFormat = data.setFormat;
-          
-          // 세트 승리 계산 (단순 점수 비교)
-          let homeWins = 0;
-          let awayWins = 0;
-          
-          const maxSets = data.setFormat || 3;
-          for (let set = 1; set <= maxSets; set++) {
-            const homeScore = matchData.set_scores.home[set] || 0;
-            const awayScore = matchData.set_scores.away[set] || 0;
-            
-            // 세트가 진행된 경우만 승리 계산 (단순 점수 비교)
-            if (homeScore > 0 || awayScore > 0) {
-              if (homeScore > awayScore) {
-                homeWins++;
-              } else if (awayScore > homeScore) {
-                awayWins++;
-              }
-            }
-          }
-          
-          matchData.home_wins = homeWins;
-          matchData.away_wins = awayWins;
-          
-          console.log('새로운 matchData:', matchData);
-          console.log('계산된 토탈 스코어:', { homeWins, awayWins });
-          
-          console.log('🔍 save_set_scores DB 업데이트 전 matchData:', JSON.stringify(matchData, null, 2));
-          
-          // match_data를 명시적으로 설정하여 JSONB 필드 업데이트 보장
-          match.match_data = matchData;
-          const updateResult = await match.save();
-          
-          // 추가로 home_score와 away_score도 명시적으로 업데이트
-          await match.update({
-            home_score: homeWins,  // 토탈 스코어
-            away_score: awayWins   // 토탈 스코어
-          });
-          
-          console.log('🔍 save_set_scores DB 업데이트 결과:', updateResult);
-          console.log('✅ 세트 점수 및 토탈 스코어 데이터베이스 저장 완료');
-          
-          // 저장 후 확인
-          const updatedMatch = await Match.findByPk(matchId);
-          console.log('🔍 save_set_scores 저장 후 matchData:', JSON.stringify(updatedMatch.match_data, null, 2));
-          console.log('🔍 save_set_scores 저장 후 set_scores:', updatedMatch.match_data.set_scores);
-          
-          // 모든 클라이언트에 세트 점수 저장 알림
-          const roomName = `match_${matchId}`;
-          io.to(roomName).emit('match_updated', {
-            matchId: matchId,
-            home_score: homeWins,  // 토탈 세트 승리 수
-            away_score: awayWins,  // 토탈 세트 승리 수
-            match_data: {
-              set_scores: data.setScores,
-              setFormat: data.setFormat,
-              home_wins: homeWins,
-              away_wins: awayWins,
-              current_set: matchData.current_set,
-              home_score: matchData.home_score,
-              away_score: matchData.away_score
-            }
-          });
-          
-          console.log(`✅ 세트 점수 저장: ${data.setFormat}세트제, 토탈: ${homeWins}-${awayWins}`);
-        } else {
-          console.log('❌ 경기를 찾을 수 없음:', matchId);
-        }
+      // save_set_scores 액션 제거 (야구 방식의 updateMatchInfo()로 대체됨)
       } else if (action === 'update_score') {
         // 현재 세트 점수 업데이트 처리
         console.log('🔍 현재 세트 점수 업데이트 디버깅:');
@@ -1018,36 +915,7 @@ io.on('connection', (socket) => {
         } else {
           console.log('❌ 경기를 찾을 수 없음:', matchId);
         }
-      } else if (action === 'load_set_scores') {
-        // 세트 점수 로드 처리
-        console.log('🔍 세트 점수 로드 디버깅:');
-        console.log('matchId:', matchId);
-        
-        const match = await Match.findByPk(matchId);
-        if (match) {
-          const matchData = match.match_data || {};
-          const setScores = matchData.set_scores || { home: {}, away: {} };
-          const setFormat = matchData.setFormat || 3;
-          const homeWins = matchData.home_wins || 0;
-          const awayWins = matchData.away_wins || 0;
-          
-          console.log('로드된 세트 점수:', setScores);
-          console.log('로드된 세트제:', setFormat);
-          console.log('로드된 매치 점수:', { homeWins, awayWins });
-          
-          // 클라이언트에 세트 점수 전송
-          socket.emit('set_scores_loaded', {
-            matchId: matchId,
-            setScores: setScores,
-            setFormat: setFormat,
-            homeWins: homeWins,
-            awayWins: awayWins
-          });
-          
-          console.log('✅ 세트 점수 로드 완료');
-        } else {
-          console.log('❌ 경기를 찾을 수 없음:', matchId);
-        }
+      // load_set_scores 액션 제거 (야구 방식의 통합 API로 대체됨)
       }
     } catch (error) {
       console.error('❌ 배구 컨트롤 처리 오류:', error);
