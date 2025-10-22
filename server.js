@@ -651,10 +651,11 @@ io.on('connection', (socket) => {
           match.match_data = matchData;
           const updateResult = await match.save();
           
-          // 추가로 home_score와 away_score도 명시적으로 업데이트
+          // 추가로 home_score와 away_score도 명시적으로 업데이트 (match_data 포함)
           await match.update({
             home_score: homeWins,  // 토탈 세트 승리 수
-            away_score: awayWins   // 토탈 세트 승리 수
+            away_score: awayWins,  // 토탈 세트 승리 수
+            match_data: matchData  // JSONB 필드 명시적 포함
           });
           
           // set_scores가 제대로 저장되었는지 확인
@@ -772,11 +773,12 @@ io.on('connection', (socket) => {
           match.match_data = matchData;
           const updateResult = await match.save();
           
-          // 추가로 status, home_score, away_score도 명시적으로 업데이트
+          // 추가로 status, home_score, away_score도 명시적으로 업데이트 (match_data 포함)
           await match.update({
             status: nextSet + '세트',
             home_score: homeWins,  // 토탈 세트 승리 수
-            away_score: awayWins   // 토탈 세트 승리 수
+            away_score: awayWins,  // 토탈 세트 승리 수
+            match_data: matchData  // JSONB 필드 명시적 포함
           });
           
           console.log('🔍 DB 업데이트 결과:', updateResult);
@@ -881,10 +883,11 @@ io.on('connection', (socket) => {
           match.match_data = matchData;
           const updateResult = await match.save();
           
-          // 추가로 home_score와 away_score도 명시적으로 업데이트
+          // 추가로 home_score와 away_score도 명시적으로 업데이트 (match_data 포함)
           await match.update({
             home_score: data.homeWins,  // 토탈 세트 승리 수
-            away_score: data.awayWins   // 토탈 세트 승리 수
+            away_score: data.awayWins,  // 토탈 세트 승리 수
+            match_data: matchData  // JSONB 필드 명시적 포함
           });
           
           console.log('🔍 매치 점수 DB 업데이트 결과:', updateResult);
