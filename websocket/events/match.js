@@ -310,13 +310,13 @@ const matchEvents = (socket, io) => {
     }
   });
 
-  // 배구 점수 업데이트 이벤트 처리
+  // 배구 점수 업데이트 이벤트 처리 (야구와 동일한 방식)
   socket.on('volleyball_score_update', async (data) => {
     try {
-      const { matchId, team, score, change, setScores } = data;
+      const { matchId, team, set, setType, score, change } = data;
       const roomName = `match_${matchId}`;
       
-      console.log(`배구 점수 업데이트: matchId=${matchId}, team=${team}, score=${score}`);
+      console.log(`배구 세트 점수 업데이트: matchId=${matchId}, team=${team}, set=${set}, score=${score}`);
       console.log(`전체 데이터:`, data);
       
       // 1. 데이터베이스에서 현재 경기 데이터 가져오기
@@ -329,63 +329,88 @@ const matchEvents = (socket, io) => {
         return;
       }
       
-      // 2. match_data에서 배구 점수 업데이트
+      // 2. match_data에서 세트 점수 업데이트 (야구의 innings와 동일한 방식)
       let matchData = match.match_data || {};
-      if (!matchData.volleyball) {
-        matchData.volleyball = {
-          currentSet: 1,
-          setScores: {
-            home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
-            away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
-          },
-          setWins: { home: 0, away: 0 }
+      if (!matchData.sets || !matchData.sets.home || !matchData.sets.away) {
+        matchData.sets = {
+          home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+          away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
         };
-        console.log(`배구 데이터 초기화 완료:`, matchData.volleyball);
+        console.log(`sets 초기화 완료:`, matchData.sets);
       }
       
-      // 3. 현재 세트 점수 업데이트
-      const currentSet = matchData.volleyball.currentSet || 1;
-      matchData.volleyball.setScores[team][currentSet] = parseInt(score);
+      const sets = matchData.sets;
+      console.log(`업데이트 전 sets:`, sets);
+      console.log(`업데이트할 위치: ${team}[${parseInt(set)}] = ${parseInt(score)}`);
       
-      // 4. 총 점수 계산 (현재 세트 점수)
-      const homeScore = matchData.volleyball.setScores.home[currentSet] || 0;
-      const awayScore = matchData.volleyball.setScores.away[currentSet] || 0;
+      sets[team][parseInt(set)] = parseInt(score);
+      console.log(`업데이트 후 sets:`, sets);
       
-      console.log(`배구 세트 ${currentSet} 점수 업데이트: 홈팀 ${homeScore}, 원정팀 ${awayScore}`);
+      // 3. 매치 점수 계산 (세트 승리 수)
+      let homeWins = 0;
+      let awayWins = 0;
       
-      // 5. Match 테이블의 match_data와 총 점수 업데이트
+      // 모든 세트의 승리 계산 (세트 점수가 0이 아닌 세트만 계산)
+      for (let setNum = 1; setNum <= 5; setNum++) {
+        const homeScore = sets.home[setNum] || 0;
+        const awayScore = sets.away[setNum] || 0;
+        
+        // 세트 점수가 모두 0이 아닌 경우에만 승리 계산
+        if (homeScore > 0 || awayScore > 0) {
+          if (homeScore > awayScore) {
+            homeWins++;
+          } else if (awayScore > homeScore) {
+            awayWins++;
+          }
+        }
+      }
+      
+      console.log(`계산된 매치 점수: 홈팀 ${homeWins}세트, 원정팀 ${awayWins}세트`);
+      
+      // 4. Match 테이블의 match_data와 매치 점수 업데이트
       await match.update({
         match_data: matchData,
-        home_score: homeScore,
-        away_score: awayScore
+        home_score: homeWins,  // 매치 점수 (세트 승리 수)
+        away_score: awayWins   // 매치 점수 (세트 승리 수)
       });
       
-      console.log(`배구 점수 업데이트 완료: ${team}팀 = ${score}`);
-      console.log(`배구 총 점수 업데이트 완료: 홈팀 ${homeScore}, 원정팀 ${awayScore}`);
+      console.log(`배구 세트 점수 업데이트 완료: ${team}팀 ${set}세트 = ${score}`);
+      console.log(`배구 매치 점수 업데이트 완료: 홈팀 ${homeWins}세트, 원정팀 ${awayWins}세트`);
       
-      // 6. 해당 방의 모든 클라이언트에게 배구 점수 업데이트 이벤트 전송
+      // 5. 세트별 점수 데이터 구성 (match_data 구조에서)
+      const setsData = {};
+      Object.keys(sets.home).forEach(setNum => {
+        setsData[`home_${setNum}`] = sets.home[setNum];
+      });
+      Object.keys(sets.away).forEach(setNum => {
+        setsData[`away_${setNum}`] = sets.away[setNum];
+      });
+      
+      // 6. 해당 방의 모든 클라이언트에게 배구 세트 점수 업데이트 이벤트 전송
       const eventData = {
         matchId: matchId,
         team: team,
+        set: set,
+        setType: setType,
         score: score,
         change: change,
-        currentSet: currentSet,
-        setScores: matchData.volleyball.setScores,
-        setWins: matchData.volleyball.setWins,
-        home_score: homeScore,
-        away_score: awayScore
+        sets: setsData,
+        home_score: homeWins,  // 매치 점수 (세트 승리 수)
+        away_score: awayWins   // 매치 점수 (세트 승리 수)
       };
       
-      console.log(`=== 배구 점수 업데이트 이벤트 전송 데이터 ===`);
+      console.log(`=== 배구 세트 점수 업데이트 이벤트 전송 데이터 ===`);
       console.log(`방: ${roomName}`);
       console.log(`전송 데이터:`, eventData);
+      console.log(`세트별 데이터:`, setsData);
+      console.log(`매치 점수: 홈팀 ${homeWins}세트, 원정팀 ${awayWins}세트`);
       
       io.to(roomName).emit('volleyball_score_updated', eventData);
       
-      console.log(`배구 점수 업데이트 이벤트를 방 ${roomName}에 전송함`);
+      console.log(`배구 세트 점수 업데이트 이벤트를 방 ${roomName}에 전송함`);
     } catch (error) {
-      console.error('배구 점수 업데이트 처리 중 오류 발생:', error);
-      socket.emit('volleyball_score_update_error', { error: '배구 점수 업데이트에 실패했습니다.' });
+      console.error('배구 세트 점수 업데이트 처리 중 오류 발생:', error);
+      socket.emit('volleyball_score_update_error', { error: '배구 세트 점수 업데이트에 실패했습니다.' });
     }
   });
 

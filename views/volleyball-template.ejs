@@ -5015,6 +5015,57 @@
             }
         });
 
+        // 배구 세트 점수 업데이트 이벤트 처리 (야구와 동일한 방식)
+        socket.on('volleyball_score_updated', function(data) {
+            console.log('=== 배구 세트 점수 업데이트 수신 (오버레이) ===');
+            console.log('수신된 데이터:', data);
+            console.log('현재 matchId:', matchId);
+            console.log('데이터 matchId:', data.matchId);
+            
+            if (data.matchId === matchId) {
+                const { team, set, score, sets, home_score, away_score } = data;
+                
+                // 세트 스코어 테이블 업데이트
+                const teamElementId = team === 'home' ? `teamA-set-${set}` : `teamB-set-${set}`;
+                const setElement = document.getElementById(teamElementId);
+                
+                if (setElement) {
+                    setElement.textContent = score;
+                    console.log(`세트 스코어 업데이트: ${team}팀 ${set}세트 = ${score}`);
+                }
+                
+                // 전체 세트 스코어 업데이트 (모든 세트)
+                if (sets) {
+                    for (let i = 1; i <= 5; i++) {
+                        const homeSetElement = document.getElementById(`teamA-set-${i}`);
+                        const awaySetElement = document.getElementById(`teamB-set-${i}`);
+                        
+                        if (homeSetElement && sets[`home_${i}`] !== undefined) {
+                            homeSetElement.textContent = sets[`home_${i}`] || '0';
+                        }
+                        if (awaySetElement && sets[`away_${i}`] !== undefined) {
+                            awaySetElement.textContent = sets[`away_${i}`] || '0';
+                        }
+                    }
+                }
+                
+                // 서버에서 계산된 매치 점수 사용 (세트 승리 수)
+                const homeScoreElement = document.getElementById('home-score');
+                const awayScoreElement = document.getElementById('away-score');
+                
+                if (homeScoreElement && home_score !== undefined) {
+                    homeScoreElement.textContent = home_score;
+                }
+                if (awayScoreElement && away_score !== undefined) {
+                    awayScoreElement.textContent = away_score;
+                }
+                
+                console.log(`배구 세트 점수 업데이트 완료: ${team}팀 ${set}세트 = ${score}`);
+                console.log(`배구 매치 점수 업데이트 완료: 홈팀 ${home_score}세트, 원정팀 ${away_score}세트`);
+                console.log('=== 배구 세트 점수 업데이트 처리 완료 (오버레이) ===');
+            }
+        });
+
         // lineupUpdated WebSocket 이벤트 리스너 - 기존 방식 (호환성 유지)
         socket.on('lineupUpdated', async function(data) {
             console.log('🔧 라인업 업데이트 이벤트 수신:', data);
