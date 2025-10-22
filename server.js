@@ -264,7 +264,8 @@ io.on('connection', (socket) => {
     console.log(`✅ tournament_text_updated 이벤트를 방 ${roomName}에 전송함`);
   });
   
-  // 배구 컨트롤 이벤트 처리
+  // 배구 컨트롤 이벤트 처리 (websocket/events/match.js로 이동됨)
+  /*
   socket.on('volleyball_control', async (data) => {
     console.log('🏐 배구 컨트롤 이벤트 수신:', data);
     console.log('🏐 액션:', data.action);
@@ -924,6 +925,7 @@ io.on('connection', (socket) => {
       console.error('❌ 배구 컨트롤 처리 오류:', error);
     }
   });
+  */
 
   // 초기 경기 데이터 로드 (컨트롤/오버레이 페이지 복원용)
   socket.on('loadMatchData', async (payload) => {
@@ -958,57 +960,12 @@ io.on('connection', (socket) => {
     }
   });
 
-  // 배구: volleyball_score_update 이벤트 처리 (야구의 innings와 동일한 방식)
+  // 배구: volleyball_score_update 이벤트 처리 (websocket/events/match.js로 이동됨)
+  /*
   socket.on('volleyball_score_update', async (data) => {
-    try {
-      console.log('🔍 volleyball_score_update 이벤트 수신:', data);
-      const { matchId, team, score, setScores } = data;
-      
-      if (!matchId) return;
-
-      const match = await Match.findByPk(matchId);
-      if (!match) return;
-
-      const matchData = match.match_data || {};
-      
-      // 현재 세트 점수 업데이트
-      if (team === 'home') {
-        matchData.home_score = score;
-      } else if (team === 'away') {
-        matchData.away_score = score;
-      }
-      
-      // set_scores 업데이트 (야구의 innings와 동일한 방식)
-      if (setScores && setScores.home && setScores.away) {
-        matchData.set_scores = setScores;
-        console.log('✅ set_scores 업데이트:', JSON.stringify(setScores, null, 2));
-      }
-      
-      // match_data를 명시적으로 설정하여 JSONB 필드 업데이트 보장
-      match.match_data = matchData;
-      await match.save();
-      
-      // 추가로 match_data도 명시적으로 업데이트
-      await match.update({
-        match_data: matchData
-      });
-      
-      // 업데이트 후 데이터 확인
-      const updatedMatch = await Match.findByPk(matchId);
-      console.log('✅ volleyball_score_update 데이터베이스 저장 완료');
-      console.log('match_data:', JSON.stringify(updatedMatch.match_data, null, 2));
-      
-      // 모든 클라이언트에 업데이트 알림
-      const roomName = `match_${matchId}`;
-      io.to(roomName).emit('match_updated', {
-        matchId: matchId,
-        match_data: matchData
-      });
-
-    } catch (err) {
-      console.error('❌ volleyball_score_update 처리 오류:', err);
-    }
+    // 이벤트 처리가 websocket/events/match.js로 이동됨
   });
+  */
 
   // 야구/배구 공통: match_updated 이벤트 처리 (데이터베이스 저장)
   socket.on('match_updated', async (data) => {

@@ -2689,27 +2689,8 @@
             console.log(`세트 ${currentSetNumber} 점수 업데이트: 홈팀 ${homeScore}, 어웨이팀 ${awayScore}`);
         }
 
-        // 점수 업데이트 이벤트 전송 함수 (배구 전용)
-        function emitScoreUpdate() {
-            const homeScore = document.getElementById('home-score').value || '0';
-            const awayScore = document.getElementById('away-score').value || '0';
-            
-            console.log('=== 배구 점수 변경 이벤트 전송 ===');
-            console.log('현재 점수:', { homeScore, awayScore });
-            console.log('변환된 점수:', { homeScore: parseInt(homeScore), awayScore: parseInt(awayScore) });
-            console.log('matchId:', matchId);
-            
-            // volleyball_control 이벤트로 점수 업데이트 전송
-            socket.emit('volleyball_control', {
-                    matchId: matchId,
-                action: 'update_score',
-                home_score: parseInt(homeScore),
-                away_score: parseInt(awayScore),
-                setScores: setScores  // 현재 세트 점수 데이터 포함
-            });
-            
-            console.log('배구 점수 업데이트 이벤트 전송 완료');
-        }
+        // 점수 업데이트 이벤트 전송 함수 (제거됨 - volleyball_score_update로 대체)
+        // function emitScoreUpdate() { ... }
 
         // 팀명 업데이트
         async function updateTeamName(team) {
