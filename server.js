@@ -957,6 +957,102 @@ io.on('connection', (socket) => {
       console.error('❌ loadMatchData 처리 오류:', err);
     }
   });
+
+  // 배구: volleyball_score_update 이벤트 처리 (야구의 innings와 동일한 방식)
+  socket.on('volleyball_score_update', async (data) => {
+    try {
+      console.log('🔍 volleyball_score_update 이벤트 수신:', data);
+      const { matchId, team, score, setScores } = data;
+      
+      if (!matchId) return;
+
+      const match = await Match.findByPk(matchId);
+      if (!match) return;
+
+      const matchData = match.match_data || {};
+      
+      // 현재 세트 점수 업데이트
+      if (team === 'home') {
+        matchData.home_score = score;
+      } else if (team === 'away') {
+        matchData.away_score = score;
+      }
+      
+      // set_scores 업데이트 (야구의 innings와 동일한 방식)
+      if (setScores && setScores.home && setScores.away) {
+        matchData.set_scores = setScores;
+        console.log('✅ set_scores 업데이트:', JSON.stringify(setScores, null, 2));
+      }
+      
+      // match_data를 명시적으로 설정하여 JSONB 필드 업데이트 보장
+      match.match_data = matchData;
+      await match.save();
+      
+      // 추가로 match_data도 명시적으로 업데이트
+      await match.update({
+        match_data: matchData
+      });
+      
+      // 업데이트 후 데이터 확인
+      const updatedMatch = await Match.findByPk(matchId);
+      console.log('✅ volleyball_score_update 데이터베이스 저장 완료');
+      console.log('match_data:', JSON.stringify(updatedMatch.match_data, null, 2));
+      
+      // 모든 클라이언트에 업데이트 알림
+      const roomName = `match_${matchId}`;
+      io.to(roomName).emit('match_updated', {
+        matchId: matchId,
+        match_data: matchData
+      });
+
+    } catch (err) {
+      console.error('❌ volleyball_score_update 처리 오류:', err);
+    }
+  });
+
+  // 야구/배구 공통: match_updated 이벤트 처리 (데이터베이스 저장)
+  socket.on('match_updated', async (data) => {
+    try {
+      console.log('🔍 match_updated 이벤트 수신:', data);
+      const { matchId, home_score, away_score, state, match_data } = data;
+      
+      if (!matchId) return;
+
+      const match = await Match.findByPk(matchId);
+      if (!match) return;
+
+      // 기본 점수 업데이트
+      const updateData = {};
+      if (home_score !== undefined) updateData.home_score = home_score;
+      if (away_score !== undefined) updateData.away_score = away_score;
+      if (state) updateData.status = state;
+
+      // match_data 업데이트 (JSONB 필드)
+      if (match_data) {
+        const currentMatchData = match.match_data || {};
+        const updatedMatchData = { ...currentMatchData, ...match_data };
+        updateData.match_data = updatedMatchData;
+      }
+
+      // 데이터베이스 업데이트
+      await match.update(updateData);
+      
+      console.log('✅ match_updated 데이터베이스 저장 완료:', updateData);
+
+      // 모든 클라이언트에 업데이트 알림
+      const roomName = `match_${matchId}`;
+      io.to(roomName).emit('match_updated', {
+        matchId: matchId,
+        home_score: home_score,
+        away_score: away_score,
+        status: state,
+        match_data: match_data
+      });
+
+    } catch (err) {
+      console.error('❌ match_updated 처리 오류:', err);
+    }
+  });
   
   // 연결 해제
   socket.on('disconnect', () => {

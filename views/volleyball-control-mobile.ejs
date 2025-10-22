@@ -438,17 +438,66 @@
             setupMobileSocketListeners();
         });
 
-        // 점수 변경 이벤트
-        function updateScore(team, change) {
-            const scoreInput = document.getElementById(`${team}-score`);
-            const currentScore = parseInt(scoreInput.value) || 0;
-            const newScore = Math.max(0, currentScore + change);
-            scoreInput.value = newScore;
-            
-            // 득점 시 자동 서브권 변경 (득점한 팀이 서브권을 가져감)
-            if (change > 0) {
-                onScoreChange(team);
+        // 점수 변경 이벤트 (야구와 동일한 실시간 DB 저장 방식)
+        async function updateScore(team, change) {
+            try {
+                console.log(`=== ${team}팀 점수 업데이트 시작 (모바일) ===`);
+                console.log('변경량:', change);
+                
+                // 1. 서버에서 최신 경기 데이터 가져오기
+                const response = await fetch(`/api/matches/${matchId}`);
+                if (!response.ok) {
+                    throw new Error('서버에서 경기 데이터를 가져올 수 없습니다.');
+                }
+                
+                const matchData = await response.json();
+                console.log('서버에서 받은 최신 데이터:', matchData);
+                
+                // 2. 서버 상태로 UI 동기화
+                const serverHomeScore = matchData.home_score || 0;
+                const serverAwayScore = matchData.away_score || 0;
+                
+                const homeScoreElement = document.getElementById('home-score');
+                const awayScoreElement = document.getElementById('away-score');
+                
+                if (homeScoreElement) {
+                    homeScoreElement.value = serverHomeScore;
+                }
+                if (awayScoreElement) {
+                    awayScoreElement.value = serverAwayScore;
+                }
+                
+                // 3. 현재 점수 가져오기
+                const scoreInput = document.getElementById(`${team}-score`);
+                const currentScore = parseInt(scoreInput.value) || 0;
+                const newScore = Math.max(0, currentScore + change);
+                
+                console.log(`점수 변경: ${team}팀 ${currentScore} + ${change} = ${newScore}`);
+                
+                // 4. UI 업데이트
+                scoreInput.value = newScore;
+                
+                // 5. 득점 시 자동 서브권 변경 (득점한 팀이 서브권을 가져감)
+                if (change > 0) {
+                    onScoreChange(team);
+                }
+                
+                // 6. 서버에 배구 점수 업데이트 전송 (야구와 동일한 방식)
+                socket.emit('volleyball_score_update', {
+                    matchId: matchId,
+                    team: team,
+                    score: newScore,
+                    change: change,
+                    setScores: {} // 모바일에서는 세트 점수 데이터가 없음
+                });
+                
+                console.log(`=== ${team}팀 점수 업데이트 완료 (모바일): ${newScore} ===`);
+                
+            } catch (error) {
+                console.error('점수 업데이트 중 오류 발생:', error);
+                alert('점수 업데이트 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
             }
+        }
             
             updateMatchInfo();
         }
@@ -869,6 +918,37 @@
                 // 경기 정보 업데이트 (점수는 이미 match_updated 이벤트에서 처리됨)
                 console.log('경기 정보 업데이트 완료:', data);
             }
+        });
+
+        // 배구 점수 업데이트 이벤트 수신 (모바일)
+        socket.on('volleyball_score_updated', function(data) {
+            console.log('=== 배구 점수 업데이트 이벤트 수신 (모바일) ===');
+            console.log('받은 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                // 현재 세트 점수 업데이트
+                const homeScoreElement = document.getElementById('home-score');
+                const awayScoreElement = document.getElementById('away-score');
+                
+                if (homeScoreElement) {
+                    homeScoreElement.value = data.home_score || 0;
+                }
+                if (awayScoreElement) {
+                    awayScoreElement.value = data.away_score || 0;
+                }
+                
+                console.log('✅ 배구 점수 업데이트 완료 (모바일):', {
+                    home_score: data.home_score,
+                    away_score: data.away_score
+                });
+            }
+        });
+
+        // 배구 점수 업데이트 오류 이벤트 수신 (모바일)
+        socket.on('volleyball_score_update_error', function(data) {
+            console.error('=== 배구 점수 업데이트 오류 (모바일) ===');
+            console.error('오류 데이터:', data);
+            alert('점수 업데이트 중 오류가 발생했습니다: ' + data.error);
         });
 
         // 팀 위치 변경 이벤트
