@@ -452,6 +452,62 @@ const matchEvents = (socket, io) => {
     }
   });
 
+  // 배구 컨트롤 이벤트 처리
+  socket.on('volleyball_control', async (data) => {
+    try {
+      const { matchId, action } = data;
+      const roomName = `match_${matchId}`;
+      
+      console.log(`배구 컨트롤 이벤트: matchId=${matchId}, action=${action}`);
+      
+      if (action === 'reset_match') {
+        // 경기 초기화 처리
+        const { Match } = require('../../models');
+        const match = await Match.findByPk(matchId);
+        
+        if (!match) {
+          console.error(`경기를 찾을 수 없습니다: ${matchId}`);
+          socket.emit('volleyball_control_error', { error: '경기를 찾을 수 없습니다.' });
+          return;
+        }
+        
+        // 모든 데이터 초기화
+        const matchData = {
+          current_set: 1,
+          home_score: 0,
+          away_score: 0,
+          sets: {
+            home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+            away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+          },
+          home_wins: 0,
+          away_wins: 0,
+          status: '1세트',
+          servingTeam: 'home'
+        };
+        
+        await match.update({ 
+          match_data: matchData,
+          status: '1세트',
+          home_score: 0,
+          away_score: 0
+        });
+        
+        // 모든 클라이언트에 초기화 알림
+        io.to(roomName).emit('volleyball_control_updated', {
+          matchId: matchId,
+          action: 'reset_match',
+          match_data: matchData
+        });
+        
+        console.log(`✅ 배구 경기 초기화 완료: ${matchId}`);
+      }
+    } catch (error) {
+      console.error('배구 컨트롤 처리 중 오류 발생:', error);
+      socket.emit('volleyball_control_error', { error: '배구 컨트롤 처리에 실패했습니다.' });
+    }
+  });
+
   // 배구 다음 세트 이벤트 처리
   socket.on('volleyball_next_set', async (data) => {
     try {
