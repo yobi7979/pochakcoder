@@ -3910,6 +3910,38 @@
                 }
             });
             
+        // 세트 점수 로드 응답 처리
+        socket.on('set_scores_loaded', function(data) {
+            console.log('=== 세트 점수 로드 응답 수신 ===');
+            console.log('받은 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                // 세트 점수 복원
+                if (data.setScores) {
+                    setScores = data.setScores;
+                    console.log('복원된 세트 점수:', setScores);
+                    
+                    // UI 업데이트
+                    updateSetScoresFromServer(setScores);
+                }
+                
+                // 세트제 복원
+                if (data.setFormat) {
+                    setFormat = data.setFormat;
+                    console.log('복원된 세트제:', setFormat);
+                    updateSetFormatUI();
+                }
+                
+                // 매치 점수 복원
+                if (data.homeWins !== undefined && data.awayWins !== undefined) {
+                    console.log('복원된 매치 점수:', { homeWins: data.homeWins, awayWins: data.awayWins });
+                    updateSetWinsFromServer(data.homeWins, data.awayWins);
+                }
+                
+                console.log('✅ 세트 점수 로드 완료');
+            }
+        });
+            
         // 팀 컬러 업데이트 응답 처리
         socket.on('teamColorUpdated', function(response) {
             console.log('=== 팀 컬러 업데이트 응답 수신 ===');

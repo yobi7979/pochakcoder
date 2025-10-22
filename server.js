@@ -714,11 +714,25 @@ io.on('connection', (socket) => {
           console.log('새로운 matchData:', matchData);
           console.log('토탈 세트 승리 수:', { homeWins, awayWins });
           
-          await match.update({ 
+          console.log('🔍 DB 업데이트 전 데이터 검증:');
+          console.log('matchData:', JSON.stringify(matchData, null, 2));
+          console.log('homeWins:', homeWins, 'awayWins:', awayWins);
+          
+          const updateResult = await match.update({ 
             match_data: matchData,
             home_score: homeWins,  // 토탈 세트 승리 수
             away_score: awayWins   // 토탈 세트 승리 수
           });
+          
+          console.log('🔍 DB 업데이트 결과:', updateResult);
+          
+          // 업데이트 후 데이터 확인
+          const updatedMatch = await Match.findByPk(matchId);
+          console.log('🔍 업데이트 후 DB 데이터:');
+          console.log('home_score:', updatedMatch.home_score);
+          console.log('away_score:', updatedMatch.away_score);
+          console.log('match_data:', JSON.stringify(updatedMatch.match_data, null, 2));
+          
           console.log('✅ 현재 세트 점수 데이터베이스 저장 완료');
           
           // 모든 클라이언트에 현재 세트 점수 업데이트 알림
@@ -894,6 +908,92 @@ io.on('connection', (socket) => {
           });
           
           console.log(`✅ 세트 이동 완료: ${targetSet}세트`);
+        }
+      } else if (action === 'save_match_score') {
+        // 매치 점수(세트 승리 수) 저장 처리
+        console.log('🔍 매치 점수 저장 디버깅:');
+        console.log('matchId:', matchId);
+        console.log('data.homeWins:', data.homeWins);
+        console.log('data.awayWins:', data.awayWins);
+        
+        const match = await Match.findByPk(matchId);
+        if (match) {
+          const matchData = match.match_data || {};
+          
+          // 매치 점수(세트 승리 수) 저장
+          matchData.home_wins = data.homeWins;
+          matchData.away_wins = data.awayWins;
+          
+          console.log('새로운 matchData:', matchData);
+          console.log('저장할 매치 점수:', { homeWins: data.homeWins, awayWins: data.awayWins });
+          
+          console.log('🔍 매치 점수 DB 업데이트 전 데이터 검증:');
+          console.log('matchData:', JSON.stringify(matchData, null, 2));
+          console.log('homeWins:', data.homeWins, 'awayWins:', data.awayWins);
+          
+          const updateResult = await match.update({ 
+            match_data: matchData,
+            home_score: data.homeWins,  // 토탈 세트 승리 수
+            away_score: data.awayWins   // 토탈 세트 승리 수
+          });
+          
+          console.log('🔍 매치 점수 DB 업데이트 결과:', updateResult);
+          
+          // 업데이트 후 데이터 확인
+          const updatedMatch = await Match.findByPk(matchId);
+          console.log('🔍 매치 점수 업데이트 후 DB 데이터:');
+          console.log('home_score:', updatedMatch.home_score);
+          console.log('away_score:', updatedMatch.away_score);
+          console.log('match_data.home_wins:', updatedMatch.match_data?.home_wins);
+          console.log('match_data.away_wins:', updatedMatch.match_data?.away_wins);
+          
+          console.log('✅ 매치 점수 데이터베이스 저장 완료');
+          
+          // 모든 클라이언트에 매치 점수 업데이트 알림
+          const roomName = `match_${matchId}`;
+          io.to(roomName).emit('match_updated', {
+            matchId: matchId,
+            home_score: data.homeWins,  // 토탈 세트 승리 수
+            away_score: data.awayWins,  // 토탈 세트 승리 수
+            match_data: {
+              home_wins: data.homeWins,
+              away_wins: data.awayWins
+            }
+          });
+          
+          console.log(`✅ 매치 점수 업데이트: ${data.homeWins}-${data.awayWins}`);
+        } else {
+          console.log('❌ 경기를 찾을 수 없음:', matchId);
+        }
+      } else if (action === 'load_set_scores') {
+        // 세트 점수 로드 처리
+        console.log('🔍 세트 점수 로드 디버깅:');
+        console.log('matchId:', matchId);
+        
+        const match = await Match.findByPk(matchId);
+        if (match) {
+          const matchData = match.match_data || {};
+          const setScores = matchData.set_scores || { home: {}, away: {} };
+          const setFormat = matchData.setFormat || 3;
+          const homeWins = matchData.home_wins || 0;
+          const awayWins = matchData.away_wins || 0;
+          
+          console.log('로드된 세트 점수:', setScores);
+          console.log('로드된 세트제:', setFormat);
+          console.log('로드된 매치 점수:', { homeWins, awayWins });
+          
+          // 클라이언트에 세트 점수 전송
+          socket.emit('set_scores_loaded', {
+            matchId: matchId,
+            setScores: setScores,
+            setFormat: setFormat,
+            homeWins: homeWins,
+            awayWins: awayWins
+          });
+          
+          console.log('✅ 세트 점수 로드 완료');
+        } else {
+          console.log('❌ 경기를 찾을 수 없음:', matchId);
         }
       }
     } catch (error) {
