@@ -462,8 +462,17 @@
                 const newScore = Math.max(0, currentScore + change);
                 
                 // 4. 서버 상태로 UI 동기화 (현재 세트의 점수)
-                const serverHomeScore = matchData.match_data?.sets?.home?.[currentSetNumber] || 0;
-                const serverAwayScore = matchData.match_data?.sets?.away?.[currentSetNumber] || 0;
+                // sets 필드가 없으면 set_scores에서 가져오기
+                let serverHomeScore = 0;
+                let serverAwayScore = 0;
+                
+                if (matchData.match_data?.sets?.home && matchData.match_data?.sets?.away) {
+                    serverHomeScore = matchData.match_data.sets.home[currentSetNumber] || 0;
+                    serverAwayScore = matchData.match_data.sets.away[currentSetNumber] || 0;
+                } else if (matchData.match_data?.set_scores?.home && matchData.match_data?.set_scores?.away) {
+                    serverHomeScore = matchData.match_data.set_scores.home[currentSetNumber] || 0;
+                    serverAwayScore = matchData.match_data.set_scores.away[currentSetNumber] || 0;
+                }
                 
                 const homeScoreElement = document.getElementById('home-score');
                 const awayScoreElement = document.getElementById('away-score');

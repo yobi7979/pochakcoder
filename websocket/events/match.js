@@ -331,12 +331,26 @@ const matchEvents = (socket, io) => {
       
       // 2. match_data에서 세트 점수 업데이트 (야구의 innings와 동일한 방식)
       let matchData = match.match_data || {};
-      if (!matchData.sets || !matchData.sets.home || !matchData.sets.away) {
-        matchData.sets = {
-          home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
-          away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
-        };
-        console.log(`sets 초기화 완료:`, matchData.sets);
+      
+      // 기존 set_scores를 sets로 변환하거나 새로 생성
+      if (!matchData.sets) {
+        if (matchData.set_scores && matchData.set_scores.home && matchData.set_scores.away) {
+          // 기존 set_scores를 sets로 변환
+          matchData.sets = {
+            home: matchData.set_scores.home,
+            away: matchData.set_scores.away
+          };
+          console.log(`set_scores를 sets로 변환 완료:`, matchData.sets);
+        } else {
+          // 새로운 sets 구조 생성
+          matchData.sets = {
+            home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+            away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+          };
+          console.log(`sets 초기화 완료:`, matchData.sets);
+        }
+      } else {
+        console.log(`기존 sets 데이터 사용:`, matchData.sets);
       }
       
       const sets = matchData.sets;
@@ -529,11 +543,26 @@ const matchEvents = (socket, io) => {
       
       // 2. match_data에서 세트 점수 업데이트
       let matchData = match.match_data || {};
-      if (!matchData.sets || !matchData.sets.home || !matchData.sets.away) {
-        matchData.sets = {
-          home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
-          away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
-        };
+      
+      // 기존 set_scores를 sets로 변환하거나 새로 생성
+      if (!matchData.sets) {
+        if (matchData.set_scores && matchData.set_scores.home && matchData.set_scores.away) {
+          // 기존 set_scores를 sets로 변환
+          matchData.sets = {
+            home: matchData.set_scores.home,
+            away: matchData.set_scores.away
+          };
+          console.log(`set_scores를 sets로 변환 완료:`, matchData.sets);
+        } else {
+          // 새로운 sets 구조 생성
+          matchData.sets = {
+            home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+            away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+          };
+          console.log(`sets 초기화 완료:`, matchData.sets);
+        }
+      } else {
+        console.log(`기존 sets 데이터 사용:`, matchData.sets);
       }
       
       // 현재 세트 점수 저장
