@@ -5049,20 +5049,78 @@
                     }
                 }
                 
-                // 서버에서 계산된 매치 점수 사용 (세트 승리 수)
+                // 매치 점수는 다음 세트 버튼에서만 업데이트 (여기서는 업데이트하지 않음)
+                
+                console.log(`배구 세트 점수 업데이트 완료: ${team}팀 ${set}세트 = ${score}`);
+                console.log('매치 점수는 다음 세트 버튼에서만 업데이트됩니다.');
+                console.log('=== 배구 세트 점수 업데이트 처리 완료 (오버레이) ===');
+            }
+        });
+
+        // 배구 매치 점수 업데이트 이벤트 수신 (다음 세트 버튼에서만 발생)
+        socket.on('volleyball_match_score_updated', function(data) {
+            console.log('=== 배구 매치 점수 업데이트 수신 (오버레이) ===');
+            console.log('수신된 데이터:', data);
+            console.log('현재 matchId:', matchId);
+            console.log('데이터 matchId:', data.matchId);
+
+            if (data.matchId === matchId) {
+                const { home_score, away_score } = data;
+
                 const homeScoreElement = document.getElementById('home-score');
                 const awayScoreElement = document.getElementById('away-score');
-                
+
                 if (homeScoreElement && home_score !== undefined) {
                     homeScoreElement.textContent = home_score;
                 }
                 if (awayScoreElement && away_score !== undefined) {
                     awayScoreElement.textContent = away_score;
                 }
-                
-                console.log(`배구 세트 점수 업데이트 완료: ${team}팀 ${set}세트 = ${score}`);
+
                 console.log(`배구 매치 점수 업데이트 완료: 홈팀 ${home_score}세트, 원정팀 ${away_score}세트`);
-                console.log('=== 배구 세트 점수 업데이트 처리 완료 (오버레이) ===');
+                console.log('=== 배구 매치 점수 업데이트 처리 완료 (오버레이) ===');
+            }
+        });
+
+        // 배구 다음 세트 업데이트 이벤트 수신 (오버레이)
+        socket.on('volleyball_next_set_updated', function(data) {
+            console.log('=== 배구 다음 세트 업데이트 수신 (오버레이) ===');
+            console.log('수신된 데이터:', data);
+            console.log('현재 matchId:', matchId);
+            console.log('데이터 matchId:', data.matchId);
+
+            if (data.matchId === matchId) {
+                const { currentSet, home_score, away_score, match_data } = data;
+
+                // 매치 점수 업데이트
+                const homeScoreElement = document.getElementById('home-score');
+                const awayScoreElement = document.getElementById('away-score');
+
+                if (homeScoreElement && home_score !== undefined) {
+                    homeScoreElement.textContent = home_score;
+                }
+                if (awayScoreElement && away_score !== undefined) {
+                    awayScoreElement.textContent = away_score;
+                }
+
+                // 세트 점수 표 업데이트
+                if (match_data && match_data.sets) {
+                    for (let i = 1; i <= 5; i++) {
+                        const homeSetElement = document.getElementById(`teamA-set-${i}`);
+                        const awaySetElement = document.getElementById(`teamB-set-${i}`);
+
+                        if (homeSetElement && match_data.sets.home && match_data.sets.home[i] !== undefined) {
+                            homeSetElement.textContent = match_data.sets.home[i] || '0';
+                        }
+                        if (awaySetElement && match_data.sets.away && match_data.sets.away[i] !== undefined) {
+                            awaySetElement.textContent = match_data.sets.away[i] || '0';
+                        }
+                    }
+                }
+
+                console.log(`배구 다음 세트 업데이트 완료: ${currentSet}세트`);
+                console.log(`매치 점수: 홈팀 ${home_score}세트, 원정팀 ${away_score}세트`);
+                console.log('=== 배구 다음 세트 업데이트 처리 완료 (오버레이) ===');
             }
         });
 

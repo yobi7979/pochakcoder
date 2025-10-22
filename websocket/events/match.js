@@ -346,36 +346,14 @@ const matchEvents = (socket, io) => {
       sets[team][parseInt(set)] = parseInt(score);
       console.log(`업데이트 후 sets:`, sets);
       
-      // 3. 매치 점수 계산 (세트 승리 수)
-      let homeWins = 0;
-      let awayWins = 0;
-      
-      // 모든 세트의 승리 계산 (세트 점수가 0이 아닌 세트만 계산)
-      for (let setNum = 1; setNum <= 5; setNum++) {
-        const homeScore = sets.home[setNum] || 0;
-        const awayScore = sets.away[setNum] || 0;
-        
-        // 세트 점수가 모두 0이 아닌 경우에만 승리 계산
-        if (homeScore > 0 || awayScore > 0) {
-          if (homeScore > awayScore) {
-            homeWins++;
-          } else if (awayScore > homeScore) {
-            awayWins++;
-          }
-        }
-      }
-      
-      console.log(`계산된 매치 점수: 홈팀 ${homeWins}세트, 원정팀 ${awayWins}세트`);
-      
-      // 4. Match 테이블의 match_data와 매치 점수 업데이트
+      // 3. Match 테이블의 match_data만 업데이트 (매치 점수는 계산하지 않음)
       await match.update({
-        match_data: matchData,
-        home_score: homeWins,  // 매치 점수 (세트 승리 수)
-        away_score: awayWins   // 매치 점수 (세트 승리 수)
+        match_data: matchData
+        // home_score, away_score는 업데이트하지 않음 (다음 세트 버튼에서만 계산)
       });
       
       console.log(`배구 세트 점수 업데이트 완료: ${team}팀 ${set}세트 = ${score}`);
-      console.log(`배구 매치 점수 업데이트 완료: 홈팀 ${homeWins}세트, 원정팀 ${awayWins}세트`);
+      console.log(`매치 점수는 다음 세트 버튼에서만 계산됩니다.`);
       
       // 5. 세트별 점수 데이터 구성 (match_data 구조에서)
       const setsData = {};
@@ -394,16 +372,15 @@ const matchEvents = (socket, io) => {
         setType: setType,
         score: score,
         change: change,
-        sets: setsData,
-        home_score: homeWins,  // 매치 점수 (세트 승리 수)
-        away_score: awayWins   // 매치 점수 (세트 승리 수)
+        sets: setsData
+        // home_score, away_score는 전송하지 않음 (다음 세트 버튼에서만 계산)
       };
       
       console.log(`=== 배구 세트 점수 업데이트 이벤트 전송 데이터 ===`);
       console.log(`방: ${roomName}`);
       console.log(`전송 데이터:`, eventData);
       console.log(`세트별 데이터:`, setsData);
-      console.log(`매치 점수: 홈팀 ${homeWins}세트, 원정팀 ${awayWins}세트`);
+      console.log(`매치 점수는 다음 세트 버튼에서만 계산됩니다.`);
       
       io.to(roomName).emit('volleyball_score_updated', eventData);
       
@@ -427,6 +404,122 @@ const matchEvents = (socket, io) => {
       clientId: socket.id 
     });
     console.log(`✅ 방 참가 확인 이벤트 전송: ${roomName}`);
+  });
+
+  // 배구 매치 점수 업데이트 이벤트 처리 (다음 세트 버튼에서만 호출)
+  socket.on('volleyball_match_score_update', async (data) => {
+    try {
+      const { matchId, homeWins, awayWins } = data;
+      const roomName = `match_${matchId}`;
+      
+      console.log(`배구 매치 점수 업데이트: matchId=${matchId}, 홈팀 ${homeWins}세트, 원정팀 ${awayWins}세트`);
+      
+      // 1. 데이터베이스에서 현재 경기 데이터 가져오기
+      const { Match } = require('../../models');
+      const match = await Match.findByPk(matchId);
+      
+      if (!match) {
+        console.error(`경기를 찾을 수 없습니다: ${matchId}`);
+        socket.emit('volleyball_match_score_update_error', { error: '경기를 찾을 수 없습니다.' });
+        return;
+      }
+      
+      // 2. Match 테이블의 매치 점수만 업데이트
+      await match.update({
+        home_score: homeWins,  // 매치 점수 (세트 승리 수)
+        away_score: awayWins   // 매치 점수 (세트 승리 수)
+      });
+      
+      console.log(`배구 매치 점수 업데이트 완료: 홈팀 ${homeWins}세트, 원정팀 ${awayWins}세트`);
+      
+      // 3. 해당 방의 모든 클라이언트에게 매치 점수 업데이트 이벤트 전송
+      const eventData = {
+        matchId: matchId,
+        home_score: homeWins,  // 매치 점수 (세트 승리 수)
+        away_score: awayWins   // 매치 점수 (세트 승리 수)
+      };
+      
+      console.log(`=== 배구 매치 점수 업데이트 이벤트 전송 데이터 ===`);
+      console.log(`방: ${roomName}`);
+      console.log(`전송 데이터:`, eventData);
+      
+      io.to(roomName).emit('volleyball_match_score_updated', eventData);
+      
+      console.log(`배구 매치 점수 업데이트 이벤트를 방 ${roomName}에 전송함`);
+    } catch (error) {
+      console.error('배구 매치 점수 업데이트 처리 중 오류 발생:', error);
+      socket.emit('volleyball_match_score_update_error', { error: '배구 매치 점수 업데이트에 실패했습니다.' });
+    }
+  });
+
+  // 배구 다음 세트 이벤트 처리
+  socket.on('volleyball_next_set', async (data) => {
+    try {
+      const { matchId, currentSet, homeScore, awayScore, setScores, setFormat, homeWins, awayWins } = data;
+      const roomName = `match_${matchId}`;
+      
+      console.log(`배구 다음 세트 요청: matchId=${matchId}, 현재 세트=${currentSet}, 홈팀=${homeScore}, 어웨이팀=${awayScore}`);
+      console.log(`클라이언트에서 계산된 매치 점수: 홈팀 ${homeWins}세트, 원정팀 ${awayWins}세트`);
+      
+      // 1. 데이터베이스에서 현재 경기 데이터 가져오기
+      const { Match } = require('../../models');
+      const match = await Match.findByPk(matchId);
+      
+      if (!match) {
+        console.error(`경기를 찾을 수 없습니다: ${matchId}`);
+        socket.emit('volleyball_next_set_error', { error: '경기를 찾을 수 없습니다.' });
+        return;
+      }
+      
+      // 2. match_data에서 세트 점수 업데이트
+      let matchData = match.match_data || {};
+      if (!matchData.sets || !matchData.sets.home || !matchData.sets.away) {
+        matchData.sets = {
+          home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+          away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+        };
+      }
+      
+      // 현재 세트 점수 저장
+      matchData.sets.home[currentSet] = homeScore;
+      matchData.sets.away[currentSet] = awayScore;
+      
+      // 다음 세트로 이동
+      const nextSet = currentSet + 1;
+      matchData.current_set = nextSet;
+      matchData.setFormat = setFormat;
+      
+      // 3. Match 테이블 업데이트 (매치 점수 포함)
+      await match.update({
+        match_data: matchData,
+        home_score: homeWins,  // 매치 점수 (세트 승리 수)
+        away_score: awayWins,  // 매치 점수 (세트 승리 수)
+        status: `${nextSet}세트`
+      });
+      
+      console.log(`배구 다음 세트 완료: ${currentSet}세트 → ${nextSet}세트`);
+      console.log(`매치 점수: 홈팀 ${homeWins}세트, 원정팀 ${awayWins}세트`);
+      
+      // 4. 해당 방의 모든 클라이언트에게 다음 세트 이벤트 전송
+      const eventData = {
+        matchId: matchId,
+        currentSet: nextSet,
+        home_score: homeWins,  // 매치 점수 (세트 승리 수)
+        away_score: awayWins,  // 매치 점수 (세트 승리 수)
+        match_data: matchData
+      };
+      
+      console.log(`=== 배구 다음 세트 이벤트 전송 데이터 ===`);
+      console.log(`방: ${roomName}`);
+      console.log(`전송 데이터:`, eventData);
+      
+      io.to(roomName).emit('volleyball_next_set_updated', eventData);
+      
+      console.log(`배구 다음 세트 이벤트를 방 ${roomName}에 전송함`);
+    } catch (error) {
+      console.error('배구 다음 세트 처리 중 오류 발생:', error);
+      socket.emit('volleyball_next_set_error', { error: '배구 다음 세트 처리에 실패했습니다.' });
+    }
   });
 
   // 경기 방 참여 이벤트 처리 (join_match)

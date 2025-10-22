@@ -453,9 +453,17 @@
                 const matchData = await response.json();
                 console.log('서버에서 받은 최신 데이터:', matchData);
                 
-                // 2. 서버 상태로 UI 동기화
-                const serverHomeScore = matchData.home_score || 0;
-                const serverAwayScore = matchData.away_score || 0;
+                // 2. 현재 세트 정보 가져오기 (모바일에서는 기본적으로 1세트)
+                const currentSetNumber = 1; // 모바일에서는 현재 세트를 1로 가정
+                
+                // 3. 현재 세트의 점수 가져오기 (서버 동기화 전에)
+                const scoreInput = document.getElementById(`${team}-score`);
+                const currentScore = parseInt(scoreInput.value) || 0;
+                const newScore = Math.max(0, currentScore + change);
+                
+                // 4. 서버 상태로 UI 동기화 (현재 세트의 점수)
+                const serverHomeScore = matchData.match_data?.sets?.home?.[currentSetNumber] || 0;
+                const serverAwayScore = matchData.match_data?.sets?.away?.[currentSetNumber] || 0;
                 
                 const homeScoreElement = document.getElementById('home-score');
                 const awayScoreElement = document.getElementById('away-score');
@@ -467,13 +475,7 @@
                     awayScoreElement.value = serverAwayScore;
                 }
                 
-                // 3. 현재 세트 정보 가져오기 (모바일에서는 기본적으로 1세트)
-                const currentSetNumber = 1; // 모바일에서는 현재 세트를 1로 가정
-                
-                // 4. 현재 세트의 점수 가져오기
-                const scoreInput = document.getElementById(`${team}-score`);
-                const currentScore = parseInt(scoreInput.value) || 0;
-                const newScore = Math.max(0, currentScore + change);
+                // 5. 매치 점수는 다음 세트 버튼에서만 업데이트 (여기서는 업데이트하지 않음)
                 
                 console.log(`세트 ${currentSetNumber} 점수 변경: ${team}팀 ${currentScore} + ${change} = ${newScore}`);
                 
