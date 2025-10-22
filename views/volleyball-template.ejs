@@ -5333,8 +5333,15 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🔧 배구 시스템 초기화 시작');
             
-            // 배구 특화 초기화
-            initializeVolleyball();
+            // WebSocket 연결 후 배구 데이터 요청
+            if (socket && socket.connected) {
+                initializeVolleyball();
+            } else {
+                // WebSocket 연결 대기
+                socket.on('connect', function() {
+                    initializeVolleyball();
+                });
+            }
             
             console.log('✅ 배구 시스템 초기화 완료');
         });
