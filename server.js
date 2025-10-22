@@ -1412,6 +1412,68 @@ app.get('/api/matches/:id', async (req, res) => {
   }
 });
 
+// 야구 방식의 통합 초기 데이터 엔드포인트 (배구용)
+app.get('/api/matches/:matchId/initial-data', async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    console.log(`[DEBUG] 배구 통합 초기 데이터 요청: ID=${matchId}`);
+    
+    const match = await Match.findByPk(matchId);
+    
+    if (!match) {
+      return res.status(404).json({ error: '경기를 찾을 수 없습니다.' });
+    }
+    
+    // 야구 방식의 통합 데이터 구성
+    const initialData = {
+      // 기본 경기 정보
+      id: match.id,
+      home_team: match.home_team,
+      away_team: match.away_team,
+      home_score: match.home_score,
+      away_score: match.away_score,
+      status: match.status,
+      
+      // match_data (JSONB 필드)
+      match_data: match.match_data || {},
+      
+      // 세트 점수 (배구 특화)
+      set_scores: match.match_data?.set_scores || { home: {}, away: {} },
+      setFormat: match.match_data?.setFormat || 3,
+      current_set: match.match_data?.current_set || 1,
+      servingTeam: match.match_data?.servingTeam || 'home',
+      
+      // 팀 로고 및 컬러
+      home_team_logo: match.match_data?.home_team_logo || '',
+      away_team_logo: match.match_data?.away_team_logo || '',
+      home_team_color: match.match_data?.home_team_color || '#1e40af',
+      away_team_color: match.match_data?.away_team_color || '#1e40af',
+      home_team_colorbg: match.match_data?.home_team_colorbg || '#ffffff',
+      away_team_colorbg: match.match_data?.away_team_colorbg || '#ffffff',
+      
+      // 팀명
+      home_team_name: match.match_data?.home_team_name || match.home_team,
+      away_team_name: match.match_data?.away_team_name || match.away_team,
+      
+      // 세트 승리 수
+      home_wins: match.match_data?.home_wins || 0,
+      away_wins: match.match_data?.away_wins || 0
+    };
+    
+    console.log(`[DEBUG] 배구 통합 초기 데이터 응답:`, {
+      matchId,
+      set_scores: initialData.set_scores,
+      setFormat: initialData.setFormat,
+      current_set: initialData.current_set
+    });
+    
+    res.json(initialData);
+  } catch (error) {
+    console.error('배구 통합 초기 데이터 조회 실패:', error);
+    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+  }
+});
+
 app.get('/api/matches', requireAuth, async (req, res) => {
   try {
     console.log('[DEBUG] 경기 목록 조회 요청 받음');

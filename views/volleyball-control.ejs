@@ -1381,6 +1381,9 @@
                 setFormat: setFormat
             });
             
+            // 야구 방식: 세트 이동 시 일괄 저장
+            updateMatchInfo();
+            
             console.log(`다음 세트로 이동: ${currentSet} → ${currentSetNumber + 1}세트`);
         }
 
@@ -1781,6 +1784,9 @@
                 action: 'set_format_change',
                 setFormat: parseInt(setFormat)
             });
+            
+            // 야구 방식: 세트 포맷 변경 시 일괄 저장
+            updateMatchInfo();
         }
 
         // 세트 구성에 따른 UI 업데이트
@@ -2638,6 +2644,9 @@
             // 기존 방식과 동일하게 emitScoreUpdate 함수 사용
             emitScoreUpdate();
             
+            // 야구 방식: 점수 변경 시 일괄 저장
+            updateMatchInfo();
+            
             console.log(`${team}팀 점수 업데이트 완료: ${newScore}`);
         }
 
@@ -2780,34 +2789,93 @@
         // 경기 정보 업데이트 함수 (기존 코드와 동일)
         async function updateMatchInfo() {
             try {
-                console.log('=== 경기 정보 업데이트 시작 ===');
+                console.log('=== 배구 경기 정보 업데이트 시작 (야구 방식) ===');
                 
+                // 기본 경기 정보 수집
                 const homeTeam = document.getElementById('home-team-name').value;
                 const awayTeam = document.getElementById('away-team-name').value;
                 const homeScore = document.getElementById('home-score').value;
                 const awayScore = document.getElementById('away-score').value;
                 
-                console.log('업데이트할 데이터:', {
-                    homeTeam, awayTeam, homeScore, awayScore
-                });
+                // 세트 포맷 정보
+                const setFormat = document.querySelector('input[name="setFormat"]:checked')?.value || '3';
+                
+                // 현재 세트 정보
+                const currentSet = parseInt(document.getElementById('current-set').textContent) || 1;
+                
+                // 세트별 점수 수집 (야구의 innings 방식과 유사)
+                const setScores = { home: {}, away: {} };
+                for (let i = 1; i <= 5; i++) {
+                    const homeSetElement = document.getElementById(`home-set-${i}`);
+                    const awaySetElement = document.getElementById(`away-set-${i}`);
+                    
+                    if (homeSetElement) {
+                        setScores.home[i] = parseInt(homeSetElement.value) || 0;
+                    }
+                    if (awaySetElement) {
+                        setScores.away[i] = parseInt(awaySetElement.value) || 0;
+                    }
+                }
+                
+                // 팀 로고 및 컬러 정보
+                const homeTeamLogo = document.querySelector('#home-team-logo-preview img')?.src || '';
+                const awayTeamLogo = document.querySelector('#away-team-logo-preview img')?.src || '';
+                const homeTeamColor = document.querySelector('.home-team-color')?.value || '#1e40af';
+                const awayTeamColor = document.querySelector('.away-team-color')?.value || '#1e40af';
+                const homeTeamColorBg = document.querySelector('.home-team-colorbg')?.value || '#ffffff';
+                const awayTeamColorBg = document.querySelector('.away-team-colorbg')?.value || '#ffffff';
+                
+                // 서빙 팀 정보
+                const servingTeam = document.querySelector('.serving-indicator.home')?.classList.contains('active') ? 'home' : 'away';
+                
+                // 매치 데이터 구성 (야구 방식과 유사)
+                const formData = {
+                    home_team: homeTeam,
+                    away_team: awayTeam,
+                    home_score: parseInt(homeScore),
+                    away_score: parseInt(awayScore),
+                    match_data: {
+                        current_set: currentSet,
+                        setFormat: setFormat,
+                        set_scores: setScores,
+                        servingTeam: servingTeam,
+                        home_team_logo: homeTeamLogo,
+                        away_team_logo: awayTeamLogo,
+                        home_team_color: homeTeamColor,
+                        away_team_color: awayTeamColor,
+                        home_team_colorbg: homeTeamColorBg,
+                        away_team_colorbg: awayTeamColorBg,
+                        home_team_name: homeTeam,
+                        away_team_name: awayTeam
+                    }
+                };
+                
+                console.log('서버로 전송할 배구 경기 정보:', formData);
                 
                 const response = await fetch(`/api/matches/${matchId}`, {
-                    method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                        home_team: homeTeam,
-                        away_team: awayTeam,
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (response.ok) {
+                    const updatedMatch = await response.json();
+                    console.log('배구 경기 정보 업데이트 성공:', updatedMatch);
+                    
+                    // WebSocket으로 다른 클라이언트에 업데이트 알림
+                    socket.emit('match_updated', {
+                        matchId: matchId,
                         home_score: parseInt(homeScore),
-                        away_score: parseInt(awayScore)
-                        })
+                        away_score: parseInt(awayScore),
+                        match_data: formData.match_data
                     });
                     
-                if (response.ok) {
-                    console.log('경기 정보 업데이트 성공');
-                    } else {
-                    console.error('경기 정보 업데이트 실패:', response.status);
+                    console.log('=== 배구 경기 정보 업데이트 완료 ===');
+                } else {
+                    console.error('배구 경기 정보 업데이트 실패:', response.status);
+                    throw new Error('업데이트 실패');
                 }
             } catch (error) {
                 console.error('경기 정보 업데이트 중 오류:', error);
