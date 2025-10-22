@@ -2775,7 +2775,8 @@
                 const setFormat = document.querySelector('input[name="setFormat"]:checked')?.value || '3';
                 
                 // 현재 세트 정보
-                const currentSet = parseInt(document.getElementById('current-set').textContent) || 1;
+                const currentSetDisplay = document.getElementById('current-set-display');
+                const currentSet = currentSetDisplay ? parseInt(currentSetDisplay.textContent.replace('세트', '')) || 1 : 1;
                 
                 // 세트별 점수 수집 (야구의 innings 방식과 유사)
                 const setScores = { home: {}, away: {} };
