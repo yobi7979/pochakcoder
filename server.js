@@ -659,17 +659,21 @@ io.on('connection', (socket) => {
           console.log('새로운 matchData:', matchData);
           console.log('계산된 토탈 스코어:', { homeWins, awayWins });
           
-          // 데이터베이스 업데이트 (토탈 스코어도 함께)
-          await match.update({ 
+          console.log('🔍 save_set_scores DB 업데이트 전 matchData:', JSON.stringify(matchData, null, 2));
+          
+          const updateResult = await match.update({ 
             match_data: matchData,
             home_score: homeWins,  // 토탈 스코어
             away_score: awayWins   // 토탈 스코어
           });
+          
+          console.log('🔍 save_set_scores DB 업데이트 결과:', updateResult);
           console.log('✅ 세트 점수 및 토탈 스코어 데이터베이스 저장 완료');
           
           // 저장 후 확인
           const updatedMatch = await Match.findByPk(matchId);
-          console.log('저장 후 확인:', updatedMatch.match_data);
+          console.log('🔍 save_set_scores 저장 후 matchData:', JSON.stringify(updatedMatch.match_data, null, 2));
+          console.log('🔍 save_set_scores 저장 후 set_scores:', updatedMatch.match_data.set_scores);
           
           // 모든 클라이언트에 세트 점수 저장 알림
           const roomName = `match_${matchId}`;
@@ -829,16 +833,21 @@ io.on('connection', (socket) => {
             set_scores: matchData.set_scores
           });
           
-          await match.update({ 
+          console.log('🔍 DB 업데이트 전 최종 matchData:', JSON.stringify(matchData, null, 2));
+          
+          const updateResult = await match.update({ 
             match_data: matchData,
             status: nextSet + '세트',
             home_score: homeWins,  // 토탈 세트 승리 수
             away_score: awayWins   // 토탈 세트 승리 수
           });
           
+          console.log('🔍 DB 업데이트 결과:', updateResult);
+          
           // DB 저장 후 확인
           const updatedMatch = await Match.findByPk(matchId);
-          console.log('🔍 DB 저장 후 matchData.set_scores:', updatedMatch.match_data.set_scores);
+          console.log('🔍 DB 저장 후 matchData:', JSON.stringify(updatedMatch.match_data, null, 2));
+          console.log('🔍 DB 저장 후 set_scores:', updatedMatch.match_data.set_scores);
           
           // 모든 클라이언트에 업데이트 알림
           const roomName = `match_${matchId}`;
