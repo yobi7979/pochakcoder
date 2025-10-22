@@ -1207,22 +1207,16 @@
             socket.emit('join_match', { matchId: matchId });
             
             // 연결 상태 업데이트
-            updateConnectionStatus(true);
-            
-            // 배구는 타이머가 없으므로 타이머 관련 코드 제거
-            
-            // 연결 시 현재 타이머 상태 요청 (재연결 시 정확한 동기화)
+            updateConnectionStatus(true);         
         });
 
         socket.on('disconnect', function() {
             console.log('🔌 서버 연결 끊김');
             console.log('서버와의 연결이 끊어졌습니다.');
             updateConnectionStatus(false);
-            
-            // 배구는 타이머가 없으므로 타이머 관련 코드 제거
-        });
-        
-        // 배구는 득점 선수 입력이 없으므로 득점 관련 소켓 이벤트 제거
+                     
+        });        
+   
         
         // 경기 데이터 로드 응답 이벤트 (최적화된 버전)
         socket.on('matchDataLoaded', function(data) {
@@ -1267,8 +1261,7 @@
             alert('득점 정보 저장에 실패했습니다: ' + data.error);
         });
 
-
-        // 완전히 새로운 단순한 타이머 제어 함수들
+      
         // 배구 특화 함수들
         // 서브권 토글 함수 (단일 버튼)
         function toggleServe() {
@@ -2621,8 +2614,6 @@
             console.log('✅ 경기 상황 업데이트 이벤트 전송 완료:', state);
         }
 
-        
-
         // 점수 업데이트
         function updateScore(team, change) {
             console.log(`=== ${team}팀 점수 업데이트 ===`);
@@ -2693,7 +2684,8 @@
                     matchId: matchId,
                 action: 'update_score',
                 home_score: parseInt(homeScore),
-                away_score: parseInt(awayScore)
+                away_score: parseInt(awayScore),
+                setScores: setScores  // 현재 세트 점수 데이터 포함
             });
             
             console.log('배구 점수 업데이트 이벤트 전송 완료');

@@ -711,6 +711,27 @@ io.on('connection', (socket) => {
           matchData.home_score = data.home_score;
           matchData.away_score = data.away_score;
           
+          // set_scores 업데이트 (클라이언트에서 전송된 setScores 사용)
+          const currentSet = matchData.current_set || 1;
+          
+          if (data.setScores && data.setScores.home && data.setScores.away) {
+            // 클라이언트에서 전송된 setScores 사용
+            matchData.set_scores = data.setScores;
+            console.log('🔍 클라이언트에서 전송된 setScores 사용:', JSON.stringify(data.setScores, null, 2));
+          } else {
+            // 기존 방식으로 현재 세트 점수만 저장
+            if (!matchData.set_scores) {
+              matchData.set_scores = { home: {}, away: {} };
+            }
+            matchData.set_scores.home[currentSet] = data.home_score;
+            matchData.set_scores.away[currentSet] = data.away_score;
+            console.log('🔍 기존 방식으로 set_scores 업데이트');
+          }
+          
+          console.log('🔍 set_scores 업데이트:');
+          console.log('currentSet:', currentSet);
+          console.log('set_scores:', JSON.stringify(matchData.set_scores, null, 2));
+          
           // 토탈 세트 승리 수 계산 (기존 승리 수 유지)
           let homeWins = matchData.home_wins || 0;
           let awayWins = matchData.away_wins || 0;
