@@ -43,8 +43,8 @@ router.get('/:matchId/initial-data', async (req, res) => {
       // match_data (JSONB 필드)
       match_data: match.match_data || {},
       
-      // 세트 점수 (배구 특화)
-      set_scores: match.match_data?.set_scores || { home: {}, away: {} },
+      // 세트 점수 (배구 특화) - sets 구조 사용
+      sets: match.match_data?.sets || { home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}, away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0} },
       setFormat: match.match_data?.setFormat || 3,
       current_set: match.match_data?.current_set || 1,
       servingTeam: match.match_data?.servingTeam || 'home',
@@ -63,7 +63,13 @@ router.get('/:matchId/initial-data', async (req, res) => {
       
       // 세트 승리 수
       home_wins: match.match_data?.home_wins || 0,
-      away_wins: match.match_data?.away_wins || 0
+      away_wins: match.match_data?.away_wins || 0,
+      
+      // 현재 세트 점수
+      current_set_score: {
+        home: match.match_data?.sets?.home?.[match.match_data?.current_set || 1] || 0,
+        away: match.match_data?.sets?.away?.[match.match_data?.current_set || 1] || 0
+      }
     };
     
     console.log(`[DEBUG] 배구 통합 초기 데이터 응답:`, {
@@ -1147,6 +1153,175 @@ router.post('/:matchId/save-lineup', async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error('🚨 RAILWAY 라인업 저장 실패:', error);
+    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+  }
+});
+
+// PUT /api/matches/:matchId/volleyball-score - 배구 세트 점수 업데이트
+router.put('/:matchId/volleyball-score', async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { team, set, score, currentSet, setFormat } = req.body;
+    
+    console.log(`=== 배구 세트 점수 업데이트 ===`);
+    console.log(`경기 ID: ${matchId}, 팀: ${team}, 세트: ${set}, 점수: ${score}`);
+    console.log(`현재 세트: ${currentSet}, 세트제: ${setFormat}`);
+    
+    const match = await Match.findByPk(matchId);
+    if (!match) {
+      return res.status(404).json({ error: '경기를 찾을 수 없습니다.' });
+    }
+    
+    // match_data 구조 통일 및 초기화
+    let matchData = match.match_data || {};
+    
+    // sets 구조 강제 생성
+    if (!matchData.sets) {
+      matchData.sets = {
+        home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+        away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+      };
+      console.log(`sets 구조 초기화 완료`);
+    }
+    
+    // 현재 세트 및 세트제 정보 저장
+    if (currentSet !== undefined) {
+      matchData.current_set = parseInt(currentSet);
+    }
+    if (setFormat !== undefined) {
+      matchData.setFormat = parseInt(setFormat);
+    }
+    
+    // 세트 점수 업데이트
+    const sets = matchData.sets;
+    sets[team][parseInt(set)] = parseInt(score);
+    
+    console.log(`세트 점수 업데이트: ${team}팀 ${set}세트 = ${score}`);
+    console.log(`현재 세트: ${matchData.current_set}, 세트제: ${matchData.setFormat}`);
+    
+    // 데이터베이스 저장
+    await match.update({
+      match_data: matchData,
+      status: `${matchData.current_set}세트`
+    });
+    
+    console.log(`=== 배구 세트 점수 업데이트 완료 ===`);
+    
+    // WebSocket으로 실시간 업데이트 전송
+    if (io) {
+      const roomName = `match_${matchId}`;
+      const setsData = {};
+      Object.keys(sets.home).forEach(setNum => {
+        setsData[`home_${setNum}`] = sets.home[setNum];
+      });
+      Object.keys(sets.away).forEach(setNum => {
+        setsData[`away_${setNum}`] = sets.away[setNum];
+      });
+      
+      io.to(roomName).emit('volleyball_score_updated', {
+        matchId: matchId,
+        team: team,
+        set: set,
+        score: score,
+        currentSet: matchData.current_set,
+        setFormat: matchData.setFormat,
+        sets: setsData
+      });
+      
+      console.log(`배구 세트 점수 업데이트 WebSocket 전송 완료`);
+    }
+    
+    res.json({ 
+      success: true, 
+      match: {
+        id: match.id,
+        match_data: matchData,
+        status: match.status
+      }
+    });
+  } catch (error) {
+    console.error('배구 세트 점수 업데이트 실패:', error);
+    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+  }
+});
+
+// PUT /api/matches/:matchId/volleyball-next-set - 배구 다음 세트 처리
+router.put('/:matchId/volleyball-next-set', async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { currentSet, homeScore, awayScore, setScores, setFormat, homeWins, awayWins } = req.body;
+    
+    console.log(`=== 배구 다음 세트 처리 ===`);
+    console.log(`경기 ID: ${matchId}, 현재 세트: ${currentSet}`);
+    console.log(`세트 점수: 홈팀 ${homeScore}, 어웨이팀 ${awayScore}`);
+    console.log(`매치 점수: 홈팀 ${homeWins}세트, 원정팀 ${awayWins}세트`);
+    
+    const match = await Match.findByPk(matchId);
+    if (!match) {
+      return res.status(404).json({ error: '경기를 찾을 수 없습니다.' });
+    }
+    
+    // match_data 구조 통일 및 초기화
+    let matchData = match.match_data || {};
+    
+    // sets 구조 강제 생성
+    if (!matchData.sets) {
+      matchData.sets = {
+        home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+        away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+      };
+    }
+    
+    // 현재 세트 점수 저장
+    matchData.sets.home[currentSet] = homeScore;
+    matchData.sets.away[currentSet] = awayScore;
+    
+    // 다음 세트로 이동
+    const nextSet = currentSet + 1;
+    matchData.current_set = nextSet;
+    matchData.setFormat = setFormat;
+    
+    console.log(`세트 진행: ${currentSet}세트 → ${nextSet}세트`);
+    console.log(`세트제: ${setFormat}세트제`);
+    
+    // 데이터베이스 저장
+    await match.update({
+      match_data: matchData,
+      home_score: homeWins,  // 매치 점수 (세트 승리 수)
+      away_score: awayWins,  // 매치 점수 (세트 승리 수)
+      status: `${nextSet}세트`
+    });
+    
+    console.log(`=== 배구 다음 세트 처리 완료 ===`);
+    
+    // WebSocket으로 실시간 업데이트 전송
+    if (io) {
+      const roomName = `match_${matchId}`;
+      
+      io.to(roomName).emit('volleyball_next_set_updated', {
+        matchId: matchId,
+        currentSet: nextSet,
+        home_score: homeWins,  // 매치 점수 (세트 승리 수)
+        away_score: awayWins,  // 매치 점수 (세트 승리 수)
+        setFormat: setFormat,
+        match_data: matchData
+      });
+      
+      console.log(`배구 다음 세트 WebSocket 전송 완료`);
+    }
+    
+    res.json({ 
+      success: true, 
+      match: {
+        id: match.id,
+        match_data: matchData,
+        home_score: homeWins,
+        away_score: awayWins,
+        status: match.status
+      }
+    });
+  } catch (error) {
+    console.error('배구 다음 세트 처리 실패:', error);
     res.status(500).json({ error: '서버 오류가 발생했습니다.' });
   }
 });

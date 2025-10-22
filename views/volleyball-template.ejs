@@ -5015,7 +5015,7 @@
             }
         });
 
-        // 배구 세트 점수 업데이트 이벤트 처리 (야구와 동일한 방식)
+        // 배구 세트 점수 업데이트 이벤트 처리 (완전 재구현)
         socket.on('volleyball_score_updated', function(data) {
             console.log('=== 배구 세트 점수 업데이트 수신 (오버레이) ===');
             console.log('수신된 데이터:', data);
@@ -5023,9 +5023,17 @@
             console.log('데이터 matchId:', data.matchId);
             
             if (data.matchId === matchId) {
-                const { team, set, score, sets, home_score, away_score } = data;
+                const { team, set, score, sets, currentSet, setFormat } = data;
                 
-                // 세트 스코어 테이블 업데이트
+                // 1. 현재 세트 표시 업데이트
+                if (currentSet !== undefined) {
+                    const currentSetElement = document.getElementById('current-set');
+                    if (currentSetElement) {
+                        currentSetElement.textContent = `${currentSet}세트`;
+                    }
+                }
+                
+                // 2. 세트 스코어 테이블 업데이트
                 const teamElementId = team === 'home' ? `teamA-set-${set}` : `teamB-set-${set}`;
                 const setElement = document.getElementById(teamElementId);
                 
@@ -5034,7 +5042,7 @@
                     console.log(`세트 스코어 업데이트: ${team}팀 ${set}세트 = ${score}`);
                 }
                 
-                // 전체 세트 스코어 업데이트 (모든 세트)
+                // 3. 전체 세트 스코어 업데이트 (모든 세트)
                 if (sets) {
                     for (let i = 1; i <= 5; i++) {
                         const homeSetElement = document.getElementById(`teamA-set-${i}`);
@@ -5049,10 +5057,8 @@
                     }
                 }
                 
-                // 매치 점수는 다음 세트 버튼에서만 업데이트 (여기서는 업데이트하지 않음)
-                
                 console.log(`배구 세트 점수 업데이트 완료: ${team}팀 ${set}세트 = ${score}`);
-                console.log('매치 점수는 다음 세트 버튼에서만 업데이트됩니다.');
+                console.log(`현재 세트: ${currentSet}세트, 세트제: ${setFormat}세트제`);
                 console.log('=== 배구 세트 점수 업데이트 처리 완료 (오버레이) ===');
             }
         });
@@ -5082,7 +5088,7 @@
             }
         });
 
-        // 배구 다음 세트 업데이트 이벤트 수신 (오버레이)
+        // 배구 다음 세트 업데이트 이벤트 수신 (완전 재구현)
         socket.on('volleyball_next_set_updated', function(data) {
             console.log('=== 배구 다음 세트 업데이트 수신 (오버레이) ===');
             console.log('수신된 데이터:', data);
@@ -5090,9 +5096,17 @@
             console.log('데이터 matchId:', data.matchId);
 
             if (data.matchId === matchId) {
-                const { currentSet, home_score, away_score, match_data } = data;
+                const { currentSet, home_score, away_score, setFormat, match_data } = data;
 
-                // 매치 점수 업데이트
+                // 1. 현재 세트 표시 업데이트
+                if (currentSet !== undefined) {
+                    const currentSetElement = document.getElementById('current-set');
+                    if (currentSetElement) {
+                        currentSetElement.textContent = `${currentSet}세트`;
+                    }
+                }
+
+                // 2. 매치 점수 업데이트
                 const homeScoreElement = document.getElementById('home-score');
                 const awayScoreElement = document.getElementById('away-score');
 
@@ -5103,7 +5117,7 @@
                     awayScoreElement.textContent = away_score;
                 }
 
-                // 세트 점수 표 업데이트
+                // 3. 세트 점수 표 업데이트
                 if (match_data && match_data.sets) {
                     for (let i = 1; i <= 5; i++) {
                         const homeSetElement = document.getElementById(`teamA-set-${i}`);
