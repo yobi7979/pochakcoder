@@ -404,33 +404,6 @@
             }
         }
 
-        /* 세트 히스토리 박스 */
-        .set-history-box {
-            position: absolute;
-            top: 420px;
-            left: 80px;
-            width: 420px;
-            background: rgba(0, 0, 0, 0.8);
-            border-radius: 8px;
-            padding: 10px;
-            color: white;
-            text-align: center;
-        }
-
-        .set-scores-history {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .set-score-item {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            border-left: 2px solid #4ecdc4;
-        }
 
         /* 배구 세트 승리 횟수 표시 박스 */
         .set-wins-box {
@@ -1427,22 +1400,6 @@
             color: #4ecdc4;
         }
         
-        .set-scores-history {
-            display: flex;
-            gap: 10px;
-            margin-top: 5px;
-        }
-        
-        .set-score-item {
-            font-size: 12px;
-            color: #ccc;
-            background: none;
-            border-radius: 0;
-            min-width: 0;
-            overflow: hidden;
-            white-space: nowrap;
-            text-overflow: ellipsis;
-        }
         .team-name.small-font {
             font-size: 16px !important;
         }
@@ -1606,14 +1563,6 @@
         </div>
         
         
-        <!-- 세트별 스코어 히스토리 -->
-        <div class="set-history-box" id="setHistoryBox">
-            <div class="set-scores-history" id="setScoresHistory">
-                <div class="set-score-item">1세트: 25-23</div>
-                <div class="set-score-item">2세트: 25-21</div>
-                <div class="set-score-item">3세트: 25-19</div>
-            </div>
-        </div>
         
         
         
@@ -3446,18 +3395,6 @@
             console.log(`✅ ${setFormat}세트제에 맞게 원형 표시 조정 완료`);
         }
         
-        function updateSetScoresHistory(setScores) {
-            const historyContainer = document.querySelector('.set-scores-history');
-            if (!historyContainer) return;
-            
-            historyContainer.innerHTML = '';
-            setScores.forEach((score, index) => {
-                const item = document.createElement('div');
-                item.className = 'set-score-item';
-                item.textContent = `${index + 1}세트: ${score.home}-${score.away}`;
-                historyContainer.appendChild(item);
-            });
-        }
         
         // 배구 데이터 업데이트 처리
         function handleVolleyballUpdate(data) {
