@@ -3423,37 +3423,8 @@
                 matchStateContainer.style.display = data.showMatchState ? 'block' : 'none';
                 }
         });
-                
-                // 서버 타이머가 실행 중이면 로컬 타이머 시작 (서버 동기화)
-                if (timerState.isRunning) {
-                    console.log('오버레이 로컬 타이머 시작 요청:', {
-                        isRunning: timerState.isRunning,
-                        startTime: timerState.startTime,
-                        currentSeconds: timerState.currentSeconds
-                    });
-                    try {
-                        startLocalTimer();
-                        console.log('✅ startLocalTimer() 호출 성공');
-                    } catch (error) {
-                        console.error('❌ startLocalTimer() 호출 실패:', error);
-                    }
-                } else {
-                    stopLocalTimer();
-                }
-            }
-        });
 
-        // 타이머 모드 변경 실시간 동기화 (오버레이 페이지)
-        socket.on('timer_mode_updated', function(data) {
-            console.log('=== 오버레이 페이지 타이머 모드 변경 ===');
-            console.log('수신된 데이터:', data);
-            
-            if (data.matchId === matchId) {
-                console.log('오버레이 페이지 타이머 모드 변경:', data.currentMode);
-                // 오버레이 페이지에서는 모드 정보만 로그로 확인
-            }
-        });
-
+        
         // 오버레이 이미지 변경 이벤트 처리
         socket.on('overlay_image_updated', function(data) {
             if (data.action === 'uploaded') {
@@ -4213,8 +4184,6 @@
         // 페이지 로드 시 소켓 연결 상태 확인
         setTimeout(checkSocketConnection, 1000);
 
-        // 기존 중복 타이머 이벤트 리스너 제거됨 (handleTimerUpdate로 통합)
-
                 // 애니메이션 이벤트 리스너 등록
         if (typeof window.registerAnimationListeners === 'function') {
             window.registerAnimationListeners(socket);
@@ -4659,85 +4628,7 @@
             } else {
                 }
         });
-
-        // 타이머 동기화 전용 함수
-        function syncTimerWithMatch(matchData) {
-            // 1. 기존 타이머 정리
-            if (timerState.localTimer) {
-                clearInterval(timerState.localTimer);
-                timerState.localTimer = null;
-                }
-            
-            // 2. 새 경기의 타이머 정보 추출
-            const currentSeconds = Math.max(0, matchData.currentSeconds || matchData.timer || 0);
-            const isRunning = matchData.isRunning || false;
-            
-            // 3. UI 업데이트
-            timerState.currentSeconds = currentSeconds;
-            updateTimerDisplay();
-            
-            // 4. 로컬 타이머 변수 동기화
-            timerState.lastServerTime = currentSeconds;
-            timerState.lastUpdateTime = Date.now();
-            // 5. 타이머 상태에 따라 로컬 타이머 제어
-            if (isRunning) {
-                startLocalTimer();
-            } else {
-                }
-            
-            }
-        
-        // 서버에서 타이머 상태 요청 함수
-        function requestTimerStateFromServer(matchId) {
-            // 서버에 타이머 상태 요청
-            socket.emit('request_timer_state', { matchId: matchId });
-        }
-
-        // 중복 함수 제거됨 - 2885번째 줄의 함수 사용
-        
-                // 로컬 타이머 중지
-        function stopLocalTimer() {
-            if (timerState.localTimer) {
-                clearInterval(timerState.localTimer);
-                timerState.localTimer = null;
-            }
-        }
-
-        // 타이머 표시 업데이트
-        function updateTimerDisplay(overrideSeconds = null) {
-            // 서버 타이머 모드일 때는 전달받은 값을 사용, 그렇지 않으면 timerState 사용
-            const targetSeconds = overrideSeconds !== null ? overrideSeconds : timerState.currentSeconds;
-            
-            // 서버 상태 수신 전까지 로딩 상태 표시
-            if (targetSeconds === 0 && !timerState.serverStateReceived) {
-                const timerElement = document.querySelector('.match-time');
-                if (timerElement) {
-                    timerElement.textContent = '---';
-                    console.log('타이머 로딩 상태 표시: ---');
-                    return;
-                }
-            }
-            
-            // 음수 값 방지
-            const safeSeconds = Math.max(0, targetSeconds);
-            const minutes = Math.floor(safeSeconds / 60);
-            const seconds = safeSeconds % 60;
-            const timerElement = document.querySelector('.match-time');
-            if (timerElement) {
-                const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                timerElement.textContent = formattedTime;
-                console.log('타이머 업데이트:', formattedTime, '(현재 경기:', matchId, ')');
-            } else {
-                console.log('타이머 엘리먼트를 찾을 수 없습니다');
-            }
-        }
-        
-        // 강제 타이머 업데이트 함수 (디버깅용)
-        function forceUpdateTimer(seconds) {
-            timerState.currentSeconds = seconds;
-            updateTimerDisplay();
-            }
-
+                
         // 팀 색상 업데이트 함수
         function updateTeamColors(homeColor, awayColor) {
             const homeSection = document.querySelector('.team-section.home');
@@ -5302,9 +5193,6 @@
                 }
         }
         
-        // 하이브리드 타이머 시스템 초기화
-        let hybridTimer = null;
-        
         // 배구 특화 초기화 함수
         function initializeVolleyball() {
             console.log('🔧 배구 시스템 초기화 시작');
@@ -5330,5 +5218,4 @@
         
     </script>
 </body>
-</html> 
 </html> 
