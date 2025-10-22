@@ -661,8 +661,12 @@ io.on('connection', (socket) => {
           
           console.log('🔍 save_set_scores DB 업데이트 전 matchData:', JSON.stringify(matchData, null, 2));
           
-          const updateResult = await match.update({ 
-            match_data: matchData,
+          // match_data를 명시적으로 설정하여 JSONB 필드 업데이트 보장
+          match.match_data = matchData;
+          const updateResult = await match.save();
+          
+          // 추가로 home_score와 away_score도 명시적으로 업데이트
+          await match.update({
             home_score: homeWins,  // 토탈 스코어
             away_score: awayWins   // 토탈 스코어
           });
@@ -746,11 +750,19 @@ io.on('connection', (socket) => {
           console.log('matchData:', JSON.stringify(matchData, null, 2));
           console.log('homeWins:', homeWins, 'awayWins:', awayWins);
           
-          const updateResult = await match.update({ 
-            match_data: matchData,
+          // match_data를 명시적으로 설정하여 JSONB 필드 업데이트 보장
+          match.match_data = matchData;
+          const updateResult = await match.save();
+          
+          // 추가로 home_score와 away_score도 명시적으로 업데이트
+          await match.update({
             home_score: homeWins,  // 토탈 세트 승리 수
             away_score: awayWins   // 토탈 세트 승리 수
           });
+          
+          // set_scores가 제대로 저장되었는지 확인
+          console.log('🔍 set_scores 저장 확인:');
+          console.log('matchData.set_scores:', JSON.stringify(matchData.set_scores, null, 2));
           
           console.log('🔍 DB 업데이트 결과:', updateResult);
           
@@ -859,8 +871,12 @@ io.on('connection', (socket) => {
           
           console.log('🔍 DB 업데이트 전 최종 matchData:', JSON.stringify(matchData, null, 2));
           
-          const updateResult = await match.update({ 
-            match_data: matchData,
+          // match_data를 명시적으로 설정하여 JSONB 필드 업데이트 보장
+          match.match_data = matchData;
+          const updateResult = await match.save();
+          
+          // 추가로 status, home_score, away_score도 명시적으로 업데이트
+          await match.update({
             status: nextSet + '세트',
             home_score: homeWins,  // 토탈 세트 승리 수
             away_score: awayWins   // 토탈 세트 승리 수
@@ -964,8 +980,12 @@ io.on('connection', (socket) => {
           console.log('matchData:', JSON.stringify(matchData, null, 2));
           console.log('homeWins:', data.homeWins, 'awayWins:', data.awayWins);
           
-          const updateResult = await match.update({ 
-            match_data: matchData,
+          // match_data를 명시적으로 설정하여 JSONB 필드 업데이트 보장
+          match.match_data = matchData;
+          const updateResult = await match.save();
+          
+          // 추가로 home_score와 away_score도 명시적으로 업데이트
+          await match.update({
             home_score: data.homeWins,  // 토탈 세트 승리 수
             away_score: data.awayWins   // 토탈 세트 승리 수
           });
