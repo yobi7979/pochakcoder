@@ -634,6 +634,89 @@ router.get('/:matchId', async (req, res) => {
   }
 });
 
+// GET /api/matches/:matchId/initial-data - 초기 로딩용 통합 데이터 조회
+router.get('/:matchId/initial-data', async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    console.log(`🔧 초기 데이터 통합 조회 시작: ${matchId}`);
+    
+    // 1. 경기 기본 정보 조회
+    const match = await Match.findByPk(matchId);
+    if (!match) {
+      return res.status(404).json({ error: '경기를 찾을 수 없습니다.' });
+    }
+    
+    // 2. 팀로고 정보 조회 (TeamInfo 테이블)
+    const teamLogos = await TeamInfo.findAll({
+      where: { match_id: matchId },
+      attributes: ['id', 'match_id', 'sport_type', 'team_name', 'team_type', 'team_color', 'team_header', 'logo_path', 'logo_bg_color', 'created_at', 'updated_at']
+    });
+    
+    // 3. 팀로고 표시 모드 조회
+    const displayModeSetting = await Settings.findOne({
+      where: { key: `volleyball_team_logo_display_mode_${matchId}` }
+    });
+    
+    // 4. 라인업 데이터 조회
+    let lineupData = null;
+    if (match.match_data && match.match_data.lineup) {
+      lineupData = match.match_data.lineup;
+    }
+    
+    // 5. 토너먼트 텍스트 조회
+    let tournamentText = '';
+    if (match.match_data && match.match_data.tournament_text) {
+      tournamentText = match.match_data.tournament_text;
+    }
+    
+    // 통합 데이터 구성
+    const initialData = {
+      // 경기 기본 정보
+      match: {
+        id: match.id,
+        home_team: match.home_team,
+        away_team: match.away_team,
+        home_team_color: match.home_team_color,
+        away_team_color: match.away_team_color,
+        home_score: match.home_score,
+        away_score: match.away_score,
+        status: match.status,
+        match_data: match.match_data,
+        sport_type: match.sport_type,
+        created_at: match.created_at,
+        updated_at: match.updated_at
+      },
+      // 팀로고 정보
+      teamLogos: teamLogos.map(team => ({
+        id: team.id,
+        match_id: team.match_id,
+        sport_type: team.sport_type,
+        team_name: team.team_name,
+        team_type: team.team_type,
+        team_color: team.team_color,
+        team_header: team.team_header,
+        logo_path: team.logo_path,
+        logo_bg_color: team.logo_bg_color,
+        created_at: team.created_at,
+        updated_at: team.updated_at
+      })),
+      // 팀로고 표시 모드
+      displayMode: displayModeSetting ? displayModeSetting.value : 'logo',
+      // 라인업 데이터
+      lineup: lineupData,
+      // 토너먼트 텍스트
+      tournamentText: tournamentText
+    };
+    
+    console.log(`✅ 초기 데이터 통합 조회 완료: ${matchId}`);
+    res.json(initialData);
+    
+  } catch (error) {
+    console.error('❌ 초기 데이터 조회 오류:', error);
+    res.status(500).json({ error: '초기 데이터 조회 중 오류가 발생했습니다.' });
+  }
+});
+
 // GET /api/matches/:matchId/tournament-text - 토너먼트 텍스트 조회
 router.get('/:matchId/tournament-text', async (req, res) => {
   try {

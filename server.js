@@ -475,6 +475,82 @@ io.on('connection', (socket) => {
           
           console.log(`✅ 경기 초기화 완료: 1세트 0-0으로 리셋`);
         }
+      } else if (action === 'end_match') {
+        // 경기 종료 처리
+        console.log('🔍 경기 종료 처리 시작:', matchId);
+        const match = await Match.findByPk(matchId);
+        if (match) {
+          const matchData = match.match_data || {};
+          const setScores = data.setScores;
+          const setFormat = data.setFormat;
+          const finalSet = data.finalSet;
+          const homeScore = data.homeScore;
+          const awayScore = data.awayScore;
+          
+          console.log('🔍 경기 종료 데이터:', {
+            setScores,
+            setFormat,
+            finalSet,
+            homeScore,
+            awayScore
+          });
+          
+          // 세트 점수 저장
+          matchData.set_scores = setScores;
+          matchData.setFormat = setFormat;
+          
+          // 최종 세트 점수 저장
+          matchData.set_scores.home[finalSet] = homeScore;
+          matchData.set_scores.away[finalSet] = awayScore;
+          
+          // 최종 매치 점수 계산 (모든 세트의 점수로 계산)
+          let homeWins = 0;
+          let awayWins = 0;
+          
+          for (let set = 1; set <= setFormat; set++) {
+            const setHomeScore = matchData.set_scores.home[set] || 0;
+            const setAwayScore = matchData.set_scores.away[set] || 0;
+            
+            if (setHomeScore > setAwayScore) {
+              homeWins++;
+            } else if (setAwayScore > setHomeScore) {
+              awayWins++;
+            }
+          }
+          
+          matchData.home_wins = homeWins;
+          matchData.away_wins = awayWins;
+          matchData.status = '경기종료';
+          
+          console.log('🔍 최종 매치 점수:', { homeWins, awayWins });
+          console.log('🔍 최종 세트 점수:', matchData.set_scores);
+          
+          // 데이터베이스 업데이트
+          await match.update({ 
+            match_data: matchData,
+            status: '경기종료',
+            home_score: homeWins,  // 토탈 세트 승리 수
+            away_score: awayWins   // 토탈 세트 승리 수
+          });
+          
+          // 모든 클라이언트에 경기 종료 알림
+          const roomName = `match_${matchId}`;
+          io.to(roomName).emit('match_updated', {
+            matchId: matchId,
+            home_score: homeWins,  // 토탈 세트 승리 수
+            away_score: awayWins,  // 토탈 세트 승리 수
+            match_data: {
+              status: '경기종료',
+              set_scores: matchData.set_scores,
+              home_wins: homeWins,
+              away_wins: awayWins,
+              setFormat: setFormat,
+              finalSet: finalSet
+            }
+          });
+          
+          console.log(`✅ 경기 종료 완료: 최종 점수 ${homeWins}-${awayWins}`);
+        }
       } else if (action === 'set_format_change') {
         // 세트 구성 변경 처리
         console.log('🔍 세트제 변경 디버깅:');
@@ -702,6 +778,8 @@ io.on('connection', (socket) => {
           matchData.set_scores.home[currentSet] = homeScore;
           matchData.set_scores.away[currentSet] = awayScore;
           
+          console.log('🔍 DB 저장 전 matchData.set_scores:', matchData.set_scores);
+          
           // 세트 승리 계산 (모든 세트 기준으로 재계산)
           let homeWins = 0;
           let awayWins = 0;
@@ -743,6 +821,10 @@ io.on('connection', (socket) => {
             home_score: homeWins,  // 토탈 세트 승리 수
             away_score: awayWins   // 토탈 세트 승리 수
           });
+          
+          // DB 저장 후 확인
+          const updatedMatch = await Match.findByPk(matchId);
+          console.log('🔍 DB 저장 후 matchData.set_scores:', updatedMatch.match_data.set_scores);
           
           // 모든 클라이언트에 업데이트 알림
           const roomName = `match_${matchId}`;

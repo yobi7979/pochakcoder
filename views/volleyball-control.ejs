@@ -1366,7 +1366,37 @@
             const maxSets = setFormat;
             
             if (currentSetNumber >= maxSets) {
-                alert(`${maxSets}세트제에서는 ${maxSets}세트가 마지막입니다.\n경기 종료를 원하시면 "경기종료" 버튼을 클릭하세요.`);
+                // 최대 세트 도달 시 경기 종료 처리
+                console.log(`${maxSets}세트제 최대 세트 도달 - 경기 종료 처리`);
+                
+                // 현재 세트의 점수 가져오기
+                const homeScore = parseInt(document.getElementById('home-score').value) || 0;
+                const awayScore = parseInt(document.getElementById('away-score').value) || 0;
+                
+                // 세트 점수 저장 (현재 세트의 최종 점수)
+                if (!setScores || !setScores.home || !setScores.away) {
+                    setScores = {
+                        home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+                        away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+                    };
+                }
+                
+                setScores.home[currentSetNumber] = homeScore;
+                setScores.away[currentSetNumber] = awayScore;
+                
+                // 세트 점수 표에 입력
+                const homeInput = document.querySelector(`input[data-team="home"][data-set="${currentSetNumber}"]`);
+                const awayInput = document.querySelector(`input[data-team="away"][data-set="${currentSetNumber}"]`);
+                
+                if (homeInput) homeInput.value = homeScore;
+                if (awayInput) awayInput.value = awayScore;
+                
+                // 경기 종료 확인 팝업
+                const confirmMessage = `경기가 종료됩니다.\n\n최종 세트 점수:\n홈팀 ${homeScore} - 어웨이팀 ${awayScore}\n\n경기를 종료하시겠습니까?`;
+                if (confirm(confirmMessage)) {
+                    // 경기 종료 처리
+                    endMatch();
+                }
                 return;
             }
             
@@ -1484,6 +1514,56 @@
             });
             
             console.log('전체 경기 초기화 완료');
+        }
+
+        // 경기 종료 함수
+        function endMatch() {
+            console.log('경기 종료 처리 시작');
+            
+            // 현재 세트의 점수 가져오기
+            const homeScore = parseInt(document.getElementById('home-score').value) || 0;
+            const awayScore = parseInt(document.getElementById('away-score').value) || 0;
+            
+            // 세트 점수 저장 (현재 세트의 최종 점수)
+            if (!setScores || !setScores.home || !setScores.away) {
+                setScores = {
+                    home: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+                    away: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+                };
+            }
+            
+            const currentSetDisplay = document.getElementById('current-set-display');
+            const currentSet = currentSetDisplay ? currentSetDisplay.textContent : '1세트';
+            const currentSetNumber = parseInt(currentSet.replace('세트', ''));
+            
+            setScores.home[currentSetNumber] = homeScore;
+            setScores.away[currentSetNumber] = awayScore;
+            
+            // 세트 점수 표에 입력
+            const homeInput = document.querySelector(`input[data-team="home"][data-set="${currentSetNumber}"]`);
+            const awayInput = document.querySelector(`input[data-team="away"][data-set="${currentSetNumber}"]`);
+            
+            if (homeInput) homeInput.value = homeScore;
+            if (awayInput) awayInput.value = awayScore;
+            
+            // 최종 매치 점수 계산 (모든 세트의 점수로 계산)
+            updateSetWins();
+            
+            console.log('최종 setScores:', setScores);
+            console.log(`경기 종료 - 최종 세트 점수: 홈팀 ${homeScore}, 어웨이팀 ${awayScore}`);
+            
+            // 서버에 경기 종료 요청
+            socket.emit('volleyball_control', {
+                matchId: matchId,
+                action: 'end_match',
+                setScores: setScores,
+                setFormat: setFormat,
+                finalSet: currentSetNumber,
+                homeScore: homeScore,
+                awayScore: awayScore
+            });
+            
+            console.log('경기 종료 요청 전송 완료');
         }
 
         // 배구 세트 점수 관리 함수들
@@ -1964,12 +2044,162 @@
         // 배구는 타이머가 없으므로 시간 수정 관련 함수 제거됨
         
 
-        // 통합된 페이지별 특화 데이터 로드 함수
+        // 통합된 페이지별 특화 데이터 로드 함수 (최적화된 버전)
         async function loadPageSpecificData() {
             try {
-                console.log('=== 페이지별 특화 데이터 로드 시작 ===');
+                console.log('=== 페이지별 특화 데이터 로드 시작 (최적화) ===');
                 
-                // 컨트롤 페이지 전용 데이터만 로드
+                // 통합 API로 모든 초기 데이터를 한 번에 로드
+                const response = await fetch(`/api/matches/${matchId}/initial-data`);
+                if (!response.ok) {
+                    throw new Error('초기 데이터 로드 실패');
+                }
+                
+                const initialData = await response.json();
+                console.log('✅ 통합 초기 데이터 로드 완료:', initialData);
+                
+                // 통합 데이터를 각각의 함수로 처리
+                await processInitialData(initialData);
+                
+                console.log('✅ 페이지별 특화 데이터 로드 완료 (최적화)');
+            } catch (error) {
+                console.error('❌ 페이지별 특화 데이터 로드 실패:', error);
+                // 폴백: 기존 방식으로 개별 로드
+                console.log('🔄 폴백: 기존 방식으로 개별 로드 시작');
+                await loadPageSpecificDataFallback();
+            }
+        }
+        
+        // 통합 데이터 처리 함수
+        async function processInitialData(data) {
+            try {
+                console.log('🔧 통합 데이터 처리 시작');
+                
+                // 1. 경기 기본 정보 처리
+                if (data.match) {
+                    await processMatchData(data.match);
+                }
+                
+                // 2. 팀로고 정보 처리
+                if (data.teamLogos && data.teamLogos.length > 0) {
+                    await processTeamLogoData(data.teamLogos);
+                }
+                
+                // 3. 팀로고 표시 모드 처리
+                if (data.displayMode) {
+                    await processDisplayModeData(data.displayMode);
+                }
+                
+                // 4. 라인업 데이터 처리
+                if (data.lineup) {
+                    await processLineupData(data.lineup);
+                }
+                
+                // 5. 토너먼트 텍스트 처리
+                if (data.tournamentText) {
+                    await processTournamentTextData(data.tournamentText);
+                }
+                
+                console.log('✅ 통합 데이터 처리 완료');
+            } catch (error) {
+                console.error('❌ 통합 데이터 처리 실패:', error);
+                throw error;
+            }
+        }
+        
+        // 경기 데이터 처리
+        async function processMatchData(matchData) {
+            console.log('🔧 경기 데이터 처리:', matchData);
+            
+            // 경기 상황 버튼 상태 설정
+            if (matchData.status) {
+                const currentStateBtn = document.querySelector(`[data-state="${matchData.status}"]`);
+                if (currentStateBtn) {
+                    document.querySelectorAll('.match-state-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    currentStateBtn.classList.add('active');
+                }
+            }
+            
+            // 세트제 복원
+            if (matchData.match_data && matchData.match_data.setFormat) {
+                setFormat = parseInt(matchData.match_data.setFormat);
+                const setFormatInput = document.querySelector(`input[name="setFormat"][value="${setFormat}"]`);
+                if (setFormatInput) {
+                    setFormatInput.checked = true;
+                    updateSetFormatUI();
+                }
+            }
+        }
+        
+        // 팀로고 데이터 처리
+        async function processTeamLogoData(teamLogos) {
+            console.log('🔧 팀로고 데이터 처리:', teamLogos);
+            
+            // 팀로고 정보를 전역 변수에 저장
+            window.teamLogos = teamLogos;
+            
+            // 팀로고 UI 업데이트
+            teamLogos.forEach(teamInfo => {
+                if (teamInfo.team_type === 'home') {
+                    updateTeamLogoUI('home', teamInfo);
+                } else if (teamInfo.team_type === 'away') {
+                    updateTeamLogoUI('away', teamInfo);
+                }
+            });
+        }
+        
+        // 표시 모드 데이터 처리
+        async function processDisplayModeData(displayMode) {
+            console.log('🔧 표시 모드 데이터 처리:', displayMode);
+            
+            // 표시 모드에 따라 UI 업데이트
+            const logoDisplayButton = document.getElementById('logo-display-button');
+            if (logoDisplayButton) {
+                if (displayMode === 'background') {
+                    logoDisplayButton.innerHTML = '<i class="bi bi-palette"></i> 배경색';
+                    logoDisplayButton.classList.remove('btn-outline-primary');
+                    logoDisplayButton.classList.add('btn-outline-secondary');
+                } else {
+                    logoDisplayButton.innerHTML = '<i class="bi bi-image"></i> 로고';
+                    logoDisplayButton.classList.remove('btn-outline-secondary');
+                    logoDisplayButton.classList.add('btn-outline-primary');
+                }
+            }
+        }
+        
+        // 라인업 데이터 처리
+        async function processLineupData(lineupData) {
+            console.log('🔧 라인업 데이터 처리:', lineupData);
+            
+            // 라인업 데이터를 전역 변수에 저장
+            window.currentLineupData = lineupData;
+            
+            // 라인업 UI 업데이트
+            if (lineupData.home && lineupData.away) {
+                updateLineupDisplay('home', lineupData.home);
+                updateLineupDisplay('away', lineupData.away);
+            }
+        }
+        
+        // 토너먼트 텍스트 데이터 처리
+        async function processTournamentTextData(tournamentText) {
+            console.log('🔧 토너먼트 텍스트 데이터 처리:', tournamentText);
+            
+            if (tournamentText) {
+                const tournamentInput = document.getElementById('tournament-text');
+                if (tournamentInput) {
+                    tournamentInput.value = tournamentText;
+                }
+            }
+        }
+        
+        // 폴백 함수 (기존 방식)
+        async function loadPageSpecificDataFallback() {
+            try {
+                console.log('🔄 폴백: 기존 방식으로 개별 로드');
+                
                 await Promise.all([
                     loadTournamentText(),      // 대회명
                     loadLineupData(),          // 라인업 데이터
@@ -1977,9 +2207,9 @@
                     loadCurrentMatchState()    // 경기 상황
                 ]);
                 
-                console.log('✅ 페이지별 특화 데이터 로드 완료');
+                console.log('✅ 폴백 데이터 로드 완료');
             } catch (error) {
-                console.error('❌ 페이지별 특화 데이터 로드 실패:', error);
+                console.error('❌ 폴백 데이터 로드 실패:', error);
             }
         }
 

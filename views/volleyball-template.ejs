@@ -2070,8 +2070,309 @@
                 }
         }
 
-        // 강력한 DB 데이터 로드 함수 (모든 데이터 다시 로드)
+        // 강력한 DB 데이터 로드 함수 (최적화된 버전)
         async function reloadAllDataFromDB() {
+            try {
+                console.log('🔧 reloadAllDataFromDB 함수 시작 (최적화)');
+                
+                // 통합 API로 모든 초기 데이터를 한 번에 로드
+                const response = await fetch(`/api/matches/${matchId}/initial-data`);
+                if (!response.ok) {
+                    throw new Error('초기 데이터 로드 실패');
+                }
+                
+                const initialData = await response.json();
+                console.log('✅ 통합 초기 데이터 로드 완료:', initialData);
+                
+                // 통합 데이터를 각각의 함수로 처리
+                await processOverlayInitialData(initialData);
+                
+                console.log('🔧 reloadAllDataFromDB 함수 완료 (최적화)');
+                
+            } catch (error) {
+                console.error('❌ reloadAllDataFromDB 함수 오류:', error);
+                // 폴백: 기존 방식으로 개별 로드
+                console.log('🔄 폴백: 기존 방식으로 개별 로드 시작');
+                await reloadAllDataFromDBFallback();
+            }
+        }
+        
+        // 오버레이 통합 데이터 처리 함수
+        async function processOverlayInitialData(data) {
+            try {
+                console.log('🔧 오버레이 통합 데이터 처리 시작');
+                
+                // 1. 경기 기본 정보 처리
+                if (data.match) {
+                    await processOverlayMatchData(data.match);
+                }
+                
+                // 2. 팀로고 정보 처리
+                if (data.teamLogos && data.teamLogos.length > 0) {
+                    await processOverlayTeamLogoData(data.teamLogos);
+                }
+                
+                // 3. 팀로고 표시 모드 처리
+                if (data.displayMode) {
+                    await processOverlayDisplayModeData(data.displayMode);
+                }
+                
+                // 4. 라인업 데이터 처리
+                if (data.lineup) {
+                    await processOverlayLineupData(data.lineup);
+                }
+                
+                // 5. 토너먼트 텍스트 처리
+                if (data.tournamentText) {
+                    await processOverlayTournamentTextData(data.tournamentText);
+                }
+                
+                console.log('✅ 오버레이 통합 데이터 처리 완료');
+            } catch (error) {
+                console.error('❌ 오버레이 통합 데이터 처리 실패:', error);
+                throw error;
+            }
+        }
+        
+        // 오버레이 경기 데이터 처리
+        async function processOverlayMatchData(matchData) {
+            console.log('🔧 오버레이 경기 데이터 처리:', matchData);
+            
+            // 팀 색상 업데이트
+            if (matchData.home_team_color && matchData.away_team_color) {
+                homeTeamColor = matchData.home_team_color;
+                awayTeamColor = matchData.away_team_color;
+                updateTeamColors(homeTeamColor, awayTeamColor);
+            }
+            
+            // 팀명 업데이트
+            if (matchData.home_team) {
+                const homeTeamElements = document.querySelectorAll('.team-section.home .team-name');
+                homeTeamElements.forEach(el => el.textContent = matchData.home_team);
+            }
+            if (matchData.away_team) {
+                const awayTeamElements = document.querySelectorAll('.team-section.away .team-name');
+                awayTeamElements.forEach(el => el.textContent = matchData.away_team);
+            }
+            
+            // 배구 데이터 복원
+            if (matchData.match_data) {
+                console.log('🔧 배구 데이터 복원 시작:', matchData.match_data);
+                
+                // 세트제 복원
+                if (matchData.match_data.setFormat) {
+                    updateSetFormatCircles(matchData.match_data.setFormat);
+                }
+                
+                // 현재 세트 복원
+                if (matchData.match_data.current_set) {
+                    updateCurrentSetDisplay(matchData.match_data.current_set);
+                }
+                
+                // 세트 승리 복원
+                if (matchData.match_data.home_wins !== undefined || matchData.match_data.away_wins !== undefined) {
+                    updateSetWinsCircles(matchData.match_data.home_wins || 0, matchData.match_data.away_wins || 0);
+                }
+                
+                // 현재 세트 점수 복원
+                if (matchData.match_data.home_score !== undefined && matchData.match_data.away_score !== undefined) {
+                    const homeCurrentScore = document.getElementById('home-current-score');
+                    const awayCurrentScore = document.getElementById('away-current-score');
+                    
+                    if (homeCurrentScore) {
+                        homeCurrentScore.textContent = matchData.match_data.home_score;
+                    }
+                    if (awayCurrentScore) {
+                        awayCurrentScore.textContent = matchData.match_data.away_score;
+                    }
+                }
+                
+                // 서브권 복원
+                if (matchData.match_data.servingTeam) {
+                    updateServeIndicator(matchData.match_data.servingTeam);
+                }
+                
+                // 세트 점수 복원
+                if (matchData.match_data.set_scores) {
+                    updateSetScoresDisplay(matchData.match_data.set_scores);
+                }
+            }
+        }
+        
+        // 오버레이 팀로고 데이터 처리
+        async function processOverlayTeamLogoData(teamLogos) {
+            console.log('🔧 오버레이 팀로고 데이터 처리:', teamLogos);
+            
+            // 팀로고 정보를 전역 변수에 저장
+            window.teamLogos = teamLogos;
+            
+            // 팀로고 UI 업데이트
+            teamLogos.forEach((teamInfo) => {
+                const teamType = teamInfo.team_type;
+                if (teamInfo.logo_path || teamInfo.logo_bg_color) {
+                    logoState[teamType] = {
+                        path: teamInfo.logo_path || '',
+                        bgColor: teamInfo.logo_bg_color || '#ffffff',
+                        teamName: teamInfo.team_name
+                    };
+                    updateTeamLogo(teamType, logoState[teamType]);
+                }
+            });
+        }
+        
+        // 오버레이 표시 모드 데이터 처리
+        async function processOverlayDisplayModeData(displayMode) {
+            console.log('🔧 오버레이 표시 모드 데이터 처리:', displayMode);
+            
+            // 표시 모드에 따라 UI 업데이트
+            if (displayMode === 'background') {
+                updateTeamLogoVisibility(false);
+            } else {
+                updateTeamLogoVisibility(true);
+            }
+        }
+        
+        // 오버레이 라인업 데이터 처리
+        async function processOverlayLineupData(lineupData) {
+            console.log('🔧 오버레이 라인업 데이터 처리:', lineupData);
+            
+            // 라인업 데이터를 전역 변수에 저장
+            window.currentLineupData = lineupData;
+            
+            // 라인업 UI 업데이트
+            if (lineupData.home && lineupData.away) {
+                updateLineupDisplay('home', lineupData.home);
+                updateLineupDisplay('away', lineupData.away);
+            }
+        }
+        
+        // 오버레이 토너먼트 텍스트 데이터 처리
+        async function processOverlayTournamentTextData(tournamentText) {
+            console.log('🔧 오버레이 토너먼트 텍스트 데이터 처리:', tournamentText);
+            
+            if (tournamentText) {
+                const tournamentElement = document.getElementById('tournament-text');
+                if (tournamentElement) {
+                    tournamentElement.textContent = tournamentText;
+                }
+            }
+        }
+        
+        // 폴백 함수 (기존 방식)
+        async function reloadAllDataFromDBFallback() {
+            try {
+                console.log('🔄 폴백: 기존 방식으로 개별 로드');
+                
+                // 1. 경기 기본 정보 로드
+                const matchResponse = await fetch(`/api/matches/${matchId}`);
+                if (matchResponse.ok) {
+                    const matchData = await matchResponse.json();
+                    
+                    // 라인업 로드
+                    await loadLineup();
+                    
+                    // 팀 색상 업데이트
+                    if (matchData.home_team_color) {
+                        homeTeamColor = matchData.home_team_color;
+                    }
+                    if (matchData.away_team_color) {
+                        awayTeamColor = matchData.away_team_color;
+                    }
+                    
+                    if (homeTeamColor && awayTeamColor) {
+                        updateTeamColors(homeTeamColor, awayTeamColor);
+                    }
+                    
+                    // 팀명 업데이트
+                    if (matchData.home_team) {
+                        const homeTeamElements = document.querySelectorAll('.team-section.home .team-name');
+                        homeTeamElements.forEach(element => {
+                            element.textContent = matchData.home_team;
+                        });
+                    }
+                    if (matchData.away_team) {
+                        const awayTeamElements = document.querySelectorAll('.team-section.away .team-name');
+                        awayTeamElements.forEach(element => {
+                            element.textContent = matchData.away_team;
+                        });
+                    }
+                    
+                    // 배구 데이터 복원
+                    if (matchData.match_data) {
+                        // 세트제 복원
+                        if (matchData.match_data.setFormat) {
+                            updateSetFormatCircles(matchData.match_data.setFormat);
+                        }
+                        
+                        // 현재 세트 복원
+                        if (matchData.match_data.current_set) {
+                            updateCurrentSetDisplay(matchData.match_data.current_set);
+                        }
+                        
+                        // 세트 승리 복원
+                        if (matchData.match_data.home_wins !== undefined || matchData.match_data.away_wins !== undefined) {
+                            updateSetWinsCircles(matchData.match_data.home_wins || 0, matchData.match_data.away_wins || 0);
+                        }
+                        
+                        // 현재 세트 점수 복원
+                        if (matchData.match_data.home_score !== undefined && matchData.match_data.away_score !== undefined) {
+                            const homeCurrentScore = document.getElementById('home-current-score');
+                            const awayCurrentScore = document.getElementById('away-current-score');
+                            
+                            if (homeCurrentScore) {
+                                homeCurrentScore.textContent = matchData.match_data.home_score;
+                            }
+                            if (awayCurrentScore) {
+                                awayCurrentScore.textContent = matchData.match_data.away_score;
+                            }
+                        }
+                        
+                        // 서브권 복원
+                        if (matchData.match_data.servingTeam) {
+                            updateServeIndicator(matchData.match_data.servingTeam);
+                        }
+                        
+                        // 세트 점수 복원
+                        if (matchData.match_data.set_scores) {
+                            updateSetScoresDisplay(matchData.match_data.set_scores);
+                        }
+                    }
+                }
+                
+                // 2. 팀로고 정보 로드
+                const teamLogosResponse = await fetch(`/api/matches/${matchId}/team-logos`);
+                if (teamLogosResponse.ok) {
+                    const teamLogosData = await teamLogosResponse.json();
+                    
+                    if (teamLogosData && teamLogosData.teamLogos) {
+                        teamLogosData.teamLogos.forEach((teamInfo) => {
+                            const teamType = teamInfo.team_type;
+                            if (teamInfo.logo_path || teamInfo.logo_bg_color) {
+                                logoState[teamType] = {
+                                    path: teamInfo.logo_path || '',
+                                    bgColor: teamInfo.logo_bg_color || '#ffffff',
+                                    teamName: teamInfo.team_name
+                                };
+                                updateTeamLogo(teamType, logoState[teamType]);
+                            }
+                        });
+                    }
+                }
+                
+                // 3. 팀로고 가시성 상태 로드
+                await loadAndApplyLogoDisplayStates();
+                
+                // 4. 팀로고 표시 모드 상태 로드
+                await loadAndApplyLogoDisplayMode();
+                
+                console.log('✅ 폴백 데이터 로드 완료');
+            } catch (error) {
+                console.error('❌ 폴백 데이터 로드 실패:', error);
+            }
+        }
+        
+        // 기존 함수 (폴백용)
+        async function reloadAllDataFromDBOriginal() {
             try {
                 console.log('🔧 reloadAllDataFromDB 함수 시작');
                 
@@ -2924,6 +3225,33 @@
                     }
                     
                     console.log('✅ 현재 세트 점수 업데이트 완료:', data.match_data.home_score, data.match_data.away_score);
+                }
+                
+                // 경기 종료 처리
+                if (data.match_data && data.match_data.status === '경기종료') {
+                    console.log('🔧 경기 종료 수신:', data.match_data);
+                    
+                    // 최종 세트 점수 업데이트
+                    if (data.match_data.set_scores) {
+                        console.log('🔧 최종 세트 점수 업데이트:', data.match_data.set_scores);
+                        updateSetScoresDisplay(data.match_data.set_scores);
+                    }
+                    
+                    // 최종 매치 점수 업데이트 (원형 표시)
+                    if (data.match_data.home_wins !== undefined && data.match_data.away_wins !== undefined) {
+                        console.log('🔧 최종 매치 점수 업데이트:', data.match_data.home_wins, data.match_data.away_wins);
+                        updateSetWinsCircles(data.match_data.home_wins, data.match_data.away_wins);
+                    }
+                    
+                    // 경기 종료 상태 표시
+                    const matchStatusElement = document.getElementById('match-status');
+                    if (matchStatusElement) {
+                        matchStatusElement.textContent = '경기종료';
+                        matchStatusElement.style.color = '#ff6b6b';
+                        matchStatusElement.style.fontWeight = 'bold';
+                    }
+                    
+                    console.log('✅ 경기 종료 처리 완료');
                 }
             }
         });
