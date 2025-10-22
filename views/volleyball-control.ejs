@@ -133,28 +133,6 @@
             border-radius: 4px;
         }
         
-        .time-edit-container {
-            margin-left: 10px;
-            padding: 8px 12px;
-            background-color: rgba(0, 123, 255, 0.1);
-            border-radius: 8px;
-            border: 1px solid rgba(0, 123, 255, 0.3);
-        }
-        
-        .time-edit-input {
-            width: 120px;
-            text-align: center;
-            border-radius: 6px;
-            border: 1px solid var(--primary-color);
-            padding: 4px 8px;
-            font-size: 0.9rem;
-        }
-        
-        .apply-time-btn {
-            border-radius: 6px;
-            padding: 4px 12px;
-                font-size: 0.9rem;
-            }
             
             
         .team-color-section .save-team-color {
@@ -1197,7 +1175,6 @@
             console.log(`🔄 소켓 재연결 성공 (시도 ${attemptNumber}번째)`);
             updateConnectionStatus(true);
             
-            // 배구는 타이머가 없으므로 타이머 관련 요청 제거
         });
 
         socket.on('reconnect_attempt', function(attemptNumber) {
@@ -1222,7 +1199,6 @@
         
         
         // ========================================
-        // 배구는 타이머가 없는 종목
         // ========================================
         
         // 소켓 연결
@@ -1236,7 +1212,6 @@
             // 배구는 타이머가 없으므로 타이머 관련 코드 제거
             
             // 연결 시 현재 타이머 상태 요청 (재연결 시 정확한 동기화)
-            // 배구는 타이머가 없으므로 타이머 관련 요청 제거
         });
 
         socket.on('disconnect', function() {
@@ -2041,7 +2016,6 @@
             }
         }
 
-        // 배구는 타이머가 없으므로 시간 수정 관련 함수 제거됨
         
 
         // 통합된 페이지별 특화 데이터 로드 함수 (최적화된 버전)
@@ -2340,7 +2314,6 @@
             }
         }
 
-        // 배구는 타이머가 없으므로 타이머 관련 함수들 모두 제거됨
 
         // 연결 상태 업데이트 함수
         function updateConnectionStatus(connected) {
@@ -3823,7 +3796,6 @@
         });
         });
 
-        // 배구는 타이머가 없으므로 타이머 관련 소켓 이벤트 제거
 
 
 
