@@ -1382,9 +1382,8 @@
                 const nextSetNumber = currentSetNumber + 1;
                 currentSetDisplay.textContent = `${nextSetNumber}세트`;
                 
-                // 현재 세트 점수 초기화
-                document.getElementById('home-score').value = 0;
-                document.getElementById('away-score').value = 0;
+                // 현재 세트 점수는 세트 점수 표에만 표시 (매치스코어는 건드리지 않음)
+                // home-score, away-score는 매치스코어(세트 승리 수)이므로 초기화하지 않음
                 
                 console.log(`=== 다음 세트 처리 완료: ${currentSetText} → ${nextSetNumber}세트 ===`);
                 
@@ -2021,15 +2020,25 @@
                 const awayScore = matchData.current_set_score.away || 0;
                 const currentSetValue = matchData.current_set || 1;
                 
-                // 현재 세트 점수 입력 필드 업데이트
-                document.getElementById('home-score').value = homeScore;
-                document.getElementById('away-score').value = awayScore;
+                // 현재 세트 점수 표시 업데이트 (home-score, away-score는 현재 세트 점수로 사용)
+                const homeScoreElement = document.getElementById('home-score');
+                const awayScoreElement = document.getElementById('away-score');
+                
+                if (homeScoreElement) {
+                    homeScoreElement.value = homeScore;
+                }
+                if (awayScoreElement) {
+                    awayScoreElement.value = awayScore;
+                }
                 
                 // 현재 세트 표시 업데이트
                 updateCurrentSetDisplay(currentSetValue);
                 
                 console.log(`✅ 현재 세트 ${currentSetValue} 점수 복원: 홈팀 ${homeScore}, 어웨이팀 ${awayScore}`);
             }
+            
+            // 매치스코어(세트 승리 수)는 home-total, away-total에 표시
+            // home-score, away-score는 현재 세트 점수로 사용
             
             // 세트 점수 표 복원
             if (matchData.sets) {
@@ -2651,7 +2660,7 @@
                     currentInningElement.value = newInningScore;
                 }
                 
-                // 4. 현재 세트 점수 표시 업데이트
+                // 4. 현재 세트 점수 표시 업데이트 (home-score, away-score는 현재 세트 점수로 사용)
                 const homeScoreElement = document.getElementById('home-score');
                 const awayScoreElement = document.getElementById('away-score');
                 
@@ -2707,7 +2716,7 @@
             const homeScore = parseInt(homeSetElement?.value) || 0;
             const awayScore = parseInt(awaySetElement?.value) || 0;
             
-            // 현재 세트 점수 표시 업데이트
+            // 현재 세트 점수 표시 업데이트 (home-score, away-score는 현재 세트 점수로 사용)
             const homeScoreElement = document.getElementById('home-score');
             const awayScoreElement = document.getElementById('away-score');
             
@@ -2718,7 +2727,7 @@
                 awayScoreElement.value = awayScore;
             }
             
-            console.log(`현재 세트 ${currentSetNumber} 점수 업데이트: 홈팀 ${homeScore}, 어웨이팀 ${awayScore}`);
+            console.log(`현재 세트 ${currentSetNumber} 점수: 홈팀 ${homeScore}, 어웨이팀 ${awayScore}`);
         }
 
         // 현재 세트 점수를 세트 점수 표에 자동 업데이트 (세트 점수만 업데이트)
@@ -4037,20 +4046,8 @@
                     }
                 }
                 
-                // 4. 현재 세트 점수 업데이트
-                const currentSetDisplay = document.getElementById('current-set-display');
-                const currentSetText = currentSetDisplay ? currentSetDisplay.textContent : '1세트';
-                const currentSetNumber = parseInt(currentSetText.replace('세트', ''));
-                
-                const homeScoreElement = document.getElementById('home-score');
-                const awayScoreElement = document.getElementById('away-score');
-                
-                if (homeScoreElement && sets) {
-                    homeScoreElement.value = sets[`home_${currentSetNumber}`] || 0;
-                }
-                if (awayScoreElement && sets) {
-                    awayScoreElement.value = sets[`away_${currentSetNumber}`] || 0;
-                }
+                // 4. 현재 세트 점수는 세트 점수 표에만 표시 (매치스코어는 건드리지 않음)
+                // home-score, away-score는 매치스코어(세트 승리 수)이므로 현재 세트 점수로 사용하지 않음
                 
                 console.log(`세트 ${set} 점수 업데이트 완료: ${team}팀 = ${score}`);
                 console.log(`현재 세트: ${currentSet}세트, 세트제: ${setFormat}세트제`);
@@ -4116,9 +4113,8 @@
                 document.getElementById('home-total').textContent = home_score || 0;
                 document.getElementById('away-total').textContent = away_score || 0;
 
-                // 현재 세트 점수 초기화
-                document.getElementById('home-score').value = 0;
-                document.getElementById('away-score').value = 0;
+                // 현재 세트 점수는 세트 점수 표에만 표시 (매치스코어는 건드리지 않음)
+                // home-score, away-score는 매치스코어(세트 승리 수)이므로 초기화하지 않음
 
                 // 세트 점수 표 업데이트
                 if (match_data && match_data.sets) {
