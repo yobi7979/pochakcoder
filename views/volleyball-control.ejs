@@ -2628,62 +2628,44 @@
             console.log('✅ 경기 상황 업데이트 이벤트 전송 완료:', state);
         }
 
-        // 점수 업데이트 (야구와 동일한 WebSocket 방식)
+        // 점수 업데이트 (배구 전용)
         async function updateScore(team, change) {
             try {
                 console.log(`=== ${team}팀 점수 업데이트 시작 ===`);
                 console.log('변경량:', change);
                 
-                // 1. 서버에서 최신 경기 데이터 가져오기 (야구와 동일)
-                const response = await fetch(`/api/matches/${matchId}`);
-                if (!response.ok) {
-                    throw new Error('서버에서 경기 데이터를 가져올 수 없습니다.');
-                }
-                
-                const matchData = await response.json();
-                console.log('서버에서 받은 최신 데이터:', matchData);
-                
-                // 2. 서버 상태로 UI 동기화 (배구 특화)
-                // 현재 세트 정보 가져오기
+                // 1. 현재 세트 정보 가져오기
                 const currentSetDisplay = document.getElementById('current-set-display');
                 const currentSetText = currentSetDisplay ? currentSetDisplay.textContent : '1세트';
                 const currentSetNumber = parseInt(currentSetText.replace('세트', ''));
                 
-                // 현재 세트의 점수를 서버에서 가져오기
-                let serverHomeScore = 0;
-                let serverAwayScore = 0;
-                
-                if (matchData.match_data && matchData.match_data.sets) {
-                    serverHomeScore = matchData.match_data.sets.home?.[currentSetNumber] || 0;
-                    serverAwayScore = matchData.match_data.sets.away?.[currentSetNumber] || 0;
-                }
-                
-                const homeScoreElement = document.getElementById('home-score');
-                const awayScoreElement = document.getElementById('away-score');
-                
-                if (homeScoreElement) {
-                    homeScoreElement.value = serverHomeScore;
-                }
-                if (awayScoreElement) {
-                    awayScoreElement.value = serverAwayScore;
-                }
-                
-                // 3. 현재 세트의 점수 가져오기
+                // 2. 현재 세트의 점수 가져오기 (UI에서 직접)
                 const currentInningElement = document.getElementById(`${team}-set-${currentSetNumber}`);
                 const currentInningScore = parseInt(currentInningElement?.value) || 0;
                 const newInningScore = Math.max(0, currentInningScore + change);
                 
                 console.log(`세트 점수 변경: ${team}팀 ${currentSetNumber}세트 ${currentInningScore} + ${change} = ${newInningScore}`);
                 
-                // 5. UI 업데이트 (세트 점수)
+                // 3. UI 업데이트 (세트 점수)
                 if (currentInningElement) {
                     currentInningElement.value = newInningScore;
                 }
                 
-                // 6. 총 점수 자동 계산 (야구와 동일)
-                updateTotalScores();
+                // 4. 현재 세트 점수 표시 업데이트
+                const homeScoreElement = document.getElementById('home-score');
+                const awayScoreElement = document.getElementById('away-score');
                 
-                // 7. 서버에 세트 스코어 업데이트 전송 (야구와 동일한 WebSocket 방식)
+                if (team === 'home') {
+                    if (homeScoreElement) {
+                        homeScoreElement.value = newInningScore;
+                    }
+                } else {
+                    if (awayScoreElement) {
+                        awayScoreElement.value = newInningScore;
+                    }
+                }
+                
+                // 5. 서버에 세트 스코어 업데이트 전송
                 const setFormatElement = document.querySelector('input[name="setFormat"]:checked');
                 const setFormat = setFormatElement ? parseInt(setFormatElement.value) : 3;
                 
@@ -2698,7 +2680,7 @@
                     setFormat: setFormat
                 });
                 
-                // 8. 득점 시 자동 서브권 변경
+                // 6. 득점 시 자동 서브권 변경
                 if (change > 0) {
                     onScoreChange(team);
                 }
@@ -2712,36 +2694,31 @@
             }
         }
 
-        // 총 점수 자동 계산 (야구와 동일)
-        function updateTotalScores() {
-            let homeTotal = 0;
-            let awayTotal = 0;
+        // 현재 세트 점수 업데이트 (배구 전용)
+        function updateCurrentSetScores() {
+            const currentSetDisplay = document.getElementById('current-set-display');
+            const currentSetText = currentSetDisplay ? currentSetDisplay.textContent : '1세트';
+            const currentSetNumber = parseInt(currentSetText.replace('세트', ''));
             
-            // 세트별 점수 합계 계산
-            for (let i = 1; i <= 5; i++) {
-                const homeSetElement = document.getElementById(`home-set-${i}`);
-                const awaySetElement = document.getElementById(`away-set-${i}`);
-                
-                if (homeSetElement) {
-                    homeTotal += parseInt(homeSetElement.value) || 0;
-                }
-                if (awaySetElement) {
-                    awayTotal += parseInt(awaySetElement.value) || 0;
-                }
-            }
+            // 현재 세트의 점수 가져오기
+            const homeSetElement = document.getElementById(`home-set-${currentSetNumber}`);
+            const awaySetElement = document.getElementById(`away-set-${currentSetNumber}`);
             
-            // 총 점수 업데이트
+            const homeScore = parseInt(homeSetElement?.value) || 0;
+            const awayScore = parseInt(awaySetElement?.value) || 0;
+            
+            // 현재 세트 점수 표시 업데이트
             const homeScoreElement = document.getElementById('home-score');
             const awayScoreElement = document.getElementById('away-score');
             
             if (homeScoreElement) {
-                homeScoreElement.value = homeTotal;
+                homeScoreElement.value = homeScore;
             }
             if (awayScoreElement) {
-                awayScoreElement.value = awayTotal;
+                awayScoreElement.value = awayScore;
             }
             
-            console.log(`총 점수 업데이트: 홈팀 ${homeTotal}, 어웨이팀 ${awayTotal}`);
+            console.log(`현재 세트 ${currentSetNumber} 점수 업데이트: 홈팀 ${homeScore}, 어웨이팀 ${awayScore}`);
         }
 
         // 현재 세트 점수를 세트 점수 표에 자동 업데이트 (세트 점수만 업데이트)
