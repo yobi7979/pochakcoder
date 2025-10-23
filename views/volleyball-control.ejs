@@ -1585,53 +1585,18 @@
             });
         }
 
-        // 세트 점수 업데이트 (세트 점수만 업데이트, 매치 점수는 세트 이동 시에만 계산)
+        // 세트 점수 업데이트 함수 (새로 구현 예정)
         function updateSetScore(input) {
-            const team = input.getAttribute('data-team');
-            const set = parseInt(input.getAttribute('data-set'));
-            const score = parseInt(input.value) || 0;
-            
-            setScores[team][set] = score;
-            // updateSetWins(); // 제거됨 - 세트 점수 표 수정 시에는 매치 점수 계산하지 않음
-            console.log(`세트 ${set} ${team}팀 점수 수동 입력: ${score}`);
+            console.log('세트 점수 수동 입력');
+            // TODO: 새로운 점수 시스템 구현
         }
 
         // updateTotals 함수 제거 - updateSetWins와 중복됨
 
-        // 세트 승리 계산 (매치 점수) - 세트 이동 시에만 호출
+        // 세트 승리 계산 함수 (새로 구현 예정)
         function updateSetWins() {
-            let homeWins = 0;
-            let awayWins = 0;
-            
-            // 모든 세트의 승리 계산 (세트 점수가 0이 아닌 세트만 계산)
-            for (let set = 1; set <= 5; set++) {
-                const homeScore = setScores.home[set] || 0;
-                const awayScore = setScores.away[set] || 0;
-                
-                // 세트 점수가 모두 0이 아닌 경우에만 승리 계산
-                if (homeScore > 0 || awayScore > 0) {
-                    if (homeScore > awayScore) {
-                        homeWins++;
-                    } else if (awayScore > homeScore) {
-                        awayWins++;
-                    }
-                }
-            }
-            
-            // UI 업데이트 (매치 점수 = 세트 승리 수)
-            document.getElementById('home-total').textContent = homeWins;
-            document.getElementById('away-total').textContent = awayWins;
-            
-            console.log('매치 점수 업데이트:', { homeWins, awayWins });
-            
-            // 서버에 매치 점수 저장 (새로운 이벤트 사용)
-            socket.emit('volleyball_match_score_update', {
-                matchId: matchId,
-                homeWins: homeWins,
-                awayWins: awayWins
-            });
-            
-            console.log('✅ 매치 점수 서버 저장 요청 전송:', { homeWins, awayWins });
+            console.log('세트 승리 계산');
+            // TODO: 새로운 점수 시스템 구현
         }
 
         // 세트 점수 저장 (개선된 버전)
@@ -2637,125 +2602,22 @@
             console.log('✅ 경기 상황 업데이트 이벤트 전송 완료:', state);
         }
 
-        // 점수 업데이트 (배구 전용)
-        async function updateScore(team, change) {
-            try {
-                console.log(`=== ${team}팀 점수 업데이트 시작 ===`);
-                console.log('변경량:', change);
-                
-                // 1. 현재 세트 정보 가져오기
-                const currentSetDisplay = document.getElementById('current-set-display');
-                const currentSetText = currentSetDisplay ? currentSetDisplay.textContent : '1세트';
-                const currentSetNumber = parseInt(currentSetText.replace('세트', ''));
-                
-                // 2. 현재 세트의 점수 가져오기 (UI에서 직접)
-                const currentInningElement = document.getElementById(`${team}-set-${currentSetNumber}`);
-                const currentInningScore = parseInt(currentInningElement?.value) || 0;
-                const newInningScore = Math.max(0, currentInningScore + change);
-                
-                console.log(`세트 점수 변경: ${team}팀 ${currentSetNumber}세트 ${currentInningScore} + ${change} = ${newInningScore}`);
-                
-                // 3. UI 업데이트 (세트 점수)
-                if (currentInningElement) {
-                    currentInningElement.value = newInningScore;
-                }
-                
-                // 4. 현재 세트 점수 표시 업데이트 (home-score, away-score는 현재 세트 점수로 사용)
-                const homeScoreElement = document.getElementById('home-score');
-                const awayScoreElement = document.getElementById('away-score');
-                
-                if (team === 'home') {
-                    if (homeScoreElement) {
-                        homeScoreElement.value = newInningScore;
-                    }
-                } else {
-                    if (awayScoreElement) {
-                        awayScoreElement.value = newInningScore;
-                    }
-                }
-                
-                // 5. 서버에 세트 스코어 업데이트 전송
-                const setFormatElement = document.querySelector('input[name="setFormat"]:checked');
-                const setFormat = setFormatElement ? parseInt(setFormatElement.value) : 3;
-                
-                socket.emit('volleyball_score_update', {
-                    matchId: matchId,
-                    team: team,
-                    set: currentSetNumber,
-                    setType: 'current',
-                    score: newInningScore,
-                    change: change,
-                    currentSet: currentSetNumber,
-                    setFormat: setFormat
-                });
-                
-                // 6. 득점 시 자동 서브권 변경
-                if (change > 0) {
-                    onScoreChange(team);
-                }
-                
-                updateMatchInfo();
-                console.log(`=== 점수 업데이트 완료: ${team}팀 ${currentSetNumber}세트 ${newInningScore} ===`);
-                
-            } catch (error) {
-                console.error('점수 업데이트 중 오류 발생:', error);
-                alert('점수 업데이트 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
-            }
+        // 점수 업데이트 함수 (새로 구현 예정)
+        function updateScore(team, change) {
+            console.log(`점수 업데이트: ${team}팀 ${change > 0 ? '+' : ''}${change}`);
+            // TODO: 새로운 점수 시스템 구현
         }
 
-        // 현재 세트 점수 업데이트 (배구 전용)
+        // 현재 세트 점수 업데이트 함수 (새로 구현 예정)
         function updateCurrentSetScores() {
-            const currentSetDisplay = document.getElementById('current-set-display');
-            const currentSetText = currentSetDisplay ? currentSetDisplay.textContent : '1세트';
-            const currentSetNumber = parseInt(currentSetText.replace('세트', ''));
-            
-            // 현재 세트의 점수 가져오기
-            const homeSetElement = document.getElementById(`home-set-${currentSetNumber}`);
-            const awaySetElement = document.getElementById(`away-set-${currentSetNumber}`);
-            
-            const homeScore = parseInt(homeSetElement?.value) || 0;
-            const awayScore = parseInt(awaySetElement?.value) || 0;
-            
-            // 현재 세트 점수 표시 업데이트 (home-score, away-score는 현재 세트 점수로 사용)
-            const homeScoreElement = document.getElementById('home-score');
-            const awayScoreElement = document.getElementById('away-score');
-            
-            if (homeScoreElement) {
-                homeScoreElement.value = homeScore;
-            }
-            if (awayScoreElement) {
-                awayScoreElement.value = awayScore;
-            }
-            
-            console.log(`현재 세트 ${currentSetNumber} 점수: 홈팀 ${homeScore}, 어웨이팀 ${awayScore}`);
+            console.log('현재 세트 점수 업데이트');
+            // TODO: 새로운 점수 시스템 구현
         }
 
-        // 현재 세트 점수를 세트 점수 표에 자동 업데이트 (세트 점수만 업데이트)
+        // 세트 점수 업데이트 함수 (새로 구현 예정)
         function updateSetScoreFromCurrentScore() {
-            const currentSetDisplay = document.getElementById('current-set-display');
-            const currentSetText = currentSetDisplay ? currentSetDisplay.textContent : '1세트';
-            const currentSetNumber = parseInt(currentSetText.replace('세트', ''));
-            
-            const homeScore = parseInt(document.getElementById('home-score').value) || 0;
-            const awayScore = parseInt(document.getElementById('away-score').value) || 0;
-            
-            // 세트 점수 표에 현재 세트 점수 입력 (세트 점수만 업데이트)
-            const homeInput = document.querySelector(`input[data-team="home"][data-set="${currentSetNumber}"]`);
-            const awayInput = document.querySelector(`input[data-team="away"][data-set="${currentSetNumber}"]`);
-            
-            if (homeInput) {
-                homeInput.value = homeScore;
-                setScores.home[currentSetNumber] = homeScore;
-            }
-            if (awayInput) {
-                awayInput.value = awayScore;
-                setScores.away[currentSetNumber] = awayScore;
-            }
-            
-            // 매치 점수(세트 승리)는 세트 이동 시에만 계산하므로 여기서는 제거
-            // updateSetWins(); // 제거됨 - 세트 점수 표 업데이트 시에는 매치 점수 계산하지 않음
-            
-            console.log(`세트 ${currentSetNumber} 점수 업데이트: 홈팀 ${homeScore}, 어웨이팀 ${awayScore}`);
+            console.log('세트 점수 업데이트');
+            // TODO: 새로운 점수 시스템 구현
         }
 
         // 점수 업데이트 이벤트 전송 함수 (제거됨 - volleyball_score_update로 대체)
@@ -4007,83 +3869,28 @@
             }
         });
 
-        // 배구 세트 점수 업데이트 이벤트 수신 (WebSocket으로 실시간 동기화)
+        // 배구 세트 점수 업데이트 이벤트 수신 (새로 구현 예정)
         socket.on('volleyball_score_updated', function(data) {
-            console.log('=== 배구 세트 점수 업데이트 이벤트 수신 ===');
-            console.log('받은 데이터:', data);
-            
-            if (data.matchId === matchId) {
-                const { team, set, score, sets, currentSet, setFormat } = data;
-                
-                // 1. 현재 세트 표시 업데이트
-                if (currentSet !== undefined) {
-                    const currentSetDisplay = document.getElementById('current-set-display');
-                    if (currentSetDisplay) {
-                        currentSetDisplay.textContent = `${currentSet}세트`;
-                    }
-                }
-                
-                // 2. 세트제 정보 업데이트
-                if (setFormat !== undefined) {
-                    const setFormatElement = document.querySelector(`input[name="setFormat"][value="${setFormat}"]`);
-                    if (setFormatElement) {
-                        setFormatElement.checked = true;
-                    }
-                }
-                
-                // 3. 세트별 점수 입력 필드 업데이트
-                if (sets) {
-                    for (let i = 1; i <= 5; i++) {
-                        const homeSetElement = document.getElementById(`home-set-${i}`);
-                        const awaySetElement = document.getElementById(`away-set-${i}`);
-                        
-                        if (homeSetElement && sets[`home_${i}`] !== undefined) {
-                            homeSetElement.value = sets[`home_${i}`] || '0';
-                        }
-                        if (awaySetElement && sets[`away_${i}`] !== undefined) {
-                            awaySetElement.value = sets[`away_${i}`] || '0';
-                        }
-                    }
-                }
-                
-                // 4. 현재 세트 점수는 세트 점수 표에만 표시 (매치스코어는 건드리지 않음)
-                // home-score, away-score는 매치스코어(세트 승리 수)이므로 현재 세트 점수로 사용하지 않음
-                
-                console.log(`세트 ${set} 점수 업데이트 완료: ${team}팀 = ${score}`);
-                console.log(`현재 세트: ${currentSet}세트, 세트제: ${setFormat}세트제`);
-                console.log('=== 배구 세트 점수 업데이트 처리 완료 ===');
-            }
+            console.log('배구 세트 점수 업데이트 이벤트 수신');
+            // TODO: 새로운 점수 시스템 구현
         });
 
-        // 배구 점수 업데이트 오류 이벤트 수신
+        // 배구 점수 업데이트 오류 이벤트 수신 (새로 구현 예정)
         socket.on('volleyball_score_update_error', function(data) {
-            console.error('=== 배구 점수 업데이트 오류 ===');
-            console.error('오류 데이터:', data);
-            alert('점수 업데이트 중 오류가 발생했습니다: ' + data.error);
+            console.error('배구 점수 업데이트 오류');
+            // TODO: 새로운 점수 시스템 구현
         });
 
-        // 배구 매치 점수 업데이트 이벤트 수신 (다음 세트 버튼에서만 발생)
+        // 배구 매치 점수 업데이트 이벤트 수신 (새로 구현 예정)
         socket.on('volleyball_match_score_updated', function(data) {
-            console.log('=== 배구 매치 점수 업데이트 이벤트 수신 ===');
-            console.log('받은 데이터:', data);
-
-            if (data.matchId === matchId) {
-                const { home_score, away_score } = data;
-
-                // 매치 점수(세트 승리 수) 업데이트
-                document.getElementById('home-total').textContent = home_score || 0;
-                document.getElementById('away-total').textContent = away_score || 0;
-
-                console.log(`배구 매치 점수 업데이트 완료: 홈팀 ${home_score}세트, 원정팀 ${away_score}세트`);
-                console.log('=== 배구 매치 점수 업데이트 처리 완료 ===');
-            }
+            console.log('배구 매치 점수 업데이트 이벤트 수신');
+            // TODO: 새로운 점수 시스템 구현
         });
 
-        // 배구 매치 점수 업데이트 오류 이벤트 수신
+        // 배구 매치 점수 업데이트 오류 이벤트 수신 (새로 구현 예정)
         socket.on('volleyball_match_score_update_error', function(data) {
-            console.error('=== 배구 매치 점수 업데이트 오류 ===');
-            console.error('오류 데이터:', data);
-            alert('매치 점수 업데이트 중 오류가 발생했습니다: ' + data.error);
+            console.error('배구 매치 점수 업데이트 오류');
+            // TODO: 새로운 점수 시스템 구현
         });
 
         // 배구 다음 세트 업데이트 이벤트 수신
