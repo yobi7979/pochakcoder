@@ -1999,27 +1999,7 @@ app.delete('/api/templates/:templateId/files/:fileType', requireAuth, async (req
   }
 });
 
-// 선수 데이터 업로드
-app.post('/api/upload-player-data', requireAuth, async (req, res) => {
-  try {
-    // 선수 데이터 업로드 처리
-    res.json({ success: true, message: '선수 데이터 업로드 완료' });
-  } catch (error) {
-    console.error('선수 데이터 업로드 실패:', error);
-    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
-  }
-});
 
-// 현재 선수 업데이트
-app.post('/api/update-current-players', requireAuth, async (req, res) => {
-  try {
-    // 현재 선수 업데이트 처리
-    res.json({ success: true, message: '현재 선수 업데이트 완료' });
-  } catch (error) {
-    console.error('현재 선수 업데이트 실패:', error);
-    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
-  }
-});
 
 // 누락된 API 엔드포인트들 추가
 
