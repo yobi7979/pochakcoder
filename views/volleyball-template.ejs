@@ -770,8 +770,8 @@
                     
                     // 모든 세트 점수 강제 업데이트
                     for (let i = 1; i <= 5; i++) {
-                        const homeSetElement = document.querySelector(`[data-set="${i}"].home-set-score`);
-                        const awaySetElement = document.querySelector(`[data-set="${i}"].away-set-score`);
+                        const homeSetElement = document.getElementById(`home-set-${i}`);
+                        const awaySetElement = document.getElementById(`away-set-${i}`);
                         if (homeSetElement) homeSetElement.textContent = '0';
                         if (awaySetElement) awaySetElement.textContent = '0';
                     }
@@ -865,8 +865,8 @@
                         }
                         
                         // 세트 스코어보드의 개별 세트 점수 업데이트
-                        const homeSetElement = document.querySelector(`[data-set="${i}"].home-set-score`);
-                        const awaySetElement = document.querySelector(`[data-set="${i}"].away-set-score`);
+                        const homeSetElement = document.getElementById(`home-set-${i}`);
+                        const awaySetElement = document.getElementById(`away-set-${i}`);
                         
                         if (homeSetElement) {
                             homeSetElement.textContent = homeSetScore;
