@@ -812,6 +812,36 @@
                     if (awayTotalElement) awayTotalElement.textContent = awayWins;
                     
                     console.log(`🏐 세트 승리 계산 완료 (${currentSet}세트 진행 중): 홈팀 ${homeWins}, 어웨이팀 ${awayWins}`);
+                    
+                    // 🏐 세트 스코어보드 개별 세트 점수 업데이트
+                    for (let i = 1; i <= 5; i++) {
+                        let homeSetScore = 0;
+                        let awaySetScore = 0;
+                        
+                        // 세트 점수 가져오기
+                        if (data.match_data.innings.home && data.match_data.innings.away) {
+                            // 새로운 구조: innings.home[1], innings.away[1]
+                            homeSetScore = parseInt(data.match_data.innings.home[i] || '0');
+                            awaySetScore = parseInt(data.match_data.innings.away[i] || '0');
+                        } else {
+                            // 기존 구조: innings.home_1, innings.away_1
+                            homeSetScore = parseInt(data.match_data.innings[`home_${i}`] || '0');
+                            awaySetScore = parseInt(data.match_data.innings[`away_${i}`] || '0');
+                        }
+                        
+                        // 세트 스코어보드의 개별 세트 점수 업데이트
+                        const homeSetElement = document.querySelector(`[data-set="${i}"].home-set-score`);
+                        const awaySetElement = document.querySelector(`[data-set="${i}"].away-set-score`);
+                        
+                        if (homeSetElement) {
+                            homeSetElement.textContent = homeSetScore;
+                        }
+                        if (awaySetElement) {
+                            awaySetElement.textContent = awaySetScore;
+                        }
+                        
+                        console.log(`🏐 ${i}세트 점수 업데이트: 홈팀 ${homeSetScore}, 어웨이팀 ${awaySetScore}`);
+                    }
                 }
                 
                 // 야구 특화 데이터 업데이트 (match_data가 있는 경우)
