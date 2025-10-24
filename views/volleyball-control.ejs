@@ -2440,39 +2440,27 @@
             }
         }
         
-        // 모든 점수 초기화 함수
+        // 모든 점수 초기화 함수 (배구용)
         async function resetAllScores() {
-            if (!confirm('모든 점수를 0으로 초기화하시겠습니까?\n(이닝별 점수와 총 점수가 모두 초기화됩니다)')) {
+            if (!confirm('모든 점수를 0으로 초기화하시겠습니까?\n(모든 세트 점수와 총 점수가 모두 초기화되고 1세트로 돌아갑니다)')) {
                 return;
             }
             
             try {
-                console.log('=== 모든 점수 초기화 시작 ===');
+                console.log('🏐 === 배구 점수 초기화 시작 ===');
                 
-                // 1. 서버에서 최신 경기 데이터 가져오기
-                const response = await fetch(`/api/matches/${matchId}`);
-                if (!response.ok) {
-                    throw new Error('서버에서 경기 데이터를 가져올 수 없습니다.');
-                }
-                
-                const matchData = await response.json();
-                console.log('서버에서 받은 최신 데이터:', matchData);
-                
-                // 2. 서버 상태로 UI 동기화
-                const serverHomeScore = matchData.home_score || 0;
-                const serverAwayScore = matchData.away_score || 0;
-                
+                // 1. 현재 세트 점수 초기화 (메인 스코어보드)
                 const homeScoreElement = document.getElementById('home-score');
                 const awayScoreElement = document.getElementById('away-score');
                 
                 if (homeScoreElement) {
-                    homeScoreElement.value = serverHomeScore;
+                    homeScoreElement.value = '0';
                 }
                 if (awayScoreElement) {
-                    awayScoreElement.value = serverAwayScore;
+                    awayScoreElement.value = '0';
                 }
                 
-                // 3. 모든 세트 스코어 초기화 (배구는 5세트까지)
+                // 2. 모든 세트 점수 초기화 (1~5세트)
                 for (let i = 1; i <= 5; i++) {
                     const homeInningElement = document.getElementById(`home-inning-${i}`);
                     const awayInningElement = document.getElementById(`away-inning-${i}`);
@@ -2485,39 +2473,64 @@
                     }
                 }
                 
-                // 4. 총 점수 초기화
-                if (homeScoreElement) {
-                    homeScoreElement.value = '0';
-                }
-                if (awayScoreElement) {
-                    awayScoreElement.value = '0';
-                }
-                
-                // 5. 경기 상태를 1세트로 변경
+                // 3. 경기 상태를 1세트로 변경
                 const currentInningElement = document.getElementById('current-inning');
                 if (currentInningElement) {
                     currentInningElement.textContent = '1';
                     console.log('🏐 경기 상태를 1세트로 변경');
                 }
                 
-                // 6. 총점을 0으로 즉시 업데이트
+                // 4. 총점을 0으로 즉시 업데이트
                 updateTotalScores();
                 console.log('🏐 총점을 0으로 즉시 업데이트');
                 
-                // 7. 서버에 모든 세트 스코어 초기화 전송 (배구는 5세트까지)
-                for (let i = 1; i <= 5; i++) {
-                    // 배구에서는 baseball_inning_score_update 이벤트 전송하지 않음 (중복 방지)
-                    console.log('🏐 배구에서는 baseball_inning_score_update 이벤트 전송하지 않음');
+                // 5. 서버에 초기화된 데이터 저장
+                const matchData = {
+                    current_inning: 1,
+                    inning_type: 'top',
+                    innings: {
+                        home: { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 },
+                        away: { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 },
+                        home_1: 0, away_1: 0,
+                        home_2: 0, away_2: 0,
+                        home_3: 0, away_3: 0,
+                        home_4: 0, away_4: 0,
+                        home_5: 0, away_5: 0
+                    }
+                };
+                
+                // 6. 서버에 경기 데이터 업데이트
+                const response = await fetch(`/api/matches/${matchId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        home_score: 0,
+                        away_score: 0,
+                        match_data: matchData
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('서버에 초기화 데이터를 저장할 수 없습니다.');
                 }
                 
-                // 8. API를 통해서도 업데이트
-                updateMatchInfo();
+                console.log('🏐 서버에 초기화 데이터 저장 완료');
                 
-                console.log('=== 모든 점수 초기화 완료 ===');
-                alert('모든 점수가 초기화되었습니다.');
+                // 7. WebSocket으로 다른 클라이언트에 초기화 알림
+                socket.emit('match_updated', {
+                    matchId: matchId,
+                    home_score: 0,
+                    away_score: 0,
+                    match_data: matchData
+                });
+                
+                console.log('🏐 === 배구 점수 초기화 완료 ===');
+                alert('모든 점수가 초기화되고 1세트로 돌아갔습니다.');
                 
             } catch (error) {
-                console.error('점수 초기화 중 오류 발생:', error);
+                console.error('🏐 점수 초기화 중 오류 발생:', error);
                 alert('점수 초기화 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
             }
         }
