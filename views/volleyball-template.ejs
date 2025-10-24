@@ -744,6 +744,41 @@
                     }
                 }
                 
+                // 🏐 초기화 감지: 모든 점수가 0이고 current_inning이 1인 경우
+                const isReset = data.home_score === 0 && data.away_score === 0 && 
+                               data.match_data?.current_inning === 1 &&
+                               homeCurrentSetScore === 0 && awayCurrentSetScore === 0;
+                
+                if (isReset) {
+                    console.log('🏐 초기화 감지 - 모든 UI 강제 업데이트');
+                    
+                    // 메인 스코어보드 강제 업데이트
+                    const homeScoreEl = document.querySelector('.home-team-score');
+                    const awayScoreEl = document.querySelector('.away-team-score');
+                    if (homeScoreEl) homeScoreEl.textContent = '0';
+                    if (awayScoreEl) awayScoreEl.textContent = '0';
+                    
+                    // 현재 세트 표시 강제 업데이트
+                    const currentSetDisplay = document.getElementById('current-set-display');
+                    if (currentSetDisplay) currentSetDisplay.textContent = '1';
+                    
+                    // 총점 강제 업데이트
+                    const homeTotalElement = document.getElementById('home-total');
+                    const awayTotalElement = document.getElementById('away-total');
+                    if (homeTotalElement) homeTotalElement.textContent = '0';
+                    if (awayTotalElement) awayTotalElement.textContent = '0';
+                    
+                    // 모든 세트 점수 강제 업데이트
+                    for (let i = 1; i <= 5; i++) {
+                        const homeSetElement = document.querySelector(`[data-set="${i}"].home-set-score`);
+                        const awaySetElement = document.querySelector(`[data-set="${i}"].away-set-score`);
+                        if (homeSetElement) homeSetElement.textContent = '0';
+                        if (awaySetElement) awaySetElement.textContent = '0';
+                    }
+                    
+                    console.log('🏐 초기화 UI 강제 업데이트 완료');
+                }
+                
                 console.log('🔥 현재 세트 점수 사용:', { 
                     currentSet: currentSet, 
                     home: homeCurrentSetScore, 
