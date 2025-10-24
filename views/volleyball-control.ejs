@@ -2518,13 +2518,15 @@
                 
                 console.log('🏐 서버에 초기화 데이터 저장 완료');
                 
-                // 7. WebSocket으로 다른 클라이언트에 초기화 알림
+                // 7. WebSocket으로 서버에 초기화 알림 (서버에서 다른 클라이언트에게 전파)
                 socket.emit('match_updated', {
                     matchId: matchId,
                     home_score: 0,
                     away_score: 0,
                     match_data: matchData
                 });
+                
+                console.log('🏐 WebSocket 초기화 이벤트 전송 완료');
                 
                 console.log('🏐 === 배구 점수 초기화 완료 ===');
                 alert('모든 점수가 초기화되고 1세트로 돌아갔습니다.');
@@ -2556,6 +2558,77 @@
                     }
                 }
                 console.log('=== 경기 업데이트 처리 완료 (일반 컨트롤) ===');
+            }
+        });
+
+        // 🏐 배구 초기화 이벤트 처리 (match_updated)
+        socket.on('match_updated', (data) => {
+            console.log('🏐 === 배구 초기화 이벤트 수신 (컨트롤) ===');
+            console.log('🏐 수신된 데이터:', data);
+            
+            if (data.matchId === matchId) {
+                console.log('🏐 배구 초기화 이벤트 처리 시작');
+                
+                // 1. 현재 세트 점수 업데이트
+                if (data.home_score !== undefined) {
+                    const homeScoreElement = document.getElementById('home-score');
+                    if (homeScoreElement) {
+                        homeScoreElement.value = data.home_score;
+                        console.log('🏐 홈팀 현재 세트 점수 업데이트:', data.home_score);
+                    }
+                }
+                
+                if (data.away_score !== undefined) {
+                    const awayScoreElement = document.getElementById('away-score');
+                    if (awayScoreElement) {
+                        awayScoreElement.value = data.away_score;
+                        console.log('🏐 어웨이팀 현재 세트 점수 업데이트:', data.away_score);
+                    }
+                }
+                
+                // 2. 모든 세트 점수 업데이트
+                if (data.match_data?.innings) {
+                    for (let i = 1; i <= 5; i++) {
+                        const homeInningElement = document.getElementById(`home-inning-${i}`);
+                        const awayInningElement = document.getElementById(`away-inning-${i}`);
+                        
+                        let homeSetScore = 0;
+                        let awaySetScore = 0;
+                        
+                        // 세트 점수 가져오기
+                        if (data.match_data.innings.home && data.match_data.innings.away) {
+                            homeSetScore = parseInt(data.match_data.innings.home[i] || '0');
+                            awaySetScore = parseInt(data.match_data.innings.away[i] || '0');
+                        } else {
+                            homeSetScore = parseInt(data.match_data.innings[`home_${i}`] || '0');
+                            awaySetScore = parseInt(data.match_data.innings[`away_${i}`] || '0');
+                        }
+                        
+                        if (homeInningElement) {
+                            homeInningElement.value = homeSetScore;
+                        }
+                        if (awayInningElement) {
+                            awayInningElement.value = awaySetScore;
+                        }
+                        
+                        console.log(`🏐 ${i}세트 점수 업데이트: 홈팀 ${homeSetScore}, 어웨이팀 ${awaySetScore}`);
+                    }
+                }
+                
+                // 3. 현재 세트 표시 업데이트
+                if (data.match_data?.current_inning) {
+                    const currentInningElement = document.getElementById('current-inning');
+                    if (currentInningElement) {
+                        currentInningElement.textContent = data.match_data.current_inning;
+                        console.log('🏐 현재 세트 업데이트:', data.match_data.current_inning);
+                    }
+                }
+                
+                // 4. 총점 업데이트
+                updateTotalScores();
+                console.log('🏐 총점 업데이트 완료');
+                
+                console.log('🏐 === 배구 초기화 이벤트 처리 완료 ===');
             }
         });
 
