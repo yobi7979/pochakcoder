@@ -1,6 +1,6 @@
 {
   "railway": {
-    "startCommand": "npm run railway-deploy",
+    "startCommand": "node server.js",
     "buildCommand": "npm install",
     "environment": {
       "NODE_ENV": "production",
