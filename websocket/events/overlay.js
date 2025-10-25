@@ -162,7 +162,15 @@ const overlayEvents = (socket, io) => {
       matchId: matchId
     });
     
+    // 오버레이 페이지 새로고침 신호 전송 (자동 새로고침 기능 활용)
+    io.to(roomName).emit('overlay_page_refresh', {
+      matchId: matchId,
+      reason: 'team_position_changed',
+      timestamp: new Date().toISOString()
+    });
+    
     console.log(`🏐 팀 위치 변경 이벤트를 방 ${roomName}에 전송함`);
+    console.log(`🏐 오버레이 페이지 새로고침 신호 전송: team_position_changed`);
   });
 
   // 리버스앵글 변경 이벤트 처리 (새로운 상태 관리 방식)
@@ -180,7 +188,16 @@ const overlayEvents = (socket, io) => {
       reverseAngle: reverseAngle
     });
 
+    // 오버레이 페이지 새로고침 신호 전송 (자동 새로고침 기능 활용)
+    io.to(roomName).emit('overlay_page_refresh', {
+      matchId: matchId,
+      reason: 'reverse_angle_changed',
+      reverseAngle: reverseAngle,
+      timestamp: new Date().toISOString()
+    });
+
     console.log(`🏐 리버스앵글 변경 이벤트를 방 ${roomName}에 전송함`);
+    console.log(`🏐 오버레이 페이지 새로고침 신호 전송: reverse_angle_changed`);
     console.log(`🏐 방 ${roomName}의 클라이언트 수: ${io.sockets.adapter.rooms.get(roomName)?.size || 0}`);
   });
 

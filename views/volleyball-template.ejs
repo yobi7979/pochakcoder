@@ -614,9 +614,18 @@
                 
                 let displayServeTeam = data.serve_team;
                 
-                // 리버스앵글과 팀위치 변경의 조합으로 서브권 표시 결정
-                // 리버스앵글 또는 팀위치 변경 중 하나라도 true이면 서브권 반전
-                const shouldReverseServe = isReverseAngle || isTeamPositionSwapped;
+                // 리버스앵글 상태에 따른 서브권 방향 결정 (완전 분리)
+                let shouldReverseServe = false;
+                
+                if (isReverseAngle) {
+                    // 리버스앵글 선택 시: 팀위치변경이 true일 때만 서브권 반전
+                    shouldReverseServe = isTeamPositionSwapped;
+                    console.log('🏐 리버스앵글 선택 시 서브권 로직:', '팀위치변경=' + isTeamPositionSwapped + ' → 서브권반전=' + shouldReverseServe);
+                } else {
+                    // 리버스앵글 선택 안함 시: 팀위치변경이 true일 때만 서브권 반전
+                    shouldReverseServe = isTeamPositionSwapped;
+                    console.log('🏐 리버스앵글 선택 안함 시 서브권 로직:', '팀위치변경=' + isTeamPositionSwapped + ' → 서브권반전=' + shouldReverseServe);
+                }
                 
                 if (shouldReverseServe) {
                     // 서브권 반전이 필요한 경우
@@ -757,7 +766,7 @@
             }
         });
 
-        // 팀 위치 변경 이벤트 (단순한 토글)
+        // 팀 위치 변경 이벤트 (새로고침으로 처리)
         socket.on('teamPositionToggle', function(data) {
             console.log('🏐 팀 위치 변경 이벤트 수신:', data);
             console.log('🏐 현재 matchId:', matchId);
@@ -769,50 +778,17 @@
                 return;
             }
             
-            // 메인 스코어보드 요소 찾기
-            const mainScoreboard = document.querySelector('.main-scoreboard');
-            console.log('🏐 main-scoreboard 요소:', mainScoreboard);
+            console.log('🏐 배구 오버레이 페이지 팀위치변경 이벤트 수신 - 새로고침 실행');
+            console.log('🏐 새로고침 이유: 팀위치변경으로 인한 상태 동기화');
             
-            if (mainScoreboard) {
-                // 컨트롤 페이지에서 변경된 팀위치 상태를 서버에서 가져와서 적용
-                fetch(`/api/matches/${matchId}`)
-                    .then(response => response.json())
-                    .then(matchData => {
-                        const teamPositionSwapped = matchData.match_data?.team_position_swapped || false;
-                        const isReverseAngle = window.currentReverseAngle || false;
-                        
-                        console.log('🏐 서버 팀위치 상태:', teamPositionSwapped);
-                        console.log('🏐 리버스앵글 상태:', isReverseAngle);
-                        
-                        // 리버스앵글과 팀위치 변경의 조합으로 최종 표시 결정
-                        const shouldShowSwapped = isReverseAngle ? !teamPositionSwapped : teamPositionSwapped;
-                        
-                        if (shouldShowSwapped) {
-                            mainScoreboard.classList.add('team-position-swapped');
-                            console.log('🏐 오버레이 팀위치: 반전 표시');
-                        } else {
-                            mainScoreboard.classList.remove('team-position-swapped');
-                            console.log('🏐 오버레이 팀위치: 정상 표시');
-                        }
-                        
-                        // 서브권 표시도 업데이트
-                        updateServeDisplay();
-                    })
-                    .catch(error => {
-                        console.error('🏐 서버 상태 조회 실패:', error);
-                    });
-                
-                // 강제로 스타일 적용 확인
-                const teamSection = mainScoreboard.querySelector('.team-section');
-                if (teamSection) {
-                    console.log('🏐 team-section flex-direction:', window.getComputedStyle(teamSection).flexDirection);
-                }
-            } else {
-                console.log('❌ main-scoreboard 요소를 찾을 수 없습니다');
-            }
+            // 팀위치변경 이벤트 수신 시 즉시 새로고침
+            setTimeout(() => {
+                console.log('🏐 500ms 지연 후 배구 오버레이 페이지 새로고침 실행');
+                location.reload();
+            }, 500);
         });
 
-        // 리버스앵글 변경 이벤트 (새로운 상태 관리 방식)
+        // 리버스앵글 변경 이벤트 (새로고침으로 처리)
         socket.on('reverseAngleChanged', function(data) {
             console.log('🏐 리버스앵글 변경 이벤트 수신:', data);
             console.log('🏐 현재 matchId:', matchId);
@@ -825,58 +801,36 @@
                 return;
             }
             
-            console.log('🏐 리버스앵글 변경 이벤트 처리 시작');
+            console.log('🏐 배구 오버레이 페이지 리버스앵글 변경 이벤트 수신 - 새로고침 실행');
+            console.log('🏐 새로고침 이유: 리버스앵글 변경으로 인한 상태 동기화');
             
-            // 리버스앵글 상태에 따라 팀 위치 조정
-            const mainScoreboard = document.querySelector('.main-scoreboard');
-            console.log('🏐 main-scoreboard 요소:', mainScoreboard);
-            if (mainScoreboard) {
-                console.log('🏐 오버레이 변경 전 클래스 상태:', mainScoreboard.classList.contains('team-position-swapped'));
-                
-                if (data.reverseAngle) {
-                    // 리버스앵글 활성화: 오버레이 페이지만 반전 (컨트롤 페이지와 반대)
-                    mainScoreboard.classList.add('team-position-swapped');
-                    console.log('🏐 리버스앵글 활성화: 오버레이 페이지만 반전 적용');
-                } else {
-                    // 리버스앵글 비활성화: 오버레이 페이지 정상화 (컨트롤 페이지와 동일)
-                    mainScoreboard.classList.remove('team-position-swapped');
-                    console.log('🏐 리버스앵글 비활성화: 오버레이 페이지 정상화');
-                }
-                console.log('🏐 리버스앵글 적용 완료:', data.reverseAngle);
-                console.log('🏐 오버레이 변경 후 클래스 상태:', mainScoreboard.classList.contains('team-position-swapped'));
-                console.log('🏐 오버레이 전체 클래스 목록:', mainScoreboard.className);
-                
-                // 리버스앵글 상태를 전역 변수로 저장
-                window.currentReverseAngle = data.reverseAngle;
-                
-                // 새로운 서브권 표시 로직 적용
-                updateServeDisplay();
-            } else {
-                console.log('❌ main-scoreboard 요소를 찾을 수 없습니다');
-            }
+            // 리버스앵글 변경 이벤트 수신 시 즉시 새로고침
+            setTimeout(() => {
+                console.log('🏐 500ms 지연 후 배구 오버레이 페이지 새로고침 실행');
+                location.reload();
+            }, 500);
         });
         
-        // 팀 위치 초기화 이벤트 (새로 추가)
+        // 팀 위치 초기화 이벤트 (새로고침으로 처리)
         socket.on('teamPositionReset', function(data) {
             console.log('🏐 팀 위치 초기화 이벤트 수신:', data);
+            console.log('🏐 현재 matchId:', matchId);
+            console.log('🏐 전송된 matchId:', data.matchId);
+            console.log('🏐 초기화 타입:', data.resetType);
             
             if (data.matchId !== matchId) {
                 console.log('🏐 다른 경기의 이벤트이므로 무시');
                 return;
             }
             
-            const mainScoreboard = document.querySelector('.main-scoreboard');
-            if (mainScoreboard) {
-                if (data.resetType === 'all') {
-                    // 완전 초기화: 모든 상태 초기화
-                    mainScoreboard.classList.remove('team-position-swapped');
-                    window.currentReverseAngle = false;
-                    console.log('🏐 완전 초기화: 팀 위치 + 리버스앵글 모두 초기화');
-                }
-                
-                // 서브권 표시도 업데이트
-                updateServeDisplay();
-            }
+            console.log('🏐 배구 오버레이 페이지 팀위치 초기화 이벤트 수신 - 새로고침 실행');
+            console.log('🏐 새로고침 이유: 팀위치 초기화로 인한 상태 동기화');
+            
+            // 팀위치 초기화 이벤트 수신 시 즉시 새로고침
+            setTimeout(() => {
+                console.log('🏐 500ms 지연 후 배구 오버레이 페이지 새로고침 실행');
+                location.reload();
+            }, 500);
         });
         
         // 오버레이 초기 상태 설정 함수 (새로 추가)
@@ -919,9 +873,18 @@
                 // 리버스앵글과 팀위치 변경의 조합으로 서브권 표시 결정
                 let displayServeTeam = serveTeam;
                 
-                // 리버스앵글과 팀위치 변경의 조합 계산
-                // 리버스앵글 또는 팀위치 변경 중 하나라도 true이면 서브권 반전
-                const shouldReverseServe = reverseAngle || teamPositionSwapped;
+                // 리버스앵글 상태에 따른 서브권 방향 결정 (완전 분리)
+                let shouldReverseServe = false;
+                
+                if (reverseAngle) {
+                    // 리버스앵글 선택 시: 팀위치변경이 true일 때만 서브권 반전
+                    shouldReverseServe = teamPositionSwapped;
+                    console.log('🏐 리버스앵글 선택 시 서브권 로직:', '팀위치변경=' + teamPositionSwapped + ' → 서브권반전=' + shouldReverseServe);
+                } else {
+                    // 리버스앵글 선택 안함 시: 팀위치변경이 true일 때만 서브권 반전
+                    shouldReverseServe = teamPositionSwapped;
+                    console.log('🏐 리버스앵글 선택 안함 시 서브권 로직:', '팀위치변경=' + teamPositionSwapped + ' → 서브권반전=' + shouldReverseServe);
+                }
                 
                 if (shouldReverseServe) {
                     // 서브권 반전이 필요한 경우
@@ -957,9 +920,18 @@
                 
                 let displayServeTeam = actualServeTeam;
                 
-                // 리버스앵글과 팀위치 변경의 조합으로 서브권 표시 결정
-                // 리버스앵글 또는 팀위치 변경 중 하나라도 true이면 서브권 반전
-                const shouldReverseServe = isReverseAngle || isTeamPositionSwapped;
+                // 리버스앵글 상태에 따른 서브권 방향 결정 (완전 분리)
+                let shouldReverseServe = false;
+                
+                if (isReverseAngle) {
+                    // 리버스앵글 선택 시: 팀위치변경이 true일 때만 서브권 반전
+                    shouldReverseServe = isTeamPositionSwapped;
+                    console.log('🏐 리버스앵글 선택 시 서브권 로직:', '팀위치변경=' + isTeamPositionSwapped + ' → 서브권반전=' + shouldReverseServe);
+                } else {
+                    // 리버스앵글 선택 안함 시: 팀위치변경이 true일 때만 서브권 반전
+                    shouldReverseServe = isTeamPositionSwapped;
+                    console.log('🏐 리버스앵글 선택 안함 시 서브권 로직:', '팀위치변경=' + isTeamPositionSwapped + ' → 서브권반전=' + shouldReverseServe);
+                }
                 
                 if (shouldReverseServe) {
                     // 서브권 반전이 필요한 경우
@@ -1028,9 +1000,18 @@
                
                let displayServeTeam = data.match_data.serve_team;
                
-               // 리버스앵글과 팀위치 변경의 조합으로 서브권 표시 결정
-               // 리버스앵글 또는 팀위치 변경 중 하나라도 true이면 서브권 반전
-               const shouldReverseServe = isReverseAngle || isTeamPositionSwapped;
+               // 리버스앵글 상태에 따른 서브권 방향 결정 (완전 분리)
+               let shouldReverseServe = false;
+               
+               if (isReverseAngle) {
+                   // 리버스앵글 선택 시: 팀위치변경이 true일 때만 서브권 반전
+                   shouldReverseServe = isTeamPositionSwapped;
+                   console.log('🏐 리버스앵글 선택 시 서브권 로직:', '팀위치변경=' + isTeamPositionSwapped + ' → 서브권반전=' + shouldReverseServe);
+               } else {
+                   // 리버스앵글 선택 안함 시: 팀위치변경이 true일 때만 서브권 반전
+                   shouldReverseServe = isTeamPositionSwapped;
+                   console.log('🏐 리버스앵글 선택 안함 시 서브권 로직:', '팀위치변경=' + isTeamPositionSwapped + ' → 서브권반전=' + shouldReverseServe);
+               }
                
                if (shouldReverseServe) {
                    // 서브권 반전이 필요한 경우
@@ -1519,24 +1500,46 @@
             }
         });
 
-        // 오버레이 페이지 새로고침 이벤트 처리 (재등록)
+        // 오버레이 페이지 새로고침 이벤트 처리 (재등록) - 팀위치변경/리버스앵글 자동 새로고침
         socket.on('overlay_page_refresh', function(data) {
             console.log('🔧 야구 오버레이 페이지 새로고침 신호 수신 (재등록):', data);
             console.log('🔧 현재 window.matchData:', window.matchData);
             console.log('🔧 현재 경기 sport_type:', window.matchData?.sport_type);
             console.log('🔧 이벤트 sportCode:', data.sportCode);
+            console.log('🔧 새로고침 이유:', data.reason);
+            console.log('🔧 현재 경기 ID:', matchId);
+            console.log('🔧 이벤트 경기 ID:', data.matchId);
+            
+            // 경기 ID 확인 (팀위치변경/리버스앵글 이벤트의 경우)
+            if (data.matchId && data.matchId !== matchId) {
+                console.log('🔧 다른 경기의 새로고침 이벤트이므로 무시 (재등록)');
+                return;
+            }
             
             // 현재 경기의 스포츠 타입과 동적 비교
-            if (data.sportCode === window.matchData?.sport_type) {
+            if (data.sportCode === window.matchData?.sport_type || data.matchId === matchId) {
                 console.log('🔧 야구 오버레이 페이지 새로고침 실행 (재등록):', data.reason);
-                // 페이지 새로고침
+                console.log('🔧 새로고침 이유 상세 (재등록):', {
+                    reason: data.reason,
+                    matchId: data.matchId,
+                    reverseAngle: data.reverseAngle,
+                    timestamp: data.timestamp
+                });
+                
+                // 팀위치변경/리버스앵글 이벤트의 경우 즉시 새로고침
+                if (data.reason === 'team_position_changed' || data.reason === 'reverse_angle_changed') {
+                    console.log('🔧 팀위치변경/리버스앵글 이벤트로 인한 즉시 새로고침 실행 (재등록)');
                     location.reload();
+                } else {
+                    // 기존 로직 유지
+                    location.reload();
+                }
             } else {
                 console.log('🔧 야구 스포츠 타입 불일치로 새로고침 건너뜀 (재등록)');
                 // 대안: window.matchData가 없을 때도 새로고침 (디버깅용)
                 if (!window.matchData) {
                     console.log('🔧 야구 window.matchData가 없어서 강제 새로고침 실행 (재등록)');
-                        location.reload();
+                    location.reload();
                 }
             }
         });
@@ -2505,18 +2508,40 @@
             }
         });
 
-        // 오버레이 페이지 새로고침 이벤트 처리
+        // 오버레이 페이지 새로고침 이벤트 처리 (팀위치변경/리버스앵글 자동 새로고침)
         socket.on('overlay_page_refresh', function(data) {
             console.log('🔧 야구 오버레이 페이지 새로고침 신호 수신:', data);
             console.log('🔧 현재 window.matchData:', window.matchData);
             console.log('🔧 현재 경기 sport_type:', window.matchData?.sport_type);
             console.log('🔧 이벤트 sportCode:', data.sportCode);
+            console.log('🔧 새로고침 이유:', data.reason);
+            console.log('🔧 현재 경기 ID:', matchId);
+            console.log('🔧 이벤트 경기 ID:', data.matchId);
+            
+            // 경기 ID 확인 (팀위치변경/리버스앵글 이벤트의 경우)
+            if (data.matchId && data.matchId !== matchId) {
+                console.log('🔧 다른 경기의 새로고침 이벤트이므로 무시');
+                return;
+            }
             
             // 현재 경기의 스포츠 타입과 동적 비교
-            if (data.sportCode === window.matchData?.sport_type) {
+            if (data.sportCode === window.matchData?.sport_type || data.matchId === matchId) {
                 console.log('🔧 야구 오버레이 페이지 새로고침 실행:', data.reason);
-                // 페이지 새로고침
+                console.log('🔧 새로고침 이유 상세:', {
+                    reason: data.reason,
+                    matchId: data.matchId,
+                    reverseAngle: data.reverseAngle,
+                    timestamp: data.timestamp
+                });
+                
+                // 팀위치변경/리버스앵글 이벤트의 경우 즉시 새로고침
+                if (data.reason === 'team_position_changed' || data.reason === 'reverse_angle_changed') {
+                    console.log('🔧 팀위치변경/리버스앵글 이벤트로 인한 즉시 새로고침 실행');
                     location.reload();
+                } else {
+                    // 기존 로직 유지
+                    location.reload();
+                }
             } else {
                 console.log('🔧 야구 스포츠 타입 불일치로 새로고침 건너뜀');
             }

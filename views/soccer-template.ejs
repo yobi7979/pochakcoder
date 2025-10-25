@@ -1575,21 +1575,43 @@
             }
         });
 
-        // 오버레이 페이지 새로고침 이벤트 처리 (재등록)
+        // 오버레이 페이지 새로고침 이벤트 처리 (재등록) - 팀위치변경/리버스앵글 자동 새로고침
         socket.on('overlay_page_refresh', function(data) {
             console.log('🔧 오버레이 페이지 새로고침 신호 수신 (재등록):', data);
             console.log('🔧 현재 window.matchData:', window.matchData);
             console.log('🔧 현재 경기 sport_type:', window.matchData?.sport_type);
             console.log('🔧 이벤트 sportCode:', data.sportCode);
+            console.log('🔧 새로고침 이유:', data.reason);
+            console.log('🔧 현재 경기 ID:', matchId);
+            console.log('🔧 이벤트 경기 ID:', data.matchId);
+            
+            // 경기 ID 확인 (팀위치변경/리버스앵글 이벤트의 경우)
+            if (data.matchId && data.matchId !== matchId) {
+                console.log('🔧 다른 경기의 새로고침 이벤트이므로 무시 (재등록)');
+                return;
+            }
             
             // 현재 경기의 스포츠 타입과 동적 비교
-            if (data.sportCode === window.matchData?.sport_type) {
+            if (data.sportCode === window.matchData?.sport_type || data.matchId === matchId) {
                 console.log('🔧 오버레이 페이지 새로고침 실행 (재등록):', data.reason);
-                // DB 저장 완료를 위해 500ms 지연 후 페이지 새로고침
-                setTimeout(() => {
-                    console.log('🔧 500ms 지연 후 페이지 새로고침 실행 (재등록)');
+                console.log('🔧 새로고침 이유 상세 (재등록):', {
+                    reason: data.reason,
+                    matchId: data.matchId,
+                    reverseAngle: data.reverseAngle,
+                    timestamp: data.timestamp
+                });
+                
+                // 팀위치변경/리버스앵글 이벤트의 경우 즉시 새로고침
+                if (data.reason === 'team_position_changed' || data.reason === 'reverse_angle_changed') {
+                    console.log('🔧 팀위치변경/리버스앵글 이벤트로 인한 즉시 새로고침 실행 (재등록)');
                     location.reload();
-                }, 500);
+                } else {
+                    // 기존 로직 유지 - DB 저장 완료를 위해 500ms 지연 후 페이지 새로고침
+                    setTimeout(() => {
+                        console.log('🔧 500ms 지연 후 페이지 새로고침 실행 (재등록)');
+                        location.reload();
+                    }, 500);
+                }
             } else {
                 console.log('🔧 스포츠 타입 불일치로 새로고침 건너뜀 (재등록)');
                 // 대안: window.matchData가 없을 때도 새로고침 (디버깅용)
@@ -3204,21 +3226,43 @@
             }
         });
 
-        // 오버레이 페이지 새로고침 이벤트 처리
+        // 오버레이 페이지 새로고침 이벤트 처리 (팀위치변경/리버스앵글 자동 새로고침)
         socket.on('overlay_page_refresh', function(data) {
             console.log('🔧 오버레이 페이지 새로고침 신호 수신:', data);
             console.log('🔧 현재 window.matchData:', window.matchData);
             console.log('🔧 현재 경기 sport_type:', window.matchData?.sport_type);
             console.log('🔧 이벤트 sportCode:', data.sportCode);
+            console.log('🔧 새로고침 이유:', data.reason);
+            console.log('🔧 현재 경기 ID:', matchId);
+            console.log('🔧 이벤트 경기 ID:', data.matchId);
+            
+            // 경기 ID 확인 (팀위치변경/리버스앵글 이벤트의 경우)
+            if (data.matchId && data.matchId !== matchId) {
+                console.log('🔧 다른 경기의 새로고침 이벤트이므로 무시');
+                return;
+            }
             
             // 현재 경기의 스포츠 타입과 동적 비교
-            if (data.sportCode === window.matchData?.sport_type) {
+            if (data.sportCode === window.matchData?.sport_type || data.matchId === matchId) {
                 console.log('🔧 오버레이 페이지 새로고침 실행:', data.reason);
-                // DB 저장 완료를 위해 500ms 지연 후 페이지 새로고침
-                setTimeout(() => {
-                    console.log('🔧 500ms 지연 후 페이지 새로고침 실행');
+                console.log('🔧 새로고침 이유 상세:', {
+                    reason: data.reason,
+                    matchId: data.matchId,
+                    reverseAngle: data.reverseAngle,
+                    timestamp: data.timestamp
+                });
+                
+                // 팀위치변경/리버스앵글 이벤트의 경우 즉시 새로고침
+                if (data.reason === 'team_position_changed' || data.reason === 'reverse_angle_changed') {
+                    console.log('🔧 팀위치변경/리버스앵글 이벤트로 인한 즉시 새로고침 실행');
                     location.reload();
-                }, 500);
+                } else {
+                    // 기존 로직 유지 - DB 저장 완료를 위해 500ms 지연 후 페이지 새로고침
+                    setTimeout(() => {
+                        console.log('🔧 500ms 지연 후 페이지 새로고침 실행');
+                        location.reload();
+                    }, 500);
+                }
             } else {
                 console.log('🔧 스포츠 타입 불일치로 새로고침 건너뜀');
                 // 대안: window.matchData가 없을 때도 새로고침 (디버깅용)
