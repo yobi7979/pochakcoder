@@ -314,6 +314,135 @@
             line-height: 1.2;
         }
         
+        /* 팀 정보 섹션 스타일 */
+        .team-info-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            min-width: 120px;
+            flex: 1;
+        }
+        
+        /* 팀 버튼들 스타일 */
+        .team-buttons-row {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin: 8px 0;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        /* 타임아웃 섹션 스타일 */
+        .timeout-section {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* 타임아웃 숫자 버튼들 스타일 */
+        .timeout-numbers {
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+        }
+        
+        .timeout-number-btn {
+            background-color: #f59e0b;
+            border: 2px solid #f59e0b;
+            color: white;
+            padding: 8px 4px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 30px;
+            text-align: center;
+        }
+        
+        .timeout-number-btn:hover {
+            background-color: #d97706;
+            border-color: #d97706;
+            transform: translateY(-1px);
+        }
+        
+        .timeout-number-btn:active {
+            transform: translateY(0);
+            background-color: #b45309;
+        }
+        
+        .timeout-number-btn.active {
+            background-color: #dc2626;
+            border-color: #dc2626;
+        }
+        
+        .team-button {
+            background-color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 120px;
+            text-align: center;
+        }
+        
+        .team-button:hover {
+            background-color: #1d4ed8;
+            border-color: #1d4ed8;
+            transform: translateY(-1px);
+        }
+        
+        .team-button:active {
+            transform: translateY(0);
+            background-color: #1e40af;
+        }
+        
+        .timeout-button {
+            background-color: #f59e0b;
+            border-color: #f59e0b;
+        }
+        
+        .timeout-button:hover {
+            background-color: #d97706;
+            border-color: #d97706;
+        }
+        
+        .matchscore-button {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+        }
+        
+        .matchscore-button:hover {
+            background-color: #2563eb;
+            border-color: #2563eb;
+        }
+        
+        /* 매치스코어 섹션 스타일 */
+        .matchscore-section {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* 매치포인트 버튼 스타일 */
+        .matchpoint-button {
+            background-color: #10b981;
+            border-color: #10b981;
+        }
+        
+        .matchpoint-button:hover {
+            background-color: #059669;
+            border-color: #059669;
+        }
+        
         .team-name-input {
             height: 32px;
             font-size: var(--text-sm);
@@ -430,9 +559,9 @@
         .team-score-control {
             display: flex;
             align-items: center;
-            gap: var(--space-3);
+            gap: 60px;
             min-width: 250px;
-            max-width: 300px;
+            max-width: 500px;
             flex: 1;
         }
         
@@ -768,6 +897,11 @@
             flex-direction: row-reverse; /* 어웨이팀 내부 순서 반전: 팀명 버튼들 */
             order: -1; /* 마지막 팀을 왼쪽으로 */
             justify-content: flex-start; /* 왼쪽 정렬 */
+        }
+        
+        /* 팀 위치 변경 시 팀 정보 섹션 정렬 유지 */
+        .score-horizontal-controls.team-position-swapped .team-info-section {
+            align-items: center;
         }
         
         /* 팀 위치 변경 시 팀명 중앙 정렬 유지 */
@@ -1958,7 +2092,24 @@
                     <div class="game-status-header">
                         <div class="score-horizontal-controls">
                             <div class="team-score-control">
-                                <div class="team-name"><%= match.home_team || 'HOME' %></div>
+                                <div class="team-info-section">
+                                    <div class="team-name"><%= match.home_team || 'HOME' %></div>
+                                    <!-- 홈팀 버튼들 -->
+                                    <div class="team-buttons-row">
+                                        <div class="timeout-section">
+                                            <button class="team-button timeout-button" id="home-timeout-btn">타임아웃</button>
+                                            <div class="timeout-numbers">
+                                                <button class="timeout-number-btn" id="home-timeout-1">1</button>
+                                                <button class="timeout-number-btn" id="home-timeout-2">2</button>
+                                                <button class="timeout-number-btn" id="home-timeout-3">3</button>
+                                            </div>
+                                        </div>
+                                        <div class="matchscore-section">
+                                            <button class="team-button matchscore-button" id="home-matchscore-btn">세트포인트</button>
+                                            <button class="team-button matchpoint-button" id="home-matchpoint-btn">매치포인트</button>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div class="score-buttons-vertical">
                                     <button class="btn btn-outline-primary score-btn" onclick="updateScore('home', 1)">
                                         <i class="bi bi-plus"></i>
@@ -2010,7 +2161,24 @@
                                         <i class="bi bi-dash"></i>
                                     </button>
                                 </div>
-                                <div class="team-name"><%= match.away_team || 'AWAY' %></div>
+                                <div class="team-info-section">
+                                    <div class="team-name"><%= match.away_team || 'AWAY' %></div>
+                                    <!-- 어웨이팀 버튼들 -->
+                                    <div class="team-buttons-row">
+                                        <div class="timeout-section">
+                                            <button class="team-button timeout-button" id="away-timeout-btn">타임아웃</button>
+                                            <div class="timeout-numbers">
+                                                <button class="timeout-number-btn" id="away-timeout-1">1</button>
+                                                <button class="timeout-number-btn" id="away-timeout-2">2</button>
+                                                <button class="timeout-number-btn" id="away-timeout-3">3</button>
+                                            </div>
+                                        </div>
+                                        <div class="matchscore-section">
+                                            <button class="team-button matchscore-button" id="away-matchscore-btn">세트포인트</button>
+                                            <button class="team-button matchpoint-button" id="away-matchpoint-btn">매치포인트</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>                    
