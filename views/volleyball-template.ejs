@@ -109,17 +109,41 @@
             opacity: 0.8;
         }
 
+        /* 대회명 박스 (메인 스코어보드 위쪽) */
+        .tournament-scoreboard {
+            position: fixed;
+            top: 40px; /* 메인 스코어보드 위쪽 */
+            left: 20px;
+            width: 640px; /* 메인 스코어보드와 동일한 너비 */
+            height: 45px; /* 메인 스코어보드와 동일한 높이 */
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgb(255, 255, 255);
+            overflow: hidden;            
+            border-radius: 10px;
+            z-index: 1000;
+        }
+        
+        .tournament-scoreboard .tournament-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+        }
+
         /* 메인 스코어보드 (좌측 상단) - 좌우 수평 디자인 */
         .main-scoreboard {        
             position: fixed;
-            top: 20px;
+            top: 90px; /* 20px → 140px (120px 아래로 이동) */
             left: 20px;
-            width: 500px; /* 고정 너비 설정 (박스 요소들의 총 너비와 일치) */
+            width: 640px; /* 고정 너비 설정 (박스 요소들의 총 너비와 일치: 200+80+80+80+200) */
             height: 60px; /* 현재 세트 박스와 동일한 높이 */
             background-color: rgba(0, 0, 0, 0.8);
             display: flex;
             color: rgb(255, 255, 255);
-            overflow: hidden;            
+            overflow: hidden;
             border-radius: 10px;
             z-index: 1000;
         }
@@ -241,8 +265,8 @@
         
         /* 각 박스별 고정 너비 설정 */
         .team-name-box {
-            width: 120px; /* 팀명 고정 너비 증가 */
-            flex: 0 0 120px; /* 크기 고정 */
+            width: 200px; /* 팀명 고정 너비 80px 증가 (120px + 80px) */
+            flex: 0 0 200px; /* 크기 고정 */
         }
         
         .team-score-box {
@@ -251,9 +275,9 @@
         }
         
         .serve-indicator-box {
-            width: 100px; /* 서브권 고정 너비 */
-            flex: 0 0 100px; /* 크기 고정 */
-            background-color: #FFD700 !important; /* 진한 노란색으로 변경 */
+            width: 80px; /* 서브권 고정 너비 (100px → 80px) */
+            flex: 0 0 80px; /* 크기 고정 */
+            background-color: #d6d6d6 !important; /* 진한 노란색으로 변경 */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -288,11 +312,11 @@
         }
         
         .team-name {
-            font-size: 18px;
+            font-size: 22px;
             font-weight: bold;
             color: white;
             padding: 10px 15px;
-            min-width: 120px;
+            min-width: 200px; /* 팀명 박스 크기에 맞춰 조정 (120px → 200px) */
             text-align: center;
             display: flex;
             align-items: center;
@@ -314,8 +338,8 @@
         /* 현재 세트 표시 박스 (메인 스코어보드 옆) */
         .current-set-box {
             position: fixed;
-            top: 20px;
-            left: calc(500px + 20px + 5px); /* 메인 스코어보드 너비(500px) + 왼쪽 여백(20px) + 간격(5px) */
+            top: 90px; /* 20px → 140px (120px 아래로 이동) */
+            left: calc(640px + 20px + 5px); /* 메인 스코어보드 너비(640px) + 왼쪽 여백(20px) + 간격(5px) */
             width: 80px;
             height: 60px; /* 메인 스코어보드와 동일한 높이 */
             background-color: rgba(0, 0, 0, 0.8);
@@ -351,7 +375,12 @@
        .serve-arrow {
            font-size: 24px;
            font-weight: bold;
-           color: white;
+           color: rgb(122, 80, 0);
+       }
+       
+       /* 팀 위치 변경 CSS (오버레이 페이지) - 단순한 flex-direction 변경 */
+       .main-scoreboard.team-position-swapped .team-section {
+           flex-direction: row-reverse !important; /* 좌우 반전 강제 적용 */
        }
         
         
@@ -442,6 +471,14 @@
             <!-- 이미지는 JavaScript로 동적으로 로드됩니다 -->
         </div>
         
+        <!-- 대회명 박스 (메인 스코어보드 위쪽) -->
+        <div class="tournament-scoreboard">
+            <div class="tournament-name" id="tournament-display-main">
+                <%= match.match_data?.tournament_name || '대회명을 입력하세요' %>
+            </div>
+        </div>
+        
+        
         <!-- 메인 스코어보드 (좌측 상단) - 좌우 수평 디자인 -->
         <div class="main-scoreboard">
             <div class="team-section">
@@ -462,9 +499,9 @@
                 <!-- 서브권 박스 -->
                 <div class="serve-indicator-box">
                    <span class="serve-arrow" id="serve-arrow">
-                       <%= match.match_data?.serve_team === 'home' ? '▶' : '◀' %>
+                       <!-- 초기 서브권은 JavaScript에서 설정 -->
                    </span>
-                </div>
+                    </div>
                 
                 <!-- 어웨이팀 점수 박스 -->
                 <div class="team-score-box away-team-score-box">
@@ -481,7 +518,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- 현재 세트 표시 박스 (메인 스코어보드 옆) -->
         <div class="current-set-box">
             <div class="current-set-number">
@@ -542,6 +579,15 @@
         const socket = io();
         const matchId = '<%= match.id %>';
         
+        // WebSocket 연결 상태 확인
+        socket.on('connect', () => {
+            console.log('🏐 오버레이 Socket 연결됨:', socket.connected);
+        });
+        
+        socket.on('disconnect', () => {
+            console.log('🏐 오버레이 Socket 연결 끊어짐');
+        });
+        
         // 경기 데이터 로드 함수
         async function loadMatchData() {
             try {
@@ -556,14 +602,36 @@
             }
         }
 
-        // 서브권 변경 이벤트 수신 (전역으로 이동)
+        // 서브권 변경 이벤트 수신 (새로운 상태 관리 방식)
         socket.on('serve_changed', function(data) {
             console.log('🏐 서브권 변경 이벤트 수신:', data);
             const serveArrow = document.getElementById('serve-arrow');
             if (serveArrow) {
-                const arrow = data.serve_team === 'home' ? '▶' : '◀';
+                // 새로운 상태 관리 방식: team_position_swapped + reverse_angle 조합
+                const mainScoreboard = document.querySelector('.main-scoreboard');
+                const isTeamPositionSwapped = mainScoreboard ? mainScoreboard.classList.contains('team-position-swapped') : false;
+                const isReverseAngle = window.currentReverseAngle || false;
+                
+                let displayServeTeam = data.serve_team;
+                
+                // 리버스앵글과 팀위치 변경의 조합으로 서브권 표시 결정
+                // 리버스앵글 또는 팀위치 변경 중 하나라도 true이면 서브권 반전
+                const shouldReverseServe = isReverseAngle || isTeamPositionSwapped;
+                
+                if (shouldReverseServe) {
+                    // 서브권 반전이 필요한 경우
+                    displayServeTeam = data.serve_team === 'home' ? 'away' : 'home';
+                    console.log(`🏐 서브권 반전 적용: ${data.serve_team} → ${displayServeTeam} (리버스앵글: ${isReverseAngle}, 팀위치변경: ${isTeamPositionSwapped})`);
+                } else {
+                    // 서브권 정상 표시
+                    displayServeTeam = data.serve_team;
+                    console.log(`🏐 서브권 정상 표시: ${data.serve_team} (리버스앵글: ${isReverseAngle}, 팀위치변경: ${isTeamPositionSwapped})`);
+                }
+                
+                const arrow = displayServeTeam === 'home' ? '▶' : '◀';
                 serveArrow.textContent = arrow;
                 console.log('🏐 서브권 도형 변경:', arrow);
+                console.log('🏐 팀 위치 상태:', isTeamPositionSwapped, '리버스앵글 상태:', isReverseAngle);
             }
         });
 
@@ -572,11 +640,23 @@
             console.log('=== Socket.IO 연결됨 (오버레이) ===');
             console.log('Socket ID:', socket.id);
             console.log('Match ID:', matchId);
+            
+            // 먼저 match 방에 참여
             socket.emit('join', matchId);
+            console.log(`🏐 match_${matchId} 방 참여 요청`);
+            
+            // 방 참여 확인 이벤트 리스너
+            socket.on('joined_room', (data) => {
+                console.log(`🏐 방 참여 확인: ${data.roomName}, matchId: ${data.matchId}`);
+                console.log(`🏐 클라이언트 ID: ${data.clientId}`);
+            });
             
             // 경기 데이터 로드 후 종목별 Room에 참여 요청
             const matchData = await loadMatchData();
             if (matchData) {
+                // 초기 팀 위치 및 서브권 상태 설정 (새로운 상태 관리 방식)
+                initializeOverlayState(matchData);
+                
                 // 서버에 종목별 Room 참여 요청
                 socket.emit('join_sport_room', matchData.sport_type);
                 console.log(`🔧 종목별 Room 참여 요청: sport_${matchData.sport_type}`);
@@ -677,6 +757,236 @@
             }
         });
 
+        // 팀 위치 변경 이벤트 (단순한 토글)
+        socket.on('teamPositionToggle', function(data) {
+            console.log('🏐 팀 위치 변경 이벤트 수신:', data);
+            console.log('🏐 현재 matchId:', matchId);
+            console.log('🏐 전송된 matchId:', data.matchId);
+            
+            // matchId 확인
+            if (data.matchId !== matchId) {
+                console.log('🏐 다른 경기의 이벤트이므로 무시');
+                return;
+            }
+            
+            // 메인 스코어보드 요소 찾기
+            const mainScoreboard = document.querySelector('.main-scoreboard');
+            console.log('🏐 main-scoreboard 요소:', mainScoreboard);
+            
+            if (mainScoreboard) {
+                // 컨트롤 페이지에서 변경된 팀위치 상태를 서버에서 가져와서 적용
+                fetch(`/api/matches/${matchId}`)
+                    .then(response => response.json())
+                    .then(matchData => {
+                        const teamPositionSwapped = matchData.match_data?.team_position_swapped || false;
+                        const isReverseAngle = window.currentReverseAngle || false;
+                        
+                        console.log('🏐 서버 팀위치 상태:', teamPositionSwapped);
+                        console.log('🏐 리버스앵글 상태:', isReverseAngle);
+                        
+                        // 리버스앵글과 팀위치 변경의 조합으로 최종 표시 결정
+                        const shouldShowSwapped = isReverseAngle ? !teamPositionSwapped : teamPositionSwapped;
+                        
+                        if (shouldShowSwapped) {
+                            mainScoreboard.classList.add('team-position-swapped');
+                            console.log('🏐 오버레이 팀위치: 반전 표시');
+                        } else {
+                            mainScoreboard.classList.remove('team-position-swapped');
+                            console.log('🏐 오버레이 팀위치: 정상 표시');
+                        }
+                        
+                        // 서브권 표시도 업데이트
+                        updateServeDisplay();
+                    })
+                    .catch(error => {
+                        console.error('🏐 서버 상태 조회 실패:', error);
+                    });
+                
+                // 강제로 스타일 적용 확인
+                const teamSection = mainScoreboard.querySelector('.team-section');
+                if (teamSection) {
+                    console.log('🏐 team-section flex-direction:', window.getComputedStyle(teamSection).flexDirection);
+                }
+            } else {
+                console.log('❌ main-scoreboard 요소를 찾을 수 없습니다');
+            }
+        });
+
+        // 리버스앵글 변경 이벤트 (새로운 상태 관리 방식)
+        socket.on('reverseAngleChanged', function(data) {
+            console.log('🏐 리버스앵글 변경 이벤트 수신:', data);
+            console.log('🏐 현재 matchId:', matchId);
+            console.log('🏐 전송된 matchId:', data.matchId);
+            console.log('🏐 리버스앵글 상태:', data.reverseAngle);
+            
+            // matchId 확인
+            if (data.matchId !== matchId) {
+                console.log('🏐 다른 경기의 이벤트이므로 무시');
+                return;
+            }
+            
+            console.log('🏐 리버스앵글 변경 이벤트 처리 시작');
+            
+            // 리버스앵글 상태에 따라 팀 위치 조정
+            const mainScoreboard = document.querySelector('.main-scoreboard');
+            console.log('🏐 main-scoreboard 요소:', mainScoreboard);
+            if (mainScoreboard) {
+                console.log('🏐 오버레이 변경 전 클래스 상태:', mainScoreboard.classList.contains('team-position-swapped'));
+                
+                if (data.reverseAngle) {
+                    // 리버스앵글 활성화: 오버레이 페이지만 반전 (컨트롤 페이지와 반대)
+                    mainScoreboard.classList.add('team-position-swapped');
+                    console.log('🏐 리버스앵글 활성화: 오버레이 페이지만 반전 적용');
+                } else {
+                    // 리버스앵글 비활성화: 오버레이 페이지 정상화 (컨트롤 페이지와 동일)
+                    mainScoreboard.classList.remove('team-position-swapped');
+                    console.log('🏐 리버스앵글 비활성화: 오버레이 페이지 정상화');
+                }
+                console.log('🏐 리버스앵글 적용 완료:', data.reverseAngle);
+                console.log('🏐 오버레이 변경 후 클래스 상태:', mainScoreboard.classList.contains('team-position-swapped'));
+                console.log('🏐 오버레이 전체 클래스 목록:', mainScoreboard.className);
+                
+                // 리버스앵글 상태를 전역 변수로 저장
+                window.currentReverseAngle = data.reverseAngle;
+                
+                // 새로운 서브권 표시 로직 적용
+                updateServeDisplay();
+            } else {
+                console.log('❌ main-scoreboard 요소를 찾을 수 없습니다');
+            }
+        });
+        
+        // 팀 위치 초기화 이벤트 (새로 추가)
+        socket.on('teamPositionReset', function(data) {
+            console.log('🏐 팀 위치 초기화 이벤트 수신:', data);
+            
+            if (data.matchId !== matchId) {
+                console.log('🏐 다른 경기의 이벤트이므로 무시');
+                return;
+            }
+            
+            const mainScoreboard = document.querySelector('.main-scoreboard');
+            if (mainScoreboard) {
+                if (data.resetType === 'all') {
+                    // 완전 초기화: 모든 상태 초기화
+                    mainScoreboard.classList.remove('team-position-swapped');
+                    window.currentReverseAngle = false;
+                    console.log('🏐 완전 초기화: 팀 위치 + 리버스앵글 모두 초기화');
+                }
+                
+                // 서브권 표시도 업데이트
+                updateServeDisplay();
+            }
+        });
+        
+        // 오버레이 초기 상태 설정 함수 (새로 추가)
+        function initializeOverlayState(matchData) {
+            console.log('🏐 오버레이 초기 상태 설정 시작');
+            
+            // 서버에서 받은 상태 정보
+            const teamPositionSwapped = matchData.match_data?.team_position_swapped || false;
+            const reverseAngle = matchData.match_data?.reverse_angle || false;
+            const serveTeam = matchData.match_data?.serve_team || 'home';
+            
+            console.log('🏐 서버 상태:', {
+                teamPositionSwapped,
+                reverseAngle,
+                serveTeam
+            });
+            
+            // 1. 팀 위치 설정
+            const mainScoreboard = document.querySelector('.main-scoreboard');
+            if (mainScoreboard) {
+                // 리버스앵글과 팀위치 변경의 조합으로 최종 표시 결정
+                const shouldShowSwapped = reverseAngle ? !teamPositionSwapped : teamPositionSwapped;
+                
+                if (shouldShowSwapped) {
+                    mainScoreboard.classList.add('team-position-swapped');
+                    console.log('🏐 오버레이 초기 팀 위치: 반전 적용');
+                } else {
+                    mainScoreboard.classList.remove('team-position-swapped');
+                    console.log('🏐 오버레이 초기 팀 위치: 정상화');
+                }
+                
+                // 리버스앵글 상태를 전역 변수로 저장
+                window.currentReverseAngle = reverseAngle;
+                console.log('🏐 오버레이 초기 리버스앵글 상태:', reverseAngle);
+            }
+            
+            // 2. 서브권 설정
+            const serveArrow = document.getElementById('serve-arrow');
+            if (serveArrow) {
+                // 리버스앵글과 팀위치 변경의 조합으로 서브권 표시 결정
+                let displayServeTeam = serveTeam;
+                
+                // 리버스앵글과 팀위치 변경의 조합 계산
+                // 리버스앵글 또는 팀위치 변경 중 하나라도 true이면 서브권 반전
+                const shouldReverseServe = reverseAngle || teamPositionSwapped;
+                
+                if (shouldReverseServe) {
+                    // 서브권 반전이 필요한 경우
+                    displayServeTeam = serveTeam === 'home' ? 'away' : 'home';
+                    console.log('🏐 서브권 반전 적용:', serveTeam + ' → ' + displayServeTeam, '(리버스앵글:', reverseAngle, '팀위치변경:', teamPositionSwapped + ')');
+                } else {
+                    // 서브권 정상 표시
+                    displayServeTeam = serveTeam;
+                    console.log('🏐 서브권 정상 표시:', serveTeam, '(리버스앵글:', reverseAngle, '팀위치변경:', teamPositionSwapped + ')');
+                }
+                
+                const arrow = displayServeTeam === 'home' ? '▶' : '◀';
+                serveArrow.textContent = arrow;
+                console.log('🏐 오버레이 초기 서브권 설정:', serveTeam + ' → ' + displayServeTeam + ' (' + arrow + ')');
+            }
+            
+            console.log('🏐 오버레이 초기 상태 설정 완료');
+        }
+        
+        // 서브권 표시 업데이트 함수 (새로 추가)
+        function updateServeDisplay() {
+            const serveArrow = document.getElementById('serve-arrow');
+            if (serveArrow) {
+                // 현재 서브권 정보 가져오기
+                const currentServe = serveArrow.textContent;
+                const isHomeServe = currentServe === '▶';
+                const actualServeTeam = isHomeServe ? 'home' : 'away';
+                
+                // 새로운 상태 관리 방식으로 서브권 표시 결정
+                const mainScoreboard = document.querySelector('.main-scoreboard');
+                const isTeamPositionSwapped = mainScoreboard ? mainScoreboard.classList.contains('team-position-swapped') : false;
+                const isReverseAngle = window.currentReverseAngle || false;
+                
+                let displayServeTeam = actualServeTeam;
+                
+                // 리버스앵글과 팀위치 변경의 조합으로 서브권 표시 결정
+                // 리버스앵글 또는 팀위치 변경 중 하나라도 true이면 서브권 반전
+                const shouldReverseServe = isReverseAngle || isTeamPositionSwapped;
+                
+                if (shouldReverseServe) {
+                    // 서브권 반전이 필요한 경우
+                    displayServeTeam = actualServeTeam === 'home' ? 'away' : 'home';
+                } else {
+                    // 서브권 정상 표시
+                    displayServeTeam = actualServeTeam;
+                }
+                
+                const newArrow = displayServeTeam === 'home' ? '▶' : '◀';
+                serveArrow.textContent = newArrow;
+                console.log('🏐 서브권 표시 업데이트:', actualServeTeam + ' → ' + displayServeTeam + ' (' + newArrow + ')');
+            }
+        }
+        
+        // 디버깅: 모든 WebSocket 이벤트 로깅
+        socket.onAny((eventName, ...args) => {
+            console.log('🔍 WebSocket 이벤트 수신:', eventName, args);
+            
+            // reverseAngleChanged 이벤트 특별 디버깅
+            if (eventName === 'reverseAngleChanged') {
+                console.log('🏐 reverseAngleChanged 이벤트 수신됨!', args);
+                console.log('🏐 이벤트 데이터:', args[0]);
+            }
+        });
+        
+
 // 경기 수정 이벤트
         socket.on('match_updated', (data) => {
             if (data.matchId === matchId) {
@@ -707,13 +1017,35 @@
                     updateOverlaySetDisplay(data.match_data.match_format);
                 }
                 
-       // 서브권 정보 업데이트 (배구용) - 도형으로 변경
+       // 서브권 정보 업데이트 (배구용) - 새로운 상태 관리 방식
        if (data.match_data?.serve_team) {
            const serveArrow = document.getElementById('serve-arrow');
            if (serveArrow) {
-               const arrow = data.match_data.serve_team === 'home' ? '▶' : '◀';
+               // 새로운 상태 관리 방식: team_position_swapped + reverse_angle 조합
+               const mainScoreboard = document.querySelector('.main-scoreboard');
+               const isTeamPositionSwapped = mainScoreboard ? mainScoreboard.classList.contains('team-position-swapped') : false;
+               const isReverseAngle = window.currentReverseAngle || false;
+               
+               let displayServeTeam = data.match_data.serve_team;
+               
+               // 리버스앵글과 팀위치 변경의 조합으로 서브권 표시 결정
+               // 리버스앵글 또는 팀위치 변경 중 하나라도 true이면 서브권 반전
+               const shouldReverseServe = isReverseAngle || isTeamPositionSwapped;
+               
+               if (shouldReverseServe) {
+                   // 서브권 반전이 필요한 경우
+                   displayServeTeam = data.match_data.serve_team === 'home' ? 'away' : 'home';
+                   console.log(`🏐 match_updated에서 서브권 반전 적용: ${data.match_data.serve_team} → ${displayServeTeam} (리버스앵글: ${isReverseAngle}, 팀위치변경: ${isTeamPositionSwapped})`);
+               } else {
+                   // 서브권 정상 표시
+                   displayServeTeam = data.match_data.serve_team;
+                   console.log(`🏐 match_updated에서 서브권 정상 표시: ${data.match_data.serve_team} (리버스앵글: ${isReverseAngle}, 팀위치변경: ${isTeamPositionSwapped})`);
+               }
+               
+               const arrow = displayServeTeam === 'home' ? '▶' : '◀';
                serveArrow.textContent = arrow;
                console.log('🏐 서브권 도형 업데이트:', arrow);
+               console.log('🏐 팀 위치 상태:', isTeamPositionSwapped, '리버스앵글 상태:', isReverseAngle);
            }
        }
                 
@@ -801,9 +1133,16 @@
                 // 대회명 업데이트
                 if (data.match_data?.tournament_name) {
                     const tournamentDisplay = document.getElementById('tournament-display');
+                    const tournamentDisplayMain = document.getElementById('tournament-display-main');
+                    
                     if (tournamentDisplay) {
                         tournamentDisplay.textContent = data.match_data.tournament_name;
                         console.log('🏐 대회명 업데이트:', data.match_data.tournament_name);
+                    }
+                    
+                    if (tournamentDisplayMain) {
+                        tournamentDisplayMain.textContent = data.match_data.tournament_name;
+                        console.log('🏐 메인 대회명 업데이트:', data.match_data.tournament_name);
                     }
                 }
                 
@@ -822,8 +1161,8 @@
                             // 새로운 구조: innings.home[1], innings.away[1]
                             homeScore = parseInt(data.match_data.innings.home[i] || '0');
                             awayScore = parseInt(data.match_data.innings.away[i] || '0');
-                } else {
-                            // 기존 구조: innings.home_1, innings.away_1
+                    } else {
+                        // 기존 구조: innings.home_1, innings.away_1
                             homeScore = parseInt(data.match_data.innings[`home_${i}`] || '0');
                             awayScore = parseInt(data.match_data.innings[`away_${i}`] || '0');
                         }
@@ -858,7 +1197,7 @@
                             // 새로운 구조: innings.home[1], innings.away[1]
                             homeSetScore = parseInt(data.match_data.innings.home[i] || '0');
                             awaySetScore = parseInt(data.match_data.innings.away[i] || '0');
-                        } else {
+                } else {
                             // 기존 구조: innings.home_1, innings.away_1
                             homeSetScore = parseInt(data.match_data.innings[`home_${i}`] || '0');
                             awaySetScore = parseInt(data.match_data.innings[`away_${i}`] || '0');
@@ -1628,6 +1967,13 @@
                     element.textContent = teamName;
                 });
                 
+                // 메인 스코어보드의 팀명 업데이트
+                const mainScoreboardTeamName = document.querySelector(`.${team}-team-name`);
+                if (mainScoreboardTeamName) {
+                    mainScoreboardTeamName.textContent = teamName;
+                    console.log(`🏐 메인 스코어보드 ${team}팀명 업데이트: ${teamName}`);
+                }
+                
                 // 팀 이름 크기 조절
                 adjustTeamNameSize();
                 
@@ -1830,9 +2176,16 @@
                 // 대회명 업데이트 (세트별 점수 실시간 업데이트 시)
                 if (data.match_data?.tournament_name) {
                     const tournamentDisplay = document.getElementById('tournament-display');
+                    const tournamentDisplayMain = document.getElementById('tournament-display-main');
+                    
                     if (tournamentDisplay) {
                         tournamentDisplay.textContent = data.match_data.tournament_name;
                         console.log('🏐 세트별 점수 업데이트 시 대회명 업데이트:', data.match_data.tournament_name);
+                    }
+                    
+                    if (tournamentDisplayMain) {
+                        tournamentDisplayMain.textContent = data.match_data.tournament_name;
+                        console.log('🏐 세트별 점수 업데이트 시 메인 대회명 업데이트:', data.match_data.tournament_name);
                     }
                 }
                 
@@ -2027,9 +2380,16 @@
                 // 대회명 업데이트 (팀 위치 변경 시)
                 if (data.match_data?.tournament_name) {
                     const tournamentDisplay = document.getElementById('tournament-display');
+                    const tournamentDisplayMain = document.getElementById('tournament-display-main');
+                    
                     if (tournamentDisplay) {
                         tournamentDisplay.textContent = data.match_data.tournament_name;
                         console.log('🏐 팀 위치 변경 시 대회명 업데이트:', data.match_data.tournament_name);
+                    }
+                    
+                    if (tournamentDisplayMain) {
+                        tournamentDisplayMain.textContent = data.match_data.tournament_name;
+                        console.log('🏐 팀 위치 변경 시 메인 대회명 업데이트:', data.match_data.tournament_name);
                     }
                 }
                 

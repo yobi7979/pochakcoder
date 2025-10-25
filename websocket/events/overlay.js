@@ -150,6 +150,59 @@ const overlayEvents = (socket, io) => {
     }
   });
 
+  // 팀 위치 변경 이벤트 처리
+  socket.on('teamPositionToggle', (data) => {
+    const { matchId } = data;
+    const roomName = `match_${matchId}`;
+    
+    console.log(`🏐 팀 위치 변경 이벤트 수신: matchId=${matchId}`);
+    
+    // 해당 방의 모든 클라이언트에게 팀 위치 변경 이벤트 전송
+    io.to(roomName).emit('teamPositionToggle', {
+      matchId: matchId
+    });
+    
+    console.log(`🏐 팀 위치 변경 이벤트를 방 ${roomName}에 전송함`);
+  });
+
+  // 리버스앵글 변경 이벤트 처리 (새로운 상태 관리 방식)
+  socket.on('reverseAngleChanged', (data) => {
+    const { matchId, reverseAngle } = data;
+    const roomName = `match_${matchId}`;
+
+    console.log(`🏐 리버스앵글 변경 이벤트 수신: matchId=${matchId}, reverseAngle=${reverseAngle}`);
+    console.log(`🏐 소켓 ID: ${socket.id}`);
+    console.log(`🏐 방 이름: ${roomName}`);
+
+    // 해당 방의 모든 클라이언트에게 리버스앵글 변경 이벤트 전송
+    io.to(roomName).emit('reverseAngleChanged', {
+      matchId: matchId,
+      reverseAngle: reverseAngle
+    });
+
+    console.log(`🏐 리버스앵글 변경 이벤트를 방 ${roomName}에 전송함`);
+    console.log(`🏐 방 ${roomName}의 클라이언트 수: ${io.sockets.adapter.rooms.get(roomName)?.size || 0}`);
+  });
+
+  // 팀 위치 초기화 이벤트 처리 (새로 추가)
+  socket.on('teamPositionReset', (data) => {
+    const { matchId, resetType } = data;
+    const roomName = `match_${matchId}`;
+
+    console.log(`🏐 팀 위치 초기화 이벤트 수신: matchId=${matchId}, resetType=${resetType}`);
+    console.log(`🏐 소켓 ID: ${socket.id}`);
+    console.log(`🏐 방 이름: ${roomName}`);
+
+    // 해당 방의 모든 클라이언트에게 팀 위치 초기화 이벤트 전송
+    io.to(roomName).emit('teamPositionReset', {
+      matchId: matchId,
+      resetType: resetType
+    });
+
+    console.log(`🏐 팀 위치 초기화 이벤트를 방 ${roomName}에 전송함`);
+    console.log(`🏐 방 ${roomName}의 클라이언트 수: ${io.sockets.adapter.rooms.get(roomName)?.size || 0}`);
+  });
+
   // 리스트 오버레이 참여 이벤트 처리
   socket.on('join_list_overlay', (listId) => {
     const roomName = `list_overlay_${listId}`;

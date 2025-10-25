@@ -419,32 +419,143 @@
         .score-horizontal-controls {
             display: flex;
             align-items: center;
-            gap: var(--space-3);
+            justify-content: space-between;
+            gap: var(--space-4);
             flex: 1;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 var(--space-6);
         }
         
         .team-score-control {
             display: flex;
             align-items: center;
-            gap: var(--space-2);
+            gap: var(--space-3);
+            min-width: 250px;
+            max-width: 300px;
+            flex: 1;
+        }
+        
+        /* 기본 상태에서 홈팀은 왼쪽 정렬, 어웨이팀은 오른쪽 정렬 */
+        .team-score-control:first-child {
+            justify-content: flex-start; /* 홈팀 왼쪽 정렬 */
+        }
+        
+        .team-score-control:last-child {
+            justify-content: flex-end; /* 어웨이팀 오른쪽 정렬 */
         }
         
         .team-score-control .team-name {
-            font-size: var(--text-base);
+            font-size: var(--text-lg);
             font-weight: 700;
             color: var(--text-primary);
             margin: 0;
-            min-width: 60px;
+            min-width: 100px;
             text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .vs-divider {
-            font-size: var(--text-lg);
+            font-size: var(--text-xl);
             font-weight: 700;
-            color: var(--text-secondary);
-            padding: 0 var(--space-2);
-            min-width: 40px;
+            color: var(--text-primary);
+            padding: var(--space-3) var(--space-4);
+            min-width: 80px;
             text-align: center;
+            background-color: var(--bg-secondary);
+            border-radius: 8px;
+            border: 2px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        
+        /* 세트 정보 섹션 (3줄 레이아웃) */
+        .set-info-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--space-3);
+            flex-shrink: 0;
+        }
+        
+        /* 세트 변경 버튼 (1줄) */
+        .set-change-buttons {
+            display: flex;
+            gap: var(--space-3);
+            align-items: center;
+        }
+        
+        /* 이전세트 버튼 */
+        .prev-set-btn {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white !important;
+            border: none;
+            padding: var(--space-3) var(--space-8);
+            border-radius: 8px;
+            font-size: var(--text-sm);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+            min-width: 140px;
+            justify-content: center;
+            white-space: nowrap;
+        }
+        
+        .prev-set-btn:hover {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            color: white !important;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
+        }
+        
+        .prev-set-btn:active {
+            transform: translateY(0);
+        }
+        
+        /* 다음세트 버튼 */
+        .next-set-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white !important;
+            border: none;
+            padding: var(--space-3) var(--space-8);
+            border-radius: 8px;
+            font-size: var(--text-sm);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+            min-width: 140px;
+            justify-content: center;
+            white-space: nowrap;
+        }
+        
+        .next-set-btn:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+            color: white !important;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
+        }
+        
+        .next-set-btn:active {
+            transform: translateY(0);
+        }
+        
+        /* 양팀위치변경 버튼 섹션 (3줄) */
+        .team-swap-section {
+            display: flex;
+            justify-content: center;
         }
         
         
@@ -499,9 +610,11 @@
         /* 세트 컨트롤 컨테이너 (중앙 정렬) */
         .set-controls-container {
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             align-items: center;
+            justify-content: center;
             gap: var(--space-4);
+            flex-wrap: wrap;
         }
         
         /* 경기 종료 버튼 스타일 */
@@ -600,6 +713,146 @@
             user-select: none;
         }
         
+        /* 양팀 위치 변경 버튼 */
+        .team-swap-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+            padding: var(--space-3) var(--space-4);
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: #ffffff !important;
+            border: none;
+            border-radius: 8px;
+            font-size: var(--text-sm);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-decoration: none;
+            white-space: nowrap;
+            min-width: 120px;
+        }
+        
+        .team-swap-btn:hover {
+            background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+            color: #ffffff !important;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .team-swap-btn:active {
+            transform: translateY(0);
+        }
+        
+        /* 팀 위치 변경 CSS (팀 순서와 내부 순서 모두 변경) */
+        .score-horizontal-controls.team-position-swapped {
+            /* flex-direction 제거 - order로만 제어 */
+        }
+        
+        /* 팀 위치 변경 시에도 세트표기는 중앙에 고정 */
+        .score-horizontal-controls.team-position-swapped .set-info-section {
+            order: 0; /* 세트 정보 섹션을 항상 중앙에 유지 */
+            position: relative;
+            z-index: 10;
+        }
+        
+        /* 팀 위치 변경 시 홈팀과 어웨이팀의 내부 순서도 변경 (상하 배치) */
+        .score-horizontal-controls.team-position-swapped .team-score-control:first-child {
+            flex-direction: row-reverse; /* 홈팀 내부 순서 반전: 버튼들 팀명 */
+            order: 2; /* 첫 번째 팀을 오른쪽으로 */
+            justify-content: flex-end; /* 오른쪽 정렬 */
+        }
+        
+        .score-horizontal-controls.team-position-swapped .team-score-control:last-child {
+            flex-direction: row-reverse; /* 어웨이팀 내부 순서 반전: 팀명 버튼들 */
+            order: -1; /* 마지막 팀을 왼쪽으로 */
+            justify-content: flex-start; /* 왼쪽 정렬 */
+        }
+        
+        /* 팀 위치 변경 시 팀명 중앙 정렬 유지 */
+        .score-horizontal-controls.team-position-swapped .team-score-control .team-name {
+            text-align: center;
+            justify-content: center;
+        }
+        
+        /* 팀 위치 변경 시 상하 배치 버튼 순서 유지 */
+        .score-horizontal-controls.team-position-swapped .score-buttons-vertical {
+            flex-direction: column; /* 상하 배치는 항상 유지 */
+        }
+        
+        /* 점수 초기화 버튼 */
+        .reset-scores-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+            padding: var(--space-3) var(--space-4);
+            background-color: #f59e0b;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: var(--text-sm);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-decoration: none;
+            white-space: nowrap;
+            min-width: 120px;
+        }
+        
+        .reset-scores-btn:hover {
+            background-color: #d97706;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3);
+        }
+        
+        .reset-scores-btn:active {
+            transform: translateY(0);
+        }
+        
+        /* 리버스앵글 체크박스 */
+        .reverse-angle-checkbox {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            font-size: var(--text-sm);
+            font-weight: 600;
+            color: var(--text-secondary);
+            padding: var(--space-2) var(--space-4);
+            background-color: var(--bg-secondary);
+            border-radius: 8px;
+            border: 2px solid var(--border-color);
+            min-width: 100px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .reverse-angle-checkbox input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--primary-color);
+        }
+        
+        .reverse-angle-checkbox:hover {
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+            transform: translateY(-1px);
+        }
+        
+        .reverse-angle-checkbox input[type="checkbox"]:checked + label {
+            color: var(--primary-color);
+        }
+        
+        .reverse-angle-checkbox label {
+            cursor: pointer;
+            user-select: none;
+        }
+        
         .score-input-group {
             display: flex;
             flex-direction: row;
@@ -610,17 +863,26 @@
         }
         
         .score-input {
-            width: calc(100px * 0.6);
-            height: calc(60px * 0.6);
+            width: 80px;
+            height: 50px;
             text-align: center;
-            font-size: calc(var(--text-3xl) * 0.6);
+            font-size: var(--text-2xl);
             font-weight: 800;
-            border-radius: 12px;
+            border-radius: 8px;
             border: 2px solid var(--border-color);
-            padding: calc(var(--space-2) * 0.6);
+            padding: var(--space-2);
             background-color: var(--bg-primary);
             color: var(--text-primary);
             transition: all 0.2s ease;
+            /* number input의 스피너(위아래 화살표) 숨기기 */
+            -moz-appearance: textfield;
+        }
+        
+        /* WebKit 기반 브라우저에서 스피너 숨기기 */
+        .score-input::-webkit-outer-spin-button,
+        .score-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
         
         .score-input:focus {
@@ -637,19 +899,27 @@
         }
         
         .score-btn {
-            width: calc(50px * 0.6);
-            height: calc(50px * 0.6);
+            width: 80px;
+            height: 50px;
             padding: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 12px;
-            font-size: calc(var(--text-xl) * 0.6);
+            border-radius: 8px;
+            font-size: var(--text-lg);
             border: 2px solid var(--border-color);
             background-color: var(--bg-primary);
             color: var(--text-primary);
             cursor: pointer;
             transition: all 0.2s ease;
+        }
+        
+        /* 상하 배치 버튼 컨테이너 */
+        .score-buttons-vertical {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--space-2);
         }
         
         .score-btn:hover {
@@ -837,7 +1107,7 @@
         
         .team-name-input {
             flex: 1;
-            max-width: 200px;
+            max-width: 350px;
             padding: var(--space-2) var(--space-3);
             border: 1px solid var(--border-color);
             border-radius: 8px;
@@ -871,7 +1141,7 @@
         }
         
         .save-team-name:hover {
-            background-color: var(--primary-dark);
+            background-color: #1d4ed8;
         }
         
         /* 경기방식 설정 섹션 */
@@ -920,7 +1190,7 @@
         }
         
         .match-format-btn.active:hover {
-            background-color: var(--primary-dark);
+            background-color: #1d4ed8;
             transform: translateY(-1px);
         }
         
@@ -935,18 +1205,12 @@
             max-width: 100%;
         }
         
-        .status-title {
-            font-size: calc(var(--text-2xl) * 0.7);
-            font-weight: 700;
-            margin-bottom: calc(var(--space-6) * 0.7);
-            color: var(--text-primary);
-            letter-spacing: -0.025em;
-        }
         
         .game-status-content {
             display: flex;
             gap: var(--space-6);
-            align-items: flex-start;
+            align-items: center;
+            justify-content: center;
         }
         
         .game-status-left {
@@ -1191,8 +1455,8 @@
             }
             
             .score-btn {
-                width: 45px;
-                height: 45px;
+                width: 80px;
+                height: 50px;
             }
             
             
@@ -1243,23 +1507,10 @@
             }
         }
         
-        /* 다크 모드 지원 */
-        /* 다크모드 비활성화 - 항상 라이트 모드 사용 */
+        /* 라이트 모드 고정 */
         body {
-            background-color: #ffffff !important;
-            color: #1e293b !important;
-        }
-        
-        /* 강제 라이트 모드 설정 */
-        * {
-            --bg-primary: #ffffff !important;
-            --bg-secondary: #f8fafc !important;
-            --bg-tertiary: #f1f5f9 !important;
-            --text-primary: #1e293b !important;
-            --text-secondary: #475569 !important;
-            --text-muted: #64748b !important;
-            --border-color: #e2e8f0 !important;
-            --border-light: #f1f5f9 !important;
+            background-color: #ffffff;
+            color: #1e293b;
         }
         
         /* 접근성 개선 */
@@ -1281,15 +1532,6 @@
             outline-offset: 2px;
         }
         
-        /* 애니메이션 */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .team-section, .game-status-section, .stats-section, .innings-section {
-            animation: fadeIn 0.3s ease-out;
-        }
         
         /* 로딩 상태 */
         .loading {
@@ -1317,32 +1559,6 @@
             }
         }
         
-        /* 다크 모드 지원 */
-        @media (prefers-color-scheme: dark) {
-            body {
-                background-color: #121212;
-                color: #f0f0f0;
-            }
-            
-            .control-panel {
-                background-color: #1e1e1e;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            }
-            
-            .team-section, .game-status-section, .innings-score-section {
-                background-color: #2a2a2a;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            }
-            
-            .score-input, .innings-input {
-                background-color: #333;
-                border-color: #444;
-                color: #fff;
-            }
-            
-                    .team-name, .status-title, .innings-title {
-            color: #f0f0f0;
-        }
         
         .team-name-edit-section {
             margin: 10px 0;
@@ -1357,7 +1573,7 @@
         }
         
         .team-name-input {
-            max-width: 120px;
+            max-width: 270px;
             font-weight: 600;
             height: 38px;
         }
@@ -1396,7 +1612,7 @@
             font-size: 1.2rem;
             font-weight: 600;
             margin-bottom: 15px;
-            color: var(--dark-color);
+            color: #1e293b;
         }
         
         .innings-table {
@@ -1512,7 +1728,7 @@
             font-size: 1.2rem;
             font-weight: 600;
             margin-bottom: 15px;
-            color: var(--dark-color);
+            color: #1e293b;
         }
         
         
@@ -1703,6 +1919,10 @@
                <input type="checkbox" id="rally-point" onchange="toggleRallyPoint()" <%= match.match_data?.rally_point !== false ? 'checked' : '' %>>
                <label for="rally-point">렐리포인트</label>
            </div>
+           <div class="reverse-angle-checkbox">
+               <input type="checkbox" id="reverse-angle" onchange="toggleReverseAngle()" <%= match.match_data?.reverse_angle === true ? 'checked' : '' %>>
+               <label for="reverse-angle">리버스앵글</label>
+           </div>
                             </div>
                         </div>
                     </div>
@@ -1736,58 +1956,76 @@
                 <div class="game-status-section">
                     <!-- 게임상태 (점수초기화) 팀명 -/+ 점수 점수 -/+ 팀명 -->
                     <div class="game-status-header">
-                        <div class="status-title">게임 상태</div>
-                        <button class="btn btn-outline-warning btn-sm" onclick="resetAllScores()" title="모든 점수 초기화">
-                            <i class="bi bi-arrow-clockwise"></i> 점수 초기화
-                        </button>
                         <div class="score-horizontal-controls">
                             <div class="team-score-control">
                                 <div class="team-name"><%= match.home_team || 'HOME' %></div>
-                                <button class="btn btn-outline-danger score-btn" onclick="updateScore('home', -1)">
-                                    <i class="bi bi-dash"></i>
-                                </button>
-                                <button class="btn btn-outline-primary score-btn" onclick="updateScore('home', 1)">
-                                    <i class="bi bi-plus"></i>
-                                </button>
-                                <input type="number" class="score-input home-score" id="home-score" value="<%= match.match_data?.innings?.home?.[match.match_data?.current_inning || 1] || 0 %>" min="0">
+                                <div class="score-buttons-vertical">
+                                    <button class="btn btn-outline-primary score-btn" onclick="updateScore('home', 1)">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                    <input type="number" class="score-input home-score" id="home-score" value="<%= match.match_data?.innings?.home?.[match.match_data?.current_inning || 1] || 0 %>" min="0">
+                                    <button class="btn btn-outline-danger score-btn" onclick="updateScore('home', -1)">
+                                        <i class="bi bi-dash"></i>
+                                    </button>
+                                </div>
                             </div>
                             
-                            <div class="vs-divider">
-                                <span id="current-set-display"><%= match.match_data?.current_inning || 1 %></span>세트
+                            <!-- 세트 정보 섹션 (3줄 레이아웃) -->
+                            <div class="set-info-section">
+                                <!-- 1줄: 세트 변경 버튼 -->
+                                <div class="set-change-buttons">
+                                    <button class="set-control-btn prev-set-btn" onclick="updateInning(-1)">
+                                        <i class="bi bi-chevron-left"></i>
+                                        <span>이전세트</span>
+                                    </button>
+                                    <button class="set-control-btn next-set-btn" onclick="updateInning(1)">
+                                        <span>다음세트</span>
+                                        <i class="bi bi-chevron-right"></i>
+                                    </button>
+                                </div>
+                                
+                                <!-- 2줄: 세트 정보 -->
+                                <div class="vs-divider">
+                                    <span id="current-set-display"><%= match.match_data?.current_inning || 1 %></span>세트
+                                </div>
+                                
+                                <!-- 숨겨진 현재 세트 정보 (JavaScript용) -->
+                                <span id="current-inning" style="display: none;"><%= match.match_data?.current_inning || 1 %></span>
+                                
+                                <!-- 3줄: 양팀위치변경 버튼 -->
+                                <div class="team-swap-section">
+                                    <button class="team-swap-btn" onclick="swapTeams()">
+                                        <i class="bi bi-arrow-left-right"></i> 양팀위치변경
+                                    </button>
+                                </div>
                             </div>
                             
                             <div class="team-score-control">
-                                <input type="number" class="score-input away-score" id="away-score" value="<%= match.match_data?.innings?.away?.[match.match_data?.current_inning || 1] || 0 %>" min="0">
-                                <button class="btn btn-outline-danger score-btn" onclick="updateScore('away', -1)">
-                                    <i class="bi bi-dash"></i>
-                                </button>
-                                <button class="btn btn-outline-primary score-btn" onclick="updateScore('away', 1)">
-                                    <i class="bi bi-plus"></i>
-                                </button>
+                                <div class="score-buttons-vertical">
+                                    <button class="btn btn-outline-primary score-btn" onclick="updateScore('away', 1)">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                    <input type="number" class="score-input away-score" id="away-score" value="<%= match.match_data?.innings?.away?.[match.match_data?.current_inning || 1] || 0 %>" min="0">
+                                    <button class="btn btn-outline-danger score-btn" onclick="updateScore('away', -1)">
+                                        <i class="bi bi-dash"></i>
+                                    </button>
+                                </div>
                                 <div class="team-name"><%= match.away_team || 'AWAY' %></div>
                             </div>
                         </div>
                     </div>                    
                     <div class="game-status-content">
-                        <!-- 세트 컨트롤 섹션 (중앙 정렬) -->
+                        <!-- 게임 상태 컨트롤 섹션 (중앙 정렬) -->
                         <div class="set-controls-container">
-                            <div class="set-controls">
-                                <button class="set-control-btn" onclick="updateInning(-1)">
-                                    <i class="bi bi-dash"></i>
-                                </button>
-                                <div class="set-display">
-                                    <span id="current-inning"><%= match.match_data?.current_inning || 1 %></span>세트
-                                </div>
-                                <button class="set-control-btn" onclick="updateInning(1)">
-                                    <i class="bi bi-plus"></i>
-                                </button>
-                            </div>
                             <button class="serve-change-btn" onclick="changeServe()">
                                 <i class="bi bi-arrow-repeat"></i> 서브권변경
                             </button>
                             <input type="hidden" id="serve-team" value="<%= match.match_data?.serve_team || 'home' %>">
                             <button class="finish-match-btn" onclick="finishMatch()">
                                 <i class="bi bi-flag-fill"></i> 경기 종료
+                            </button>
+                            <button class="reset-scores-btn" onclick="resetAllScores()">
+                                <i class="bi bi-arrow-clockwise"></i> 점수 초기화
                             </button>
                         </div>
                     </div>
@@ -2520,7 +2758,7 @@
                 
                 // 7. WebSocket으로 다른 클라이언트에 초기화 알림
                 socket.emit('match_updated', {
-                    matchId: matchId,
+                        matchId: matchId,
                     home_score: 0,
                     away_score: 0,
                     match_data: matchData
@@ -2945,6 +3183,10 @@
                     // 서브권 및 렐리포인트 정보
                     serve_team: document.getElementById('serve-team')?.value || 'home',
                     rally_point: document.getElementById('rally-point')?.checked || false,
+                    reverse_angle: document.getElementById('reverse-angle')?.checked || false,
+                    
+                    // 팀 위치 변경 상태
+                    team_position_swapped: document.querySelector('.score-horizontal-controls')?.classList.contains('team-position-swapped') || false,
 
                     // 팀 로고 정보
                     home_team_logo: document.querySelector('#home-team-logo-preview img')?.src || '',
@@ -3007,6 +3249,15 @@
         // 야구 전용 전역 변수 선언
         const baseballMatchId = '<%= match.id %>';
         const baseballSocket = io();
+        
+        // WebSocket 연결 상태 확인
+        baseballSocket.on('connect', () => {
+            console.log('🏐 baseballSocket 연결됨:', baseballSocket.connected);
+        });
+        
+        baseballSocket.on('disconnect', () => {
+            console.log('🏐 baseballSocket 연결 끊어짐');
+        });
 
         // 초기 상태 설정
         document.addEventListener('DOMContentLoaded', async function() {
@@ -3103,7 +3354,7 @@
                     updateMatchInfo();
                     
                     // 소켓을 통해 오버레이에 실시간 업데이트 전송
-                    baseballSocket.emit('updateTeamName', {
+                    baseballSocket.emit('teamNameUpdated', {
                         matchId: baseballMatchId,
                         team: team,
                         teamName: newTeamName
@@ -4329,6 +4580,28 @@
                         }
                     }
                     
+                    // 팀 위치 상태 초기화 (team_position_swapped)
+                    const teamPositionSwapped = matchData.match_data?.team_position_swapped || false;
+                    const scoreControls = document.querySelector('.score-horizontal-controls');
+                    if (scoreControls) {
+                        if (teamPositionSwapped) {
+                            scoreControls.classList.add('team-position-swapped');
+                            console.log('🏐 초기 로딩: 팀 위치 반전 적용 (어웨이/홈)');
+                        } else {
+                            scoreControls.classList.remove('team-position-swapped');
+                            console.log('🏐 초기 로딩: 팀 위치 정상화 (홈/어웨이)');
+                        }
+                        console.log('🏐 초기 팀 위치 상태:', teamPositionSwapped);
+                    }
+                    
+                    // 리버스앵글 상태 초기화 (reverse_angle)
+                    const reverseAngle = matchData.match_data?.reverse_angle || false;
+                    const reverseAngleCheckbox = document.getElementById('reverse-angle');
+                    if (reverseAngleCheckbox) {
+                        reverseAngleCheckbox.checked = reverseAngle;
+                        console.log('🏐 초기 로딩: 리버스앵글 체크박스 상태 설정:', reverseAngle);
+                    }
+                    
                     // 현재 세트 점수를 +/- 버튼 옆의 점수 입력 필드에 표시
                     const currentSet = parseInt(matchData.match_data?.current_inning) || 1;
                     const currentHomeScore = parseInt(innings.home?.[currentSet]) || 0;
@@ -4604,13 +4877,12 @@
         }
         });
         
-        // 서브권변경 함수
+        // 서브권변경 함수 (새로운 상태 관리 방식)
         function changeServe() {
             const serveTeamElement = document.getElementById('serve-team');
             if (serveTeamElement) {
                 const currentServe = serveTeamElement.value;
                 const newServe = currentServe === 'home' ? 'away' : 'home';
-                serveTeamElement.value = newServe;
                 
                 console.log('🏐 서브권 변경:', currentServe + ' → ' + newServe);
                 
@@ -4634,7 +4906,178 @@
             }
         }
         
-        // 서브권 변경 함수
+        // 양팀 위치 변경 함수 (CSS 위치 변경 + 버튼 이벤트 교체)
+        function swapTeams() {
+            console.log('🏐 팀 위치 변경 시작 (CSS 위치 변경 + 버튼 이벤트 교체)');
+            
+            // 컨트롤 페이지에서 CSS 클래스 토글
+            const scoreControls = document.querySelector('.score-horizontal-controls');
+            if (scoreControls) {
+                scoreControls.classList.toggle('team-position-swapped');
+                console.log('🏐 CSS 클래스 토글:', scoreControls.classList.contains('team-position-swapped'));
+            } else {
+                console.log('🏐 score-horizontal-controls 요소를 찾을 수 없습니다');
+            }
+            
+            // -/+ 버튼 이벤트 교체 (팀마다 바뀌도록) - 상하 배치
+            // 팀 위치 변경 상태에 관계없이 항상 올바른 버튼을 찾기 위해 ID 기반 선택자 사용
+            const homeScoreInput = document.getElementById('home-score');
+            const awayScoreInput = document.getElementById('away-score');
+            
+            if (homeScoreInput && awayScoreInput) {
+                // 홈팀 점수 입력 필드의 부모에서 버튼들 찾기
+                const homeScoreContainer = homeScoreInput.closest('.score-buttons-vertical');
+                const awayScoreContainer = awayScoreInput.closest('.score-buttons-vertical');
+                
+                if (homeScoreContainer && awayScoreContainer) {
+                    const homePlusBtn = homeScoreContainer.querySelector('.score-btn:first-child');
+                    const homeMinusBtn = homeScoreContainer.querySelector('.score-btn:last-child');
+                    const awayPlusBtn = awayScoreContainer.querySelector('.score-btn:first-child');
+                    const awayMinusBtn = awayScoreContainer.querySelector('.score-btn:last-child');
+                    
+                    if (homeMinusBtn && homePlusBtn && awayMinusBtn && awayPlusBtn) {
+                        // 팀 위치 변경 시: 홈팀 버튼은 홈팀 점수, 어웨이팀 버튼은 어웨이팀 점수 변경
+                        homeMinusBtn.setAttribute('onclick', "updateScore('home', -1)");
+                        homePlusBtn.setAttribute('onclick', "updateScore('home', 1)");
+                        
+                        awayMinusBtn.setAttribute('onclick', "updateScore('away', -1)");
+                        awayPlusBtn.setAttribute('onclick', "updateScore('away', 1)");
+                        
+                        console.log('🏐 버튼 이벤트 교체 완료');
+                        console.log('🏐 홈팀 버튼 (홈팀 점수 변경):', homeMinusBtn.onclick, homePlusBtn.onclick);
+                        console.log('🏐 어웨이팀 버튼 (어웨이팀 점수 변경):', awayMinusBtn.onclick, awayPlusBtn.onclick);
+                    }
+                }
+            }
+            
+            // 서버에 상태 저장
+            console.log('🏐 서버에 팀위치 상태 저장');
+            updateMatchInfo();
+            
+            // 오버레이 페이지에 변경 알림 전송
+            console.log('🏐 WebSocket 이벤트 전송 시작');
+            console.log('🏐 baseballSocket 존재 여부:', typeof baseballSocket !== 'undefined');
+            console.log('🏐 baseballSocket 객체:', baseballSocket);
+            console.log('🏐 baseballMatchId:', baseballMatchId);
+            
+            if (typeof baseballSocket !== 'undefined' && baseballSocket) {
+                console.log('🏐 WebSocket 연결 상태:', baseballSocket.connected);
+                
+                baseballSocket.emit('teamPositionToggle', {
+                    matchId: baseballMatchId
+                });
+                console.log('🏐 오버레이 페이지에 이벤트 전송 완료');
+            } else {
+                console.log('❌ baseballSocket이 정의되지 않았거나 null입니다');
+            }
+            
+            console.log('🏐 팀 위치 변경 완료 (CSS 위치 변경 + 버튼 이벤트 교체)');
+        }
+        
+        // 리버스앵글 토글 함수 (새로운 상태 관리 방식)
+        function toggleReverseAngle() {
+            const reverseAngleCheckbox = document.getElementById('reverse-angle');
+            if (reverseAngleCheckbox) {
+                console.log('🏐 리버스앵글:', reverseAngleCheckbox.checked ? '활성화' : '비활성화');
+                
+                // 리버스앵글 해제 시 상태 초기화 옵션
+                if (!reverseAngleCheckbox.checked) {
+                    console.log('🏐 리버스앵글 해제: 상태 초기화 옵션 선택');
+                    
+                    // 사용자에게 초기화 옵션 제공
+                    const resetOption = confirm('리버스앵글을 해제합니다.\n\n"확인" - 모든 상태 초기화 (팀위치 + 리버스앵글)\n"취소" - 팀위치만 유지');
+                    
+                    if (resetOption) {
+                        // 완전 초기화: 팀위치도 초기화
+                        console.log('🏐 완전 초기화 선택: 팀위치 + 리버스앵글 모두 초기화');
+                        resetAllStates();
+                    } else {
+                        // 팀위치만 유지: 서버 상태에 맞게 컨트롤 페이지 업데이트
+                        console.log('🏐 팀위치 유지: 서버 상태에 맞게 컨트롤 페이지 업데이트');
+                        syncControlPageWithServer();
+                    }
+                } else {
+                    console.log('🏐 리버스앵글 활성화: 컨트롤 페이지는 변경하지 않음');
+                }
+                
+                // 2. 서버에 업데이트 전송
+                updateMatchInfo();
+                
+                // 3. 오버레이 페이지에 리버스앵글 변경 알림
+                if (typeof baseballSocket !== 'undefined' && baseballSocket) {
+                    console.log('🏐 WebSocket 연결 상태:', baseballSocket.connected);
+                    console.log('🏐 리버스앵글 변경 이벤트 전송:', {
+                        matchId: baseballMatchId,
+                        reverseAngle: reverseAngleCheckbox.checked
+                    });
+                    
+                    baseballSocket.emit('reverseAngleChanged', {
+                        matchId: baseballMatchId,
+                        reverseAngle: reverseAngleCheckbox.checked
+                    });
+                    console.log('🏐 오버레이 페이지에 리버스앵글 변경 이벤트 전송 완료');
+                } else {
+                    console.log('❌ baseballSocket이 정의되지 않았거나 null입니다');
+                }
+            } else {
+                console.log('🏐 리버스앵글 체크박스를 찾을 수 없습니다');
+            }
+        }
+        
+        // 완전 초기화 함수
+        function resetAllStates() {
+            console.log('🏐 완전 초기화 실행');
+            
+            // 1. 컨트롤 페이지 상태 초기화
+            const scoreControls = document.querySelector('.score-horizontal-controls');
+            if (scoreControls) {
+                scoreControls.classList.remove('team-position-swapped');
+                console.log('🏐 컨트롤 페이지: 팀 위치 정상화 (홈/어웨이)');
+            }
+            
+            // 2. 서버 상태도 초기화하도록 업데이트
+            updateMatchInfo();
+            
+            // 3. 오버레이 페이지에도 초기화 알림
+            if (typeof baseballSocket !== 'undefined' && baseballSocket) {
+                baseballSocket.emit('teamPositionReset', {
+                    matchId: baseballMatchId,
+                    resetType: 'all'
+                });
+                console.log('🏐 오버레이 페이지에 완전 초기화 이벤트 전송');
+            }
+        }
+        
+        // 서버 상태와 컨트롤 페이지 동기화
+        function syncControlPageWithServer() {
+            fetch(`/api/matches/${matchId}`)
+                .then(response => response.json())
+                .then(matchData => {
+                    const scoreControls = document.querySelector('.score-horizontal-controls');
+                    if (scoreControls && matchData.match_data) {
+                        const teamPositionSwapped = matchData.match_data.team_position_swapped || false;
+                        
+                        console.log('🏐 서버 팀 위치 상태:', teamPositionSwapped);
+                        console.log('🏐 컨트롤 페이지 업데이트 전:', scoreControls.classList.contains('team-position-swapped'));
+                        
+                        if (teamPositionSwapped) {
+                            scoreControls.classList.add('team-position-swapped');
+                            console.log('🏐 컨트롤 페이지 팀 위치: 반전 적용 (어웨이/홈)');
+                        } else {
+                            scoreControls.classList.remove('team-position-swapped');
+                            console.log('🏐 컨트롤 페이지 팀 위치: 정상화 (홈/어웨이)');
+                        }
+                        
+                        console.log('🏐 컨트롤 페이지 업데이트 후:', scoreControls.classList.contains('team-position-swapped'));
+                        console.log('🏐 최종 팀 위치:', teamPositionSwapped ? '어웨이/홈' : '홈/어웨이');
+                    }
+                })
+                .catch(error => {
+                    console.error('🏐 서버 상태 조회 실패:', error);
+                });
+        }
+        
+        // 서브권 변경 함수 (새로운 상태 관리 방식)
         function changeServeTeam(team) {
             console.log(`🏐 서브권 변경: ${team}팀이 서브권 획득`);
             
@@ -4652,6 +5095,8 @@
                 matchId: matchId,
                 serve_team: team
             });
+            
+            console.log(`🏐 서브권 변경 완료: ${team}`);
         }
     </script>
 </body>
