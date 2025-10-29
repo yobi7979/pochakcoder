@@ -706,7 +706,7 @@ router.delete('/team-info/:id', async (req, res) => {
     console.log(`팀 정보 삭제 요청: ID ${id}`);
     
     const [deletedRows] = await sequelize.query(`
-      DELETE FROM TeamInfo WHERE id = ?
+      DELETE FROM "TeamInfo" WHERE id = ?
     `, {
       replacements: [id],
       type: sequelize.QueryTypes.DELETE

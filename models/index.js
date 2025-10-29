@@ -10,7 +10,7 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
   try {
     sequelize = new Sequelize(process.env.DATABASE_URL, {
       dialect: 'postgres',
-      logging: console.log,
+      logging: false, // 로그 레이트 리미트 방지를 위해 비활성화
       benchmark: false,
       timezone: '+09:00', // 한국시간 설정
       dialectOptions: {
@@ -27,7 +27,7 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
     sequelize = new Sequelize({
       dialect: 'sqlite',
       storage: path.join(__dirname, '../sports.db'),
-      logging: console.log,
+      logging: false, // 로그 레이트 리미트 방지를 위해 비활성화
       benchmark: false,
       timezone: '+09:00' // 한국시간 설정
     });
@@ -38,7 +38,7 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
   sequelize = new Sequelize({
     dialect: 'sqlite',
     storage: path.join(__dirname, '../sports.db'),
-    logging: console.log,
+    logging: false, // 로그 레이트 리미트 방지를 위해 비활성화
     benchmark: false,
     // SQLite는 timezone 설정을 지원하지 않음
     define: {
