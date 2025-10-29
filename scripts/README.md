@@ -4,7 +4,23 @@
 
 ## 📋 현재 스크립트
 
-현재 이 폴더에는 특별한 스크립트가 없습니다.
+### 🔄 마이그레이션 스크립트
+- **[migration-runner.js](migration-runner.js)** - 🎯 메인 마이그레이션 실행기
+- **[migrate-stage-to-main.js](migrate-stage-to-main.js)** - Stage DB → Main DB 전체 마이그레이션
+- **[create-missing-tables-fixed.js](create-missing-tables-fixed.js)** - 누락된 테이블 생성
+- **[check-main-db-tables.js](check-main-db-tables.js)** - 마이그레이션 상태 확인
+
+### 🚀 마이그레이션 사용법
+```bash
+# 전체 마이그레이션 (권장)
+node scripts/migration-runner.js --full
+
+# 상태 확인
+node scripts/migration-runner.js --check
+
+# 도움말
+node scripts/migration-runner.js --help
+```
 
 ## 🔧 스크립트 추가 시 주의사항
 

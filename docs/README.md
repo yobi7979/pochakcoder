@@ -49,6 +49,10 @@
 - **[RAILWAY_DB_RESET.md](RAILWAY_DB_RESET.md)** - Railway DB 리셋 가이드
 - **[EXISTING_SYSTEM_PROTECTION.md](EXISTING_SYSTEM_PROTECTION.md)** - 기존 시스템 보호 방안
 
+### 🔄 마이그레이션 문서
+- **[마이그레이션.md](마이그레이션.md)** - Stage DB → Main DB 마이그레이션 상세 가이드
+- **[MIGRATION_README.md](MIGRATION_README.md)** - 마이그레이션 빠른 시작 가이드
+
 ### 📊 분석 문서
 - **[API_COMPARISON_ANALYSIS.md](API_COMPARISON_ANALYSIS.md)** - API 비교 분석
 
