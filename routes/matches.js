@@ -272,6 +272,19 @@ router.delete('/by-tab', requireAuth, asyncHandler(async (req, res) => {
       }
     }
 
+    // TeamInfo 삭제 (외래키 제약조건이 없어서 수동 삭제 필요)
+    if (matchIds.length > 0) {
+      try {
+        const deletedTeamInfoCount = await TeamInfo.destroy({
+          where: { match_id: { [Op.in]: matchIds } }
+        });
+        console.log(`[DEBUG] TeamInfo 삭제 완료: ${deletedTeamInfoCount}개 항목 삭제됨`);
+      } catch (teamInfoError) {
+        console.error(`[DEBUG] TeamInfo 삭제 중 오류 발생:`, teamInfoError);
+        // TeamInfo 삭제 실패해도 경기 삭제는 계속 진행
+      }
+    }
+
     const deletedCount = await Match.destroy({
       where: whereCondition
     });
@@ -328,6 +341,19 @@ router.delete('/all', requireAuth, asyncHandler(async (req, res) => {
       } catch (settingsError) {
         console.error(`[DEBUG] Settings 정리 중 오류 발생:`, settingsError);
         // Settings 정리 실패해도 경기 삭제는 계속 진행
+      }
+    }
+
+    // TeamInfo 삭제 (외래키 제약조건이 없어서 수동 삭제 필요)
+    if (matchIds.length > 0) {
+      try {
+        const deletedTeamInfoCount = await TeamInfo.destroy({
+          where: { match_id: { [Op.in]: matchIds } }
+        });
+        console.log(`[DEBUG] TeamInfo 삭제 완료: ${deletedTeamInfoCount}개 항목 삭제됨`);
+      } catch (teamInfoError) {
+        console.error(`[DEBUG] TeamInfo 삭제 중 오류 발생:`, teamInfoError);
+        // TeamInfo 삭제 실패해도 경기 삭제는 계속 진행
       }
     }
 
@@ -1285,6 +1311,17 @@ router.delete('/:id', requireAuth, asyncHandler(async (req, res) => {
     } catch (settingsError) {
       console.error(`[DEBUG] Settings 정리 중 오류 발생:`, settingsError);
       // Settings 정리 실패해도 경기 삭제는 계속 진행
+    }
+
+    // TeamInfo 삭제 (외래키 제약조건이 없어서 수동 삭제 필요)
+    try {
+      const deletedTeamInfoCount = await TeamInfo.destroy({
+        where: { match_id: matchId }
+      });
+      console.log(`[DEBUG] TeamInfo 삭제 완료: ${deletedTeamInfoCount}개 항목 삭제됨`);
+    } catch (teamInfoError) {
+      console.error(`[DEBUG] TeamInfo 삭제 중 오류 발생:`, teamInfoError);
+      // TeamInfo 삭제 실패해도 경기 삭제는 계속 진행
     }
 
     await match.destroy();
