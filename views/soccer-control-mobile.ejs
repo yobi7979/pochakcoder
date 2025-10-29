@@ -24,34 +24,72 @@
         .score-section {
             margin: 1px 0;
         }
-        .score-input-group {
+        .unified-score-section {
             display: flex;
             align-items: center;
-            gap: 12px;
+            justify-content: space-between;
+            gap: 2px;
+            padding: 12px 4px;
+            background-color: #f8f9fa;
+            border-radius: 12px;
+            margin: 4px 0;
         }
-        .score-input {
-            width: 84px;
-            height: 42px;
+        
+        .score-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+        
+        .score-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin: 0 16px;
+        }
+        
+        .score-display {
+            width: 80px;
+            height: 60px;
             text-align: center;
-            font-size: 24px;
+            font-size: 32px;
             font-weight: bold;
             border-radius: 10px;
-            border: 2px solid #ddd;
-            padding: 6px;
-        }
-        .score-controls {
+            border: 3px solid #007bff;
+            padding: 8px;
+            background-color: white;
             display: flex;
-            gap: 6px;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+        
+        .center-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            min-width: 180px;
+            justify-content: center;
+        }
+        
+        .score-display-container {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
         .score-btn {
-            width: 42px;
-            height: 42px;
+            width: 100px;
+            height: 36px;
             padding: 0;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 10px;
-            font-size: 22px;
+            font-size: 20px;
         }
         .timer-section {
             margin: 1px 0;
@@ -165,52 +203,47 @@
                 </button>
             </div>
         </div>
-        <!-- 팀로고 사용 유무 설정 -->
+        <!-- 통합 스코어 영역 (1줄) -->
         <div class="row mb-0">
-            <div class="col-12 text-center">
-                <div class="form-check form-check-inline">
-                    <input type="checkbox" class="form-check-input" id="use-team-logos" checked style="transform: scale(0.8);">
-                    <label class="form-check-label" for="use-team-logos" style="font-size: 0.85em;">
-                        팀로고 사용
-                    </label>
-                </div>
-            </div>
-        </div>
-        <!-- 팀 위치 변경 버튼 -->
-        <div class="row mb-0">
-            <div class="col-12 text-center">
-                <button class="btn btn-warning btn-sm" style="font-size: 0.9em; padding: 6px 12px;" onclick="swapTeams()">
-                    <i class="bi bi-arrow-left-right"></i> 위치변경
-                </button>
-            </div>
-        </div>
-        <!-- 스코어 영역 -->
-        <div class="row mb-0">
-            <div class="col-6">
-                <div class="score-section">
-                    <div class="score-input-group">
-                        <input type="number" id="home-score" class="score-input" value="<%= match.home_score || 0 %>" min="0">
-                        <div class="score-controls">
-                            <button class="btn btn-sm btn-outline-primary score-btn" onclick="updateScore('home', -1)">
-                                <i class="bi bi-dash-lg"></i>
-                            </button>
+            <div class="col-12">
+                <div class="unified-score-section">
+                    <!-- 홈팀 스코어 컨트롤 -->
+                    <div class="score-group">
+                        <div class="score-buttons">
                             <button class="btn btn-sm btn-outline-primary score-btn" onclick="updateScore('home', 1)">
                                 <i class="bi bi-plus-lg"></i>
                             </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6">
-                <div class="score-section">
-                    <div class="score-input-group">
-                        <input type="number" id="away-score" class="score-input" value="<%= match.away_score || 0 %>" min="0">
-                        <div class="score-controls">
-                            <button class="btn btn-sm btn-outline-primary score-btn" onclick="updateScore('away', -1)">
+                            <button class="btn btn-sm btn-outline-primary score-btn" onclick="updateScore('home', -1)">
                                 <i class="bi bi-dash-lg"></i>
                             </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 중앙 컨트롤 영역 -->
+                    <div class="center-controls">
+                        <div class="form-check form-check-inline">
+                            <input type="checkbox" class="form-check-input" id="use-team-logos" checked style="transform: scale(0.8);">
+                            <label class="form-check-label" for="use-team-logos" style="font-size: 0.85em;">
+                                팀로고 사용
+                            </label>
+                        </div>
+                        <div class="score-display-container">
+                            <div id="home-score" class="score-display"><%= match.home_score || 0 %></div>
+                            <div id="away-score" class="score-display"><%= match.away_score || 0 %></div>
+                        </div>
+                        <button class="btn btn-warning btn-sm" style="font-size: 0.8em; padding: 4px 8px;" onclick="swapTeams()">
+                            <i class="bi bi-arrow-left-right"></i> 위치변경
+                        </button>
+                    </div>
+                    
+                    <!-- 어웨이팀 스코어 컨트롤 -->
+                    <div class="score-group">
+                        <div class="score-buttons">
                             <button class="btn btn-sm btn-outline-primary score-btn" onclick="updateScore('away', 1)">
                                 <i class="bi bi-plus-lg"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary score-btn" onclick="updateScore('away', -1)">
+                                <i class="bi bi-dash-lg"></i>
                             </button>
                         </div>
                     </div>
@@ -250,12 +283,6 @@
                 </button>
                 <button class="btn btn-secondary timer-btn" onclick="resetTimer()">
                     <i class="bi bi-arrow-counterclockwise"></i> 리셋
-                </button>
-            </div>
-            <!-- 시간 수정 UI -->
-            <div class="d-flex justify-content-center align-items-center gap-3 mb-2">
-                <button class="btn btn-primary timer-btn" onclick="toggleTimeEdit()">
-                    <i class="bi bi-pencil"></i> 수정
                 </button>
             </div>
             <!-- 시간 수정 입력 필드 (수정 버튼 클릭 시 표시) -->
@@ -514,10 +541,10 @@
 
         // 점수 변경 이벤트
         function updateScore(team, change) {
-            const scoreInput = document.getElementById(`${team}-score`);
-            const currentScore = parseInt(scoreInput.value) || 0;
+            const scoreDisplay = document.getElementById(`${team}-score`);
+            const currentScore = parseInt(scoreDisplay.textContent) || 0;
             const newScore = Math.max(0, currentScore + change);
-            scoreInput.value = newScore;
+            scoreDisplay.textContent = newScore;
             updateMatchInfo();
         }
 
@@ -601,8 +628,8 @@
         // 점수/타이머/경기상태 변경 시 서버에 업데이트
         async function updateMatchInfo() {
             const formData = {
-                home_score: parseInt(document.getElementById('home-score').value) || 0,
-                away_score: parseInt(document.getElementById('away-score').value) || 0,
+                home_score: parseInt(document.getElementById('home-score').textContent) || 0,
+                away_score: parseInt(document.getElementById('away-score').textContent) || 0,
                 match_data: {
                     state: document.querySelector('input[name="matchState"]:checked')?.value || '전반'
                 }
@@ -734,28 +761,6 @@
             });
         }
 
-        // 시간 수정 토글 (일반 컨트롤 페이지와 동일)
-        function toggleTimeEdit() {
-            const timeEditContainer = document.getElementById('time-edit-container');
-            const timeEditInput = document.getElementById('time-edit-input');
-            
-            if (!timeEditContainer || !timeEditInput) {
-                console.error('시간 수정 UI 요소를 찾을 수 없음');
-                return;
-            }
-            
-            const minutes = Math.floor(timerState.currentSeconds / 60);
-            const seconds = timerState.currentSeconds % 60;
-            timeEditInput.value = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            
-            if (timeEditContainer.style.display === 'none') {
-                timeEditContainer.style.display = 'block';
-                timeEditInput.focus();
-                timeEditInput.select();
-            } else {
-                timeEditContainer.style.display = 'none';
-            }
-        }
 
         // 리스트 기능 관련 변수
         let currentMatchIndex = 0;
@@ -859,8 +864,8 @@
             // 현재 경기 정보 가져오기
             const homeTeam = document.getElementById('home-team-display').textContent.trim();
             const awayTeam = document.getElementById('away-team-display').textContent.trim();
-            const homeScore = document.getElementById('home-score').value;
-            const awayScore = document.getElementById('away-score').value;
+            const homeScore = document.getElementById('home-score').textContent;
+            const awayScore = document.getElementById('away-score').textContent;
             
             let confirmMessage = `통합 URL에 현재 경기를 푸시하시겠습니까?\n\n` +
                 `경기: ${homeTeam} vs ${awayTeam}\n` +
@@ -1061,14 +1066,14 @@
                 }
                 
                 // 점수 업데이트
-                const homeScoreInput = document.getElementById('home-score');
-                const awayScoreInput = document.getElementById('away-score');
+                const homeScoreDisplay = document.getElementById('home-score');
+                const awayScoreDisplay = document.getElementById('away-score');
                 
-                if (homeScoreInput) {
-                    homeScoreInput.value = data.home_score;
+                if (homeScoreDisplay) {
+                    homeScoreDisplay.textContent = data.home_score;
                 }
-                if (awayScoreInput) {
-                    awayScoreInput.value = data.away_score;
+                if (awayScoreDisplay) {
+                    awayScoreDisplay.textContent = data.away_score;
                 }
                 
                 console.log('팀 위치 변경 완료');
