@@ -628,7 +628,14 @@ const TeamInfo = sequelize.define('TeamInfo', {
   updatedAt: 'updated_at',
   tableName: 'TeamInfo',
   // Railway PostgreSQL 환경에서 테이블명 대소문자 문제 해결
-  freezeTableName: true
+  freezeTableName: true,
+  indexes: [
+    {
+      unique: true,
+      fields: ['match_id', 'team_type'],
+      name: 'unique_match_team_type'
+    }
+  ]
 });
 
 // TeamInfo와 Match 간의 관계 설정

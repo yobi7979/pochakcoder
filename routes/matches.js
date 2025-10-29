@@ -433,29 +433,37 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
       created_by: req.session.userId
     });
     
-    // TeamInfo 자동 생성 (홈팀과 어웨이팀)
-    await TeamInfo.bulkCreate([
-      {
-        match_id: match.id,
-        sport_type: sport_type,
-        team_name: home_team,
-        team_type: 'home',
-        team_color: matchDataObj.home_team_color,
-        team_header: matchDataObj.home_team_header,
-        logo_path: null, // 기본값: null (나중에 기본 이미지 지정 예정)
-        logo_bg_color: '#FFFFFF' // 기본값: 흰색
-      },
-      {
-        match_id: match.id,
-        sport_type: sport_type,
-        team_name: away_team,
-        team_type: 'away',
-        team_color: matchDataObj.away_team_color,
-        team_header: matchDataObj.away_team_header,
-        logo_path: null, // 기본값: null (나중에 기본 이미지 지정 예정)
-        logo_bg_color: '#FFFFFF' // 기본값: 흰색
-      }
-    ]);
+    // TeamInfo 자동 생성 (홈팀과 어웨이팀) - 중복 방지
+    try {
+      await TeamInfo.bulkCreate([
+        {
+          match_id: match.id,
+          sport_type: sport_type,
+          team_name: home_team,
+          team_type: 'home',
+          team_color: matchDataObj.home_team_color,
+          team_header: matchDataObj.home_team_header,
+          logo_path: null, // 기본값: null (나중에 기본 이미지 지정 예정)
+          logo_bg_color: '#FFFFFF' // 기본값: 흰색
+        },
+        {
+          match_id: match.id,
+          sport_type: sport_type,
+          team_name: away_team,
+          team_type: 'away',
+          team_color: matchDataObj.away_team_color,
+          team_header: matchDataObj.away_team_header,
+          logo_path: null, // 기본값: null (나중에 기본 이미지 지정 예정)
+          logo_bg_color: '#FFFFFF' // 기본값: 흰색
+        }
+      ], {
+        ignoreDuplicates: true // 중복 시 무시
+      });
+      console.log(`TeamInfo 자동 생성 완료: 홈팀(${home_team}), 어웨이팀(${away_team})`);
+    } catch (teamInfoError) {
+      console.error('TeamInfo 생성 중 오류 (무시됨):', teamInfoError.message);
+      // TeamInfo 생성 실패해도 경기 생성은 계속 진행
+    }
     
     // Settings 테이블에 팀로고 사용 상태 저장 (컨트롤 페이지와 연동)
     if (use_team_logos !== undefined) {
