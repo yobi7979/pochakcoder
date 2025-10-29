@@ -448,6 +448,28 @@
             gap: 8px;
             flex: 1;
         }
+        
+        .url-item button {
+            padding: 0.3rem 0.6rem;
+            background-color: var(--primary-color, #007bff);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: var(--text-xs, 0.75rem);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .url-item button:hover {
+            background-color: var(--primary-light, #0056b3);
+            transform: translateY(-1px);
+        }
+        
+        .url-item button:active {
+            transform: translateY(0);
+            background-color: var(--primary-color, #007bff);
+        }
 
         .url-type {
             font-size: 0.8rem;
