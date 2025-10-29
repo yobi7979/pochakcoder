@@ -366,9 +366,44 @@ router.delete('/api/:sportType', async (req, res) => {
     const transaction = await sequelize.transaction();
     
     try {
-      // 1. TeamInfo 삭제 (외래키로 인해 먼저 삭제)
+      // 1. Settings 정리 (경기 ID 기반으로 삭제)
+      const deletedSettings = await sequelize.query(`
+        DELETE FROM "Settings" 
+        WHERE "key" LIKE 'timer_mode_%' 
+           OR "key" LIKE 'soccer_team_logo_visibility_%'
+           OR "key" LIKE 'soccer_team_logo_display_mode_%'
+           OR "key" LIKE 'tournament_text_%'
+           OR "key" LIKE 'baseball_team_logo_visibility_%'
+           OR "key" LIKE 'baseball_team_logo_display_mode_%'
+           OR "key" LIKE 'volleyball_team_logo_visibility_%'
+           OR "key" LIKE 'volleyball_team_logo_display_mode_%'
+        AND "key" IN (
+          SELECT CONCAT('timer_mode_', id) FROM Matches WHERE sport_type = ?
+          UNION
+          SELECT CONCAT('soccer_team_logo_visibility_', id) FROM Matches WHERE sport_type = ?
+          UNION
+          SELECT CONCAT('soccer_team_logo_display_mode_', id) FROM Matches WHERE sport_type = ?
+          UNION
+          SELECT CONCAT('tournament_text_', id) FROM Matches WHERE sport_type = ?
+          UNION
+          SELECT CONCAT('baseball_team_logo_visibility_', id) FROM Matches WHERE sport_type = ?
+          UNION
+          SELECT CONCAT('baseball_team_logo_display_mode_', id) FROM Matches WHERE sport_type = ?
+          UNION
+          SELECT CONCAT('volleyball_team_logo_visibility_', id) FROM Matches WHERE sport_type = ?
+          UNION
+          SELECT CONCAT('volleyball_team_logo_display_mode_', id) FROM Matches WHERE sport_type = ?
+        )
+      `, {
+        replacements: [sportType, sportType, sportType, sportType, sportType, sportType, sportType, sportType],
+        transaction
+      });
+      
+      console.log(`[DEBUG] Settings 정리 완료: ${deletedSettings[1]}개 항목 삭제됨`);
+      
+      // 2. TeamInfo 삭제 (외래키로 인해 먼저 삭제)
       const deletedTeamInfo = await sequelize.query(`
-        DELETE FROM TeamInfo 
+        DELETE FROM "TeamInfo" 
         WHERE match_id IN (
           SELECT id FROM Matches WHERE sport_type = ?
         )
@@ -377,7 +412,7 @@ router.delete('/api/:sportType', async (req, res) => {
         transaction
       });
       
-      // 2. Matches 삭제
+      // 3. Matches 삭제
       const deletedMatches = await sequelize.query(`
         DELETE FROM Matches 
         WHERE sport_type = ?

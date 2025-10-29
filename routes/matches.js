@@ -235,6 +235,43 @@ router.delete('/by-tab', requireAuth, asyncHandler(async (req, res) => {
       whereCondition.created_by = req.session.userId;
     }
 
+    // 삭제할 경기들을 먼저 조회
+    const matchesToDelete = await Match.findAll({
+      where: whereCondition,
+      attributes: ['id']
+    });
+
+    const matchIds = matchesToDelete.map(match => match.id);
+    console.log(`[DEBUG] 탭별 삭제할 경기 ID들: ${matchIds.join(', ')}`);
+
+    // Settings 정리
+    if (matchIds.length > 0) {
+      try {
+        console.log(`[DEBUG] 탭별 경기 삭제 전 Settings 정리 시작`);
+        
+        // 모든 경기와 관련된 Settings 항목들 삭제
+        const deletedSettingsCount = await Settings.destroy({
+          where: {
+            [Op.or]: matchIds.flatMap(matchId => [
+              { key: `timer_mode_${matchId}` },
+              { key: `soccer_team_logo_visibility_${matchId}` },
+              { key: `soccer_team_logo_display_mode_${matchId}` },
+              { key: `tournament_text_${matchId}` },
+              { key: `baseball_team_logo_visibility_${matchId}` },
+              { key: `baseball_team_logo_display_mode_${matchId}` },
+              { key: `volleyball_team_logo_visibility_${matchId}` },
+              { key: `volleyball_team_logo_display_mode_${matchId}` }
+            ])
+          }
+        });
+        
+        console.log(`[DEBUG] Settings 정리 완료: ${deletedSettingsCount}개 항목 삭제됨`);
+      } catch (settingsError) {
+        console.error(`[DEBUG] Settings 정리 중 오류 발생:`, settingsError);
+        // Settings 정리 실패해도 경기 삭제는 계속 진행
+      }
+    }
+
     const deletedCount = await Match.destroy({
       where: whereCondition
     });
@@ -280,7 +317,9 @@ router.delete('/all', requireAuth, asyncHandler(async (req, res) => {
               { key: `soccer_team_logo_display_mode_${matchId}` },
               { key: `tournament_text_${matchId}` },
               { key: `baseball_team_logo_visibility_${matchId}` },
-              { key: `baseball_team_logo_display_mode_${matchId}` }
+              { key: `baseball_team_logo_display_mode_${matchId}` },
+              { key: `volleyball_team_logo_visibility_${matchId}` },
+              { key: `volleyball_team_logo_display_mode_${matchId}` }
             ])
           }
         });
@@ -1235,7 +1274,9 @@ router.delete('/:id', requireAuth, asyncHandler(async (req, res) => {
             { key: `soccer_team_logo_display_mode_${matchId}` },
             { key: `tournament_text_${matchId}` },
             { key: `baseball_team_logo_visibility_${matchId}` },
-            { key: `baseball_team_logo_display_mode_${matchId}` }
+            { key: `baseball_team_logo_display_mode_${matchId}` },
+            { key: `volleyball_team_logo_visibility_${matchId}` },
+            { key: `volleyball_team_logo_display_mode_${matchId}` }
           ]
         }
       });
