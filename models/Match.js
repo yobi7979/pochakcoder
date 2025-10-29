@@ -12,9 +12,29 @@ Match.init({
         type: DataTypes.STRING,
         allowNull: false
     },
-    status: {
+    home_team: {
         type: DataTypes.STRING,
-        defaultValue: 'pending'
+        allowNull: false
+    },
+    away_team: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    home_team_color: {
+        type: DataTypes.STRING,
+        defaultValue: '#1e40af'
+    },
+    away_team_color: {
+        type: DataTypes.STRING,
+        defaultValue: '#1e40af'
+    },
+    home_team_header: {
+        type: DataTypes.STRING,
+        defaultValue: 'HOME'
+    },
+    away_team_header: {
+        type: DataTypes.STRING,
+        defaultValue: 'AWAY'
     },
     home_score: {
         type: DataTypes.INTEGER,
@@ -24,28 +44,29 @@ Match.init({
         type: DataTypes.INTEGER,
         defaultValue: 0
     },
-    match_data: {
-        type: DataTypes.JSON,
-        defaultValue: {
-            state: '경기 전',
-            home_shots: 0,
-            away_shots: 0,
-            home_shots_on_target: 0,
-            away_shots_on_target: 0,
-            home_corners: 0,
-            away_corners: 0,
-            home_fouls: 0,
-            away_fouls: 0
-        }
+    status: {
+        type: DataTypes.STRING,
+        defaultValue: 'pending'
     },
-
-
+    match_data: {
+        type: DataTypes.JSONB,  // PostgreSQL JSONB 타입으로 변경
+        defaultValue: {}
+    },
+    created_by: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+            model: 'users',
+            key: 'id'
+        }
+    }
 }, {
     sequelize,
     modelName: 'Match',
     timestamps: true,
     createdAt: 'created_at',
-    updatedAt: 'updated_at'
+    updatedAt: 'updated_at',
+    tableName: 'Matches'
 });
 
 module.exports = Match; 
