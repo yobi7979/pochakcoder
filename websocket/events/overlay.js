@@ -220,6 +220,28 @@ const overlayEvents = (socket, io) => {
     console.log(`🏐 방 ${roomName}의 클라이언트 수: ${io.sockets.adapter.rooms.get(roomName)?.size || 0}`);
   });
 
+  // 오버레이 컨트롤 클릭 이벤트 처리 (타임아웃, 세트포인트, 매치포인트)
+  socket.on('overlayControlClick', (data) => {
+    const { matchId, team, type, timeout } = data;
+    const roomName = `match_${matchId}`;
+    
+    console.log(`🏐 오버레이 컨트롤 클릭 이벤트 수신: matchId=${matchId}, team=${team}, type=${type}, timeout=${timeout}`);
+    console.log(`🏐 소켓 ID: ${socket.id}`);
+    console.log(`🏐 방 이름: ${roomName}`);
+    console.log(`🏐 방에 참여한 클라이언트 수: ${io.sockets.adapter.rooms.get(roomName)?.size || 0}`);
+    
+    // 해당 방의 모든 클라이언트에게 오버레이 컨트롤 클릭 이벤트 전송
+    io.to(roomName).emit('overlayControlClicked', {
+      matchId: matchId,
+      team: team,
+      type: type,
+      timeout: timeout
+    });
+    
+    console.log(`🏐 오버레이 컨트롤 클릭 이벤트를 방 ${roomName}에 전송함`);
+    console.log(`🏐 전송된 데이터:`, { matchId, team, type, timeout });
+  });
+
   // 리스트 오버레이 참여 이벤트 처리
   socket.on('join_list_overlay', (listId) => {
     const roomName = `list_overlay_${listId}`;

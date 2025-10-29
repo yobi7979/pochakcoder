@@ -109,6 +109,7 @@
             margin-bottom: var(--space-3);
             box-shadow: var(--shadow-md);
             border: 1px solid var(--border-light);
+            overflow: hidden;
         }
         
         .innings-score-section {
@@ -233,6 +234,8 @@
             background-color: var(--bg-tertiary);
             border-radius: 8px;
             border: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            min-width: 0;
         }
         
         .url-copy-item {
@@ -289,6 +292,7 @@
             margin-bottom: var(--space-3);
             box-shadow: var(--shadow-md);
             border: 1px solid var(--border-light);
+            overflow: hidden;
         }
         
         /* 팀명 행 */
@@ -339,7 +343,7 @@
             display: flex;
             flex-direction: row;
             align-items: center;
-            gap: 8px;
+            gap: 0px;
         }
         
         /* 타임아웃 숫자 버튼들 스타일 */
@@ -385,12 +389,13 @@
             color: white;
             padding: 8px 16px;
             border-radius: 6px;
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
-            min-width: 120px;
+            min-width: 100px;
             text-align: center;
+            white-space: nowrap;
         }
         
         .team-button:hover {
@@ -404,14 +409,14 @@
             background-color: #1e40af;
         }
         
-        .timeout-button {
-            background-color: #f59e0b;
-            border-color: #f59e0b;
-        }
-        
-        .timeout-button:hover {
-            background-color: #d97706;
-            border-color: #d97706;
+        .timeout-label {
+            color: #f59e0b;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            padding: 4px 2px;
+            min-width: 100px;
+            white-space: nowrap;
         }
         
         .matchscore-button {
@@ -427,7 +432,7 @@
         /* 매치스코어 섹션 스타일 */
         .matchscore-section {
             display: flex;
-            flex-direction: row;
+            flex-direction: column;
             align-items: center;
             gap: 8px;
         }
@@ -461,6 +466,8 @@
             display: flex;
             align-items: center;
             gap: var(--space-3);
+            flex-wrap: wrap;
+            min-width: 0;
         }
         
         .logo-buttons {
@@ -475,6 +482,7 @@
             flex-direction: column;
             align-items: center;
             gap: var(--space-2);
+            min-width: 0;
         }
         
         .team-color-section label {
@@ -496,6 +504,7 @@
             flex-direction: column;
             align-items: center;
             gap: var(--space-2);
+            min-width: 0;
         }
         
         .logo-color-section label {
@@ -554,6 +563,8 @@
             max-width: 1000px;
             margin: 0 auto;
             padding: 0 var(--space-6);
+            flex-wrap: wrap;
+            min-width: 0;
         }
         
         .team-score-control {
@@ -563,6 +574,8 @@
             min-width: 250px;
             max-width: 500px;
             flex: 1;
+            flex-shrink: 1;
+            min-width: 0;
         }
         
         /* 기본 상태에서 홈팀은 왼쪽 정렬, 어웨이팀은 오른쪽 정렬 */
@@ -736,14 +749,30 @@
             transform: translateY(0);
         }
         
-        /* 세트 컨트롤 컨테이너 (중앙 정렬) */
+        /* 세트 컨트롤 컨테이너 (중앙 정렬) - 좌우 배치 */
         .set-controls-container {
             display: flex;
             flex-direction: row;
             align-items: center;
-            justify-content: center;
+            justify-content: space-between;
             gap: var(--space-4);
             flex-wrap: wrap;
+        }
+        
+        /* 중앙 버튼 컨테이너 - 수직 배치 */
+        .center-buttons-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        /* 중앙 버튼들 너비 통일 */
+        .serve-change-btn,
+        .finish-match-btn,
+        .reset-scores-btn {
+            min-width: 140px;
+            width: 140px;
         }
         
         /* 경기 종료 버튼 스타일 */
@@ -908,6 +937,91 @@
         .score-horizontal-controls.team-position-swapped .team-score-control .team-name {
             text-align: center;
             justify-content: center;
+        }
+        
+        /* 팀별 컨트롤 섹션 스타일 */
+        .team-controls-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 12px;
+            border-radius: 8px;
+            min-width: 200px;
+        }
+        
+        /* 팀명 표시 순서 변경 (양팀위치 변경 시) - 제거됨 */
+        
+        .home-team-section {
+            background-color: rgba(30, 64, 175, 0.1);
+            border: 1px solid rgba(30, 64, 175, 0.3);
+        }
+        
+        .away-team-section {
+            background-color: rgba(174, 30, 51, 0.1);
+            border: 1px solid rgba(174, 30, 51, 0.3);
+        }
+        
+        /* 팀명 토글 시 색상 교체 */
+        .set-controls-container.team-names-swapped .home-team-section {
+            background-color: rgba(174, 30, 51, 0.1);
+            border: 1px solid rgba(174, 30, 51, 0.3);
+        }
+        
+        .set-controls-container.team-names-swapped .away-team-section {
+            background-color: rgba(30, 64, 175, 0.1);
+            border: 1px solid rgba(30, 64, 175, 0.3);
+        }
+        
+        .team-controls-header {
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .home-team-section .team-controls-header {
+            color: #1e40af;
+        }
+        
+        .away-team-section .team-controls-header {
+            color: #ae1e33;
+        }
+        
+        /* 팀명 토글 시 헤더 색상 교체 */
+        .set-controls-container.team-names-swapped .home-team-section .team-controls-header {
+            color: #ae1e33;
+        }
+        
+        .set-controls-container.team-names-swapped .away-team-section .team-controls-header {
+            color: #1e40af;
+        }
+        
+        .team-controls-buttons {
+            display: flex;
+            flex-direction: row;
+            gap: 12px;
+            align-items: flex-start;
+        }
+        
+        .timeout-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .timeout-label {
+            color: #f59e0b;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .matchpoint-section {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            align-items: center;
         }
         
         /* 팀 위치 변경 시 상하 배치 버튼 순서 유지 */
@@ -1188,6 +1302,7 @@
             box-shadow: var(--shadow-md);
             border: 1px solid var(--border-light);
             max-width: 100%;
+            overflow: hidden;
         }
         
         .tournament-section-header {
@@ -1197,6 +1312,8 @@
             margin-bottom: var(--space-4);
             padding-bottom: var(--space-3);
             border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            min-width: 0;
         }
         
         .tournament-section-title {
@@ -1211,12 +1328,15 @@
             margin-top: var(--space-4);
             padding-top: var(--space-4);
             border-top: 1px solid var(--border-color);
+            overflow: hidden;
         }
         
         .team-name-edit-single-row {
             display: flex;
             gap: var(--space-4);
             align-items: center;
+            flex-wrap: wrap;
+            min-width: 0;
         }
         
         .team-name-edit-item {
@@ -1438,6 +1558,7 @@
             border-radius: 12px;
             box-shadow: var(--shadow-sm);
             border: 1px solid var(--border-color);
+            overflow: hidden;
         }
         
         
@@ -1449,6 +1570,7 @@
             border-radius: 12px;
             box-shadow: var(--shadow-sm);
             border: 1px solid var(--border-color);
+            overflow: hidden;
         }
         
         .stats-grid {
@@ -1486,6 +1608,7 @@
             border-radius: 12px;
             box-shadow: var(--shadow-sm);
             border: 1px solid var(--border-color);
+            overflow: hidden;
         }
         
         .innings-grid {
@@ -1588,11 +1711,147 @@
                 font-size: var(--text-2xl);
             }
             
+            /* 작은 화면에서 게임 상태 섹션 조정 */
+            .score-horizontal-controls {
+                flex-direction: column;
+                gap: var(--space-4);
+                padding: 0 var(--space-2);
+            }
+            
+            .team-score-control {
+                gap: var(--space-4);
+                max-width: 100%;
+                min-width: 200px;
+            }
+            
+            .team-info-section {
+                min-width: 150px;
+            }
+            
+            .team-buttons-row {
+                gap: var(--space-2);
+            }
+            
+            .timeout-section {
+                gap: var(--space-2);
+            }
+            
+            .matchscore-section {
+                gap: var(--space-2);
+            }
+            
+            .team-button {
+                min-width: 60px;
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+            
+            .timeout-number-btn {
+                min-width: 20px;
+                padding: 4px 6px;
+                font-size: 10px;
+            }
+            
             .score-btn {
                 width: 80px;
                 height: 50px;
             }
             
+            /* 768px 이하에서 모든 섹션 조정 */
+            .team-settings-section,
+            .tournament-section,
+            .team-section,
+            .player-section,
+            .stats-section,
+            .innings-section {
+                padding: var(--space-4);
+            }
+            
+            .url-copy-section {
+                flex-direction: column;
+                gap: var(--space-3);
+            }
+            
+            .team-logo-section {
+                flex-direction: column;
+                gap: var(--space-2);
+            }
+            
+            .tournament-section-header {
+                flex-direction: column;
+                gap: var(--space-3);
+                align-items: flex-start;
+            }
+            
+            .team-name-edit-single-row {
+                flex-direction: column;
+                gap: var(--space-3);
+                align-items: flex-start;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+        }
+        
+        /* 매우 작은 화면 (480px 이하) */
+        @media (max-width: 480px) {
+            .score-horizontal-controls {
+                padding: 0 var(--space-1);
+            }
+            
+            .team-score-control {
+                gap: var(--space-2);
+                min-width: 150px;
+            }
+            
+            .team-button {
+                min-width: 50px;
+                padding: 4px 8px;
+                font-size: 10px;
+            }
+            
+            .timeout-number-btn {
+                min-width: 18px;
+                padding: 2px 4px;
+                font-size: 9px;
+            }
+            
+            .team-name {
+                font-size: 16px;
+            }
+            
+            /* 작은 화면에서 모든 섹션 조정 */
+            .team-settings-section,
+            .tournament-section,
+            .team-section,
+            .player-section,
+            .stats-section,
+            .innings-section {
+                padding: var(--space-3);
+            }
+            
+            .url-copy-section {
+                flex-direction: column;
+                gap: var(--space-2);
+            }
+            
+            .team-logo-section {
+                flex-direction: column;
+                gap: var(--space-2);
+            }
+            
+            .tournament-section-header {
+                flex-direction: column;
+                gap: var(--space-2);
+                align-items: flex-start;
+            }
+            
+            .team-name-edit-single-row {
+                flex-direction: column;
+                gap: var(--space-2);
+                align-items: flex-start;
+            }
             
             .stats-grid {
                 grid-template-columns: 1fr;
@@ -2094,21 +2353,6 @@
                             <div class="team-score-control">
                                 <div class="team-info-section">
                                     <div class="team-name"><%= match.home_team || 'HOME' %></div>
-                                    <!-- 홈팀 버튼들 -->
-                                    <div class="team-buttons-row">
-                                        <div class="timeout-section">
-                                            <button class="team-button timeout-button" id="home-timeout-btn">타임아웃</button>
-                                            <div class="timeout-numbers">
-                                                <button class="timeout-number-btn" id="home-timeout-1">1</button>
-                                                <button class="timeout-number-btn" id="home-timeout-2">2</button>
-                                                <button class="timeout-number-btn" id="home-timeout-3">3</button>
-                                            </div>
-                                        </div>
-                                        <div class="matchscore-section">
-                                            <button class="team-button matchscore-button" id="home-matchscore-btn">세트포인트</button>
-                                            <button class="team-button matchpoint-button" id="home-matchpoint-btn">매치포인트</button>
-                                        </div>
-                                    </div>
                                 </div>
                                 <div class="score-buttons-vertical">
                                     <button class="btn btn-outline-primary score-btn" onclick="updateScore('home', 1)">
@@ -2163,21 +2407,6 @@
                                 </div>
                                 <div class="team-info-section">
                                     <div class="team-name"><%= match.away_team || 'AWAY' %></div>
-                                    <!-- 어웨이팀 버튼들 -->
-                                    <div class="team-buttons-row">
-                                        <div class="timeout-section">
-                                            <button class="team-button timeout-button" id="away-timeout-btn">타임아웃</button>
-                                            <div class="timeout-numbers">
-                                                <button class="timeout-number-btn" id="away-timeout-1">1</button>
-                                                <button class="timeout-number-btn" id="away-timeout-2">2</button>
-                                                <button class="timeout-number-btn" id="away-timeout-3">3</button>
-                                            </div>
-                                        </div>
-                                        <div class="matchscore-section">
-                                            <button class="team-button matchscore-button" id="away-matchscore-btn">세트포인트</button>
-                                            <button class="team-button matchpoint-button" id="away-matchpoint-btn">매치포인트</button>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2185,16 +2414,57 @@
                     <div class="game-status-content">
                         <!-- 게임 상태 컨트롤 섹션 (중앙 정렬) -->
                         <div class="set-controls-container">
-                            <button class="serve-change-btn" onclick="changeServe()">
-                                <i class="bi bi-arrow-repeat"></i> 서브권변경
-                            </button>
-                            <input type="hidden" id="serve-team" value="<%= match.match_data?.serve_team || 'home' %>">
-                            <button class="finish-match-btn" onclick="finishMatch()">
-                                <i class="bi bi-flag-fill"></i> 경기 종료
-                            </button>
-                            <button class="reset-scores-btn" onclick="resetAllScores()">
-                                <i class="bi bi-arrow-clockwise"></i> 점수 초기화
-                            </button>
+                            <!-- 홈팀 컨트롤 섹션 -->
+                            <div class="team-controls-section home-team-section">
+                                <div class="team-controls-header" data-home-team="<%= match.home_team || 'HOME' %>" data-away-team="<%= match.away_team || 'AWAY' %>"><%= match.home_team || 'HOME' %></div>
+                                <div class="team-controls-buttons">
+                                    <div class="timeout-section">
+                                        <div class="timeout-label">타임아웃</div>
+                                        <div class="timeout-numbers">
+                                            <button class="timeout-number-btn" id="home-timeout-1">1</button>
+                                            <button class="timeout-number-btn" id="home-timeout-2">2</button>
+                                            <button class="timeout-number-btn" id="home-timeout-3">3</button>
+                                        </div>
+                                    </div>
+                                    <div class="matchpoint-section">
+                                        <button class="team-button matchscore-button" id="home-matchscore-btn">세트포인트</button>
+                                        <button class="team-button matchpoint-button" id="home-matchpoint-btn">매치포인트</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 중앙 버튼들 컨테이너 -->
+                            <div class="center-buttons-container">
+                                <button class="serve-change-btn" onclick="changeServe()">
+                                    <i class="bi bi-arrow-repeat"></i> 서브권변경
+                                </button>
+                                <input type="hidden" id="serve-team" value="<%= match.match_data?.serve_team || 'home' %>">
+                                <button class="finish-match-btn" onclick="finishMatch()">
+                                    <i class="bi bi-flag-fill"></i> 경기 종료
+                                </button>
+                                <button class="reset-scores-btn" onclick="resetAllScores()">
+                                    <i class="bi bi-arrow-clockwise"></i> 점수 초기화
+                                </button>
+                            </div>
+                            
+                            <!-- 어웨이팀 컨트롤 섹션 -->
+                            <div class="team-controls-section away-team-section">
+                                <div class="team-controls-header" data-home-team="<%= match.home_team || 'HOME' %>" data-away-team="<%= match.away_team || 'AWAY' %>"><%= match.away_team || 'AWAY' %></div>
+                                <div class="team-controls-buttons">
+                                    <div class="timeout-section">
+                                        <div class="timeout-label">타임아웃</div>
+                                        <div class="timeout-numbers">
+                                            <button class="timeout-number-btn" id="away-timeout-1">1</button>
+                                            <button class="timeout-number-btn" id="away-timeout-2">2</button>
+                                            <button class="timeout-number-btn" id="away-timeout-3">3</button>
+                                        </div>
+                                    </div>
+                                    <div class="matchpoint-section">
+                                        <button class="team-button matchscore-button" id="away-matchscore-btn">세트포인트</button>
+                                        <button class="team-button matchpoint-button" id="away-matchpoint-btn">매치포인트</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -2483,6 +2753,86 @@
                 const team = this.getAttribute('data-team-type');
                 console.log(`=== ${team}팀 컬러 저장 버튼 클릭 ===`);
                 saveTeamColor(team);
+            });
+        });
+        
+        // 타임아웃 버튼 이벤트 리스너 추가
+        document.querySelectorAll('.timeout-number-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const team = this.id.includes('home') ? 'home' : 'away';
+                const timeoutNumber = this.textContent;
+                console.log(`🏐 ${team}팀 타임아웃 ${timeoutNumber} 클릭`);
+                console.log('🏐 소켓 연결 상태:', typeof socket !== 'undefined' ? socket.connected : 'socket undefined');
+                
+                // WebSocket을 통해 오버레이 페이지로 이벤트 전송
+                if (typeof socket !== 'undefined' && socket.connected) {
+                    const eventData = {
+                        matchId: '<%= match.id %>',
+                        team: team,
+                        type: 'timeout',
+                        timeout: timeoutNumber
+                    };
+                    console.log('🏐 전송할 이벤트 데이터:', eventData);
+                    socket.emit('overlayControlClick', eventData);
+                    console.log(`🏐 오버레이 컨트롤 이벤트 전송 완료: ${team}팀 타임아웃 ${timeoutNumber}`);
+                } else {
+                    console.error('🏐 소켓이 연결되지 않음 - 이벤트 전송 실패');
+                }
+                
+                // 버튼 활성화 상태 토글
+                this.classList.toggle('active');
+            });
+        });
+        
+        // 세트포인트 버튼 이벤트 리스너 추가
+        document.querySelectorAll('.matchscore-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const team = this.id.includes('home') ? 'home' : 'away';
+                console.log(`🏐 ${team}팀 세트포인트 클릭`);
+                console.log('🏐 소켓 연결 상태:', typeof socket !== 'undefined' ? socket.connected : 'socket undefined');
+                
+                // WebSocket을 통해 오버레이 페이지로 이벤트 전송
+                if (typeof socket !== 'undefined' && socket.connected) {
+                    const eventData = {
+                        matchId: '<%= match.id %>',
+                        team: team,
+                        type: 'setpoint'
+                    };
+                    console.log('🏐 전송할 이벤트 데이터:', eventData);
+                    socket.emit('overlayControlClick', eventData);
+                    console.log(`🏐 오버레이 컨트롤 이벤트 전송 완료: ${team}팀 세트포인트`);
+                } else {
+                    console.error('🏐 소켓이 연결되지 않음 - 이벤트 전송 실패');
+                }
+                
+                // 버튼 활성화 상태 토글
+                this.classList.toggle('active');
+            });
+        });
+        
+        // 매치포인트 버튼 이벤트 리스너 추가
+        document.querySelectorAll('.matchpoint-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const team = this.id.includes('home') ? 'home' : 'away';
+                console.log(`🏐 ${team}팀 매치포인트 클릭`);
+                console.log('🏐 소켓 연결 상태:', typeof socket !== 'undefined' ? socket.connected : 'socket undefined');
+                
+                // WebSocket을 통해 오버레이 페이지로 이벤트 전송
+                if (typeof socket !== 'undefined' && socket.connected) {
+                    const eventData = {
+                        matchId: '<%= match.id %>',
+                        team: team,
+                        type: 'matchpoint'
+                    };
+                    console.log('🏐 전송할 이벤트 데이터:', eventData);
+                    socket.emit('overlayControlClick', eventData);
+                    console.log(`🏐 오버레이 컨트롤 이벤트 전송 완료: ${team}팀 매치포인트`);
+                } else {
+                    console.error('🏐 소켓이 연결되지 않음 - 이벤트 전송 실패');
+                }
+                
+                // 버튼 활성화 상태 토글
+                this.classList.toggle('active');
             });
         });
 
@@ -3355,6 +3705,9 @@
                     
                     // 팀 위치 변경 상태
                     team_position_swapped: document.querySelector('.score-horizontal-controls')?.classList.contains('team-position-swapped') || false,
+                    
+                    // 하단 버튼 섹션 팀명 토글 상태
+                    team_names_swapped: document.querySelector('.set-controls-container')?.classList.contains('team-names-swapped') || false,
 
                     // 팀 로고 정보
                     home_team_logo: document.querySelector('#home-team-logo-preview img')?.src || '',
@@ -4762,6 +5115,29 @@
                         console.log('🏐 초기 팀 위치 상태:', teamPositionSwapped);
                     }
                     
+                    // 하단 버튼 섹션 팀명 토글 상태 복원
+                    const teamNamesSwapped = matchData.match_data?.team_names_swapped || false;
+                    const setControlsContainer = document.querySelector('.set-controls-container');
+                    if (setControlsContainer) {
+                        if (teamNamesSwapped) {
+                            setControlsContainer.classList.add('team-names-swapped');
+                            // 팀명도 토글된 상태로 설정
+                            const homeHeader = document.querySelector('.home-team-section .team-controls-header');
+                            const awayHeader = document.querySelector('.away-team-section .team-controls-header');
+                            if (homeHeader && awayHeader) {
+                                const homeTeamName = homeHeader.getAttribute('data-home-team');
+                                const awayTeamName = homeHeader.getAttribute('data-away-team');
+                                homeHeader.textContent = awayTeamName;
+                                awayHeader.textContent = homeTeamName;
+                            }
+                            console.log('🏐 초기 로딩: 하단 버튼 섹션 팀명 토글 적용');
+                        } else {
+                            setControlsContainer.classList.remove('team-names-swapped');
+                            console.log('🏐 초기 로딩: 하단 버튼 섹션 팀명 정상화');
+                        }
+                        console.log('🏐 초기 하단 버튼 섹션 팀명 토글 상태:', teamNamesSwapped);
+                    }
+                    
                     // 리버스앵글 상태 초기화 (reverse_angle)
                     const reverseAngle = matchData.match_data?.reverse_angle || false;
                     const reverseAngleCheckbox = document.getElementById('reverse-angle');
@@ -4769,6 +5145,9 @@
                         reverseAngleCheckbox.checked = reverseAngle;
                         console.log('🏐 초기 로딩: 리버스앵글 체크박스 상태 설정:', reverseAngle);
                     }
+                    
+                    // 리버스앵글 상태에 따른 버튼 이벤트 핸들러 적용
+                    swapButtonEventHandlers();
                     
                     // 현재 세트 점수를 +/- 버튼 옆의 점수 입력 필드에 표시
                     const currentSet = parseInt(matchData.match_data?.current_inning) || 1;
@@ -5087,6 +5466,15 @@
                 console.log('🏐 score-horizontal-controls 요소를 찾을 수 없습니다');
             }
             
+            // 하단 버튼 섹션의 팀명 토글 (리버스앵글 체크되지 않은 경우에만)
+            const reverseAngleCheckbox = document.getElementById('reverse-angle');
+            if (!reverseAngleCheckbox || !reverseAngleCheckbox.checked) {
+                toggleTeamNamesInButtonSections();
+            } else {
+                // 리버스앵글 선택된 경우: 버튼 섹션의 모든 내용이 서로 반대로 표시
+                toggleReverseAngleButtonSections();
+            }
+            
             // -/+ 버튼 이벤트 교체 (팀마다 바뀌도록) - 상하 배치
             // 팀 위치 변경 상태에 관계없이 항상 올바른 버튼을 찾기 위해 ID 기반 선택자 사용
             const homeScoreInput = document.getElementById('home-score');
@@ -5168,7 +5556,10 @@
                     console.log('🏐 리버스앵글 활성화: 컨트롤 페이지는 변경하지 않음');
                 }
                 
-                // 2. 서버에 업데이트 전송
+                // 2. 버튼 이벤트 핸들러 교체
+                swapButtonEventHandlers();
+                
+                // 3. 서버에 업데이트 전송
                 updateMatchInfo();
                 
                 // 3. 오버레이 페이지에 리버스앵글 변경 알림
@@ -5238,6 +5629,29 @@
                         
                         console.log('🏐 컨트롤 페이지 업데이트 후:', scoreControls.classList.contains('team-position-swapped'));
                         console.log('🏐 최종 팀 위치:', teamPositionSwapped ? '어웨이/홈' : '홈/어웨이');
+                        
+                        // 하단 버튼 섹션 팀명 토글 상태 동기화
+                        const teamNamesSwapped = matchData.match_data?.team_names_swapped || false;
+                        const setControlsContainer = document.querySelector('.set-controls-container');
+                        if (setControlsContainer) {
+                            if (teamNamesSwapped) {
+                                setControlsContainer.classList.add('team-names-swapped');
+                                // 팀명도 토글된 상태로 설정
+                                const homeHeader = document.querySelector('.home-team-section .team-controls-header');
+                                const awayHeader = document.querySelector('.away-team-section .team-controls-header');
+                                if (homeHeader && awayHeader) {
+                                    const homeTeamName = homeHeader.getAttribute('data-home-team');
+                                    const awayTeamName = homeHeader.getAttribute('data-away-team');
+                                    homeHeader.textContent = awayTeamName;
+                                    awayHeader.textContent = homeTeamName;
+                                }
+                                console.log('🏐 서버 동기화: 하단 버튼 섹션 팀명 토글 적용');
+                            } else {
+                                setControlsContainer.classList.remove('team-names-swapped');
+                                console.log('🏐 서버 동기화: 하단 버튼 섹션 팀명 정상화');
+                            }
+                            console.log('🏐 서버 하단 버튼 섹션 팀명 토글 상태:', teamNamesSwapped);
+                        }
                     }
                 })
                 .catch(error => {
@@ -5265,6 +5679,246 @@
             });
             
             console.log(`🏐 서브권 변경 완료: ${team}`);
+        }
+        
+        // 하단 버튼 섹션의 팀명 토글 함수
+        function toggleTeamNamesInButtonSections() {
+            console.log('🏐 하단 버튼 섹션의 팀명 토글 시작');
+            
+            const setControlsContainer = document.querySelector('.set-controls-container');
+            const homeHeader = document.querySelector('.home-team-section .team-controls-header');
+            const awayHeader = document.querySelector('.away-team-section .team-controls-header');
+            
+            if (homeHeader && awayHeader && setControlsContainer) {
+                const homeTeamName = homeHeader.getAttribute('data-home-team');
+                const awayTeamName = homeHeader.getAttribute('data-away-team');
+                
+                // 현재 표시된 팀명 확인
+                const currentHomeText = homeHeader.textContent;
+                const currentAwayText = awayHeader.textContent;
+                
+                // 팀명이 이미 바뀌어 있는지 확인
+                if (currentHomeText === homeTeamName && currentAwayText === awayTeamName) {
+                    // 팀명을 서로 바꿔서 표시
+                    homeHeader.textContent = awayTeamName;
+                    awayHeader.textContent = homeTeamName;
+                    // 색상 교체를 위한 CSS 클래스 추가
+                    setControlsContainer.classList.add('team-names-swapped');
+                    console.log('🏐 팀명 바꿈:', homeTeamName, '↔', awayTeamName, '(색상도 교체)');
+                } else {
+                    // 팀명을 원래대로 복원
+                    homeHeader.textContent = homeTeamName;
+                    awayHeader.textContent = awayTeamName;
+                    // 색상 교체를 위한 CSS 클래스 제거
+                    setControlsContainer.classList.remove('team-names-swapped');
+                    console.log('🏐 팀명 복원:', homeTeamName, '↔', awayTeamName, '(색상도 복원)');
+                }
+            } else {
+                console.log('🏐 팀명 헤더 요소를 찾을 수 없습니다');
+            }
+        }
+        
+        // 리버스앵글 선택 시 양팀위치 변경 시 버튼 섹션의 모든 내용이 서로 반대로 표시
+        function toggleReverseAngleButtonSections() {
+            console.log('🏐 리버스앵글 선택 시 버튼 섹션 반대 표시 시작');
+            
+            const setControlsContainer = document.querySelector('.set-controls-container');
+            const homeHeader = document.querySelector('.home-team-section .team-controls-header');
+            const awayHeader = document.querySelector('.away-team-section .team-controls-header');
+            
+            if (homeHeader && awayHeader && setControlsContainer) {
+                const homeTeamName = homeHeader.getAttribute('data-home-team');
+                const awayTeamName = homeHeader.getAttribute('data-away-team');
+                
+                // 현재 표시된 팀명 확인
+                const currentHomeText = homeHeader.textContent;
+                const currentAwayText = awayHeader.textContent;
+                
+                // 팀명이 이미 바뀌어 있는지 확인
+                if (currentHomeText === homeTeamName && currentAwayText === awayTeamName) {
+                    // 팀명을 서로 바꿔서 표시
+                    homeHeader.textContent = awayTeamName;
+                    awayHeader.textContent = homeTeamName;
+                    // 색상 교체를 위한 CSS 클래스 추가
+                    setControlsContainer.classList.add('team-names-swapped');
+                    console.log('🏐 리버스앵글: 팀명 바꿈:', homeTeamName, '↔', awayTeamName, '(색상도 교체)');
+                } else {
+                    // 팀명을 원래대로 복원
+                    homeHeader.textContent = homeTeamName;
+                    awayHeader.textContent = awayTeamName;
+                    // 색상 교체를 위한 CSS 클래스 제거
+                    setControlsContainer.classList.remove('team-names-swapped');
+                    console.log('🏐 리버스앵글: 팀명 복원:', homeTeamName, '↔', awayTeamName, '(색상도 복원)');
+                }
+            } else {
+                console.log('🏐 팀명 헤더 요소를 찾을 수 없습니다');
+            }
+        }
+        
+        // 리버스앵글 상태에 따라 버튼 이벤트 핸들러 교체
+        function swapButtonEventHandlers() {
+            console.log('🏐 리버스앵글 상태에 따른 버튼 이벤트 핸들러 교체 시작');
+            
+            const reverseAngleCheckbox = document.getElementById('reverse-angle');
+            const isReverseAngle = reverseAngleCheckbox && reverseAngleCheckbox.checked;
+            
+            console.log('🏐 리버스앵글 상태:', isReverseAngle ? '활성화' : '비활성화');
+            
+            // 타임아웃 버튼 이벤트 핸들러 교체
+            swapTimeoutButtonHandlers(isReverseAngle);
+            
+            // 세트포인트/매치포인트 버튼 이벤트 핸들러 교체
+            swapPointButtonHandlers(isReverseAngle);
+            
+            console.log('🏐 버튼 이벤트 핸들러 교체 완료');
+        }
+        
+        // 타임아웃 버튼 이벤트 핸들러 교체
+        function swapTimeoutButtonHandlers(isReverseAngle) {
+            console.log('🏐 타임아웃 버튼 이벤트 핸들러 교체:', isReverseAngle ? '반대 적용' : '정상 적용');
+            
+            // 홈팀 타임아웃 버튼들
+            const homeTimeoutButtons = [
+                document.getElementById('home-timeout-1'),
+                document.getElementById('home-timeout-2'),
+                document.getElementById('home-timeout-3')
+            ];
+            
+            // 어웨이팀 타임아웃 버튼들
+            const awayTimeoutButtons = [
+                document.getElementById('away-timeout-1'),
+                document.getElementById('away-timeout-2'),
+                document.getElementById('away-timeout-3')
+            ];
+            
+            // 기존 이벤트 리스너 제거
+            [...homeTimeoutButtons, ...awayTimeoutButtons].forEach(button => {
+                if (button) {
+                    button.replaceWith(button.cloneNode(true));
+                }
+            });
+            
+            // 새로운 이벤트 리스너 추가
+            if (isReverseAngle) {
+                // 리버스앵글 활성화: 홈팀 버튼은 어웨이팀 기능, 어웨이팀 버튼은 홈팀 기능
+                homeTimeoutButtons.forEach((button, index) => {
+                    if (button) {
+                        button.addEventListener('click', () => {
+                            console.log('🏐 리버스앵글: 홈팀 타임아웃 버튼 클릭 -> 어웨이팀 타임아웃 기능 실행');
+                            handleTimeoutClick('away', index + 1);
+                        });
+                    }
+                });
+                
+                awayTimeoutButtons.forEach((button, index) => {
+                    if (button) {
+                        button.addEventListener('click', () => {
+                            console.log('🏐 리버스앵글: 어웨이팀 타임아웃 버튼 클릭 -> 홈팀 타임아웃 기능 실행');
+                            handleTimeoutClick('home', index + 1);
+                        });
+                    }
+                });
+            } else {
+                // 리버스앵글 비활성화: 정상 기능
+                homeTimeoutButtons.forEach((button, index) => {
+                    if (button) {
+                        button.addEventListener('click', () => {
+                            console.log('🏐 정상: 홈팀 타임아웃 버튼 클릭 -> 홈팀 타임아웃 기능 실행');
+                            handleTimeoutClick('home', index + 1);
+                        });
+                    }
+                });
+                
+                awayTimeoutButtons.forEach((button, index) => {
+                    if (button) {
+                        button.addEventListener('click', () => {
+                            console.log('🏐 정상: 어웨이팀 타임아웃 버튼 클릭 -> 어웨이팀 타임아웃 기능 실행');
+                            handleTimeoutClick('away', index + 1);
+                        });
+                    }
+                });
+            }
+        }
+        
+        // 세트포인트/매치포인트 버튼 이벤트 핸들러 교체
+        function swapPointButtonHandlers(isReverseAngle) {
+            console.log('🏐 포인트 버튼 이벤트 핸들러 교체:', isReverseAngle ? '반대 적용' : '정상 적용');
+            
+            // 홈팀 포인트 버튼들
+            const homeMatchscoreBtn = document.getElementById('home-matchscore-btn');
+            const homeMatchpointBtn = document.getElementById('home-matchpoint-btn');
+            
+            // 어웨이팀 포인트 버튼들
+            const awayMatchscoreBtn = document.getElementById('away-matchscore-btn');
+            const awayMatchpointBtn = document.getElementById('away-matchpoint-btn');
+            
+            // 기존 이벤트 리스너 제거
+            [homeMatchscoreBtn, homeMatchpointBtn, awayMatchscoreBtn, awayMatchpointBtn].forEach(button => {
+                if (button) {
+                    button.replaceWith(button.cloneNode(true));
+                }
+            });
+            
+            // 새로운 이벤트 리스너 추가
+            if (isReverseAngle) {
+                // 리버스앵글 활성화: 홈팀 버튼은 어웨이팀 기능, 어웨이팀 버튼은 홈팀 기능
+                if (homeMatchscoreBtn) {
+                    homeMatchscoreBtn.addEventListener('click', () => {
+                        console.log('🏐 리버스앵글: 홈팀 세트포인트 버튼 클릭 -> 어웨이팀 세트포인트 기능 실행');
+                        handleSetpointClick('away');
+                    });
+                }
+                
+                if (homeMatchpointBtn) {
+                    homeMatchpointBtn.addEventListener('click', () => {
+                        console.log('🏐 리버스앵글: 홈팀 매치포인트 버튼 클릭 -> 어웨이팀 매치포인트 기능 실행');
+                        handleMatchpointClick('away');
+                    });
+                }
+                
+                if (awayMatchscoreBtn) {
+                    awayMatchscoreBtn.addEventListener('click', () => {
+                        console.log('🏐 리버스앵글: 어웨이팀 세트포인트 버튼 클릭 -> 홈팀 세트포인트 기능 실행');
+                        handleSetpointClick('home');
+                    });
+                }
+                
+                if (awayMatchpointBtn) {
+                    awayMatchpointBtn.addEventListener('click', () => {
+                        console.log('🏐 리버스앵글: 어웨이팀 매치포인트 버튼 클릭 -> 홈팀 매치포인트 기능 실행');
+                        handleMatchpointClick('home');
+                    });
+                }
+            } else {
+                // 리버스앵글 비활성화: 정상 기능
+                if (homeMatchscoreBtn) {
+                    homeMatchscoreBtn.addEventListener('click', () => {
+                        console.log('🏐 정상: 홈팀 세트포인트 버튼 클릭 -> 홈팀 세트포인트 기능 실행');
+                        handleSetpointClick('home');
+                    });
+                }
+                
+                if (homeMatchpointBtn) {
+                    homeMatchpointBtn.addEventListener('click', () => {
+                        console.log('🏐 정상: 홈팀 매치포인트 버튼 클릭 -> 홈팀 매치포인트 기능 실행');
+                        handleMatchpointClick('home');
+                    });
+                }
+                
+                if (awayMatchscoreBtn) {
+                    awayMatchscoreBtn.addEventListener('click', () => {
+                        console.log('🏐 정상: 어웨이팀 세트포인트 버튼 클릭 -> 어웨이팀 세트포인트 기능 실행');
+                        handleSetpointClick('away');
+                    });
+                }
+                
+                if (awayMatchpointBtn) {
+                    awayMatchpointBtn.addEventListener('click', () => {
+                        console.log('🏐 정상: 어웨이팀 매치포인트 버튼 클릭 -> 어웨이팀 매치포인트 기능 실행');
+                        handleMatchpointClick('away');
+                    });
+                }
+            }
         }
     </script>
 </body>
