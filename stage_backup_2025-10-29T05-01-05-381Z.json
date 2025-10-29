@@ -1,0 +1,1307 @@
+{
+  "MatchLists": {
+    "structure": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "is_nullable": "NO",
+        "column_default": "nextval('\"MatchLists_id_seq\"'::regclass)"
+      },
+      {
+        "column_name": "name",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "matches",
+        "data_type": "json",
+        "is_nullable": "YES",
+        "column_default": "'[]'::json"
+      },
+      {
+        "column_name": "custom_url",
+        "data_type": "character varying",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "column_name": "pushed_match_id",
+        "data_type": "character varying",
+        "is_nullable": "YES",
+        "column_default": "NULL::character varying"
+      },
+      {
+        "column_name": "pushed_match_index",
+        "data_type": "integer",
+        "is_nullable": "YES",
+        "column_default": "0"
+      },
+      {
+        "column_name": "pushed_timestamp",
+        "data_type": "bigint",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "column_name": "created_by",
+        "data_type": "integer",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      }
+    ],
+    "data": [
+      {
+        "id": 7,
+        "name": "언남고등학교",
+        "matches": [],
+        "custom_url": null,
+        "pushed_match_id": null,
+        "pushed_match_index": 0,
+        "pushed_timestamp": null,
+        "created_by": null,
+        "created_at": "2025-10-29T02:27:30.659Z",
+        "updated_at": "2025-10-29T02:27:30.659Z"
+      },
+      {
+        "id": 6,
+        "name": "양재근린공원",
+        "matches": [
+          {
+            "id": "10291836",
+            "sport_type": "SOCCER",
+            "home_team": "Test1",
+            "away_team": "Test2"
+          }
+        ],
+        "custom_url": null,
+        "pushed_match_id": "10291836",
+        "pushed_match_index": 0,
+        "pushed_timestamp": "1761712219014",
+        "created_by": null,
+        "created_at": "2025-10-29T02:27:26.276Z",
+        "updated_at": "2025-10-29T04:30:19.014Z"
+      }
+    ]
+  },
+  "MatchTeamLogos": {
+    "structure": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "is_nullable": "NO",
+        "column_default": "nextval('\"MatchTeamLogos_id_seq\"'::regclass)"
+      },
+      {
+        "column_name": "match_id",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "team_type",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "team_logo_id",
+        "data_type": "integer",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      }
+    ],
+    "data": []
+  },
+  "Matches": {
+    "structure": [
+      {
+        "column_name": "id",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "sport_type",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "home_team",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "away_team",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "home_team_color",
+        "data_type": "character varying",
+        "is_nullable": "YES",
+        "column_default": "'#1e40af'::character varying"
+      },
+      {
+        "column_name": "away_team_color",
+        "data_type": "character varying",
+        "is_nullable": "YES",
+        "column_default": "'#1e40af'::character varying"
+      },
+      {
+        "column_name": "home_team_header",
+        "data_type": "character varying",
+        "is_nullable": "YES",
+        "column_default": "'HOME'::character varying"
+      },
+      {
+        "column_name": "away_team_header",
+        "data_type": "character varying",
+        "is_nullable": "YES",
+        "column_default": "'AWAY'::character varying"
+      },
+      {
+        "column_name": "home_score",
+        "data_type": "integer",
+        "is_nullable": "YES",
+        "column_default": "0"
+      },
+      {
+        "column_name": "away_score",
+        "data_type": "integer",
+        "is_nullable": "YES",
+        "column_default": "0"
+      },
+      {
+        "column_name": "status",
+        "data_type": "character varying",
+        "is_nullable": "YES",
+        "column_default": "'pending'::character varying"
+      },
+      {
+        "column_name": "match_data",
+        "data_type": "json",
+        "is_nullable": "YES",
+        "column_default": "'{}'::json"
+      },
+      {
+        "column_name": "created_by",
+        "data_type": "integer",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      }
+    ],
+    "data": [
+      {
+        "id": "10291836",
+        "sport_type": "SOCCER",
+        "home_team": "Test1",
+        "away_team": "Test2",
+        "home_team_color": "#1e40af",
+        "away_team_color": "#1e40af",
+        "home_team_header": "Test1",
+        "away_team_header": "Test2",
+        "home_score": 0,
+        "away_score": 0,
+        "status": "scheduled",
+        "match_data": {
+          "home_team_color": "#1e40af",
+          "away_team_color": "#1e40af",
+          "home_team_header": "Test1",
+          "away_team_header": "Test2",
+          "use_team_logos": false
+        },
+        "created_by": 2,
+        "created_at": "2025-10-29T02:27:11.835Z",
+        "updated_at": "2025-10-29T02:27:11.835Z"
+      }
+    ]
+  },
+  "Settings": {
+    "structure": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "is_nullable": "NO",
+        "column_default": "nextval('\"Settings_id_seq\"'::regclass)"
+      },
+      {
+        "column_name": "key",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "value",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "description",
+        "data_type": "character varying",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      }
+    ],
+    "data": [
+      {
+        "id": 3,
+        "key": "soccer_team_logo_visibility_10100285",
+        "value": "false",
+        "description": null,
+        "created_at": "2025-10-10T04:38:50.295Z",
+        "updated_at": "2025-10-10T04:38:50.295Z"
+      },
+      {
+        "id": 6,
+        "key": "soccer_team_logo_visibility_10107668",
+        "value": "true",
+        "description": null,
+        "created_at": "2025-10-10T04:41:37.676Z",
+        "updated_at": "2025-10-10T04:44:01.936Z"
+      },
+      {
+        "id": 10,
+        "key": "soccer_team_logo_visibility_10106132",
+        "value": "false",
+        "description": null,
+        "created_at": "2025-10-10T04:50:36.141Z",
+        "updated_at": "2025-10-10T04:50:36.141Z"
+      },
+      {
+        "id": 11,
+        "key": "soccer_team_logo_visibility_10109566",
+        "value": "true",
+        "description": null,
+        "created_at": "2025-10-10T04:52:39.579Z",
+        "updated_at": "2025-10-10T05:02:06.854Z"
+      },
+      {
+        "id": 63,
+        "key": "soccer_team_logo_visibility_10113228",
+        "value": "true",
+        "description": null,
+        "created_at": "2025-10-11T08:40:33.233Z",
+        "updated_at": "2025-10-11T13:41:00.509Z"
+      },
+      {
+        "id": 68,
+        "key": "soccer_team_logo_display_mode_10113228",
+        "value": "background",
+        "description": null,
+        "created_at": "2025-10-11T08:43:53.001Z",
+        "updated_at": "2025-10-11T13:41:01.207Z"
+      },
+      {
+        "id": 22,
+        "key": "soccer_team_logo_visibility_10103440",
+        "value": "false",
+        "description": null,
+        "created_at": "2025-10-10T05:05:03.448Z",
+        "updated_at": "2025-10-10T05:05:03.448Z"
+      },
+      {
+        "id": 24,
+        "key": "soccer_team_logo_visibility_10109891",
+        "value": "false",
+        "description": null,
+        "created_at": "2025-10-10T05:13:09.897Z",
+        "updated_at": "2025-10-10T05:13:09.897Z"
+      },
+      {
+        "id": 23,
+        "key": "soccer_team_logo_visibility_10102517",
+        "value": "true",
+        "description": null,
+        "created_at": "2025-10-10T05:13:02.530Z",
+        "updated_at": "2025-10-10T05:15:05.234Z"
+      },
+      {
+        "id": 30,
+        "key": "soccer_team_logo_display_mode_10102517",
+        "value": "logo",
+        "description": null,
+        "created_at": "2025-10-10T05:15:05.784Z",
+        "updated_at": "2025-10-10T05:15:45.743Z"
+      },
+      {
+        "id": 25,
+        "key": "default_home_color",
+        "value": "#1e40af",
+        "description": "홈팀 기본 컬러",
+        "created_at": "2025-10-10T05:13:54.061Z",
+        "updated_at": "2025-10-10T06:44:48.582Z"
+      },
+      {
+        "id": 26,
+        "key": "default_away_color",
+        "value": "#1e40af",
+        "description": "원정팀 기본 컬러",
+        "created_at": "2025-10-10T05:13:54.182Z",
+        "updated_at": "2025-10-10T06:44:48.675Z"
+      },
+      {
+        "id": 36,
+        "key": "soccer_team_logo_visibility_10104725",
+        "value": "false",
+        "description": null,
+        "created_at": "2025-10-10T07:06:34.738Z",
+        "updated_at": "2025-10-10T07:06:34.738Z"
+      },
+      {
+        "id": 37,
+        "key": "soccer_team_logo_visibility_10109615",
+        "value": "false",
+        "description": null,
+        "created_at": "2025-10-10T11:23:19.627Z",
+        "updated_at": "2025-10-10T11:23:19.627Z"
+      },
+      {
+        "id": 38,
+        "key": "soccer_team_logo_visibility_10110224",
+        "value": "false",
+        "description": null,
+        "created_at": "2025-10-11T02:05:30.237Z",
+        "updated_at": "2025-10-11T02:05:30.237Z"
+      },
+      {
+        "id": 39,
+        "key": "soccer_team_logo_visibility_10110269",
+        "value": "false",
+        "description": null,
+        "created_at": "2025-10-11T02:13:00.292Z",
+        "updated_at": "2025-10-11T02:13:00.292Z"
+      },
+      {
+        "id": 40,
+        "key": "soccer_team_logo_visibility_10118094",
+        "value": "false",
+        "description": null,
+        "created_at": "2025-10-11T02:43:48.106Z",
+        "updated_at": "2025-10-11T02:43:48.106Z"
+      },
+      {
+        "id": 41,
+        "key": "soccer_team_logo_visibility_10118717",
+        "value": "false",
+        "description": null,
+        "created_at": "2025-10-11T03:53:38.729Z",
+        "updated_at": "2025-10-11T03:53:38.729Z"
+      },
+      {
+        "id": 43,
+        "key": "soccer_team_logo_visibility_10117771",
+        "value": "false",
+        "description": null,
+        "created_at": "2025-10-11T04:49:27.775Z",
+        "updated_at": "2025-10-11T04:49:27.775Z"
+      },
+      {
+        "id": 44,
+        "key": "soccer_team_logo_visibility_10117215",
+        "value": "false",
+        "description": null,
+        "created_at": "2025-10-11T04:49:37.221Z",
+        "updated_at": "2025-10-11T04:49:37.221Z"
+      },
+      {
+        "id": 42,
+        "key": "soccer_team_logo_visibility_10119439",
+        "value": "false",
+        "description": null,
+        "created_at": "2025-10-11T04:49:19.447Z",
+        "updated_at": "2025-10-11T04:51:54.273Z"
+      },
+      {
+        "id": 49,
+        "key": "soccer_team_logo_visibility_10110108",
+        "value": "true",
+        "description": null,
+        "created_at": "2025-10-11T06:09:30.119Z",
+        "updated_at": "2025-10-11T06:12:04.391Z"
+      },
+      {
+        "id": 51,
+        "key": "soccer_team_logo_display_mode_10110108",
+        "value": "logo",
+        "description": null,
+        "created_at": "2025-10-11T06:12:05.073Z",
+        "updated_at": "2025-10-11T06:12:05.703Z"
+      },
+      {
+        "id": 53,
+        "key": "soccer_team_logo_visibility_10114949",
+        "value": "true",
+        "description": null,
+        "created_at": "2025-10-11T07:37:54.958Z",
+        "updated_at": "2025-10-11T07:38:15.053Z"
+      },
+      {
+        "id": 55,
+        "key": "soccer_team_logo_display_mode_10114949",
+        "value": "logo",
+        "description": null,
+        "created_at": "2025-10-11T07:38:15.516Z",
+        "updated_at": "2025-10-11T07:38:16.973Z"
+      },
+      {
+        "id": 57,
+        "key": "soccer_team_logo_visibility_10111642",
+        "value": "true",
+        "description": null,
+        "created_at": "2025-10-11T07:43:51.651Z",
+        "updated_at": "2025-10-11T07:44:39.676Z"
+      },
+      {
+        "id": 59,
+        "key": "soccer_team_logo_display_mode_10111642",
+        "value": "logo",
+        "description": null,
+        "created_at": "2025-10-11T07:44:40.138Z",
+        "updated_at": "2025-10-11T07:44:40.969Z"
+      },
+      {
+        "id": 394,
+        "key": "soccer_team_logo_visibility_10291836",
+        "value": "false",
+        "description": null,
+        "created_at": "2025-10-29T02:27:11.844Z",
+        "updated_at": "2025-10-29T02:27:11.844Z"
+      }
+    ]
+  },
+  "SportActiveOverlayImages": {
+    "structure": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "is_nullable": "NO",
+        "column_default": "nextval('\"SportActiveOverlayImages_id_seq\"'::regclass)"
+      },
+      {
+        "column_name": "sport_code",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "active_image_id",
+        "data_type": "integer",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "column_name": "active_image_path",
+        "data_type": "character varying",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      }
+    ],
+    "data": [
+      {
+        "id": 25,
+        "sport_code": "SOCCER",
+        "active_image_id": null,
+        "active_image_path": null,
+        "created_at": "2025-10-14T01:45:59.381Z",
+        "updated_at": "2025-10-14T01:45:59.381Z"
+      },
+      {
+        "id": 26,
+        "sport_code": "SOCCER",
+        "active_image_id": 10,
+        "active_image_path": "/overlay-images/SOCCER/충청북도생활체육bg.png",
+        "created_at": "2025-10-14T01:46:04.353Z",
+        "updated_at": "2025-10-14T01:46:04.353Z"
+      },
+      {
+        "id": 27,
+        "sport_code": "BASEBALL",
+        "active_image_id": null,
+        "active_image_path": null,
+        "created_at": "2025-10-16T12:30:07.926Z",
+        "updated_at": "2025-10-16T12:30:07.926Z"
+      },
+      {
+        "id": 28,
+        "sport_code": "BASEBALL",
+        "active_image_id": 11,
+        "active_image_path": "/overlay-images/BASEBALL/충청북도생활체육bg.png",
+        "created_at": "2025-10-16T12:30:11.302Z",
+        "updated_at": "2025-10-16T12:30:11.302Z"
+      }
+    ]
+  },
+  "SportOverlayImages": {
+    "structure": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "is_nullable": "NO",
+        "column_default": "nextval('\"SportOverlayImages_id_seq\"'::regclass)"
+      },
+      {
+        "column_name": "sport_code",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "filename",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "file_path",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "is_active",
+        "data_type": "boolean",
+        "is_nullable": "YES",
+        "column_default": "true"
+      },
+      {
+        "column_name": "upload_time",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      }
+    ],
+    "data": [
+      {
+        "id": 10,
+        "sport_code": "SOCCER",
+        "filename": "충청북도생활체육bg.png",
+        "file_path": "/overlay-images/SOCCER/충청북도생활체육bg.png",
+        "is_active": true,
+        "upload_time": "2025-10-14T01:45:59.378Z",
+        "created_at": "2025-10-14T01:45:59.378Z",
+        "updated_at": "2025-10-14T01:46:04.350Z"
+      },
+      {
+        "id": 11,
+        "sport_code": "BASEBALL",
+        "filename": "충청북도생활체육bg.png",
+        "file_path": "/overlay-images/BASEBALL/충청북도생활체육bg.png",
+        "is_active": true,
+        "upload_time": "2025-10-16T12:30:07.922Z",
+        "created_at": "2025-10-16T12:30:07.922Z",
+        "updated_at": "2025-10-16T12:30:11.296Z"
+      }
+    ]
+  },
+  "Sports": {
+    "structure": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "is_nullable": "NO",
+        "column_default": "nextval('\"Sports_id_seq\"'::regclass)"
+      },
+      {
+        "column_name": "name",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "code",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "template",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "description",
+        "data_type": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "column_name": "is_active",
+        "data_type": "boolean",
+        "is_nullable": "YES",
+        "column_default": "true"
+      },
+      {
+        "column_name": "is_default",
+        "data_type": "boolean",
+        "is_nullable": "YES",
+        "column_default": "false"
+      },
+      {
+        "column_name": "created_by",
+        "data_type": "integer",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      }
+    ],
+    "data": [
+      {
+        "id": 1,
+        "name": "Soccer",
+        "code": "SOCCER",
+        "template": "soccer",
+        "description": "Football/Soccer sport",
+        "is_active": true,
+        "is_default": true,
+        "created_by": null,
+        "created_at": "2025-10-10T04:34:20.004Z",
+        "updated_at": "2025-10-10T04:34:20.004Z"
+      },
+      {
+        "id": 2,
+        "name": "Baseball",
+        "code": "BASEBALL",
+        "template": "baseball",
+        "description": "Baseball sport",
+        "is_active": true,
+        "is_default": true,
+        "created_by": null,
+        "created_at": "2025-10-10T04:34:20.009Z",
+        "updated_at": "2025-10-10T04:34:20.009Z"
+      },
+      {
+        "id": 8,
+        "name": "축구 리그",
+        "code": "SOCCER_LEAGUE",
+        "template": "soccer",
+        "description": "축구 리그 전용 종목",
+        "is_active": true,
+        "is_default": false,
+        "created_by": null,
+        "created_at": "2025-10-18T12:22:45.256Z",
+        "updated_at": "2025-10-18T12:22:45.256Z"
+      },
+      {
+        "id": 9,
+        "name": "야구 리그",
+        "code": "BASEBALL_LEAGUE",
+        "template": "baseball",
+        "description": "야구 리그 전용 종목",
+        "is_active": true,
+        "is_default": false,
+        "created_by": null,
+        "created_at": "2025-10-18T12:23:01.339Z",
+        "updated_at": "2025-10-18T12:23:01.339Z"
+      },
+      {
+        "id": 10,
+        "name": "Volleyball",
+        "code": "VOLLEYBALL",
+        "template": "volleyball",
+        "description": "Volleyball sport",
+        "is_active": true,
+        "is_default": true,
+        "created_by": null,
+        "created_at": "2025-10-19T13:34:37.227Z",
+        "updated_at": "2025-10-19T13:34:37.227Z"
+      }
+    ]
+  },
+  "TeamInfo": {
+    "structure": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "is_nullable": "NO",
+        "column_default": "nextval('\"TeamInfo_id_seq\"'::regclass)"
+      },
+      {
+        "column_name": "match_id",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "sport_type",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": "'SOCCER'::character varying"
+      },
+      {
+        "column_name": "team_name",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "team_type",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "team_color",
+        "data_type": "character varying",
+        "is_nullable": "YES",
+        "column_default": "'#000000'::character varying"
+      },
+      {
+        "column_name": "team_header",
+        "data_type": "character varying",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "column_name": "logo_path",
+        "data_type": "character varying",
+        "is_nullable": "YES",
+        "column_default": "NULL::character varying"
+      },
+      {
+        "column_name": "logo_bg_color",
+        "data_type": "character varying",
+        "is_nullable": "YES",
+        "column_default": "'#FFFFFF'::character varying"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      }
+    ],
+    "data": [
+      {
+        "id": 166,
+        "match_id": "10291836",
+        "sport_type": "SOCCER",
+        "team_name": "Test1",
+        "team_type": "home",
+        "team_color": "#1e40af",
+        "team_header": "Test1",
+        "logo_path": null,
+        "logo_bg_color": "#FFFFFF",
+        "created_at": "2025-10-29T02:27:11.841Z",
+        "updated_at": "2025-10-29T02:27:11.841Z"
+      },
+      {
+        "id": 167,
+        "match_id": "10291836",
+        "sport_type": "SOCCER",
+        "team_name": "Test2",
+        "team_type": "away",
+        "team_color": "#1e40af",
+        "team_header": "Test2",
+        "logo_path": null,
+        "logo_bg_color": "#FFFFFF",
+        "created_at": "2025-10-29T02:27:11.841Z",
+        "updated_at": "2025-10-29T02:27:11.841Z"
+      }
+    ]
+  },
+  "TeamLogos": {
+    "structure": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "is_nullable": "NO",
+        "column_default": "nextval('\"TeamLogos_id_seq\"'::regclass)"
+      },
+      {
+        "column_name": "sport_type",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "team_name",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "logo_path",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "logo_bg_color",
+        "data_type": "character varying",
+        "is_nullable": "YES",
+        "column_default": "'#ffffff'::character varying"
+      },
+      {
+        "column_name": "is_active",
+        "data_type": "boolean",
+        "is_nullable": "YES",
+        "column_default": "true"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      }
+    ],
+    "data": []
+  },
+  "UserSportPermissions": {
+    "structure": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "is_nullable": "NO",
+        "column_default": "nextval('\"UserSportPermissions_id_seq\"'::regclass)"
+      },
+      {
+        "column_name": "user_id",
+        "data_type": "integer",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "sport_id",
+        "data_type": "integer",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      }
+    ],
+    "data": [
+      {
+        "id": 1,
+        "user_id": 1,
+        "sport_id": 10,
+        "created_at": "2025-10-29T04:45:40.745Z",
+        "updated_at": "2025-10-29T04:45:40.745Z"
+      }
+    ]
+  },
+  "templates": {
+    "structure": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "is_nullable": "NO",
+        "column_default": "nextval('templates_id_seq'::regclass)"
+      },
+      {
+        "column_name": "name",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "sport_type",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "template_type",
+        "data_type": "USER-DEFINED",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "content",
+        "data_type": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "file_name",
+        "data_type": "character varying",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "column_name": "is_default",
+        "data_type": "boolean",
+        "is_nullable": "YES",
+        "column_default": "false"
+      },
+      {
+        "column_name": "created_by",
+        "data_type": "integer",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      }
+    ],
+    "data": [
+      {
+        "id": 1,
+        "name": "soccer",
+        "sport_type": "SOCCER",
+        "template_type": "overlay",
+        "content": "Default soccer template",
+        "file_name": "soccer-template.ejs",
+        "is_default": true,
+        "created_by": null,
+        "created_at": "2025-10-10T04:34:20.013Z",
+        "updated_at": "2025-10-10T04:34:20.013Z"
+      },
+      {
+        "id": 2,
+        "name": "baseball",
+        "sport_type": "BASEBALL",
+        "template_type": "overlay",
+        "content": "Default baseball template",
+        "file_name": "baseball-template.ejs",
+        "is_default": true,
+        "created_by": null,
+        "created_at": "2025-10-10T04:34:20.020Z",
+        "updated_at": "2025-10-10T04:34:20.020Z"
+      }
+    ]
+  },
+  "user_sessions": {
+    "structure": [
+      {
+        "column_name": "sid",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "sess",
+        "data_type": "json",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "expire",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      }
+    ],
+    "data": [
+      {
+        "sid": "vRunaoUtaGQXtKLBfuI4MCiblbdF23ZI",
+        "sess": {
+          "cookie": {
+            "originalMaxAge": 86400000,
+            "expires": "2025-10-30T02:23:31.864Z",
+            "secure": false,
+            "httpOnly": true,
+            "path": "/",
+            "sameSite": "lax"
+          }
+        },
+        "expire": "2025-10-29T17:23:32.000Z"
+      },
+      {
+        "sid": "hvqf9UOcStCjT__Me8J_k7XEt5YLwUWr",
+        "sess": {
+          "cookie": {
+            "originalMaxAge": 86400000,
+            "expires": "2025-10-30T04:46:42.383Z",
+            "secure": false,
+            "httpOnly": true,
+            "path": "/",
+            "sameSite": "lax"
+          },
+          "authenticated": true,
+          "username": "admin",
+          "userId": 1,
+          "userRole": "admin"
+        },
+        "expire": "2025-10-29T19:46:43.000Z"
+      },
+      {
+        "sid": "w0HoGvNS2qIW28KawQr0gleN8qpZuHuU",
+        "sess": {
+          "cookie": {
+            "originalMaxAge": 86400000,
+            "expires": "2025-10-30T04:05:53.852Z",
+            "secure": false,
+            "httpOnly": true,
+            "path": "/",
+            "sameSite": "lax"
+          },
+          "authenticated": true,
+          "username": "guest",
+          "userId": 2,
+          "userRole": "user"
+        },
+        "expire": "2025-10-29T19:05:54.000Z"
+      },
+      {
+        "sid": "XQhCcHBEpf-unBWcP322N5mjVDA5aFC4",
+        "sess": {
+          "cookie": {
+            "originalMaxAge": 86400000,
+            "expires": "2025-10-30T04:46:07.903Z",
+            "secure": false,
+            "httpOnly": true,
+            "path": "/",
+            "sameSite": "lax"
+          }
+        },
+        "expire": "2025-10-29T19:46:08.000Z"
+      },
+      {
+        "sid": "v3Zvq9wAkF40i1m_dQtHkz7EQpNZBHbx",
+        "sess": {
+          "cookie": {
+            "originalMaxAge": 86400000,
+            "expires": "2025-10-29T19:04:17.603Z",
+            "secure": false,
+            "httpOnly": true,
+            "path": "/",
+            "sameSite": "lax"
+          }
+        },
+        "expire": "2025-10-29T10:04:18.000Z"
+      },
+      {
+        "sid": "7gA_IgZo1GQfpkCHuem7n34PI--IeGD_",
+        "sess": {
+          "cookie": {
+            "originalMaxAge": 86399999,
+            "expires": "2025-10-30T04:01:03.720Z",
+            "secure": false,
+            "httpOnly": true,
+            "path": "/",
+            "sameSite": "lax"
+          },
+          "authenticated": true,
+          "username": "admin",
+          "userId": 1,
+          "userRole": "admin"
+        },
+        "expire": "2025-10-29T19:01:04.000Z"
+      },
+      {
+        "sid": "eIYSd_dKy7Qh7cT1a9RJn876KmXXtmuI",
+        "sess": {
+          "cookie": {
+            "originalMaxAge": 86400000,
+            "expires": "2025-10-29T19:04:18.163Z",
+            "secure": false,
+            "httpOnly": true,
+            "path": "/",
+            "sameSite": "lax"
+          }
+        },
+        "expire": "2025-10-29T10:04:19.000Z"
+      }
+    ]
+  },
+  "users": {
+    "structure": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "is_nullable": "NO",
+        "column_default": "nextval('users_id_seq'::regclass)"
+      },
+      {
+        "column_name": "username",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "password",
+        "data_type": "character varying",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "email",
+        "data_type": "character varying",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "column_name": "full_name",
+        "data_type": "character varying",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "column_name": "role",
+        "data_type": "USER-DEFINED",
+        "is_nullable": "NO",
+        "column_default": "'user'::enum_users_role"
+      },
+      {
+        "column_name": "is_active",
+        "data_type": "boolean",
+        "is_nullable": "NO",
+        "column_default": "true"
+      },
+      {
+        "column_name": "last_login",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO",
+        "column_default": null
+      }
+    ],
+    "data": [
+      {
+        "id": 2,
+        "username": "guest",
+        "password": "guest123",
+        "email": "yobi@hogak.co.kr",
+        "full_name": "guest",
+        "role": "user",
+        "is_active": true,
+        "last_login": "2025-10-29T02:24:36.071Z",
+        "created_at": "2025-10-11T08:29:47.688Z",
+        "updated_at": "2025-10-29T02:24:36.071Z"
+      },
+      {
+        "id": 1,
+        "username": "admin",
+        "password": "sports2025",
+        "email": "admin@sportscoder.com",
+        "full_name": "Administrator",
+        "role": "admin",
+        "is_active": true,
+        "last_login": "2025-10-29T03:58:51.775Z",
+        "created_at": "2025-10-10T04:34:19.993Z",
+        "updated_at": "2025-10-29T03:58:51.775Z"
+      }
+    ]
+  }
+}
