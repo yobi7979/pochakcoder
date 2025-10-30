@@ -2678,6 +2678,10 @@
 
         // 통합된 타이머 상태 수신 처리 (호환성 지원)
         function handleTimerUpdate(data) {
+            if (window.hybridTimerActive) {
+                // 하이브리드가 모든 타이머 이벤트를 처리하므로 중복 처리 방지
+                return;
+            }
             // 현재 표시 중인 경기의 타이머만 처리
             if (data.matchId !== matchId) {
                 return;

@@ -102,9 +102,14 @@ class HybridTimerSystem {
         });
         
         // 서버 타이머 상태 수신
-        this.socket.on('timer_state', (data) => {
-            this.handleServerTimerState(data);
-        });
+        const forwardToHandler = (data) => this.handleServerTimerState(data);
+        this.socket.on('timer_state', forwardToHandler);
+        this.socket.on('timer_update', forwardToHandler);
+        this.socket.on('timer_updated', forwardToHandler);
+        this.socket.on('timer_started', forwardToHandler);
+        this.socket.on('timer_stopped', forwardToHandler);
+        this.socket.on('timer_set', forwardToHandler);
+        this.socket.on('timer_reset', forwardToHandler);
     }
     
     /**
