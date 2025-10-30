@@ -360,7 +360,7 @@
     <script>
         const socket = io();
         const matchId = '<%= match.id %>';
-        let currentSportType = '<%= typeof match.sport_type !== "undefined" ? match.sport_type : "" %>';
+        const currentSportType = '<%= typeof match.sport_type !== "undefined" ? match.sport_type : "" %>';
         
         // 경기별 타이머 상태 관리 객체 (호환성 지원)
         const timerState = {
@@ -921,7 +921,7 @@
                 alert('통합 URL에 경기가 성공적으로 푸시되었습니다!');
                 // 푸시 성공 후 색상 업데이트
                 checkPushedMatchStatus();
-                // 푸시 직후 타이머 고정 방지: 타이머가 있는 종목이고 진행 중이면 정지→시작 시퀀스
+                // 타이머가 있는 종목이고, 현재 진행 중이면 오버레이 반영 보장: 정지 후 시작
                 try {
                     if (hasTimer(currentSportType) && timerState.isRunning) {
                         safeRestartTimerForOverlay();
