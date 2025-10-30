@@ -131,6 +131,12 @@ class HybridTimerSystem {
             this.timerState.startTime = data.startTime || null;
             this.timerState.pausedTime = data.pausedTime || 0;
             this.timerState.lastServerTime = data.serverTime || Date.now();
+
+            // 서버가 실행 중인데 startTime이 비어있으면 currentSeconds로 역산하여 설정
+            if (this.timerState.isRunning && !this.timerState.startTime) {
+                this.timerState.startTime = Date.now() - (this.timerState.currentSeconds * 1000);
+                console.log('하이브리드 startTime 보정 설정:', this.timerState.startTime);
+            }
             
             // 로컬 백업 타이머 상태 초기화 (서버 연결 시)
             if (this.timerState.localIsRunning) {
