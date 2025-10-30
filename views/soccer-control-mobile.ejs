@@ -735,9 +735,21 @@
 
         // 타이머 제어 함수들 (일반 컨트롤 페이지와 동일)
         function startTimer() {
-            console.log('=== 타이머 시작 요청 ===');
+            console.log('=== 타이머 시작 요청 (안전 시작: 정지→시작) ===');
             console.log('matchId:', matchId);
-            socket.emit('timer_control', { matchId: matchId, action: 'start' });
+            // 1) 먼저 정지 신호로 서버/오버레이의 잠김 상태 해제
+            try {
+                const currentTime = timerState.currentSeconds;
+                socket.emit('timer_control', { matchId: matchId, action: 'stop', currentTime });
+                console.log('사전 정지 신호 전송 완료');
+            } catch (e) {
+                console.warn('사전 정지 신호 전송 중 경고:', e);
+            }
+            // 2) 짧은 지연 후 시작 신호 전송
+            setTimeout(() => {
+                socket.emit('timer_control', { matchId: matchId, action: 'start' });
+                console.log('시작 신호 전송 완료');
+            }, 80);
         }
 
         function stopTimer() {
