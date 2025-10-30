@@ -101,6 +101,7 @@ const settingsRouter = require('./routes/settings');
 const dbManagementRouter = require('./routes/db-management');
 const tableManagementRouter = require('./routes/table-management');
 const teamLogosRouter = require('./routes/team-logos');
+const audioRouter = require('./routes/audio');
 
 // 모델들
 const { sequelize, Match, Settings, MatchList, SportOverlayImage, SportActiveOverlayImage, User, UserSportPermission } = require('./models');
@@ -370,6 +371,8 @@ app.use(sessionDebugging);
 
 // 정적 파일 서빙
 app.use(express.static(staticConfig.public.path, staticConfig.public.options));
+// 오디오 업로드 정적 서빙
+app.use('/uploads/audio', express.static(path.join(process.cwd(), 'uploads', 'audio')));
 
 // EJS 템플릿 엔진 설정
 app.set('view engine', 'ejs');
@@ -391,7 +394,8 @@ function connectRouters() {
     { path: '/api/logs', router: logsRouter, name: '로그 API' },
     { path: '/api/settings', router: settingsRouter, name: '설정 API' },
     { path: '/api/matches', router: matchesRouter, name: '경기 API' },
-    { path: '/api/match-lists', router: matchListsRouter, name: '경기 목록 API' }
+    { path: '/api/match-lists', router: matchListsRouter, name: '경기 목록 API' },
+    { path: '/api/audio', router: audioRouter, name: '오디오 업로드 API' }
   ];
   
   // 2. 오버레이 이미지 전용 라우터 (최우선순위)
@@ -2291,6 +2295,17 @@ app.get('/api/sport/:code/delete-info', requireAuth, async (req, res) => {
 
 // DB 초기화 API - 기본 종목만 남기고 모든 데이터 삭제
 app.post('/api/database/reset', requireAdmin, async (req, res) => {
+  // 보호 모드: 프로덕션 또는 명시적 보호에서 파괴적 초기화 차단
+  const PROTECT_EXISTING_SPORTS = process.env.PROTECT_EXISTING_SPORTS === 'true';
+  const ALLOW_DESTRUCTIVE_OPS = process.env.ALLOW_DESTRUCTIVE_OPS === 'true';
+  if (process.env.NODE_ENV === 'production' && !ALLOW_DESTRUCTIVE_OPS) {
+    console.warn('🚫 PROTECT: production에서 DB 초기화가 차단되었습니다.');
+    return res.status(403).json({ error: 'Production에서 DB 초기화가 비활성화되어 있습니다.' });
+  }
+  if (PROTECT_EXISTING_SPORTS && !ALLOW_DESTRUCTIVE_OPS) {
+    console.warn('🚫 PROTECT: PROTECT_EXISTING_SPORTS=true - DB 초기화 차단.');
+    return res.status(403).json({ error: '보호 모드에서 DB 초기화가 차단되었습니다.' });
+  }
   try {
     console.log('🔧 DB 초기화 시작...');
     
