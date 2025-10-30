@@ -1698,6 +1698,17 @@
         function getPenaltyLabel(){
             return isEnglishNotationEnabled() ? 'Penalty Shootout' : '승부차기';
         }
+
+        function applyPenaltyTextLanguageToDisplay() {
+            const el = document.getElementById('penalty-text-display');
+            if (!el) return;
+            const labelKor = '(승부차기)';
+            const labelEn = '(Penalty Shootout)';
+            const raw = el.textContent || currentPenaltyText || '0 (승부차기) 0';
+            const converted = isEnglishNotationEnabled() ? raw.replace(labelKor, labelEn) : raw.replace(labelEn, labelKor);
+            el.textContent = converted;
+            currentPenaltyText = converted;
+        }
         
         function updatePenaltyScore(team, change) {
             console.log('=== 승부차기 점수 업데이트 (실시간 반영) ===');
@@ -2369,6 +2380,8 @@
                         });
                     }
                 }
+                // UI의 승부차기 텍스트도 현재 설정에 맞게 변환
+                applyPenaltyTextLanguageToDisplay();
             } catch (e) {
             }
 
@@ -2385,6 +2398,8 @@
                     enabled: enabled
                 });
                 console.log('경기상황 영문 표기 토글 전송:', enabled);
+                // 즉시 UI에 반영
+                applyPenaltyTextLanguageToDisplay();
             });
         })();
         

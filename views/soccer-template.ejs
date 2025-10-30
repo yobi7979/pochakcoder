@@ -3760,6 +3760,14 @@
                     if (strip) { strip.textContent = display; applyFitStripMatchState(); }
                     const vs = document.querySelector('.vs-match-state');
                     if (vs) { vs.textContent = display; }
+                    // 승부차기 텍스트도 즉시 변환
+                    const extraBoxTextEl = document.getElementById('extraBoxText');
+                    if (extraBoxTextEl && typeof extraBoxTextEl.textContent === 'string') {
+                        const labelKor = '(승부차기)';
+                        const labelEn = '(Penalty Shootout)';
+                        const raw = extraBoxTextEl.textContent;
+                        extraBoxTextEl.textContent = matchStateEnglishEnabled ? raw.replace(labelKor, labelEn) : raw.replace(labelEn, labelKor);
+                    }
                 } catch (e) {
                     console.log('영문 표기 즉시 반영 중 오류:', e);
                 }
