@@ -242,20 +242,20 @@ class HybridTimerSystem {
             // 다음 초 경계까지 지연 후 인터벌 시작
             const driftMs = (this.getSyncedNow() - this.timerState.startTime) % 1000;
             const firstDelay = driftMs === 0 ? 1000 : 1000 - driftMs;
-            // 시작 즉시 1초 표시(리딩 엣지 업데이트)로 사용자 체감 개선
-            try {
-                const nowImmediate = this.getSyncedNow();
-                const elapsedImmediate = Math.max(0, Math.floor((nowImmediate - this.timerState.startTime) / 1000));
-                let initialSeconds = this.timerState.pausedTime + elapsedImmediate;
-                if (this.timerState.isRunning && initialSeconds === 0) {
-                    initialSeconds = 1; // 0초 고정/2초 점프 방지: 시작 즉시 1초 표시
-                }
-                this.timerState.currentSeconds = initialSeconds;
-                this.onTimerUpdate(this.timerState.currentSeconds, this.timerState.isRunning);
-                console.log('서버 연결 로컬 타이머 즉시 표시:', this.timerState.currentSeconds);
-            } catch (e) {
-                console.warn('초기 즉시 표시 중 경고:', e);
-            }
+            // 시작 즉시 1초 표시(리딩 엣지) 기능 비활성화
+            // try {
+            //     const nowImmediate = this.getSyncedNow();
+            //     const elapsedImmediate = Math.max(0, Math.floor((nowImmediate - this.timerState.startTime) / 1000));
+            //     let initialSeconds = this.timerState.pausedTime + elapsedImmediate;
+            //     if (this.timerState.isRunning && initialSeconds === 0) {
+            //         initialSeconds = 1; // 0초 고정/2초 점프 방지: 시작 즉시 1초 표시
+            //     }
+            //     this.timerState.currentSeconds = initialSeconds;
+            //     this.onTimerUpdate(this.timerState.currentSeconds, this.timerState.isRunning);
+            //     console.log('서버 연결 로컬 타이머 즉시 표시:', this.timerState.currentSeconds);
+            // } catch (e) {
+            //     console.warn('초기 즉시 표시 중 경고:', e);
+            // }
 
             this.timerState.localTimerInterval = setTimeout(() => {
                 scheduleTick();
