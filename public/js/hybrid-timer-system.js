@@ -34,6 +34,12 @@ class HybridTimerSystem {
             // 타이머 인터벌
             localTimerInterval: null
         };
+
+        // 서버-클라이언트 시계 보정 상태
+        this.clockSync = {
+            offsetMs: 0,          // serverTime - clientNow (EMA로 스무딩)
+            lastUpdated: 0
+        };
         
         this.init();
     }
@@ -45,6 +51,17 @@ class HybridTimerSystem {
         console.log('🔧 하이브리드 타이머 시스템 초기화');
         this.setupSocketEvents();
         this.setupServerEvents();
+        // 30초마다 서버 상태 재요청으로 오프셋 갱신 기회 확보 (부하 완화 주기)
+        this.resyncInterval = setInterval(() => {
+            try {
+                if (this.socket && this.socket.connected && this.matchId) {
+                    this.socket.emit('requestTimerState', { matchId: this.matchId });
+                    console.log('🛰️  주기적 서버 타이머 상태 요청(30s)');
+                }
+            } catch (e) {
+                console.warn('주기 재동기화 요청 중 경고:', e);
+            }
+        }, 30000);
     }
     
     /**
@@ -124,6 +141,18 @@ class HybridTimerSystem {
             // 서버 상태 수신 플래그 설정
             this.timerState.serverStateReceived = true;
             this.timerState.serverConnected = true;
+
+            // 서버 시간으로 오프셋 갱신 (EMA 스무딩)
+            if (typeof data.serverTime === 'number') {
+                const clientNow = Date.now();
+                const measuredOffset = data.serverTime - clientNow;
+                const alpha = 0.2; // 20% 반영으로 급격한 점프 완화
+                this.clockSync.offsetMs = this.clockSync.lastUpdated === 0
+                    ? measuredOffset
+                    : (1 - alpha) * this.clockSync.offsetMs + alpha * measuredOffset;
+                this.clockSync.lastUpdated = clientNow;
+                console.log('⏱️  오프셋 갱신(ms):', Math.round(this.clockSync.offsetMs));
+            }
             
             // 서버에서 전송된 정확한 시간 사용
             this.timerState.currentSeconds = Math.max(0, data.currentSeconds || 0);
@@ -134,7 +163,7 @@ class HybridTimerSystem {
 
             // 서버가 실행 중인데 startTime이 비어있으면 currentSeconds로 역산하여 설정
             if (this.timerState.isRunning && !this.timerState.startTime) {
-                this.timerState.startTime = Date.now() - (this.timerState.currentSeconds * 1000);
+                this.timerState.startTime = this.getSyncedNow() - (this.timerState.currentSeconds * 1000);
                 console.log('하이브리드 startTime 보정 설정:', this.timerState.startTime);
             }
             
@@ -167,6 +196,13 @@ class HybridTimerSystem {
             }
         }
     }
+
+    /**
+     * 보정된 현재 시각 (ms)
+     */
+    getSyncedNow() {
+        return Date.now() + (this.clockSync?.offsetMs || 0);
+    }
     
     /**
      * 로컬 타이머 시작
@@ -191,7 +227,7 @@ class HybridTimerSystem {
         if (this.timerState.serverConnected && this.timerState.isRunning) {
             const scheduleTick = () => {
                 if (!this.timerState.isRunning || !this.timerState.startTime) return;
-                const now = Date.now();
+                const now = this.getSyncedNow();
                 const elapsed = Math.floor((now - this.timerState.startTime) / 1000);
                 this.timerState.currentSeconds = this.timerState.pausedTime + elapsed;
                 this.onTimerUpdate(this.timerState.currentSeconds, this.timerState.isRunning);
@@ -199,11 +235,11 @@ class HybridTimerSystem {
             };
 
             // 다음 초 경계까지 지연 후 인터벌 시작
-            const driftMs = (Date.now() - this.timerState.startTime) % 1000;
+            const driftMs = (this.getSyncedNow() - this.timerState.startTime) % 1000;
             const firstDelay = driftMs === 0 ? 1000 : 1000 - driftMs;
             // 시작 즉시 1초 표시(리딩 엣지 업데이트)로 사용자 체감 개선
             try {
-                const nowImmediate = Date.now();
+                const nowImmediate = this.getSyncedNow();
                 const elapsedImmediate = Math.floor((nowImmediate - this.timerState.startTime) / 1000);
                 let initialSeconds = this.timerState.pausedTime + elapsedImmediate;
                 if (this.timerState.isRunning && initialSeconds === 0) {
@@ -226,13 +262,13 @@ class HybridTimerSystem {
         else if (!this.timerState.serverConnected && this.timerState.localIsRunning) {
             const scheduleTickLocal = () => {
                 if (!this.timerState.localIsRunning || !this.timerState.localStartTime) return;
-                const now = Date.now();
+                const now = this.getSyncedNow();
                 const elapsed = Math.floor((now - this.timerState.localStartTime) / 1000);
                 this.timerState.currentSeconds = this.timerState.localPausedTime + elapsed;
                 this.onTimerUpdate(this.timerState.currentSeconds, this.timerState.isRunning);
                 console.log('로컬 백업 타이머 업데이트:', this.timerState.currentSeconds);
             };
-            const driftMsLocal = (Date.now() - this.timerState.localStartTime) % 1000;
+            const driftMsLocal = (this.getSyncedNow() - this.timerState.localStartTime) % 1000;
             const firstDelayLocal = driftMsLocal === 0 ? 1000 : 1000 - driftMsLocal;
             this.timerState.localTimerInterval = setTimeout(() => {
                 scheduleTickLocal();
