@@ -4892,7 +4892,8 @@
             // 감독 정보 표시
             const coachName = lineup.coaches && lineup.coaches[teamType] ? lineup.coaches[teamType] : '';
             if (coachName) {
-                coachElement.textContent = `감독 : ${coachName}`;
+                coachElement.textContent = `Head coach : ${coachName}`;
+                /*coachElement.textContent = `감독 : ${coachName}`;*/
                 coachElement.style.display = 'block';
             } else {
                 coachElement.style.display = 'none';
