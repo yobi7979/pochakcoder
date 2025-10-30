@@ -783,6 +783,23 @@
         .lineup-container {
             width: 100%;
         }
+        /* 2열 라인업 레이아웃 */
+        .lineup-overlay.two-column {
+            width: 780px; /* 420 → 780으로 확장 */
+        }
+        .lineup-players.two-column {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .lineup-row {
+            display: flex;
+            gap: 12px;
+        }
+        .lineup-col {
+            flex: 1 1 0;
+            min-width: 0;
+        }
         
         .lineup-header {
             text-align: center;
@@ -4842,6 +4859,7 @@
             const playersContainer = document.getElementById('lineupPlayers');
             const teamNameElement = document.getElementById('lineupTeamName');
             const coachElement = document.getElementById('lineupCoach');
+            const lineupOverlay = document.getElementById('lineupOverlay');
             
             if (!playersContainer || !teamNameElement || !coachElement) {
                 console.error('❌ 라인업 컨테이너를 찾을 수 없습니다.');
@@ -4866,13 +4884,62 @@
             // 선택된 팀의 라인업 표시
             const teamLineup = lineup[teamType] || [];
             if (teamLineup.length > 0) {
-                playersContainer.innerHTML = teamLineup.map(player => `
-                    <div class="lineup-player">
-                        <span class="player-number">${player.number}</span>
-                        <span class="player-name">${player.name}</span>
-                        <span class="player-position">${player.position}</span>
-                    </div>
-                `).join('');
+                // 11명 초과 시 2열 표시
+                const useTwoColumn = teamLineup.length > 11;
+                if (playersContainer) {
+                    playersContainer.classList.toggle('two-column', useTwoColumn);
+                }
+                if (lineupOverlay) {
+                    lineupOverlay.classList.toggle('two-column', useTwoColumn);
+                }
+
+                if (!useTwoColumn) {
+                    playersContainer.innerHTML = teamLineup.map(player => `
+                        <div class="lineup-player">
+                            <span class="player-number">${player.number}</span>
+                            <span class="player-name">${player.name}</span>
+                            <span class="player-position">${player.position}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    const left = teamLineup.slice(0, 11);
+                    const right = teamLineup.slice(11);
+                    const rowCount = Math.max(left.length, right.length);
+                    let html = '';
+                    for (let i = 0; i < rowCount; i++) {
+                        const lp = left[i];
+                        const rp = right[i];
+                        html += `<div class="lineup-row">`;
+                        // 왼쪽 칼럼
+                        if (lp) {
+                            html += `
+                            <div class="lineup-col">
+                                <div class="lineup-player">
+                                    <span class="player-number">${lp.number}</span>
+                                    <span class="player-name">${lp.name}</span>
+                                    <span class="player-position">${lp.position}</span>
+                                </div>
+                            </div>`;
+                        } else {
+                            html += `<div class="lineup-col"></div>`;
+                        }
+                        // 오른쪽 칼럼
+                        if (rp) {
+                            html += `
+                            <div class="lineup-col">
+                                <div class="lineup-player">
+                                    <span class="player-number">${rp.number}</span>
+                                    <span class="player-name">${rp.name}</span>
+                                    <span class="player-position">${rp.position}</span>
+                                </div>
+                            </div>`;
+                        } else {
+                            html += `<div class="lineup-col"></div>`;
+                        }
+                        html += `</div>`;
+                    }
+                    playersContainer.innerHTML = html;
+                }
             } else {
                 playersContainer.innerHTML = '<div class="no-players">라인업 데이터가 없습니다.</div>';
             }
