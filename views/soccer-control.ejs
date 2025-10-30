@@ -1714,8 +1714,8 @@
             console.log('=== 승부차기 점수 업데이트 (실시간 반영) ===');
             console.log('team:', team, 'change:', change);
             
-            // 정규식으로 홈팀과 어웨이팀 점수 추출
-            const match = currentPenaltyText.match(/(\d+)\s*\(승부차기\)\s*(\d+)/);
+            // 정규식으로 홈팀과 어웨이팀 점수 추출 (한/영 라벨 모두 지원)
+            const match = currentPenaltyText.match(/(\d+)\s*\((?:승부차기|Penalty Shootout)\)\s*(\d+)/);
             if (!match) {
                 console.log('승부차기 형식을 찾을 수 없습니다');
                 return;
@@ -1816,12 +1816,14 @@
                 if (response.ok) {
                     const data = await response.json();
                     if (data.success && data.text) {
-                        currentPenaltyText = data.text;
-                        // 표시 시 영문 표기 토글에 맞춰 라벨 변환
+                        // 현재 토글 상태에 맞춰 내부 상태와 표시를 모두 정규화
                         const labelKor = '(승부차기)';
                         const labelEn = '(Penalty Shootout)';
-                        const displayText = isEnglishNotationEnabled() ? (data.text || '').replace(labelKor, labelEn) : data.text;
-                        document.getElementById('penalty-text-display').textContent = displayText;
+                        const desired = isEnglishNotationEnabled() ? labelEn : labelKor;
+                        const other = isEnglishNotationEnabled() ? labelKor : labelEn;
+                        const normalized = (data.text || '').replace(other, desired);
+                        currentPenaltyText = normalized;
+                        document.getElementById('penalty-text-display').textContent = normalized;
                         console.log('승부차기 텍스트 로드 성공:', data.text);
             } else {
                         console.log('저장된 승부차기 텍스트가 없습니다. 기본값 사용');
