@@ -144,3 +144,29 @@ matchData.isRunning = timerData.isRunning;
 4. **핵심 데이터베이스**: 기존 DB 구조와 필드
 
 새로운 타이머 시스템은 완전히 독립적으로 구현하여 기존 시스템과의 간섭을 완전히 방지해야 합니다.
+
+---
+
+## 🚀 운영 보호 규칙 (배포 시 비파괴 원칙)
+
+### 1) 환경 변수 보호 플래그
+- `PROTECT_EXISTING_SPORTS=true` (기본값 권장): 파괴적 초기화 차단
+- `ALLOW_DESTRUCTIVE_OPS=false` (기본값 권장): 운영 환경에서 삭제/초기화 금지 강제
+
+서버 동작
+- Production에서 `ALLOW_DESTRUCTIVE_OPS`가 활성화되지 않으면 `/api/database/reset` 차단 (HTTP 403)
+- `PROTECT_EXISTING_SPORTS=true`이고 `ALLOW_DESTRUCTIVE_OPS`가 비활성화이면, 모든 파괴적 초기화 차단
+
+### 2) 파일/템플릿 영속화
+- `views/` 템플릿은 반드시 Git에 포함하여 이미지에 내장
+- 업로드/오버레이 등 가변 데이터는 `VOLUME_STORAGE_PATH`(예: `/app/public`) 볼륨에 저장해 컨테이너 재시작에도 보존
+- 리눅스 환경 대소문자 주의: 템플릿 키 ↔ 파일명 정확히 일치
+
+### 3) 마이그레이션/시드 안전성
+- 운영 환경에서 Drop/Truncate 금지, 추가/수정 위주
+- 기본 종목/템플릿 시드는 Upsert-NonDestructive: 존재 시 수정하지 않음, 삭제하지 않음
+
+### 4) 배포 파이프라인 체크리스트
+- 프리플라이트: 종목코드→템플릿키→파일 존재 검사
+- 헬스체크: `/CHUN/:id/control`, `/chun/:id/overlay` 200 확인 실패 시 롤백
+- 백업: 배포 전/후 파일+DB 백업 자동화

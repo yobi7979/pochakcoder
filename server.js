@@ -101,7 +101,6 @@ const settingsRouter = require('./routes/settings');
 const dbManagementRouter = require('./routes/db-management');
 const tableManagementRouter = require('./routes/table-management');
 const teamLogosRouter = require('./routes/team-logos');
-const audioRouter = require('./routes/audio');
 
 // 모델들
 const { sequelize, Match, Settings, MatchList, SportOverlayImage, SportActiveOverlayImage, User, UserSportPermission } = require('./models');
@@ -371,8 +370,6 @@ app.use(sessionDebugging);
 
 // 정적 파일 서빙
 app.use(express.static(staticConfig.public.path, staticConfig.public.options));
-// 오디오 업로드 정적 서빙
-app.use('/uploads/audio', express.static(path.join(process.cwd(), 'uploads', 'audio')));
 
 // EJS 템플릿 엔진 설정
 app.set('view engine', 'ejs');
@@ -394,8 +391,7 @@ function connectRouters() {
     { path: '/api/logs', router: logsRouter, name: '로그 API' },
     { path: '/api/settings', router: settingsRouter, name: '설정 API' },
     { path: '/api/matches', router: matchesRouter, name: '경기 API' },
-    { path: '/api/match-lists', router: matchListsRouter, name: '경기 목록 API' },
-    { path: '/api/audio', router: audioRouter, name: '오디오 업로드 API' }
+    { path: '/api/match-lists', router: matchListsRouter, name: '경기 목록 API' }
   ];
   
   // 2. 오버레이 이미지 전용 라우터 (최우선순위)
