@@ -2853,6 +2853,7 @@
 
         // 서버 타이머 업데이트 이벤트 리스너 (오버레이 페이지 - 최종 아웃풋)
         socket.on('server_timer_update', function(data) {
+            if (window.hybridTimerActive) { return; }
             console.log('=== 서버 타이머 업데이트 수신 (오버레이) ===');
             console.log('수신된 데이터:', data);
             
@@ -2892,6 +2893,7 @@
 
         // 로컬 타이머 업데이트 이벤트 리스너 (오버레이 페이지 - 로컬타이머 모드)
         socket.on('local_timer_update', function(data) {
+            if (window.hybridTimerActive) { return; }
             console.log('=== 로컬 타이머 업데이트 수신 (오버레이) ===');
             console.log('수신된 데이터:', data);
             
@@ -2973,6 +2975,10 @@
         let localTimerInterval = null;
         
         function startLocalTimer() {
+            if (window.hybridTimerActive) {
+                console.log('하이브리드 표시 활성: 로컬 타이머 비활성');
+                return;
+            }
             console.log('=== 오버레이 로컬 타이머 시작 함수 호출 ===');
             console.log('현재 타이머 상태:', {
                 isRunning: timerState.isRunning,
@@ -2999,7 +3005,8 @@
                     const elapsed = Math.floor((now - timerState.startTime) / 1000);
                     timerState.currentSeconds = timerState.pausedTime + elapsed;
                 } else {
-                    timerState.currentSeconds += 1;
+                    // startTime이 없을 때 즉시 +1 증가를 제거하여 0→2 점프 방지
+                    // 첫 인터벌에서 1초 증가하도록 대기
                 }
                 updateTimerDisplay();
                 console.log('오버레이 로컬 타이머 즉시 업데이트:', timerState.currentSeconds);
@@ -3051,15 +3058,7 @@
             console.log('오버레이 로컬 타이머 정지됨');
         }
         
-        function updateTimerDisplay(overrideSeconds = null) {
-            const targetSeconds = overrideSeconds !== null ? overrideSeconds : timerState.currentSeconds;
-            const minutes = Math.floor(targetSeconds / 60);
-            const seconds = targetSeconds % 60;
-            const timerDisplay = document.getElementById('timer-display');
-            if (timerDisplay) {
-                timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            }
-        }
+        
 
         // 오버레이 페이지에서 서버 타이머 상태 요청 (중복 제거됨)
         // socket.on('connect') 이벤트는 위에서 이미 처리됨
@@ -3102,6 +3101,7 @@
 
         // 서버 중심 타이머 상태 수신 (오버레이 페이지)
         socket.on('timer_state', function(data) {
+            if (window.hybridTimerActive) { return; }
             console.log('=== 서버 타이머 상태 수신 (오버레이) ===');
             console.log('수신된 데이터:', data);
             
@@ -5211,10 +5211,12 @@
                 });
 
                 console.log('✅ 하이브리드 타이머 시스템 초기화 완료');
+                window.hybridTimerActive = true;
             } else {
                 console.log('⚠️ HybridTimerSystem이 정의되지 않음 - 기본 타이머 사용');
                 // 기본 타이머 초기화
                 initializeBasicTimer();
+                window.hybridTimerActive = false;
             }
         });
         
