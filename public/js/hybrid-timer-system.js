@@ -152,6 +152,13 @@ class HybridTimerSystem {
             
             // 타이머 표시 업데이트
             this.onTimerUpdate(this.timerState.currentSeconds, this.timerState.isRunning);
+
+            // 서버에서 실행 중이면 즉시 로컬 갱신 루프 시작 (서버 연결 상태에서도 1초 주기 갱신)
+            if (this.timerState.isRunning) {
+                this.startLocalTimer();
+            } else {
+                this.stopLocalTimer();
+            }
         }
     }
     
