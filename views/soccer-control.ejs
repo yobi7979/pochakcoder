@@ -1014,8 +1014,12 @@
                         
                         <!-- 경기 상황 선택 섹션 -->
                         <div class="mb-3">
-                            <label class="form-label">
+                            <label class="form-label d-flex align-items-center gap-2">
                                 <i class="bi bi-clock-history"></i> 경기 상황
+                                <div class="form-check form-switch ms-2">
+                                    <input class="form-check-input" type="checkbox" id="matchStateEnglish">
+                                    <label class="form-check-label" for="matchStateEnglish">영문 표기</label>
+                                </div>
                             </label>
                             <div class="row g-2">
                                 <div class="col-6">
@@ -2145,7 +2149,7 @@
                 applyTournamentTextAutomatically();
             }
             
-            // 하단 스트립의 경우 DB에서 최신 데이터를 가져와서 전송
+            // 하단 스트립의 경우 DB에서 최신 데이터를 가져와서 전송 (안정화: 상태 ACK 대기/타임아웃)
             if (graphicType === 'bottom-strip' && newState) {
                 console.log('=== 하단 스트립 토글: DB에서 최신 데이터 로드 ===');
                 
@@ -2192,9 +2196,28 @@
                         
                         console.log('하단 스트립과 함께 전송할 데이터:', eventData);
                         
-                        // WebSocket 이벤트 전송
-                        socket.emit('toggleGraphic', eventData);
-                        console.log(`✅ 컨트롤: 그래픽 토글 이벤트 전송 완료: ${graphicType} = ${newState}`);
+                        // 안정화: 직전에 상태 변경이 있었다면 서버 방송을 잠깐 대기
+                        // race: matchStateUpdated 수신 또는 TIMEOUT 후 전송
+                        (function emitBottomStripSafely(){
+                            const TIMEOUT_MS = 500;
+                            let emitted = false;
+                            const tryEmit = function(){
+                                if (emitted) return;
+                                emitted = true;
+                                socket.emit('toggleGraphic', eventData);
+                                console.log(`✅ 컨트롤: 그래픽 토글 이벤트 전송 완료: ${graphicType} = ${newState}`);
+                            };
+                            const ackHandler = function(data){
+                                tryEmit();
+                            };
+                            // 대기 시작
+                            socket.once('matchStateUpdated', ackHandler);
+                            setTimeout(() => {
+                                // 타임아웃 시에도 진행
+                                socket.off('matchStateUpdated', ackHandler);
+                                tryEmit();
+                            }, TIMEOUT_MS);
+                        })();
                     });
                 });
                 return; // 여기서 함수 종료
@@ -2205,9 +2228,18 @@
             console.log('전송할 데이터:', eventData);
             console.log('이벤트 전송 시간:', new Date().toISOString());
             
-            socket.emit('toggleGraphic', eventData);
-            
-            console.log(`✅ 컨트롤: 그래픽 토글 이벤트 전송 완료: ${graphicType} = ${newState}`);
+            // 연결 안정화: 미연결 시 connect 후 전송, 연결 시에는 약간의 rAF 지연 후 전송
+            const safeSend = function(){
+                requestAnimationFrame(function(){
+                    socket.emit('toggleGraphic', eventData);
+                    console.log(`✅ 컨트롤: 그래픽 토글 이벤트 전송 완료: ${graphicType} = ${newState}`);
+                });
+            };
+            if (!socket.connected) {
+                socket.once('connect', safeSend);
+            } else {
+                safeSend();
+            }
         }
         
         // 그래픽 이름 반환 함수
@@ -2297,6 +2329,47 @@
                 }
             }
         }
+
+        // 경기상황 영문 표기 스위치 이벤트
+        (function registerMatchStateEnglishToggle(){
+            var checkbox = document.getElementById('matchStateEnglish');
+            if (!checkbox) { return; }
+            // 로컬 스토리지 키 (경기별로 분리 저장)
+            var STORAGE_KEY = 'match:' + String(matchId) + ':matchStateEnglish';
+
+            // 초기값 로드 및 적용
+            try {
+                var saved = localStorage.getItem(STORAGE_KEY);
+                var enabled = saved === '1' || saved === 'true';
+                checkbox.checked = enabled;
+                // 소켓 연결 상태에 맞게 초기 상태 방송
+                if (typeof socket !== 'undefined') {
+                    if (socket.connected) {
+                        socket.emit('toggleMatchStateEnglish', { matchId: matchId, enabled: enabled });
+                    } else {
+                        socket.once('connect', function(){
+                            socket.emit('toggleMatchStateEnglish', { matchId: matchId, enabled: enabled });
+                        });
+                    }
+                }
+            } catch (e) {
+            }
+
+            // 변경 시 저장 및 방송
+            checkbox.addEventListener('change', function(){
+                var enabled = !!checkbox.checked;
+                try {
+                    localStorage.setItem(STORAGE_KEY, enabled ? '1' : '0');
+                } catch(e) {
+                }
+                // 서버를 통해 같은 경기 방에 방송
+                socket.emit('toggleMatchStateEnglish', {
+                    matchId: matchId,
+                    enabled: enabled
+                });
+                console.log('경기상황 영문 표기 토글 전송:', enabled);
+            });
+        })();
         
         // 경기 상황 업데이트 함수
         function updateMatchState(state) {
@@ -4105,9 +4178,18 @@
             console.log('전송할 데이터:', eventData);
             console.log('이벤트 전송 시간:', new Date().toISOString());
             
-            socket.emit('toggleLineup', eventData);
-            
-            console.log(`✅ 컨트롤: 라인업 토글 이벤트 전송 완료: ${teamType}팀 = ${newState}`);
+            // 연결 안정화: 미연결 시 connect 후 전송, 연결 시 rAF 지연 후 전송
+            const safeSend = function(){
+                requestAnimationFrame(function(){
+                    socket.emit('toggleLineup', eventData);
+                    console.log(`✅ 컨트롤: 라인업 토글 이벤트 전송 완료: ${teamType}팀 = ${newState}`);
+                });
+            };
+            if (!socket.connected) {
+                socket.once('connect', safeSend);
+            } else {
+                safeSend();
+            }
         }
         
         // 라인업 데이터 로드 함수

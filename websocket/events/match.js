@@ -109,6 +109,22 @@ const matchEvents = (socket, io) => {
     console.log(`경기 상태 변경 이벤트를 방 ${roomName}에 전송함: ${matchState}`);
   });
 
+  // 경기상황 영문 표기 토글 → 같은 경기 방에 방송
+  socket.on('toggleMatchStateEnglish', (data) => {
+    try {
+      const { matchId, enabled } = data || {};
+      if (!matchId) return;
+      const roomName = `match_${matchId}`;
+      io.to(roomName).emit('match_state_english_toggled', {
+        matchId,
+        enabled: !!enabled
+      });
+      console.log(`경기상황 영문 표기 토글 방송: matchId=${matchId}, enabled=${!!enabled}`);
+    } catch (e) {
+      console.error('toggleMatchStateEnglish 처리 중 오류:', e);
+    }
+  });
+
   // 점수 변경 이벤트 처리
   socket.on('scoreChanged', (data) => {
     const { matchId, homeScore, awayScore } = data;

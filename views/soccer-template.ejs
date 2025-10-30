@@ -156,7 +156,9 @@
             text-align: center;
             /*text-shadow: 0 0 15px rgba(0, 191, 255, 0.9);*/
             margin: 0;
-            letter-spacing: 2px;
+            letter-spacing: var(--vs-title-letter-spacing, 0.1px);
+            white-space: nowrap;
+            overflow: hidden;
         }
         
         /* 하단 스트립 */
@@ -197,7 +199,7 @@
             text-align: center;
             /*text-shadow: 0 0 15px rgba(0, 191, 255, 0.9);*/
             margin: 0;
-            letter-spacing: 2px;
+            letter-spacing: var(--strip-title-letter-spacing, 0.1px);
         }
         
         /* 하단 구역: 팀 정보 */
@@ -430,7 +432,7 @@
         
         .strip-match-state {
             background: rgba(0, 191, 255, 0.5);
-            padding: 10px 20px;
+            padding: 0 12px;
             border-radius: 20px;
             border: 2px solid #00bfff;
             font-family: 'Noto Sans KR', Arial, sans-serif;
@@ -439,6 +441,17 @@
             color: #ffffff;
             text-shadow: 0 0 10px rgba(0, 191, 255, 0.8);
             box-shadow: 0 0 15px rgba(0, 191, 255, 0.3);
+            width: 170px;
+            height: 60px;
+            max-width: 170px;
+            max-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            overflow: hidden;
+            line-height: 1;
+            text-align: center;
         }
         
         /* 중앙 구역: 팀 로고 + 팀명 */
@@ -2645,7 +2658,7 @@
                 // 경기 상황 표시 업데이트
                 const matchStateElement = document.querySelector('.match-state');
                 if (matchStateElement) {
-                    matchStateElement.textContent = data.matchState;
+                    matchStateElement.textContent = translateMatchStateIfNeeded(data.matchState);
                     console.log('✅ 경기 상황 업데이트 완료:', data.matchState);
                 } else {
                     console.log('⚠️ 경기 상황 표시 요소를 찾을 수 없습니다.');
@@ -2654,7 +2667,8 @@
                 // 하단 스트립 경기 상황 업데이트
                 const stripMatchState = document.getElementById('strip-match-state');
                 if (stripMatchState) {
-                    stripMatchState.textContent = data.matchState;
+                    stripMatchState.textContent = translateMatchStateIfNeeded(data.matchState);
+                    applyFitStripMatchState();
                     console.log('✅ 하단 스트립 경기 상황 업데이트 완료:', data.matchState);
                 } else {
                     console.log('⚠️ 하단 스트립 경기 상황 요소를 찾을 수 없습니다.');
@@ -3708,6 +3722,53 @@
             }
         });
 
+        // ===== 경기상황 영문 표기 지원 =====
+        let matchStateEnglishEnabled = false;
+
+        // 컨트롤 페이지에서 오는 토글 신호 수신
+        socket.on('match_state_english_toggled', function(data){
+            if (data.matchId === matchId) {
+                matchStateEnglishEnabled = !!data.enabled;
+                console.log('경기상황 영문 표기 모드:', matchStateEnglishEnabled);
+                // 현재 상태를 즉시 반영
+                try {
+                    const baseKorState = (window.matchData && (window.matchData.status || window.matchData.match_data?.state)) || null;
+                    const korState = baseKorState || (document.getElementById('strip-match-state')?.textContent || '전반');
+                    const display = translateMatchStateIfNeeded(korState);
+                    const ms = document.querySelector('.match-state');
+                    if (ms) { ms.textContent = display; }
+                    const strip = document.getElementById('strip-match-state');
+                    if (strip) { strip.textContent = display; applyFitStripMatchState(); }
+                    const vs = document.querySelector('.vs-match-state');
+                    if (vs) { vs.textContent = display; }
+                } catch (e) {
+                    console.log('영문 표기 즉시 반영 중 오류:', e);
+                }
+            }
+        });
+
+        // 한국어 → 영어 변환 맵
+        function translateMatchStateToEnglish(kor) {
+            const map = {
+                '전반': 'First Half',
+                '전반종료': 'Half Time',
+                '후반': 'Second Half',
+                '후반종료': 'Full Time',
+                '연장': 'Extra Time',
+                '연장종료': 'End of Extra Time',
+                '경기종료': 'Match Ended',
+                '승부차기': 'Penalty Shootout'
+            };
+            return map[kor] || kor;
+        }
+
+        function translateMatchStateIfNeeded(stateText) {
+            if (matchStateEnglishEnabled) {
+                return translateMatchStateToEnglish(stateText);
+            }
+            return stateText;
+        }
+
         // 서버로부터 팀 색상 변경 이벤트 수신 (teamColorChanged)
         socket.on('teamColorChanged', function(data) {
             if (data.matchId === matchId) {
@@ -3800,7 +3861,8 @@
                     if (data.matchState) {
                         const stripMatchState = document.getElementById('strip-match-state');
                         if (stripMatchState) {
-                            stripMatchState.textContent = data.matchState;
+                            stripMatchState.textContent = translateMatchStateIfNeeded(data.matchState);
+                            applyFitStripMatchState();
                             console.log('✅ 하단 스트립 경기 상황 업데이트:', data.matchState);
                         }
                     }
@@ -4071,6 +4133,8 @@
                             } else {
                             tournamentTitle.textContent = '';
                             }
+                        // 텍스트가 들어간 뒤 한 줄 맞춤 자동 축소 적용
+                        applyFitVsTitle();
                     }
                 })
                 .catch(error => {
@@ -4078,8 +4142,64 @@
                     const tournamentTitle = document.querySelector('.vs-tournament-title');
                     if (tournamentTitle) {
                         tournamentTitle.textContent = '';
+                        applyFitVsTitle();
                         }
                 });
+        }
+
+        // VS 타이틀을 한 줄에 맞춰 자동 축소하는 유틸 함수
+        function fitTextToSingleLine(el, maxPx, minPx, step) {
+            if (!el) { return; }
+            var maxSize = typeof maxPx === 'number' ? maxPx : 60;
+            var minSize = typeof minPx === 'number' ? minPx : 20;
+            var delta = typeof step === 'number' ? step : 1;
+            // 초기 스타일 보장
+            el.style.whiteSpace = 'nowrap';
+            el.style.overflow = 'hidden';
+            // 초기 폰트 크기
+            el.style.fontSize = maxSize + 'px';
+            // 줄여가며 한 줄 폭에 들어갈 때까지 축소
+            var size = maxSize;
+            // clientWidth가 0인 경우(숨김 상태) 대비, 부모 폭을 대체 기준으로 사용
+            var baseWidth = el.clientWidth || (el.parentElement ? el.parentElement.clientWidth : 0) || 1200;
+            while (size > minSize && el.scrollWidth > baseWidth) {
+                size -= delta;
+                el.style.fontSize = size + 'px';
+            }
+        }
+
+        // VS 오버레이 타이틀에 자동 축소 적용
+        function applyFitVsTitle() {
+            var el = document.getElementById('vsTournamentTitle');
+            if (!el) { return; }
+            // 텍스트 반영 직후 레이아웃 확정 뒤 축소 적용
+            requestAnimationFrame(function () {
+                fitTextToSingleLine(el, 60, 20, 1);
+            });
+        }
+
+        // ===== 타이틀 커닝(글자간 간격) 제어 유틸 =====
+        function setVsTitleLetterSpacing(px) {
+            var el = document.getElementById('vsTopSection');
+            if (!el) { return; }
+            // CSS 변수로 제어
+            el.style.setProperty('--vs-title-letter-spacing', (typeof px === 'number' ? px + 'px' : px));
+        }
+
+        function setStripTitleLetterSpacing(px) {
+            var el = document.getElementById('bottomStrip');
+            if (!el) { return; }
+            el.style.setProperty('--strip-title-letter-spacing', (typeof px === 'number' ? px + 'px' : px));
+        }
+
+        // 하단 스트립 경기상황 텍스트를 상자(170x60) 안에 맞게 축소
+        function applyFitStripMatchState() {
+            var el = document.getElementById('strip-match-state');
+            if (!el) { return; }
+            requestAnimationFrame(function () {
+                // 기본 24px에서 최소 12px까지 축소
+                fitTextToSingleLine(el, 24, 12, 1);
+            });
         }
 
         // VS 오버레이 팀 로고 업데이트 함수 (최적화된 버전)
@@ -4149,6 +4269,8 @@
             const tournamentTitle = document.querySelector('.vs-tournament-title');
             if (tournamentTitle) {
                 tournamentTitle.textContent = data.tournamentText || '';
+                // 실시간 업데이트 시에도 한 줄 맞춤 자동 축소 적용
+                applyFitVsTitle();
                 }
             
             // 하단 스트립 대회명도 동시 업데이트
@@ -4296,7 +4418,8 @@
             
             // 경기 상태 업데이트
             if (matchState && stripMatchState) {
-                stripMatchState.textContent = matchState.value || '전반';
+                stripMatchState.textContent = translateMatchStateIfNeeded(matchState.value || '전반');
+                applyFitStripMatchState();
                 }
             
             // 팀 로고 업데이트 (약간의 지연을 두고 실행)
@@ -4360,13 +4483,13 @@
                 // VS 그래픽 경기상황 업데이트
                 const vsMatchState = document.querySelector('.vs-match-state');
                 if (vsMatchState) {
-                    vsMatchState.textContent = data.matchState;
+                    vsMatchState.textContent = translateMatchStateIfNeeded(data.matchState);
                     }
                 
                 // 하단 스트립 경기상황 업데이트
                 const stripMatchState = document.getElementById('strip-match-state');
                 if (stripMatchState) {
-                    stripMatchState.textContent = data.matchState;
+                    stripMatchState.textContent = translateMatchStateIfNeeded(data.matchState);
                     }
             } else {
                 }
