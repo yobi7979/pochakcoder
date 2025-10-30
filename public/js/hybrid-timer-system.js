@@ -233,7 +233,7 @@ class HybridTimerSystem {
             const scheduleTick = () => {
                 if (!this.timerState.isRunning || !this.timerState.startTime) return;
                 const now = this.getSyncedNow();
-                const elapsed = Math.floor((now - this.timerState.startTime) / 1000);
+                const elapsed = Math.max(0, Math.floor((now - this.timerState.startTime) / 1000));
                 this.timerState.currentSeconds = this.timerState.pausedTime + elapsed;
                 this.onTimerUpdate(this.timerState.currentSeconds, this.timerState.isRunning);
                 console.log('서버 연결 로컬 타이머 업데이트:', this.timerState.currentSeconds);
@@ -245,7 +245,7 @@ class HybridTimerSystem {
             // 시작 즉시 1초 표시(리딩 엣지 업데이트)로 사용자 체감 개선
             try {
                 const nowImmediate = this.getSyncedNow();
-                const elapsedImmediate = Math.floor((nowImmediate - this.timerState.startTime) / 1000);
+                const elapsedImmediate = Math.max(0, Math.floor((nowImmediate - this.timerState.startTime) / 1000));
                 let initialSeconds = this.timerState.pausedTime + elapsedImmediate;
                 if (this.timerState.isRunning && initialSeconds === 0) {
                     initialSeconds = 1; // 0초 고정/2초 점프 방지: 시작 즉시 1초 표시
@@ -268,7 +268,7 @@ class HybridTimerSystem {
             const scheduleTickLocal = () => {
                 if (!this.timerState.localIsRunning || !this.timerState.localStartTime) return;
                 const now = this.getSyncedNow();
-                const elapsed = Math.floor((now - this.timerState.localStartTime) / 1000);
+                const elapsed = Math.max(0, Math.floor((now - this.timerState.localStartTime) / 1000));
                 this.timerState.currentSeconds = this.timerState.localPausedTime + elapsed;
                 this.onTimerUpdate(this.timerState.currentSeconds, this.timerState.isRunning);
                 console.log('로컬 백업 타이머 업데이트:', this.timerState.currentSeconds);
