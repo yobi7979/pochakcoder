@@ -1320,6 +1320,43 @@
                 </div>
             </div>
         </div>
+
+        <!-- 오디오 관리 섹션 (최하단) -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <h6 class="mb-0"><i class="bi bi-music-note-beamed"></i> 오디오 관리</h6>
+                        <div class="d-flex align-items-center gap-2">
+                            <label class="mb-0 small text-muted">볼륨</label>
+                            <input type="range" id="audioVolume" min="0" max="1" step="0.05" value="1" style="width:140px;">
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3 d-flex align-items-center gap-2">
+                            <input type="file" id="audioFileInput" accept="audio/*" class="form-control" style="max-width: 420px;">
+                            <button class="btn btn-primary" id="uploadAudioBtn"><i class="bi bi-cloud-upload"></i> 업로드</button>
+                            <button class="btn btn-outline-secondary" id="preloadAllBtn"><i class="bi bi-lightning"></i> 전체 프리로드</button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width:50%">이름</th>
+                                        <th>미리듣기</th>
+                                        <th>오버레이</th>
+                                        <th>관리</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="audioListTbody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     
     <script>
@@ -2469,6 +2506,130 @@
             console.log('점수 업데이트 이벤트 전송 완료');
         }
 
+        // ===== 오디오 매니저 =====
+        let audioItems = [];
+        const AUDIO_STORAGE_KEY = 'match:' + String(matchId) + ':audioList';
+
+        function loadAudioListFromStorage() {
+            try {
+                const raw = localStorage.getItem(AUDIO_STORAGE_KEY);
+                audioItems = raw ? JSON.parse(raw) : [];
+            } catch (e) {
+                audioItems = [];
+            }
+        }
+
+        function saveAudioListToStorage() {
+            try {
+                localStorage.setItem(AUDIO_STORAGE_KEY, JSON.stringify(audioItems));
+            } catch (e) {}
+        }
+
+        function renderAudioList() {
+            const tbody = document.getElementById('audioListTbody');
+            if (!tbody) return;
+            if (!Array.isArray(audioItems)) audioItems = [];
+            tbody.innerHTML = audioItems.map((item, idx) => {
+                const safeName = (item.name || ('audio-' + (idx+1)));
+                const url = item.url || '';
+                return `
+                <tr>
+                    <td>${safeName}</td>
+                    <td>
+                        <audio controls preload="none" src="${url}" style="height:28px;"></audio>
+                    </td>
+                    <td class="d-flex gap-2">
+                        <button class="btn btn-sm btn-success" onclick="preloadAudioOverlay('${encodeURIComponent(url)}')"><i class=\"bi bi-lightning\"></i> 프리로드</button>
+                        <button class="btn btn-sm btn-primary" onclick="playAudioOverlay('${encodeURIComponent(url)}')"><i class=\"bi bi-play-fill\"></i> 재생</button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="stopAudioOverlay('${encodeURIComponent(url)}')"><i class=\"bi bi-stop\"></i> 정지</button>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" onclick="removeAudioItem(${idx})"><i class=\"bi bi-trash\"></i></button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function removeAudioItem(index) {
+            if (index < 0 || index >= audioItems.length) return;
+            audioItems.splice(index, 1);
+            saveAudioListToStorage();
+            renderAudioList();
+        }
+
+        async function uploadAudio() {
+            const input = document.getElementById('audioFileInput');
+            if (!input || !input.files || input.files.length === 0) {
+                alert('업로드할 오디오 파일을 선택하세요.');
+                return;
+            }
+            const file = input.files[0];
+            try {
+                const fd = new FormData();
+                fd.append('audio', file);
+                // 서버 업로드 엔드포인트 (서버 라우터 구현 필요: /api/audio/upload)
+                const res = await fetch('/api/audio/upload', { method: 'POST', body: fd });
+                if (!res.ok) throw new Error('업로드 실패');
+                const data = await res.json();
+                if (!data || !data.url) throw new Error('업로드 응답에 URL 없음');
+                audioItems.push({ name: file.name, url: data.url });
+                saveAudioListToStorage();
+                renderAudioList();
+                // 업로드 후 즉시 프리로드 지시
+                preloadAudioOverlay(encodeURIComponent(data.url));
+                alert('업로드 및 프리로드 요청을 전송했습니다.');
+            } catch (e) {
+                console.error('오디오 업로드 오류:', e);
+                alert('오디오 업로드 중 오류가 발생했습니다.');
+            } finally {
+                if (input) input.value = '';
+            }
+        }
+
+        function getVolume() {
+            const v = parseFloat(document.getElementById('audioVolume')?.value || '1');
+            if (Number.isNaN(v)) return 1;
+            return Math.min(1, Math.max(0, v));
+        }
+
+        function preloadAudioOverlay(encodedUrl) {
+            try {
+                const url = decodeURIComponent(encodedUrl);
+                socket.emit('overlay_preload_audio', { matchId: matchId, url });
+            } catch (e) {}
+        }
+
+        function playAudioOverlay(encodedUrl) {
+            try {
+                const url = decodeURIComponent(encodedUrl);
+                socket.emit('overlay_play_audio', { matchId: matchId, url, volume: getVolume() });
+            } catch (e) {}
+        }
+
+        function stopAudioOverlay(encodedUrl) {
+            try {
+                const url = decodeURIComponent(encodedUrl);
+                socket.emit('overlay_stop_audio', { matchId: matchId, url });
+            } catch (e) {}
+        }
+
+        function preloadAllOverlay() {
+            (audioItems || []).forEach(item => {
+                if (item && item.url) {
+                    socket.emit('overlay_preload_audio', { matchId: matchId, url: item.url });
+                }
+            });
+            alert('오버레이에 전체 프리로드 요청을 전송했습니다.');
+        }
+
+        function initAudioManager() {
+            loadAudioListFromStorage();
+            renderAudioList();
+            const uploadBtn = document.getElementById('uploadAudioBtn');
+            if (uploadBtn) uploadBtn.addEventListener('click', uploadAudio);
+            const preloadAllBtn = document.getElementById('preloadAllBtn');
+            if (preloadAllBtn) preloadAllBtn.addEventListener('click', preloadAllOverlay);
+        }
         // 팀명 업데이트
         async function updateTeamName(team) {
             console.log(`=== ${team}팀 이름 업데이트 ===`);
@@ -3427,6 +3588,9 @@
             
             // 페이지 로드 시 팀로고 표시 모드 상태 로드 (나중에 실행)
             await loadTeamLogoDisplayMode();
+
+            // 오디오 매니저 초기화
+            initAudioManager();
             
             // 시간 적용 버튼 이벤트 리스너 (숫자 자동 변환 포함)
             document.getElementById('apply-time-btn').addEventListener('click', function() {

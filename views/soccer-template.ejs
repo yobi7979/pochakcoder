@@ -3900,6 +3900,52 @@
                 }
         });
 
+        // ===== 오디오 재생 지원 (오버레이) =====
+        const overlayAudioCache = new Map(); // url -> HTMLAudioElement
+
+        function ensureAudio(url) {
+            if (!url) return null;
+            if (overlayAudioCache.has(url)) return overlayAudioCache.get(url);
+            const a = new Audio();
+            a.src = url;
+            a.preload = 'auto';
+            overlayAudioCache.set(url, a);
+            return a;
+        }
+
+        socket.on('overlay_preload_audio', function(data){
+            if (!data || data.matchId !== matchId) return;
+            try {
+                const a = ensureAudio(data.url);
+                if (a) { a.load(); }
+            } catch (e) {}
+        });
+
+        socket.on('overlay_play_audio', function(data){
+            if (!data || data.matchId !== matchId) return;
+            try {
+                const a = ensureAudio(data.url);
+                if (a) {
+                    a.volume = typeof data.volume === 'number' ? Math.min(1, Math.max(0, data.volume)) : 1;
+                    a.currentTime = 0;
+                    a.play().catch(()=>{});
+                }
+            } catch (e) {}
+        });
+
+        socket.on('overlay_stop_audio', function(data){
+            if (!data || data.matchId !== matchId) return;
+            try {
+                if (data.url) {
+                    const a = overlayAudioCache.get(data.url);
+                    if (a) { a.pause(); a.currentTime = 0; }
+                } else {
+                    // 전체 정지
+                    overlayAudioCache.forEach(a => { a.pause(); a.currentTime = 0; });
+                }
+            } catch (e) {}
+        });
+
         // 스코어 보드 추가 박스 텍스트 업데이트 이벤트 처리
         socket.on('extra_box_text_updated', function(data) {
             
