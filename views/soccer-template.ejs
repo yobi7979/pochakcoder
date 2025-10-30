@@ -4915,7 +4915,7 @@
                         <div class="lineup-player">
                             <span class="player-number">${player.number}</span>
                             <span class="player-name">${player.name}</span>
-                            <span class="player-position">${player.position}</span>
+                            <span class="player-position">${player.position || ''}</span>
                         </div>
                     `).join('');
                 } else {
@@ -4934,7 +4934,7 @@
                                 <div class="lineup-player">
                                     <span class="player-number">${lp.number}</span>
                                     <span class="player-name">${lp.name}</span>
-                                    <span class="player-position">${lp.position}</span>
+                                    <span class="player-position">${lp.position || ''}</span>
                                 </div>
                             </div>`;
                         } else {
@@ -4947,7 +4947,7 @@
                                 <div class="lineup-player">
                                     <span class="player-number">${rp.number}</span>
                                     <span class="player-name">${rp.name}</span>
-                                    <span class="player-position">${rp.position}</span>
+                                    <span class="player-position">${rp.position || ''}</span>
                                 </div>
                             </div>`;
                         } else {

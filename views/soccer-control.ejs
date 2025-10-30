@@ -1267,12 +1267,7 @@
                             </div>
                         </div>
                         
-                        <!-- 전체 라인업 저장 버튼 -->
-                        <div class="text-center mt-3">
-                            <button type="button" class="btn btn-warning" onclick="saveAllLineup()">
-                                <i class="bi bi-save2"></i> 전체 라인업 저장
-                            </button>
-                        </div>
+                        
                     </div>
                 </div>
             </div>
@@ -4171,7 +4166,7 @@
         });
         
         // 라인업 토글 함수
-        function toggleLineup(teamType) {
+        async function toggleLineup(teamType) {
             console.log(`=== 라인업 토글: ${teamType}팀 ===`);
             
             // 버튼 ID 매핑
@@ -4183,6 +4178,22 @@
                 return;
             }
             
+            // 표시 전 라인업 존재 여부 확인
+            let hasPlayers = false;
+            try {
+                const res = await fetch(`/api/matches/${matchId}/load-lineup`);
+                const result = await res.json();
+                const arr = (result && result.lineup && result.lineup[teamType]) || [];
+                hasPlayers = Array.isArray(arr) && arr.length > 0;
+            } catch (e) {
+                console.warn('라인업 확인 중 오류:', e);
+            }
+
+            if (!hasPlayers) {
+                alert(`${teamType === 'home' ? '홈팀' : '어웨이팀'}에 등록된 선수가 없습니다.`);
+                return;
+            }
+
             const isVisible = button.classList.contains('btn-success');
             const newState = !isVisible;
             
