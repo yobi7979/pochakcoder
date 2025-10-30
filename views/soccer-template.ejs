@@ -3898,7 +3898,10 @@
             if (data.matchId === matchId) {
                 const extraBoxText = document.getElementById('extraBoxText');
                 if (extraBoxText) {
-                    extraBoxText.textContent = data.text || '0 (승부차기) 0';
+                    const labelKor = '(승부차기)';
+                    const labelEn = '(Penalty Shootout)';
+                    const text = data.text || '0 (승부차기) 0';
+                    extraBoxText.textContent = matchStateEnglishEnabled ? text.replace(labelKor, labelEn) : text;
                     }
             }
         });
@@ -3908,7 +3911,10 @@
             if (data.matchId === matchId) {
                 const extraBoxText = document.getElementById('extraBoxText');
                 if (extraBoxText) {
-                    extraBoxText.textContent = data.text || '0 (승부차기) 0';
+                    const labelKor = '(승부차기)';
+                    const labelEn = '(Penalty Shootout)';
+                    const text = data.text || '0 (승부차기) 0';
+                    extraBoxText.textContent = matchStateEnglishEnabled ? text.replace(labelKor, labelEn) : text;
                     }
             }
         });
@@ -3922,7 +3928,10 @@
                 if (data.success) {
                     const extraBoxText = document.getElementById('extraBoxText');
                     if (extraBoxText) {
-                        extraBoxText.textContent = data.text;
+                        const labelKor = '(승부차기)';
+                        const labelEn = '(Penalty Shootout)';
+                        const text = data.text || '0 (승부차기) 0';
+                        extraBoxText.textContent = matchStateEnglishEnabled ? text.replace(labelKor, labelEn) : text;
                         }
                 }
             } catch (error) {

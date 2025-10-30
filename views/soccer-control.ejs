@@ -1690,6 +1690,14 @@
 
         // 승부차기 점수 관리
         let currentPenaltyText = '0 (승부차기) 0';
+        function isEnglishNotationEnabled(){
+            var checkbox = document.getElementById('matchStateEnglish');
+            if (!checkbox) return false;
+            return !!checkbox.checked;
+        }
+        function getPenaltyLabel(){
+            return isEnglishNotationEnabled() ? 'Penalty Shootout' : '승부차기';
+        }
         
         function updatePenaltyScore(team, change) {
             console.log('=== 승부차기 점수 업데이트 (실시간 반영) ===');
@@ -1715,7 +1723,7 @@
             console.log('업데이트된 점수 - 홈:', homeScore, '어웨이:', awayScore);
             
             // 새로운 텍스트 생성
-            const newText = `${homeScore} (승부차기) ${awayScore}`;
+            const newText = `${homeScore} (${getPenaltyLabel()}) ${awayScore}`;
             console.log('새로운 텍스트:', newText);
             
             // 현재 텍스트 업데이트
@@ -1798,7 +1806,11 @@
                     const data = await response.json();
                     if (data.success && data.text) {
                         currentPenaltyText = data.text;
-                        document.getElementById('penalty-text-display').textContent = data.text;
+                        // 표시 시 영문 표기 토글에 맞춰 라벨 변환
+                        const labelKor = '(승부차기)';
+                        const labelEn = '(Penalty Shootout)';
+                        const displayText = isEnglishNotationEnabled() ? (data.text || '').replace(labelKor, labelEn) : data.text;
+                        document.getElementById('penalty-text-display').textContent = displayText;
                         console.log('승부차기 텍스트 로드 성공:', data.text);
             } else {
                         console.log('저장된 승부차기 텍스트가 없습니다. 기본값 사용');
