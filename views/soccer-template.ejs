@@ -4543,8 +4543,8 @@
             // 서버 타이머 모드일 때는 전달받은 값을 사용, 그렇지 않으면 timerState 사용
             const targetSeconds = overrideSeconds !== null ? overrideSeconds : timerState.currentSeconds;
             
-            // 서버 상태 수신 전까지 로딩 상태 표시
-            if (targetSeconds === 0 && !timerState.serverStateReceived) {
+            // 서버 상태 수신 전까지 로딩 상태 표시 (하이브리드 활성 시에는 항상 시간 표시)
+            if (!window.hybridTimerActive && targetSeconds === 0 && !timerState.serverStateReceived) {
                 const timerElement = document.querySelector('.match-time');
                 if (timerElement) {
                     timerElement.textContent = '---';
@@ -5199,8 +5199,12 @@
                     matchId: window.matchId,
                     socket: socket,
                     onTimerUpdate: function(currentSeconds, isRunning) {
+                        // 하이브리드 경로에서도 오버레이 timerState를 동기화하여 로딩 표시(---) 방지
+                        timerState.currentSeconds = Math.max(0, currentSeconds || 0);
+                        timerState.isRunning = !!isRunning;
+                        timerState.serverStateReceived = true;
                         // 타이머 표시 업데이트
-                        updateTimerDisplay(currentSeconds);
+                        updateTimerDisplay(timerState.currentSeconds);
                     },
                     onServerDisconnect: function() {
                         console.log('🔌 서버 연결 끊김 - 로컬 타이머로 전환됨');

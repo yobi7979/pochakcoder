@@ -187,30 +187,42 @@ class HybridTimerSystem {
             this.timerState.localTimerInterval = null;
         }
         
-        // 서버 연결 시: 서버 상태 기반 타이머
+        // 서버 연결 시: 서버 상태 기반 타이머 (초 경계 정렬로 2초 점프 방지)
         if (this.timerState.serverConnected && this.timerState.isRunning) {
-            this.timerState.localTimerInterval = setInterval(() => {
-                if (this.timerState.isRunning && this.timerState.startTime) {
-                    const now = Date.now();
-                    const elapsed = Math.floor((now - this.timerState.startTime) / 1000);
-                    this.timerState.currentSeconds = this.timerState.pausedTime + elapsed;
-                    this.onTimerUpdate(this.timerState.currentSeconds, this.timerState.isRunning);
-                    console.log('서버 연결 로컬 타이머 업데이트:', this.timerState.currentSeconds);
-                }
-            }, 1000);
+            const scheduleTick = () => {
+                if (!this.timerState.isRunning || !this.timerState.startTime) return;
+                const now = Date.now();
+                const elapsed = Math.floor((now - this.timerState.startTime) / 1000);
+                this.timerState.currentSeconds = this.timerState.pausedTime + elapsed;
+                this.onTimerUpdate(this.timerState.currentSeconds, this.timerState.isRunning);
+                console.log('서버 연결 로컬 타이머 업데이트:', this.timerState.currentSeconds);
+            };
+
+            // 다음 초 경계까지 지연 후 인터벌 시작
+            const driftMs = (Date.now() - this.timerState.startTime) % 1000;
+            const firstDelay = driftMs === 0 ? 1000 : 1000 - driftMs;
+            this.timerState.localTimerInterval = setTimeout(() => {
+                scheduleTick();
+                this.timerState.localTimerInterval = setInterval(scheduleTick, 1000);
+            }, firstDelay);
             console.log('서버 연결 로컬 타이머 시작됨');
         }
         // 서버 연결 끊김 시: 로컬 백업 타이머
         else if (!this.timerState.serverConnected && this.timerState.localIsRunning) {
-            this.timerState.localTimerInterval = setInterval(() => {
-                if (this.timerState.localIsRunning && this.timerState.localStartTime) {
-                    const now = Date.now();
-                    const elapsed = Math.floor((now - this.timerState.localStartTime) / 1000);
-                    this.timerState.currentSeconds = this.timerState.localPausedTime + elapsed;
-                    this.onTimerUpdate(this.timerState.currentSeconds, this.timerState.isRunning);
-                    console.log('로컬 백업 타이머 업데이트:', this.timerState.currentSeconds);
-                }
-            }, 1000);
+            const scheduleTickLocal = () => {
+                if (!this.timerState.localIsRunning || !this.timerState.localStartTime) return;
+                const now = Date.now();
+                const elapsed = Math.floor((now - this.timerState.localStartTime) / 1000);
+                this.timerState.currentSeconds = this.timerState.localPausedTime + elapsed;
+                this.onTimerUpdate(this.timerState.currentSeconds, this.timerState.isRunning);
+                console.log('로컬 백업 타이머 업데이트:', this.timerState.currentSeconds);
+            };
+            const driftMsLocal = (Date.now() - this.timerState.localStartTime) % 1000;
+            const firstDelayLocal = driftMsLocal === 0 ? 1000 : 1000 - driftMsLocal;
+            this.timerState.localTimerInterval = setTimeout(() => {
+                scheduleTickLocal();
+                this.timerState.localTimerInterval = setInterval(scheduleTickLocal, 1000);
+            }, firstDelayLocal);
             console.log('로컬 백업 타이머 시작됨');
         }
         
