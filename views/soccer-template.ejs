@@ -2714,7 +2714,7 @@
                 if (timerState.isRunning) {
                     // 서버에서 받은 시작 시간을 기준으로 정확한 계산
                     const currentTime = Date.now();
-                    const elapsedTime = Math.floor((currentTime - timerState.startTime) / 1000);
+                    const elapsedTime = Math.max(0, Math.floor((currentTime - timerState.startTime) / 1000));
                     currentSeconds = timerState.pausedTime + elapsedTime;
                     
                     
@@ -2749,10 +2749,10 @@
                 
                 }
             
+            // -1초 방지: Math.max로 음수 방지하여 25:00 설정 시 24:59로 시작되는 현상 방지
             timerState.currentSeconds = Math.max(0, currentSeconds);
             
             // UI 업데이트
-            timerState.currentSeconds = currentSeconds;
             updateTimerDisplay();
             
             // 타이머 실행 상태에 따라 로컬 타이머 제어
@@ -2786,7 +2786,7 @@
                 if (timerState.isRunning) {
                     // 서버에서 받은 시작 시간을 기준으로 정확한 계산
                     const currentTime = Date.now();
-                    const elapsedTime = Math.floor((currentTime - timerState.startTime) / 1000);
+                    const elapsedTime = Math.max(0, Math.floor((currentTime - timerState.startTime) / 1000));
                     currentSeconds = timerState.pausedTime + elapsedTime;
                     console.log(`타이머 계산: startTime=${timerState.startTime}, pausedTime=${timerState.pausedTime}, elapsedTime=${elapsedTime}, currentSeconds=${currentSeconds}`);
                 } else {
@@ -2813,10 +2813,10 @@
                 
                 }
             
+            // -1초 방지: Math.max로 음수 방지하여 25:00 설정 시 24:59로 시작되는 현상 방지
             timerState.currentSeconds = Math.max(0, currentSeconds);
             
             // UI 업데이트
-            timerState.currentSeconds = currentSeconds;
             updateTimerDisplay();
             
             // 타이머 실행 상태에 따라 로컬 타이머 제어
@@ -3036,7 +3036,7 @@
                         // startTime이 있으면 정확한 계산, 없으면 단순 증가
                         if (timerState.startTime) {
                             const now = Date.now();
-                            const elapsed = Math.floor((now - timerState.startTime) / 1000);
+                            const elapsed = Math.max(0, Math.floor((now - timerState.startTime) / 1000));
                             timerState.currentSeconds = timerState.pausedTime + elapsed;
                         } else {
                             // startTime이 없으면 1초씩 증가
