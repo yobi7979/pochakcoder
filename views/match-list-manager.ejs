@@ -449,9 +449,9 @@ async function renderMatchList() {
             <div class="match-card-title">${m.home_team} vs ${m.away_team} <span class="badge bg-secondary">${m.sport_type}</span></div>
 
             <div class="btn-group">
-            <button class="btn btn-outline-primary btn-sm" onclick="goControl('${m.sport_type}','${m.id}')">컨트롤</button>
+            <button class="btn btn-outline-primary btn-sm" onclick="goControl('${m.sport_type.toLowerCase()}','${m.id}')">컨트롤</button>
             <button class="btn btn-outline-info btn-sm" onclick="goIntegratedOverlay('${list.id}','${idx}')">통합URL</button>
-            <button class="btn btn-outline-success btn-sm" onclick="goOverlay('${m.sport_type}','${m.id}')">오버레이</button>
+            <button class="btn btn-outline-success btn-sm" onclick="goOverlay('${m.sport_type.toLowerCase()}','${m.id}')">오버레이</button>
             <button class="btn btn-outline-danger btn-sm" onclick="removeMatch(${idx})">삭제</button>
             <button class="btn btn-outline-secondary btn-sm" onclick="moveMatch(${idx},-1)">↑</button>
             <button class="btn btn-outline-secondary btn-sm" onclick="moveMatch(${idx},1)">↓</button>
@@ -545,12 +545,12 @@ async function moveMatch(idx, dir) {
 
 // 컨트롤 페이지로 이동
 function goControl(sport, id) {
-    window.open(`/${sport}/${String(id).padStart(6, '0')}/control`, '_blank');
+    window.open(`/${sport.toLowerCase()}/${String(id).padStart(6, '0')}/control`, '_blank');
 }
 
 // 오버레이 페이지로 이동
 function goOverlay(sport, id) {
-    window.open(`/${sport}/${String(id).padStart(6, '0')}/overlay`, '_blank');
+    window.open(`/${sport.toLowerCase()}/${String(id).padStart(6, '0')}/overlay`, '_blank');
 }
 
 // 통합 컨트롤 페이지로 이동

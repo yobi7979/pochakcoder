@@ -3421,7 +3421,7 @@
             // 현재 URL에서 종목 코드 추출
             const currentPath = window.location.pathname;
             const pathParts = currentPath.split('/');
-            const sportCode = pathParts[1]; // /soccer_league/10195455/control -> soccer_league
+            const sportCode = pathParts[1].toLowerCase(); // /soccer_league/10195455/control -> soccer_league (소문자 통일)
             
             document.getElementById('mobile-url').value = `${baseUrl}/${sportCode}/${matchId}/control-mobile`;
             document.getElementById('overlay-url').value = `${baseUrl}/${sportCode}/${matchId}/overlay`;
