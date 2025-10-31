@@ -422,4 +422,61 @@ router.get('/:listId/unified-overlay', async (req, res) => {
   }
 });
 
+// POST /api/match-lists/:id/custom-url - 커스텀 URL 설정
+router.post('/:id/custom-url', requireAuth, asyncHandler(async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { customUrl } = req.body;
+    
+    console.log(`[DEBUG] 커스텀 URL 설정 요청: ID=${id}, customUrl=${customUrl}`);
+    
+    const matchList = await MatchList.findByPk(id);
+    if (!matchList) {
+      return res.status(404).json({ error: '경기 목록을 찾을 수 없습니다.' });
+    }
+    
+    // 권한 확인
+    if (req.session.userRole !== 'admin' && matchList.created_by && matchList.created_by !== req.session.userId) {
+      return res.status(403).json({ error: '권한이 없습니다.' });
+    }
+    
+    // 커스텀 URL 업데이트
+    await matchList.update({ custom_url: customUrl });
+    
+    console.log(`[DEBUG] 커스텀 URL 설정 완료: ID=${id}, customUrl=${customUrl}`);
+    res.json({ success: true, matchList });
+  } catch (error) {
+    console.error('[DEBUG] 커스텀 URL 설정 실패:', error);
+    res.status(500).json({ error: '커스텀 URL 설정 중 오류가 발생했습니다.' });
+  }
+}));
+
+// DELETE /api/match-lists/:id/custom-url - 커스텀 URL 삭제
+router.delete('/:id/custom-url', requireAuth, asyncHandler(async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    console.log(`[DEBUG] 커스텀 URL 삭제 요청: ID=${id}`);
+    
+    const matchList = await MatchList.findByPk(id);
+    if (!matchList) {
+      return res.status(404).json({ error: '경기 목록을 찾을 수 없습니다.' });
+    }
+    
+    // 권한 확인
+    if (req.session.userRole !== 'admin' && matchList.created_by && matchList.created_by !== req.session.userId) {
+      return res.status(403).json({ error: '권한이 없습니다.' });
+    }
+    
+    // 커스텀 URL 삭제
+    await matchList.update({ custom_url: null });
+    
+    console.log(`[DEBUG] 커스텀 URL 삭제 완료: ID=${id}`);
+    res.json({ success: true, matchList });
+  } catch (error) {
+    console.error('[DEBUG] 커스텀 URL 삭제 실패:', error);
+    res.status(500).json({ error: '커스텀 URL 삭제 중 오류가 발생했습니다.' });
+  }
+}));
+
 module.exports = router;

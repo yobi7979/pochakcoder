@@ -618,7 +618,7 @@ router.post('/:matchId/swap-teams', async (req, res) => {
 router.post('/:matchId/team-name', async (req, res) => {
   try {
     const { matchId } = req.params;
-    const { team, teamName } = req.body;
+    const { team, teamName, teamNameDark } = req.body;
     
     const match = await Match.findByPk(matchId);
     if (!match) {
@@ -630,6 +630,15 @@ router.post('/:matchId/team-name', async (req, res) => {
       await match.update({ home_team: teamName });
     } else if (team === 'away') {
       await match.update({ away_team: teamName });
+    }
+    
+    // 팀명 색상 정보를 match_data에 저장
+    if (teamNameDark !== undefined) {
+      const matchData = match.match_data || {};
+      const colorKey = team === 'home' ? 'home_team_name_dark' : 'away_team_name_dark';
+      matchData[colorKey] = teamNameDark;
+      await match.update({ match_data: matchData });
+      console.log(`팀명 색상 정보 저장: ${team}팀, 검정색=${teamNameDark}`);
     }
     
     // TeamInfo 테이블도 업데이트 (DB 관리 페이지와 동기화)
@@ -655,8 +664,6 @@ router.post('/:matchId/team-name', async (req, res) => {
       // TeamInfo 업데이트 실패해도 Match 테이블 업데이트는 성공했으므로 계속 진행
     }
     
-    console.log(`TeamInfo 테이블 동기화 완료: matchId=${matchId}, teamType=${team}, teamName=${teamName}`);
-    
     // WebSocket으로 팀명 업데이트 이벤트 전송
     const io = require('../server').getIO();
     const roomName = `match_${matchId}`;
@@ -666,11 +673,75 @@ router.post('/:matchId/team-name', async (req, res) => {
       teamName: teamName
     });
     
-    console.log(`팀명 업데이트 완료: ${matchId}, ${team}팀: ${teamName}`);
+    // 팀명 색상 업데이트 이벤트도 전송
+    if (teamNameDark !== undefined) {
+      io.to(roomName).emit('teamNameColorUpdate', {
+        matchId: matchId,
+        team: team,
+        isDark: teamNameDark
+      });
+    }
+    
+    console.log(`팀명 업데이트 완료: ${matchId}, ${team}팀: ${teamName}, 색상(검정): ${teamNameDark}`);
     
     res.json({ success: true, match });
   } catch (error) {
     console.error('팀명 업데이트 실패:', error);
+    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+  }
+});
+
+// POST /api/matches/:matchId/team-name-color - 팀명 색상 설정 (체크박스 전용)
+router.post('/:matchId/team-name-color', async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { team, teamNameDark } = req.body;
+    
+    console.log(`팀명 색상 저장 요청: matchId=${matchId}, team=${team}, teamNameDark=${teamNameDark}`);
+    
+    const match = await Match.findByPk(matchId);
+    if (!match) {
+      return res.status(404).json({ error: '경기를 찾을 수 없습니다.' });
+    }
+    
+    // 팀명 색상 정보를 match_data에 저장 (기존 데이터 보존)
+    const matchData = match.match_data ? { ...match.match_data } : {};
+    const colorKey = team === 'home' ? 'home_team_name_dark' : 'away_team_name_dark';
+    matchData[colorKey] = teamNameDark;
+    
+    console.log(`저장 전 match_data:`, JSON.stringify(matchData, null, 2));
+    console.log(`저장할 색상 키: ${colorKey}, 값: ${teamNameDark}`);
+    
+    // Sequelize reload를 먼저 해서 최신 데이터 가져오기
+    await match.reload();
+    
+    // 최신 match_data와 병합
+    const latestMatchData = match.match_data ? { ...match.match_data } : {};
+    latestMatchData[colorKey] = teamNameDark;
+    
+    await match.update({ match_data: latestMatchData });
+    
+    // 저장 후 확인을 위해 다시 조회
+    await match.reload();
+    const savedMatchData = match.match_data || {};
+    console.log(`저장 후 match_data:`, JSON.stringify(savedMatchData, null, 2));
+    console.log(`저장된 ${colorKey}:`, savedMatchData[colorKey]);
+    
+    console.log(`✅ 팀명 색상 저장 완료: ${matchId}, ${team}팀, 검정색=${teamNameDark}`);
+    
+    // WebSocket으로 팀명 색상 업데이트 이벤트 전송
+    const io = require('../server').getIO();
+    const roomName = `match_${matchId}`;
+    io.to(roomName).emit('teamNameColorUpdate', {
+      matchId: matchId,
+      team: team,
+      isDark: teamNameDark
+    });
+    
+    res.json({ success: true, match: match.toJSON() });
+  } catch (error) {
+    console.error('팀명 색상 저장 실패:', error);
+    console.error('에러 스택:', error.stack);
     res.status(500).json({ error: '서버 오류가 발생했습니다.' });
   }
 });

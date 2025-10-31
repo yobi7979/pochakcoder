@@ -846,15 +846,9 @@
             align-items: center;
             justify-content: space-between;
             gap: 8px;
-            transition: all 0.3s ease;
             border: 1px solid rgba(255, 255, 255, 0.3);
             margin-bottom: 1px;
             min-height: 24px;
-        }
-        
-        .lineup-player:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateX(5px);
         }
         
         .player-number {
@@ -4381,6 +4375,85 @@
             } else {
                 }
         });
+
+        // 팀명 색상 변경 이벤트 처리 (검정색/흰색)
+        socket.on('teamNameColorUpdate', function(data) {
+            if (data.matchId === matchId) {
+                console.log('팀명 색상 변경 이벤트 수신:', data);
+                const team = data.team;
+                const isDark = data.isDark;
+                
+                // 스코어보드 팀명 색상 업데이트
+                const teamNameElement = document.querySelector(`.team-section.${team} .team-name`);
+                if (teamNameElement) {
+                    teamNameElement.style.color = isDark ? '#000000' : '#ffffff';
+                    console.log(`${team}팀명 색상 변경: ${isDark ? '검정색' : '흰색'}`);
+                }
+            }
+        });
+
+        // 페이지 로드 시 저장된 팀명 색상 정보 적용
+        function applyTeamNameColorFromData() {
+            <% const matchDataStr = JSON.stringify(match.match_data || {}); %>
+            const matchData = <%- matchDataStr %>;
+            
+            // 홈팀명 색상 적용 (요소가 존재할 때까지 재시도)
+            function applyHomeTeamNameColor() {
+                const homeTeamNameElement = document.querySelector('.team-section.home .team-name');
+                if (homeTeamNameElement) {
+                    if (matchData.home_team_name_dark) {
+                        homeTeamNameElement.style.color = '#000000';
+                        console.log('✅ 홈팀명 색상 적용: 검정색');
+                    } else {
+                        homeTeamNameElement.style.color = '#ffffff';
+                        console.log('✅ 홈팀명 색상 적용: 흰색 (기본값)');
+                    }
+                    return true;
+                }
+                return false;
+            }
+            
+            // 어웨이팀명 색상 적용 (요소가 존재할 때까지 재시도)
+            function applyAwayTeamNameColor() {
+                const awayTeamNameElement = document.querySelector('.team-section.away .team-name');
+                if (awayTeamNameElement) {
+                    if (matchData.away_team_name_dark) {
+                        awayTeamNameElement.style.color = '#000000';
+                        console.log('✅ 어웨이팀명 색상 적용: 검정색');
+                    } else {
+                        awayTeamNameElement.style.color = '#ffffff';
+                        console.log('✅ 어웨이팀명 색상 적용: 흰색 (기본값)');
+                    }
+                    return true;
+                }
+                return false;
+            }
+            
+            // 요소가 존재할 때까지 재시도 (최대 10회, 100ms 간격)
+            let retryCount = 0;
+            const maxRetries = 10;
+            
+            const tryApply = () => {
+                const homeApplied = applyHomeTeamNameColor();
+                const awayApplied = applyAwayTeamNameColor();
+                
+                if ((!homeApplied || !awayApplied) && retryCount < maxRetries) {
+                    retryCount++;
+                    setTimeout(tryApply, 100);
+                } else if (retryCount >= maxRetries) {
+                    console.warn('⚠️ 팀명 색상 적용 실패: 스코어보드 요소를 찾을 수 없습니다.');
+                }
+            };
+            
+            tryApply();
+        }
+
+        // DOM 로드 완료 후 팀명 색상 적용
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', applyTeamNameColorFromData);
+        } else {
+            applyTeamNameColorFromData();
+        }
 
         // 팀명 길이에 따른 폰트 사이즈 조정 함수
         function adjustTeamPositionForLongNames() {
